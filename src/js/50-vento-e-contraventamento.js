@@ -14,7 +14,7 @@
   const f = (v, d = 2) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   const DEF = { on: 0, V0: 35, S1: 1, S3: 1, cat: 'IV', cls: 'auto', CaX: 1.3, CaY: 1.3, desaprumo: 1,
-    arg: '3,5 a 7,0', gW: 1.4, psiQ: 0.5, psiW: 0.6, gmV: 2.0 };
+    arg: '3,5 a 7,0', gW: 1.4, psiQ: 0.5, psiW: 0.6, gmV: 2.0, Efat: 600, rEI: 1, fyk: 500, gs: 1.15 };
   function S() {
     const s = L7().S(); s.vento ??= {};
     for (const k in DEF) if (s.vento[k] === undefined || s.vento[k] === null || s.vento[k] === '') s.vento[k] = DEF[k];
@@ -57,11 +57,13 @@
     const cls = s.cls === 'auto' ? CV.classe(Math.max(H, Lx, Ly)) : s.cls;
     const v = { V0: N(s.V0), S1: N(s.S1), S3: N(s.S3), cat: s.cat, cls };
 
-    // peso de cada pavimento (G + Q do próprio pavimento) para o desaprumo
-    const peso = R.LV.map((l, i) => {
+    // peso de cada pavimento (G e Q do próprio pavimento) para o desaprumo e o γz
+    const pesoGQ = R.LV.map((l, i) => {
       let own = null; try { own = L7().compute({ lv: l.key }); } catch {}
-      return (own?.rows?.[i] || []).reduce((a, r) => a + (N(r.G) || 0) + (N(r.Q) || 0), 0);
+      const rows = own?.rows?.[i] || [];
+      return { G: rows.reduce((a, r) => a + (N(r.G) || 0), 0), Q: rows.reduce((a, r) => a + (N(r.Q) || 0), 0) };
     });
+    const peso = pesoGQ.map(x => x.G + x.Q);
     const theta = CV.anguloDesaprumo(H);
 
     const P = { gG: D.gG, gQ: D.gQ, gW: N(s.gW), psiQ: N(s.psiQ), psiW: N(s.psiW), gm: D.gm, gmV: N(s.gmV), kf: D.kf, eta: D.eta, arg: s.arg };
@@ -92,15 +94,31 @@
           });
         });
         const K = tr.reduce((a, p) => a + p.k, 0) || 1;
-        for (const p of tr) { p.parte = p.k / K; p.Vk = V * p.parte; p.Mk = M * p.parte; Object.assign(p, CV.verificarTrecho(p, P)); }
+        const fyd = N(s.fyk) / N(s.gs);
+        for (const p of tr) {
+          p.parte = p.k / K; p.Vk = V * p.parte; p.Mk = M * p.parte; Object.assign(p, CV.verificarTrecho(p, P));
+          if (!p.tracaOk) { p.arm = CV.armaduraTracao(p, p.Md, fyd); p.barras = CV.escolherBarras(p.arm.As); }
+        }
+        // rigidez do conjunto nesta direção (para o γz): E = Efat · fpk do pavimento
+        const E = N(s.Efat) * (D.levels[i]?.fpk || D.eta * (D.levels[i]?.fbk || 4)) * 1000 * (N(s.rEI) || 1);
+        const EI = tr.reduce((a, p) => a + E * p.t * p.L ** 3 / 12, 0), GA = tr.reduce((a, p) => a + 0.4 * E * p.t * p.L, 0);
         const fbkAdot = D.levels[i]?.fbk || 0, fbkMax = tr.reduce((a, p) => Math.max(a, p.fbk), 0);
-        return { i, nome: l.name, zb, V, M, trechos: tr, fbkAdot, fbkMax,
+        return { i, nome: l.name, zb, V, M, trechos: tr, fbkAdot, fbkMax, E, EI, GA,
           falhasCis: tr.filter(p => !p.cisOk).length, falhasTr: tr.filter(p => !p.tracaOk).length };
       });
-      return { dir, largura, Ca, forcas, niveis };
+      // estabilidade global
+      let gz = null;
+      if (niveis.every(n => n.EI > 0)) {
+        const segs = andares.map(a => ({ z0: a.zBase, z1: a.zTopo, EI: niveis[a.i].EI, GA: niveis[a.i].GA }));
+        const fd = forcas.map(x => ({ z: x.z, F: P.gW * x.F }));
+        const pd = andares.map(a => P.gG * pesoGQ[a.i].G + P.gQ * P.psiQ * pesoGQ[a.i].Q);
+        gz = CV.gamaZ(segs, fd, pd);
+        gz.topoK = CV.deslocamentos(segs, forcas.map(x => ({ z: x.z, F: x.Fw })) ).at(-1).d;
+      }
+      return { dir, largura, Ca, forcas, niveis, gz };
     });
     if (inclinadas) avisos.push(inclinadas + ' parede(s) inclinadas (mais de 10°) não entraram no contraventamento.');
-    return { s, v, cls, H, Lx, Ly, theta, peso, andares, dirs, avisos, P };
+    return { s, v, cls, H, Lx, Ly, theta, peso, pesoGQ, andares, dirs, avisos, P };
   }
 
   // ---------- quadro na tela
@@ -116,20 +134,25 @@
       const linhas = n.trechos.map(p => `<tr class="${!p.cisOk || !p.tracaOk || p.fbk > n.fbkAdot + 1e-9 ? 'bad109' : ''}"><td>${esc(p.nome)}</td><td>${f(p.L)}</td><td>${f(p.parte * 100, 1)}%</td><td>${f(p.Vk)}</td><td>${f(p.Mk)}</td>
         <td>${f(p.tau, 3)} / ${f(p.fvd, 3)} ${ok(p.cisOk, '')}</td><td>${f(p.sigt, 3)} / ${f(p.ftd, 3)} ${ok(p.tracaOk, '')}</td><td>${f(p.fbk)}</td></tr>`).join('');
       const fb = n.fbkMax > n.fbkAdot + 1e-9 ? `<p class="no109">⚠ Com vento, o trecho mais solicitado pede f<sub>bk</sub> = ${f(n.fbkMax)} MPa, acima do adotado (${f(n.fbkAdot, 1)} MPa). Ajuste o f<sub>bk</sub> do pavimento em "Resistências por pavimento".</p>` : `<p class="ok109">✓ f<sub>bk</sub> adotado (${f(n.fbkAdot, 1)} MPa) atende com vento (máx. necessário ${f(n.fbkMax)} MPa).</p>`;
-      const tr = n.falhasTr ? `<p class="no109">⚠ ${n.falhasTr} trecho(s) com tração na flexão acima de f<sub>td</sub>: prever armadura vertical grauteada nas extremidades desses trechos (dimensionar) ou aumentar o trecho.</p>` : '';
+      const arm = n.trechos.filter(p => p.arm?.As > 0);
+      const tr = n.falhasTr ? `<p class="no109">⚠ ${n.falhasTr} trecho(s) com tração na flexão acima de f<sub>td</sub>. Armadura vertical grauteada sugerida em cada extremidade (pré-dimensionamento): ${
+        arm.map(p => `<b>${esc(p.nome)}</b>: A<sub>s</sub> = ${f(p.arm.As)} cm² → ${p.barras ? p.barras.n + ' ϕ ' + f(p.barras.d, p.barras.d % 1 ? 1 : 0) : 'aumentar o trecho'}`).join(' · ')}.</p>` : '';
       const ci = n.falhasCis ? `<p class="no109">⚠ ${n.falhasCis} trecho(s) não passam no cisalhamento.</p>` : '';
       return `<h4>${esc(n.nome)} — base: V<sub>k</sub> = ${f(n.V)} kN · M<sub>k</sub> = ${f(n.M)} kN·m</h4>
         ${n.trechos.length ? `<table class="t109"><tr><th>Trecho</th><th>L (m)</th><th>rigidez</th><th>V<sub>k</sub> (kN)</th><th>M<sub>k</sub> (kN·m)</th><th>τ<sub>d</sub> / f<sub>vd</sub> (MPa)</th><th>σ<sub>t</sub> / f<sub>td</sub> (MPa)</th><th>f<sub>bk</sub> nec. (MPa)</th></tr>${linhas}</table>${fb}${tr}${ci}`
           : '<p class="no109">⚠ Nenhuma parede nesta direção.</p>'}`;
     }).join('');
-    return `<h3>Vento em ${d.dir} (fachada de ${f(d.largura)} m, C<sub>a</sub> = ${f(d.Ca)})</h3>${forcas}${niveis}`;
+    const gz = d.gz ? `<p class="${d.gz.gz <= 1.1 ? 'ok109' : 'no109'}">${d.gz.gz <= 1.1 ? '✓' : '⚠'} Estabilidade global: <b>γ<sub>z</sub> = ${Number.isFinite(d.gz.gz) ? f(d.gz.gz, 3) : '∞'}</b> (M<sub>1d</sub> = ${f(d.gz.M1)} kN·m, ΔM<sub>d</sub> = ${f(d.gz.dM, 3)} kN·m)${
+      d.gz.gz <= 1.1 ? ' — efeitos globais de 2ª ordem desprezíveis.' : d.gz.gz <= 1.3 ? ' — considerar os efeitos de 2ª ordem (majorar os esforços horizontais por 0,95·γ<sub>z</sub>).' : ' — estrutura muito deslocável: rever o contraventamento.'}
+      Deslocamento no topo só com vento (característico): ${f(d.gz.topoK * 1000, 2)} mm = H/${f(A.H / Math.max(d.gz.topoK, 1e-12), 0)}.</p>` : '';
+    return `<h3>Vento em ${d.dir} (fachada de ${f(d.largura)} m, C<sub>a</sub> = ${f(d.Ca)})</h3>${forcas}${gz}${niveis}`;
   }
 
   function render() {
     const s = S(), A = analisar();
     const params = `<div class="p109">${inp('V0', 'V<sub>0</sub> (m/s)', s.V0)}${inp('S1', 'S<sub>1</sub> (terreno)', s.S1)}${sel('cat', 'Categoria (S<sub>2</sub>)', s.cat, ['I', 'II', 'III', 'IV', 'V'])}${sel('cls', 'Classe', s.cls, ['auto', 'A', 'B', 'C'])}${inp('S3', 'S<sub>3</sub> (estatístico)', s.S3)}
       ${inp('CaX', 'C<sub>a</sub> vento em X', s.CaX)}${inp('CaY', 'C<sub>a</sub> vento em Y', s.CaY)}${sel('desaprumo', 'Desaprumo', s.desaprumo ? 'somar ao vento' : 'não considerar', ['somar ao vento', 'não considerar'])}
-      ${sel('arg', 'Argamassa f<sub>a</sub> (MPa)', s.arg, Object.keys(CV.ARGAMASSA))}${inp('gW', 'γ<sub>q</sub> do vento', s.gW)}${inp('psiQ', 'ψ<sub>0</sub> sobrecarga', s.psiQ)}${inp('psiW', 'ψ<sub>0</sub> vento', s.psiW)}${inp('gmV', 'γ<sub>m</sub> cisalh./tração', s.gmV)}</div>`;
+      ${sel('arg', 'Argamassa f<sub>a</sub> (MPa)', s.arg, Object.keys(CV.ARGAMASSA))}${inp('gW', 'γ<sub>q</sub> do vento', s.gW)}${inp('psiQ', 'ψ<sub>0</sub> sobrecarga', s.psiQ)}${inp('psiW', 'ψ<sub>0</sub> vento', s.psiW)}${inp('gmV', 'γ<sub>m</sub> cisalh./tração', s.gmV)}${inp('Efat', 'E<sub>alv</sub> = k · f<sub>pk</sub> (k)', s.Efat)}${inp('rEI', 'redução de rigidez (γ<sub>z</sub>)', s.rEI)}${inp('fyk', 'f<sub>yk</sub> do aço (MPa)', s.fyk)}${inp('gs', 'γ<sub>s</sub>', s.gs)}</div>`;
     const resumo = A ? `<p class="n109">Altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m · classe ${A.cls} · θ<sub>a</sub> = 1/${f(1 / A.theta, 0)} · pesos dos pavimentos: ${A.peso.map(p => f(p, 0)).join(' · ')} kN</p>${A.avisos.map(w => `<p class="no109">⚠ ${esc(w)}</p>`).join('')}` : '<p class="no109">Lance as paredes na planta para calcular.</p>';
     box.innerHTML = `<div class="h109"><b>Vento e contraventamento</b><span>arraste por aqui</span>
       <label class="on109"><input type="checkbox" class="cb109"${s.on ? ' checked' : ''}> incluir no memorial</label>

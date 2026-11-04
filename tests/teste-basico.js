@@ -98,7 +98,9 @@ function diferencas(a, b, onde = '') {
     window.vento109.S().on = 1; const mem = window.memorial.html(); window.vento109.S().on = 0;
     return { H: A.H, Lx: A.Lx, Ly: A.Ly, Fw: X.forcas[0].Fw, Fd: X.forcas[0].Fd, P1: n.trechos.find(t => t.nome === 'P1')?.parte,
       nTrechos: n.trechos.length, todosOk: A.dirs.every(d => d.niveis.every(n => !n.falhasCis && !n.falhasTr)),
-      mem: /Ações horizontais e contraventamento/.test(mem) && /Vento em Y/.test(mem) };
+      mem: /Ações horizontais e contraventamento/.test(mem) && /Vento em Y/.test(mem), gz: X.gz.gz,
+      arm: (() => { const s = window.vento109.S(); s.V0 = 120; const B = window.vento109.analisar(); s.V0 = 35;
+        return B.dirs[1].niveis[0].trechos.filter(t => t.arm).map(t => t.nome + ':' + t.barras.n + 'x' + t.barras.d).join(' '); })() };
   });
   // F = 1,3 · 0,41264 · 5,6 · 1,45 = 4,3558 kN ; desaprumo = 435,99 / (100·√2,9) = 2,5602 kN
   conferir(Math.abs(vt.H - 2.9) < 1e-9 && vt.Lx === 8 && Math.abs(vt.Ly - 5.6) < 1e-9, `geometria do vento: H ${vt.H} m, planta ${vt.Lx} × ${vt.Ly} m`);
@@ -106,6 +108,9 @@ function diferencas(a, b, onde = '') {
   conferir(vt.nTrechos === 7 && Math.abs(vt.P1 - 0.524) < 1e-3, `contraventamento em X: 7 trechos, P1 com ${(vt.P1 * 100).toFixed(1)}% da rigidez`);
   conferir(vt.todosOk, 'térreo do exemplo passa no cisalhamento e na tração');
   conferir(vt.mem, 'memorial inclui ações horizontais quando marcado');
+  // γz em X: Fd = 1,4·6,916 ; δ = Fd·H³/3EI + 1,2·Fd·H/GA = 3,07e-5 m ; ΔM = 577,09·δ ; M1 = 28,079 → 1,00063
+  conferir(Math.abs(vt.gz - 1.000631) < 1e-5, `γz em X = ${vt.gz.toFixed(6)} (esperado 1,000631)`);
+  conferir(vt.arm === 'P2.2:1x10 P4.1:1x10 P4.2:1x8 P5.1:1x10', `armadura nos trechos tracionados com V0 = 120 m/s: ${vt.arm}`);
 
   conferir(erros.length === 0, 'nenhum erro no navegador' + (erros.length ? ':\n    ' + erros.join('\n    ') : ''));
 

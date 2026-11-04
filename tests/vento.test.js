@@ -91,3 +91,35 @@ test('parede curta e pouco carregada: tração na flexão não passa', () => {
   perto(r.sigt, 0.535714, 1e-5);
   assert.equal(r.tracaOk, false);
 });
+
+test('deslocamento no topo de balanço com carga na ponta: PH³/3EI + 1,2PH/GA', () => {
+  // P = 10 kN ; H = 6 m ; EI = 1e6 kN·m² ; GA = 1e5 kN
+  // flexão = 10·216/3e6 = 7,2e-4 m ; cisalhamento = 1,2·10·6/1e5 = 7,2e-4 m ; total = 1,44e-3 m
+  const segs = [{ z0: 0, z1: 3, EI: 1e6, GA: 1e5 }, { z0: 3, z1: 6, EI: 1e6, GA: 1e5 }];
+  const d = V.deslocamentos(segs, [{ z: 6, F: 10 }]);
+  perto(d[0].d, 1.44e-3, 2e-7);
+});
+
+test('γz = 1 / (1 − ΔMd / M1d)', () => {
+  // 1 andar: F = 10 kN a 3 m ; EI = 1e4 ; GA infinito na prática
+  // δ = 10·27/(3·1e4) = 9e-3 m ; M1 = 30 ; ΔM = 1000·9e-3 = 9 ; γz = 1/(1 − 0,3) = 1,4286
+  const r = V.gamaZ([{ z0: 0, z1: 3, EI: 1e4, GA: 1e12 }], [{ z: 3, F: 10 }], [1000]);
+  perto(r.M1, 30);
+  perto(r.dM, 9, 1e-3);
+  perto(r.gz, 1.4286);
+});
+
+test('armadura na extremidade tracionada', () => {
+  // L = 1 ; t = 0,14 ; G = 10 kN ; Md = 14 kN·m
+  // σM = 14/0,023333 = 0,6 MPa ; σN = 0,9·10/0,14 = 0,06429 ; σt = 0,53571 ; σc = 0,66429
+  // x = 0,53571/1,2 = 0,44643 m ; T = 535,71·0,14·0,44643/2 = 16,741 kN ; As = 16,741/43,478 = 0,3850 cm²
+  const r = V.armaduraTracao({ L: 1, t: 0.14, NG: 10 }, 14, 500 / 1.15);
+  perto(r.x, 0.446429, 1e-5);
+  perto(r.T, 16.7411, 1e-3);
+  perto(r.As, 0.38504, 1e-4);
+  assert.deepEqual([V.escolherBarras(r.As).n, V.escolherBarras(r.As).d], [1, 8]);
+  // sem tração: não precisa
+  assert.equal(V.armaduraTracao({ L: 4, t: 0.14, NG: 200 }, 10, 434.8).As, 0);
+  // 2,2 cm² → 1 ϕ 20 (3,14) é menor que 2 ϕ 12,5 (2,45)? não: 2 ϕ 12,5 = 2,45 atende primeiro
+  assert.deepEqual([V.escolherBarras(2.2).n, V.escolherBarras(2.2).d], [2, 12.5]);
+});

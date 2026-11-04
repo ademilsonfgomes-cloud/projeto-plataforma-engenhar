@@ -109,7 +109,64 @@
     };
   }
 
-  const api = { S2_TAB, FR, ARGAMASSA, classe, s2, pressao, forcasVento, anguloDesaprumo, esforcosNaBase, rigidez, verificarTrecho };
+  // Deslocamentos horizontais de uma estrutura em balanço (conjunto das paredes de uma direção),
+  // por carga unitária com integração numérica: δk = ∫ M·m/EI ds + ∫ 1,2·V·v/GA ds.
+  //   segs:   [{ z0, z1, EI (kN·m²), GA (kN) }] da base ao topo (cotas em m, base = segs[0].z0)
+  //   forcas: [{ z, F (kN) }]
+  // Devolve o deslocamento (m) na cota de cada força.
+  function deslocamentos(segs, forcas) {
+    const base = segs[0].z0;
+    const M = s => forcas.reduce((a, f) => a + (f.z > s ? f.F * (f.z - s) : 0), 0);
+    const V = s => forcas.reduce((a, f) => a + (f.z > s ? f.F : 0), 0);
+    return forcas.map(fk => {
+      let d = 0;
+      for (const g of segs) {
+        const n = 60, h = (g.z1 - g.z0) / n;
+        for (let k = 0; k < n; k++) {
+          const s = g.z0 + (k + 0.5) * h;
+          if (s >= fk.z) break;
+          d += M(s) * (fk.z - s) / g.EI * h + 1.2 * V(s) / g.GA * h;
+        }
+      }
+      return { z: fk.z, d, rel: fk.z - base };
+    });
+  }
+
+  // Coeficiente γz (estabilidade global): γz = 1 / (1 − ΔMd / M1d)
+  //   M1d = Σ Fd · z (momento de tombamento na base)   ΔMd = Σ Pd · δ (cargas verticais × deslocamentos)
+  //   forcasD: [{ z, F }] de cálculo ; pesosD: [kN] de cálculo no mesmo andar ; base: cota da base (m)
+  function gamaZ(segs, forcasD, pesosD) {
+    const base = segs[0].z0, des = deslocamentos(segs, forcasD);
+    const M1 = forcasD.reduce((a, f) => a + f.F * (f.z - base), 0);
+    const dM = des.reduce((a, x, i) => a + pesosD[i] * x.d, 0);
+    return { M1, dM, gz: dM < M1 ? 1 / (1 - dM / M1) : Infinity, des };
+  }
+
+  // Armadura vertical na extremidade tracionada de um trecho (pré-dimensionamento elástico,
+  // seção não fissurada): diagrama linear com σt = Md/W − N/A e σc = Md/W + N/A (N = 0,9·G);
+  // zona tracionada x = L·σt/(σt + σc), força T = σt·t·x/2, As = T / fyd.
+  //   fyd em MPa (CA-50: 500/1,15 = 434,8)
+  function armaduraTracao(tr, Md, fyd) {
+    const A = tr.t * tr.L, W = tr.t * tr.L * tr.L / 6;
+    const sM = Md / W / 1000, sN = 0.9 * tr.NG / A / 1000;
+    const st = sM - sN;
+    if (st <= 0) return { T: 0, x: 0, As: 0 };
+    const x = tr.L * st / (st + sM + sN);
+    const T = st * 1000 * tr.t * x / 2;           // kN
+    return { st, sc: sM + sN, x, T, As: T / (fyd / 10) };  // cm² (fyd em kN/cm²)
+  }
+
+  // Menor combinação de 1 ou 2 barras que atende à área (cm²).
+  const BARRAS = [8, 10, 12.5, 16, 20, 25];
+  function escolherBarras(As) {
+    const op = [];
+    for (const d of BARRAS) for (const n of [1, 2]) op.push({ n, d, area: n * Math.PI * d * d / 400 });
+    op.sort((a, b) => a.area - b.area || a.n - b.n);
+    return op.find(o => o.area >= As - 1e-9) || null;
+  }
+
+  const api = { S2_TAB, FR, ARGAMASSA, classe, s2, pressao, forcasVento, anguloDesaprumo, esforcosNaBase, rigidez, verificarTrecho,
+    deslocamentos, gamaZ, armaduraTracao, escolherBarras };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.calcVento = api;
 })(this);
