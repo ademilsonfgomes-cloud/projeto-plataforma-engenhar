@@ -43,6 +43,7 @@
     const dirs = A.dirs.map(d => `<h3>Vento em ${d.dir} — fachada de ${f(d.largura)} m, C<sub>a</sub> = ${f(d.Ca)}</h3>
       <table><tr><th>z (m)</th><th>V<sub>k</sub> (m/s)</th><th>q (kN/m²)</th><th>faixa (m)</th><th>F vento (kN)</th><th>F desaprumo (kN)</th><th>F total (kN)</th></tr>${
         d.forcas.map(x => `<tr><td>${f(x.z)}</td><td>${f(x.Vk, 1)}</td><td>${f(x.q, 3)}</td><td>${f(x.hTrib)}</td><td>${f(x.Fw)}</td><td>${f(x.Fd)}</td><td>${f(x.F)}</td></tr>`).join('')}</table>
+      ${d.modo === 'maior' ? `<p>Momento na base: com vento ${f(d.Mw)} kN·m; com desaprumo ${f(d.Mdes)} kN·m → adotado <b>${d.caso}</b>.</p>` : ''}
       ${d.gz ? `<p class="${d.gz.gz <= 1.1 ? 'res' : 'aviso'}">Estabilidade global: γ<sub>z</sub> = 1 / (1 − ΔM<sub>d</sub> / M<sub>1d</sub>) = 1 / (1 − ${f(d.gz.dM, 4)} / ${f(d.gz.M1)}) = <b>${Number.isFinite(d.gz.gz) ? f(d.gz.gz, 3) : '∞'}</b>${
         d.gz.gz <= 1.1 ? ' ≤ 1,10 — efeitos globais de 2ª ordem desprezíveis.' : d.gz.gz <= 1.3 ? ' — majorar os esforços horizontais por 0,95·γ<sub>z</sub>.' : ' — rever o contraventamento.'}
         Deslocamento no topo (vento característico): ${f(d.gz.topoK * 1000, 2)} mm = H/${f(A.H / Math.max(d.gz.topoK, 1e-12), 0)}.</p>` : ''}
@@ -56,7 +57,7 @@
             n.trechos.filter(p => p.arm?.As > 0).map(p => `${esc(p.nome)}: T<sub>d</sub> = ${f(p.arm.T)} kN, A<sub>s</sub> = ${f(p.arm.As)} cm² → ${p.barras ? p.barras.n + ' ϕ ' + f(p.barras.d, p.barras.d % 1 ? 1 : 0) : 'aumentar o trecho'}`).join('; ')}.` : ' Sem tração acima de f<sub>td</sub>.'}</p>`).join('')}`).join('');
     return `<h2>4. Ações horizontais e contraventamento</h2>
       <p>Vento pela ABNT NBR 6123 (método estático): V<sub>k</sub> = V<sub>0</sub> · S<sub>1</sub> · S<sub>2</sub> · S<sub>3</sub>, S<sub>2</sub> = b · F<sub>r</sub> · (z/10)<sup>p</sup>, q = 0,613 · V<sub>k</sub>², F = C<sub>a</sub> · q · A<sub>e</sub>, com a força de cada pavimento na cota da laje e faixa de meia altura abaixo e acima.
-      ${s.desaprumo ? `Desaprumo (ABNT NBR 16868-1): θ<sub>a</sub> = 1/(100·√H) = 1/${f(1 / A.theta, 0)}, força = θ<sub>a</sub> · peso do pavimento, somada ao vento.` : 'Desaprumo não considerado.'}</p>
+      ${N(s.desaprumo) ? `Desaprumo (ABNT NBR 16868-1): θ<sub>a</sub> = 1/(100·√H) = 1/${f(1 / A.theta, 0)}, força = θ<sub>a</sub> · peso do pavimento, ${N(s.desaprumo) === 2 ? 'considerado separadamente do vento: em cada direção vale o caso (vento ou desaprumo) com maior momento de tombamento na base' : 'somada ao vento'}.` : 'Desaprumo não considerado.'}</p>
       <dl><dt>V<sub>0</sub></dt><dd>${f(N(s.V0), 1)} m/s</dd><dt>S<sub>1</sub> / S<sub>3</sub></dt><dd>${f(N(s.S1), 2)} / ${f(N(s.S3), 2)}</dd><dt>S<sub>2</sub></dt><dd>categoria ${esc(s.cat)}, classe ${esc(A.cls)}</dd>
       <dt>Edificação</dt><dd>altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m</dd><dt>Argamassa</dt><dd>f<sub>a</sub> ${esc(s.arg)} MPa</dd>
       <dt>Combinações</dt><dd>vento principal: γg·G + γq·(W + ψ<sub>0</sub>·Q), ψ<sub>0</sub> = ${f(P.psiQ, 2)}; sobrecarga principal: γg·G + γq·(Q + ψ<sub>0</sub>·W), ψ<sub>0</sub> = ${f(P.psiW, 2)}; γq do vento = ${f(P.gW, 2)}; γm (cisalhamento e tração) = ${f(P.gmV, 2)}</dd></dl>

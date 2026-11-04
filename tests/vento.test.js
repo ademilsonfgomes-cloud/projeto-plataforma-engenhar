@@ -123,3 +123,20 @@ test('armadura na extremidade tracionada', () => {
   // 2,2 cm² → 1 ϕ 20 (3,14) é menor que 2 ϕ 12,5 (2,45)? não: 2 ϕ 12,5 = 2,45 atende primeiro
   assert.deepEqual([V.escolherBarras(2.2).n, V.escolherBarras(2.2).d], [2, 12.5]);
 });
+
+test('vento e desaprumo: somar ou usar o maior', () => {
+  // 2 pavimentos: z = 3 e 6 ; vento 16 e 9 kN ; desaprumo 5 e 5 kN
+  const fw = [16, 9], fd = [5, 5], z = [3, 6];
+  assert.deepEqual(V.combinarHorizontais(fw, fd, z, 0, 'somar').F, [21, 14]);
+  assert.deepEqual(V.combinarHorizontais(fw, fd, z, 0, 'nao').F, [16, 9]);
+  // maior: M vento = 16·3 + 9·6 = 102 ; M desaprumo = 5·3 + 5·6 = 45 → vento
+  const m = V.combinarHorizontais(fw, fd, z, 0, 'maior');
+  assert.equal(m.caso, 'vento');
+  assert.equal(m.Mw, 102);
+  assert.equal(m.Md, 45);
+  assert.deepEqual(m.F, [16, 9]);
+  // prédio pesado e vento fraco: desaprumo vale
+  const m2 = V.combinarHorizontais([2, 1], [5, 5], z, 0, 'maior');
+  assert.equal(m2.caso, 'desaprumo');
+  assert.deepEqual(m2.F, [5, 5]);
+});

@@ -112,6 +112,15 @@ function diferencas(a, b, onde = '') {
   conferir(Math.abs(vt.gz - 1.000631) < 1e-5, `γz em X = ${vt.gz.toFixed(6)} (esperado 1,000631)`);
   conferir(vt.arm === 'P2.2:1x10 P4.1:1x10 P4.2:1x8 P5.1:1x10', `armadura nos trechos tracionados com V0 = 120 m/s: ${vt.arm}`);
 
+  // Desaprumo "usar o maior": em X vento 4,3558 kN × desaprumo 2,5602 kN (mesma cota) → vale o vento
+  const dm = await page.evaluate(() => {
+    const s = window.vento109.S(); s.desaprumo = 2; const A = window.vento109.analisar(); s.desaprumo = 1;
+    const B = window.vento109.analisar();
+    return { caso: A.dirs[0].caso, F: A.dirs[0].forcas[0].F, Fsoma: B.dirs[0].forcas[0].F };
+  });
+  conferir(dm.caso === 'vento' && Math.abs(dm.F - 4.3558) < 1e-3 && Math.abs(dm.Fsoma - 6.9160) < 1e-3,
+    `desaprumo: usar o maior → ${dm.caso} ${dm.F.toFixed(4)} kN ; somar → ${dm.Fsoma.toFixed(4)} kN`);
+
   // Vergas do exemplo (verga de 1 fiada, fk do pavimento = 1,4 MPa)
   const vg = await page.evaluate(() => {
     const A = window.vergas109.analisar(), v = A.niveis[0].vergas, p1 = v.find(x => x.nome === 'P1');

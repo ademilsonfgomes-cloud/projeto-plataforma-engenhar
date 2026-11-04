@@ -73,10 +73,11 @@
     const dirs = ['X', 'Y'].map(dir => {
       const largura = dir === 'X' ? Ly : Lx, Ca = N(dir === 'X' ? s.CaX : s.CaY);
       const Fw = CV.forcasVento(andares, largura, Ca, v);
-      const forcas = Fw.map((fw, j) => {
-        const Fd = s.desaprumo ? theta * peso[andares[j].i] : 0;
-        return { ...fw, Fw: fw.F, Fd, F: fw.F + Fd };
-      });
+      // desaprumo: 1 = somar ao vento (padrão), 2 = usar o maior (momento na base), 0 = não considerar
+      const fdArr = andares.map(a => theta * peso[a.i]);
+      const modo = N(s.desaprumo) === 2 ? 'maior' : N(s.desaprumo) ? 'somar' : 'nao';
+      const comb = CV.combinarHorizontais(Fw.map(x => x.F), fdArr, Fw.map(x => x.z), andares[0].zBase, modo);
+      const forcas = Fw.map((fw, j) => ({ ...fw, Fw: fw.F, Fd: modo === 'nao' ? 0 : fdArr[j], F: comb.F[j] }));
       const niveis = R.LV.map((l, i) => {
         const zb = N(l.z) || 0, { V, M } = CV.esforcosNaBase(forcas, zb), hAcima = H - (zb - andares[0].zBase);
         const tr = [];
@@ -115,7 +116,7 @@
         gz = CV.gamaZ(segs, fd, pd);
         gz.topoK = CV.deslocamentos(segs, forcas.map(x => ({ z: x.z, F: x.Fw })) ).at(-1).d;
       }
-      return { dir, largura, Ca, forcas, niveis, gz };
+      return { dir, largura, Ca, forcas, niveis, gz, caso: comb.caso, modo, Mw: comb.Mw, Mdes: comb.Md };
     });
     if (inclinadas) avisos.push(inclinadas + ' parede(s) inclinadas (mais de 10°) não entraram no contraventamento.');
     return { s, v, cls, H, Lx, Ly, theta, peso, pesoGQ, andares, dirs, avisos, P };
@@ -125,6 +126,7 @@
   const box = document.createElement('div'); box.id = 'vento109'; box.className = 'noPrint'; box.hidden = true; document.body.append(box);
   const inp = (k, l, val, t = 'number') => `<label>${l}<input data-v="${k}" type="${t}" step="any" value="${esc(String(val))}"></label>`;
   const sel = (k, l, val, ops) => `<label>${l}<select data-v="${k}">${ops.map(o => `<option${String(o) === String(val) ? ' selected' : ''}>${o}</option>`).join('')}</select></label>`;
+  const DESAP = { 1: 'somar ao vento', 2: 'usar o maior', 0: 'não considerar' };
   const ok = (b, txt) => `<span class="${b ? 'ok109' : 'no109'}">${b ? '✓' : '✗'} ${txt}</span>`;
 
   function tabelaDirecao(d, A) {
@@ -145,13 +147,14 @@
     const gz = d.gz ? `<p class="${d.gz.gz <= 1.1 ? 'ok109' : 'no109'}">${d.gz.gz <= 1.1 ? '✓' : '⚠'} Estabilidade global: <b>γ<sub>z</sub> = ${Number.isFinite(d.gz.gz) ? f(d.gz.gz, 3) : '∞'}</b> (M<sub>1d</sub> = ${f(d.gz.M1)} kN·m, ΔM<sub>d</sub> = ${f(d.gz.dM, 3)} kN·m)${
       d.gz.gz <= 1.1 ? ' — efeitos globais de 2ª ordem desprezíveis.' : d.gz.gz <= 1.3 ? ' — considerar os efeitos de 2ª ordem (majorar os esforços horizontais por 0,95·γ<sub>z</sub>).' : ' — estrutura muito deslocável: rever o contraventamento.'}
       Deslocamento no topo só com vento (característico): ${f(d.gz.topoK * 1000, 2)} mm = H/${f(A.H / Math.max(d.gz.topoK, 1e-12), 0)}.</p>` : '';
-    return `<h3>Vento em ${d.dir} (fachada de ${f(d.largura)} m, C<sub>a</sub> = ${f(d.Ca)})</h3>${forcas}${gz}${niveis}`;
+    const caso = d.modo === 'maior' ? `<p class="n109">Usar o maior: momento na base com vento ${f(d.Mw)} kN·m × com desaprumo ${f(d.Mdes)} kN·m → vale <b>${d.caso}</b>.</p>` : '';
+    return `<h3>Vento em ${d.dir} (fachada de ${f(d.largura)} m, C<sub>a</sub> = ${f(d.Ca)})</h3>${forcas}${caso}${gz}${niveis}`;
   }
 
   function render() {
     const s = S(), A = analisar();
     const params = `<div class="p109">${inp('V0', 'V<sub>0</sub> (m/s)', s.V0)}${inp('S1', 'S<sub>1</sub> (terreno)', s.S1)}${sel('cat', 'Categoria (S<sub>2</sub>)', s.cat, ['I', 'II', 'III', 'IV', 'V'])}${sel('cls', 'Classe', s.cls, ['auto', 'A', 'B', 'C'])}${inp('S3', 'S<sub>3</sub> (estatístico)', s.S3)}
-      ${inp('CaX', 'C<sub>a</sub> vento em X', s.CaX)}${inp('CaY', 'C<sub>a</sub> vento em Y', s.CaY)}${sel('desaprumo', 'Desaprumo', s.desaprumo ? 'somar ao vento' : 'não considerar', ['somar ao vento', 'não considerar'])}
+      ${inp('CaX', 'C<sub>a</sub> vento em X', s.CaX)}${inp('CaY', 'C<sub>a</sub> vento em Y', s.CaY)}${sel('desaprumo', 'Desaprumo', DESAP[N(s.desaprumo)] || DESAP[1], [DESAP[1], DESAP[2], DESAP[0]])}
       ${sel('arg', 'Argamassa f<sub>a</sub> (MPa)', s.arg, Object.keys(CV.ARGAMASSA))}${inp('gW', 'γ<sub>q</sub> do vento', s.gW)}${inp('psiQ', 'ψ<sub>0</sub> sobrecarga', s.psiQ)}${inp('psiW', 'ψ<sub>0</sub> vento', s.psiW)}${inp('gmV', 'γ<sub>m</sub> cisalh./tração', s.gmV)}${inp('Efat', 'E<sub>alv</sub> = k · f<sub>pk</sub> (k)', s.Efat)}${inp('rEI', 'redução de rigidez (γ<sub>z</sub>)', s.rEI)}${inp('fyk', 'f<sub>yk</sub> do aço (MPa)', s.fyk)}${inp('gs', 'γ<sub>s</sub>', s.gs)}</div>`;
     const resumo = A ? `<p class="n109">Altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m · classe ${A.cls} · θ<sub>a</sub> = 1/${f(1 / A.theta, 0)} · pesos dos pavimentos: ${A.peso.map(p => f(p, 0)).join(' · ')} kN</p>${A.avisos.map(w => `<p class="no109">⚠ ${esc(w)}</p>`).join('')}` : '<p class="no109">Lance as paredes na planta para calcular.</p>';
     box.innerHTML = `<div class="h109"><b>Vento e contraventamento</b><span>arraste por aqui</span>
@@ -163,7 +166,7 @@
     box.querySelector('.cb109').onchange = e => { s.on = e.target.checked ? 1 : 0; salvar(); };
     box.querySelectorAll('[data-v]').forEach(el => el.onchange = () => {
       const k = el.dataset.v;
-      if (k === 'desaprumo') s[k] = el.value === 'somar ao vento' ? 1 : 0;
+      if (k === 'desaprumo') s[k] = N(Object.keys(DESAP).find(c => DESAP[c] === el.value) ?? 1);
       else if (el.tagName === 'SELECT') s[k] = el.value;
       else { const x = N(String(el.value).replace(',', '.')); s[k] = Number.isFinite(x) && x > 0 ? x : DEF[k]; }
       salvar(); render(); box.querySelector('details').open = true;

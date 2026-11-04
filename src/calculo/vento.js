@@ -56,6 +56,19 @@
     return 1 / (100 * Math.sqrt(alturaTotal));
   }
 
+  // Junta vento e desaprumo em cada pavimento.
+  //   fw, fd: forças por pavimento (kN) ; z: cotas (m) ; base: cota da base (m)
+  //   modo: 'somar' (padrão) | 'maior' (o caso com maior momento de tombamento na base) | 'nao' (só vento)
+  function combinarHorizontais(fw, fd, z, base, modo) {
+    if (modo === 'nao') return { F: fw.slice(), caso: 'vento' };
+    if (modo === 'maior') {
+      const Mw = fw.reduce((a, F, i) => a + F * (z[i] - base), 0);
+      const Md = fd.reduce((a, F, i) => a + F * (z[i] - base), 0);
+      return Mw >= Md ? { F: fw.slice(), caso: 'vento', Mw, Md } : { F: fd.slice(), caso: 'desaprumo', Mw, Md };
+    }
+    return { F: fw.map((F, i) => F + fd[i]), caso: 'vento + desaprumo' };
+  }
+
   // Esforços na base de um pavimento (cota zBase) devidos a forças { z, F } acima dela.
   function esforcosNaBase(forcas, zBase) {
     let V = 0, M = 0;
@@ -165,7 +178,7 @@
     return op.find(o => o.area >= As - 1e-9) || null;
   }
 
-  const api = { S2_TAB, FR, ARGAMASSA, classe, s2, pressao, forcasVento, anguloDesaprumo, esforcosNaBase, rigidez, verificarTrecho,
+  const api = { S2_TAB, FR, ARGAMASSA, classe, s2, pressao, forcasVento, anguloDesaprumo, combinarHorizontais, esforcosNaBase, rigidez, verificarTrecho,
     deslocamentos, gamaZ, armaduraTracao, escolherBarras };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.calcVento = api;
