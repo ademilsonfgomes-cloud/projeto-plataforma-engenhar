@@ -15,16 +15,9 @@
     const R = L.compute({}), D = R96.compute();
     if (!R?.LV?.length || !D) return null;
     const cfg = L.S().cfg, s = R96.S();
-    const P = { gm: D.gm, kf: D.kf, eta: D.eta };
-    const pav = D.levels.map((lv, i) => {
-      const paredes = (R.rows[i] || []).map(r => {
-        const t = N(r.x.t) || 14, H = N(r.x.H) || 280;
-        const nd = C.cargaDeCalculo(r.g, r.q, D.gG, D.gQ);
-        return { nome: r.label, gk: r.g, qk: r.q, ...C.compressaoSimples(nd, t, H, P) };
-      });
-      return { ...lv, paredes };
-    });
-    return { R, D, cfg, s, pav, P };
+    // resultados de cada parede vêm do próprio quadro de resistências (mesma conta)
+    const pav = D.levels.map(lv => ({ ...lv, paredes: lv.walls || [] }));
+    return { R, D, cfg, s, pav };
   }
 
   function passoAPasso(c, D) {
@@ -32,8 +25,12 @@
       <p><b>Parede crítica: ${esc(c.label)}</b> (t = ${f(c.t, 0)} cm, h = ${f(c.H, 0)} cm)</p>
       <p>N<sub>d</sub> = ${f(c.pd)} kN/m <span class="obs">(γg·G<sub>k</sub> + γq·Q<sub>k</sub>, com γg = ${f(D.gG, 2)} e γq = ${f(D.gQ, 2)})</span></p>
       <p>σ<sub>d</sub> = N<sub>d</sub> / t = ${f(c.pd)} / ${f(c.t / 100, 2)} = ${f(c.sig * 1000, 1)} kN/m² = <b>${f(c.sig, 3)} MPa</b></p>
-      <p>λ = h<sub>ef</sub> / t<sub>ef</sub> = ${f(c.H, 0)} / ${f(c.t, 0)} = ${f(c.lam, 2)} &nbsp;→&nbsp; R = 1 − (λ/40)³ = <b>${f(c.R, 3)}</b></p>
-      <p>f<sub>k</sub> ≥ γm · σ<sub>d</sub> / R = ${f(D.gm, 1)} · ${f(c.sig, 3)} / ${f(c.R, 3)} = <b>${f(c.fk, 3)} MPa</b></p>
+      <p>h<sub>ef</sub> = ${f(D.fh, 2)} · ${f(c.H, 0)} = ${f(c.hef ?? c.H, 1)} cm &nbsp; t<sub>ef</sub> = ${f(D.delta, 2)} · ${f(c.t, 0)} = ${f(c.tef ?? c.t, 1)} cm</p>
+      <p>λ = h<sub>ef</sub> / t<sub>ef</sub> = ${f(c.hef ?? c.H, 1)} / ${f(c.tef ?? c.t, 1)} = ${f(c.lam, 2)} &nbsp;→&nbsp; R = 1 − (λ/40)³ = <b>${f(c.R, 3)}</b></p>
+      ${c.ef > 0 ? `<p>Excentricidade da laje: e = ${f(c.ef, 3)} · t = ${f(c.e, 2)} cm, aplicada à carga do próprio pavimento N<sub>exc</sub> = ${f(c.nexc)} kN/m</p>
+      <p>M<sub>d</sub> = N<sub>exc</sub> · e = ${f(c.nexc)} · ${f(c.e / 100, 4)} = ${f(c.md, 3)} kN·m/m &nbsp; σ<sub>M</sub> = M<sub>d</sub> / W = ${f(c.md, 3)} / (${f(c.t / 100, 2)}²/6) = <b>${f(c.sigM, 3)} MPa</b></p>
+      <p>f<sub>k</sub> ≥ γm · (σ<sub>d</sub> / R + σ<sub>M</sub> / 1,5) = ${f(D.gm, 1)} · (${f(c.sig, 3)} / ${f(c.R, 3)} + ${f(c.sigM, 3)} / 1,5) = <b>${f(c.fk, 3)} MPa</b> <span class="obs">(flexo-compressão; só compressão daria f<sub>bk</sub> = ${f(c.fbkN, 2)} MPa)</span></p>`
+      : `<p>f<sub>k</sub> ≥ γm · σ<sub>d</sub> / R = ${f(D.gm, 1)} · ${f(c.sig, 3)} / ${f(c.R, 3)} = <b>${f(c.fk, 3)} MPa</b></p>`}
       <p>f<sub>pk</sub> = f<sub>k</sub> / ${f(D.kf, 2)} = <b>${f(c.fpk, 3)} MPa</b> &nbsp;&nbsp; f<sub>bk</sub> = f<sub>pk</sub> / η = ${f(c.fpk, 3)} / ${f(D.eta, 2)} = <b>${f(c.fbk, 2)} MPa</b></p>
     </div>`;
   }
@@ -57,12 +54,12 @@
         const uso = L.fbk > 0 ? p.fbk / L.fbk : 0;
         const crit = L.crit && p.nome === L.crit.label;
         return `<tr${crit ? ' class="crit"' : ''}><td>${esc(p.nome)}${crit ? ' ★' : ''}</td><td>${f(p.t, 0)}</td><td>${f(p.H, 0)}</td><td>${f(p.lambda, 1)}${p.lambda > 24 ? ' ⚠' : ''}</td><td>${f(p.R, 3)}</td>
-          <td>${f(p.gk)}</td><td>${f(p.qk)}</td><td>${f(p.nd)}</td><td>${f(p.sigma, 3)}</td><td>${f(p.fbk)}</td><td>${f(uso * 100, 0)}%</td></tr>`;
+          <td>${f(p.gk)}</td><td>${f(p.qk)}</td><td>${f(p.nd)}</td><td>${f(p.sigma, 3)}</td>${D.ef > 0 ? `<td>${f(p.sigmaM, 3)}</td>` : ''}<td>${f(p.fbk)}</td><td>${f(uso * 100, 0)}%</td></tr>`;
       }).join('');
       const tipo = L.rep > 1 && L.groups?.length ? `<p>Pavimento-tipo repetido ${L.rep}×. fbk por andar (1 = o de baixo): ${L.groups.map(g =>
         `andar${g.from === g.to ? ' ' + g.from : 'es ' + g.from + '–' + g.to}: fbk ${f(g.fbk, 0)} MPa / fgk ${f(g.fgk, 0)} MPa`).join(' · ')}.</p>` : '';
       return `<h2>${esc(L.name)}</h2>
-        <table><tr><th>Parede</th><th>t (cm)</th><th>h (cm)</th><th>λ</th><th>R</th><th>G<sub>k</sub> (kN/m)</th><th>Q<sub>k</sub> (kN/m)</th><th>N<sub>d</sub> (kN/m)</th><th>σ<sub>d</sub> (MPa)</th><th>f<sub>bk</sub> nec. (MPa)</th><th>uso</th></tr>${linhas}</table>
+        <table><tr><th>Parede</th><th>t (cm)</th><th>h (cm)</th><th>λ</th><th>R</th><th>G<sub>k</sub> (kN/m)</th><th>Q<sub>k</sub> (kN/m)</th><th>N<sub>d</sub> (kN/m)</th><th>σ<sub>d</sub> (MPa)</th>${D.ef > 0 ? '<th>σ<sub>M</sub> (MPa)</th>' : ''}<th>f<sub>bk</sub> nec. (MPa)</th><th>uso</th></tr>${linhas}</table>
         <p class="obs">★ parede crítica · uso = f<sub>bk</sub> necessário ÷ f<sub>bk</sub> adotado no pavimento · cargas acumuladas dos pavimentos de cima.</p>
         ${L.crit ? passoAPasso(L.crit, D) : ''}
         <p class="res">Adotado: <b>f<sub>bk</sub> = ${f(L.fbk, 1)} MPa</b> — ${motivo(L, s)} · <b>f<sub>gk</sub> = ${f(L.fgk, 0)} MPa</b> · f<sub>pk</sub> = ${f(L.fpk, 2)} MPa · f<sub>k</sub> = ${f(L.fk, 2)} MPa</p>
@@ -87,7 +84,8 @@
       <h2>1. Normas e critérios</h2>
       <p>ABNT NBR 16868-1 (alvenaria estrutural — projeto) · ABNT NBR 6120:2019 (ações) · ABNT NBR 8681 (combinações) · ABNT NBR 15270-1:2023 (blocos cerâmicos).</p>
       <p>Verificação à compressão simples por metro de parede: N<sub>d</sub> ≤ f<sub>d</sub> · A · R, com f<sub>d</sub> = f<sub>k</sub> / γm, R = 1 − (λ/40)³ e λ = h<sub>ef</sub> / t<sub>ef</sub>; f<sub>k</sub> = k · f<sub>pk</sub> e f<sub>pk</sub> = η · f<sub>bk</sub>. Assim, f<sub>bk</sub> ≥ γm · σ<sub>d</sub> / (R · k · η).</p>
-      <p>Adotado h<sub>ef</sub> = altura da parede e t<sub>ef</sub> = espessura do bloco (paredes travadas no topo e na base pelas lajes, sem enrijecedores considerados).</p>
+      <p>Adotado h<sub>ef</sub> = ${f(D.fh, 2)} · h${D.fh === 1 ? ' (parede travada no topo e na base pelas lajes)' : ''} e t<sub>ef</sub> = ${f(D.delta, 2)} · t${D.delta === 1 ? ' (sem enrijecedores considerados)' : ' (enrijecedores)'}.</p>
+      ${D.ef > 0 ? `<p>Flexo-compressão: N<sub>d</sub> / (A · R) + M<sub>d</sub> / (1,5 · W) ≤ f<sub>d</sub>, com a reação da laje do próprio pavimento excêntrica de e = ${f(D.ef, 3)} · t (conservador: toda a carga do pavimento considerada excêntrica). Cargas dos pavimentos de cima consideradas centradas.</p>` : ''}
 
       <h2>2. Parâmetros adotados</h2>
       <dl><dt>γg (permanentes)</dt><dd>${f(D.gG, 2)}</dd><dt>γq (variáveis)</dt><dd>${f(D.gQ, 2)}</dd><dt>γm (alvenaria)</dt><dd>${f(D.gm, 2)}</dd>
@@ -101,10 +99,10 @@
       ${(R.warn || []).length ? '<h3>Avisos do cálculo de cargas</h3>' + R.warn.map(w => `<p class="aviso">⚠ ${esc(w)}</p>`).join('') : ''}
 
       <h2>4. Escopo e limitações</h2>
-      <div class="lim"><p>Este memorial cobre <b>somente cargas verticais e compressão simples</b>. Não foram verificados:</p><ul>
+      <div class="lim"><p>Este memorial cobre <b>somente cargas verticais e ${D.ef > 0 ? 'flexo-compressão pela excentricidade das lajes' : 'compressão simples'}</b>. Não foram verificados:</p><ul>
         <li>ações horizontais (vento — ABNT NBR 6123 — e desaprumo) e estabilidade global;</li>
         <li>cisalhamento e flexão das paredes de contraventamento;</li>
-        <li>flexo-compressão por excentricidade das lajes apoiadas;</li>
+        ${D.ef > 0 ? '' : '<li>flexo-compressão por excentricidade das lajes apoiadas;</li>'}
         <li>compressão localizada sob apoios concentrados, dimensionamento de vergas e contravergas;</li>
         <li>situação de incêndio e colapso progressivo.</li></ul>
         <p>Cabe ao engenheiro responsável verificar esses itens e conferir os resultados deste memorial.</p></div>

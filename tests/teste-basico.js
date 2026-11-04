@@ -76,6 +76,22 @@ function diferencas(a, b, onde = '') {
   const mem = await page.evaluate(() => window.memorial?.html() || '');
   conferir(/Memorial de cálculo/.test(mem) && /P6 ★/.test(mem) && /Escopo e limitações/.test(mem), 'memorial de cálculo gerado (parede crítica P6)');
 
+  // Opções novas ligadas (excentricidade e = t/6 e hef = 1,2·h) — depois volta ao padrão
+  const op = await page.evaluate(() => {
+    const s = window.res96.S(); s.exc = 1 / 6;
+    const a = window.res96.compute().levels[0];
+    const memExc = window.memorial.html();
+    s.exc = 0; s.fh = 1.2;
+    const b = window.res96.compute().levels[0];
+    s.fh = 1;
+    const c = window.res96.compute().levels[0];
+    return { exc: a.crit.fbk, critExc: a.crit.label, memExc: /flexo-compressão/.test(memExc) && /σ<sub>M<\/sub> = M<sub>d<\/sub>/.test(memExc), hef: b.crit.fbk, lamHef: b.crit.lam, volta: c.crit.fbk };
+  });
+  conferir(Math.abs(op.exc - 2.0762) < 1e-3 && op.critExc === 'P6', `flexo-compressão e = t/6: P6 fbk = ${op.exc.toFixed(4)} (esperado 2,0762)`);
+  conferir(op.memExc, 'memorial mostra o passo a passo da flexo-compressão');
+  conferir(Math.abs(op.lamHef - 24) < 1e-9, `hef = 1,2·h: λ = ${op.lamHef}`);
+  conferir(Math.abs(op.volta - 1.311263) < 1e-5, 'com as opções desligadas volta ao resultado original');
+
   conferir(erros.length === 0, 'nenhum erro no navegador' + (erros.length ? ':\n    ' + erros.join('\n    ') : ''));
 
   await browser.close();

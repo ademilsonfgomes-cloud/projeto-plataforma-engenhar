@@ -23,17 +23,38 @@
   }
 
   // fbk necessário para a parede resistir a Nd (kN/m).
-  //   t: espessura (cm)   H: altura efetiva (cm)
-  //   p: { gm: γm, kf: fk/fpk, eta: fpk/fbk }
+  //   t: espessura (cm)   H: altura da parede (cm)
+  //   p: { gm: γm, kf: fk/fpk, eta: fpk/fbk,
+  //        fh: hef/h (opcional, padrão 1 — travada no topo e na base),
+  //        delta: tef/t (opcional, padrão 1 — sem enrijecedores) }
   // Devolve todos os passos, para a tela e o memorial de cálculo.
   function compressaoSimples(nd, t, H, p) {
-    const lambda = H / t;
+    const hef = H * (Number(p.fh) || 1), tef = t * (Number(p.delta) || 1);
+    const lambda = hef / tef;
     const R = fatorEsbeltez(lambda);
     const sigma = nd / (t / 100) / 1000; // kN/m ÷ m → kN/m² → MPa
     const fk = p.gm * sigma / R;
     const fpk = fk / p.kf;
     const fbk = fpk / p.eta;
-    return { nd, t, H, lambda, R, sigma, fk, fpk, fbk };
+    return { nd, t, H, hef, tef, lambda, R, sigma, fk, fpk, fbk };
+  }
+
+  // Flexo-compressão pela excentricidade da reação da laje — ABNT NBR 16868-1:
+  //   Nd / (A · R) + Md / (K · W) ≤ fd,   K = 1,5
+  // Por metro: A = t, W = t²/6, Md = Nexc · e, com e = ef · t.
+  //   nexc: parte de Nd aplicada com excentricidade (kN/m) — a carga do próprio pavimento
+  //   ef:   excentricidade como fração da espessura (ex.: 1/6)
+  function flexoCompressao(nd, nexc, t, H, p, ef) {
+    const base = compressaoSimples(nd, t, H, p);
+    const tm = t / 100;
+    const e = ef * tm;                         // m
+    const md = nexc * e;                       // kN·m/m
+    const sigmaM = md / (tm * tm / 6) / 1000;  // MPa
+    const K = 1.5;
+    const fk = p.gm * (base.sigma / base.R + sigmaM / K);
+    const fpk = fk / p.kf;
+    const fbk = fpk / p.eta;
+    return { ...base, nexc, e: e * 100, md, sigmaM, K, fk, fpk, fbk, fbkCompressao: base.fbk };
   }
 
   // fgk do graute: o maior entre o mínimo informado e 2,3 · fbk arredondado
@@ -48,7 +69,7 @@
     return l.find(x => x >= necessario - 1e-9) ?? Math.ceil(necessario);
   }
 
-  const api = { fatorEsbeltez, cargaDeCalculo, compressaoSimples, fgkDoGraute, fbkComercial };
+  const api = { fatorEsbeltez, cargaDeCalculo, compressaoSimples, flexoCompressao, fgkDoGraute, fbkComercial };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.calcAlv = api;
 })(this);

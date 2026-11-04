@@ -69,3 +69,47 @@ test('fgk do graute: mínimo ou 2,3·fbk em múltiplos de 5', () => {
   assert.equal(C.fgkDoGraute(10, 15), 25);    // 23 → 25
   assert.equal(C.fgkDoGraute(4, 0), 15);      // sem mínimo informado: 15
 });
+
+test('altura efetiva: hef = 1,2·h aumenta a esbeltez', () => {
+  // hef = 336 ; λ = 336/14 = 24 ; R = 0,784 ; σ = 28/0,14/1000 = 0,2
+  // fbk = 2·0,2/0,784/0,35 = 1,4577
+  const r = C.compressaoSimples(28, 14, 280, { ...NORMA, fh: 1.2 });
+  perto(r.hef, 336);
+  perto(r.lambda, 24);
+  perto(r.fbk, 1.4577);
+});
+
+test('espessura efetiva com enrijecedores: tef = δ·t', () => {
+  // tef = 1,4·14 = 19,6 ; λ = 280/19,6 = 14,286 ; R = 1 − 0,35714³ = 0,95445
+  // σ continua com a espessura real: 0,2 MPa ; fbk = 2·0,2/0,95445/0,35 = 1,1974
+  const r = C.compressaoSimples(28, 14, 280, { ...NORMA, delta: 1.4 });
+  perto(r.tef, 19.6);
+  perto(r.R, 0.95445);
+  perto(r.fbk, 1.1974);
+});
+
+test('sem as opções novas o resultado não muda', () => {
+  const a = C.compressaoSimples(28, 14, 280, NORMA);
+  const b = C.compressaoSimples(28, 14, 280, { ...NORMA, fh: 1, delta: 1 });
+  assert.equal(a.fbk, b.fbk);
+});
+
+test('flexo-compressão: laje com e = t/6', () => {
+  // e = 0,14/6 = 0,02333 m ; Md = 28·0,02333 = 0,6533 kN·m/m ; W = 0,14²/6 = 0,0032667 m³
+  // σM = 0,6533/0,0032667/1000 = 0,2 MPa (com e = t/6, σM = σN)
+  // fk = 2·(0,2/0,875 + 0,2/1,5) = 0,72381 ; fpk = 1,03401 ; fbk = 2,06803
+  const r = C.flexoCompressao(28, 28, 14, 280, NORMA, 1 / 6);
+  perto(r.e, 2.3333);
+  perto(r.md, 0.6533);
+  perto(r.sigmaM, 0.2);
+  perto(r.fk, 0.72381);
+  perto(r.fbk, 2.06803);
+  perto(r.fbkCompressao, 1.30612);  // só compressão: 2·0,2/0,875/0,35
+});
+
+test('flexo-compressão: só a carga do próprio pavimento é excêntrica', () => {
+  // térreo: Nd = 224 (8 pavimentos), excêntrica só a do pavimento: 28
+  // σN = 1,6 ; σM = 0,2 ; fk = 2·(1,6/0,875 + 0,2/1,5) = 3,92381 ; fbk = 11,2109
+  const r = C.flexoCompressao(224, 28, 14, 280, NORMA, 1 / 6);
+  perto(r.fbk, 11.2109);
+});

@@ -53,17 +53,38 @@
   }
 
   // fbk necessário para a parede resistir a Nd (kN/m).
-  //   t: espessura (cm)   H: altura efetiva (cm)
-  //   p: { gm: γm, kf: fk/fpk, eta: fpk/fbk }
+  //   t: espessura (cm)   H: altura da parede (cm)
+  //   p: { gm: γm, kf: fk/fpk, eta: fpk/fbk,
+  //        fh: hef/h (opcional, padrão 1 — travada no topo e na base),
+  //        delta: tef/t (opcional, padrão 1 — sem enrijecedores) }
   // Devolve todos os passos, para a tela e o memorial de cálculo.
   function compressaoSimples(nd, t, H, p) {
-    const lambda = H / t;
+    const hef = H * (Number(p.fh) || 1), tef = t * (Number(p.delta) || 1);
+    const lambda = hef / tef;
     const R = fatorEsbeltez(lambda);
     const sigma = nd / (t / 100) / 1000; // kN/m ÷ m → kN/m² → MPa
     const fk = p.gm * sigma / R;
     const fpk = fk / p.kf;
     const fbk = fpk / p.eta;
-    return { nd, t, H, lambda, R, sigma, fk, fpk, fbk };
+    return { nd, t, H, hef, tef, lambda, R, sigma, fk, fpk, fbk };
+  }
+
+  // Flexo-compressão pela excentricidade da reação da laje — ABNT NBR 16868-1:
+  //   Nd / (A · R) + Md / (K · W) ≤ fd,   K = 1,5
+  // Por metro: A = t, W = t²/6, Md = Nexc · e, com e = ef · t.
+  //   nexc: parte de Nd aplicada com excentricidade (kN/m) — a carga do próprio pavimento
+  //   ef:   excentricidade como fração da espessura (ex.: 1/6)
+  function flexoCompressao(nd, nexc, t, H, p, ef) {
+    const base = compressaoSimples(nd, t, H, p);
+    const tm = t / 100;
+    const e = ef * tm;                         // m
+    const md = nexc * e;                       // kN·m/m
+    const sigmaM = md / (tm * tm / 6) / 1000;  // MPa
+    const K = 1.5;
+    const fk = p.gm * (base.sigma / base.R + sigmaM / K);
+    const fpk = fk / p.kf;
+    const fbk = fpk / p.eta;
+    return { ...base, nexc, e: e * 100, md, sigmaM, K, fk, fpk, fbk, fbkCompressao: base.fbk };
   }
 
   // fgk do graute: o maior entre o mínimo informado e 2,3 · fbk arredondado
@@ -78,7 +99,7 @@
     return l.find(x => x >= necessario - 1e-9) ?? Math.ceil(necessario);
   }
 
-  const api = { fatorEsbeltez, cargaDeCalculo, compressaoSimples, fgkDoGraute, fbkComercial };
+  const api = { fatorEsbeltez, cargaDeCalculo, compressaoSimples, flexoCompressao, fgkDoGraute, fbkComercial };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.calcAlv = api;
 })(this);
@@ -6914,7 +6935,7 @@ document.head.append(css);
 'use strict';
 const N=Number,L7=()=>window.loads77;if(!L7())return;
 const f1=(v,d=1)=>(Number.isFinite(v)?v:0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
-const DEF={gm:2.0,kfk:0.7,eta:0.5,min:4,minItem:'',gMin:15,gItem:'6.1.3',list:[4,6,8,10,12,14,16,18,20],ovr:{}};
+const DEF={gm:2.0,kfk:0.7,eta:0.5,fh:1,delta:1,exc:0,min:4,minItem:'',gMin:15,gItem:'6.1.3',list:[4,6,8,10,12,14,16,18,20],ovr:{}};
 function S(){const s=L7().S();s.res96??={};const r=s.res96;for(const k in DEF)if(r[k]===undefined||r[k]===null||r[k]==='')r[k]=JSON.parse(JSON.stringify(DEF[k]));if(!r.ovr||typeof r.ovr!=='object')r.ovr={};return r;}
 const C=window.calcAlv; // src/calculo/alvenaria.js
 const fgkOf=fbk=>C.fgkDoGraute(fbk,S().gMin);
@@ -6927,14 +6948,17 @@ const fmV=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2).replace('.',',');
 function compute(){let R;try{R=L7().compute({});}catch(e){console.error('V96',e);return null;}if(!R?.LV?.length||!R.rows)return null;
  const c=L7().S().cfg,gG=N(c.gG)||1.4,gQ=N(c.gQ)||1.4,s=S(),gm=N(s.gm)||2,kf=N(s.kfk)||.7,eta=N(s.eta)||.5;
  const out=R.LV.map((l,i)=>{let own=null;try{own=L7().compute({lv:l.key});}catch{}
-  let crit=null,maxOwn=0;const slender=[];const RP=Math.max(1,N(l.rep)||1),repCalc=new Array(RP).fill(0);
-  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,nd=C.cargaDeCalculo(r.g,r.q,gG,gQ),P={gm,kf,eta},cs=C.compressaoSimples(nd,t,H,P),lam=cs.lambda;
-   const o=own?.rows?.[i]?.[j];const od=o?gG*o.g+gQ*o.q:0;if(od>maxOwn)maxOwn=od;if(lam>24)slender.push(r.label);
-   if(!crit||cs.fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:cs.R,sig:cs.sigma,fk:cs.fk,fpk:cs.fpk,fbk:cs.fbk};
+  let crit=null,maxOwn=0;const slender=[],walls=[];const RP=Math.max(1,N(l.rep)||1),repCalc=new Array(RP).fill(0);
+  // hef = fh·h, tef = δ·t; com excentricidade (exc = e/t > 0) a carga do próprio pavimento entra com momento (flexo-compressão).
+  const P={gm,kf,eta,fh:N(s.fh)||1,delta:N(s.delta)||1},ef=N(s.exc)||0;
+  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,nd=C.cargaDeCalculo(r.g,r.q,gG,gQ);
+   const o=own?.rows?.[i]?.[j];const od=o?gG*o.g+gQ*o.q:0;if(od>maxOwn)maxOwn=od;
+   const calc=(n,nx)=>ef>0?C.flexoCompressao(n,Math.min(n,nx),t,H,P,ef):C.compressaoSimples(n,t,H,P),cs=calc(nd,od),lam=cs.lambda;if(lam>24)slender.push(r.label);walls.push({nome:r.label,gk:r.g,qk:r.q,...cs});
+   if(!crit||cs.fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:cs.R,sig:cs.sigma,fk:cs.fk,fpk:cs.fpk,fbk:cs.fbk,hef:cs.hef,tef:cs.tef,ef,e:cs.e,nexc:cs.nexc,md:cs.md,sigM:cs.sigmaM,fbkN:cs.fbkCompressao};
    // V107.2 — andar a andar no pavimento-tipo (1 = o de baixo)
-   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=C.compressaoSimples(nj,t,H,P).fbk;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
+   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=calc(nj,od1).fbk;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
   const tt=N(window.opt3d74?.t)||10,step=((N(l.H)||280)+tt)/100,v0=N(String(l.key).split('|')[0])||0;
-  return {i,key:l.key,name:l.name,rep:RP,v:v0,step,repCalc,crit,maxOwn,slender,calc:crit?crit.fbk:0};});
+  return {i,key:l.key,name:l.name,rep:RP,v:v0,step,repCalc,crit,maxOwn,slender,walls,calc:crit?crit.fbk:0};});
  // de cima para baixo: nunca menor que o de cima
  let above=0;for(let i=out.length-1;i>=0;i--){const L=out[i];let a=up(Math.max(L.calc,N(s.min)||4)),why=L.calc<(N(s.min)||4)?'min':'calc';
   if(a<above){a=above;why='acima';}const o=N(s.ovr[L.key]);L.auto=a;L.warn=[];
@@ -6944,7 +6968,7 @@ function compute(){let R;try{R=L7().compute({});}catch(e){console.error('V96',e)
    L.reps=reps;a=Math.max(a,reps[0].fbk);const G=[];for(const r of reps){const g=G.at(-1);if(g&&g.fbk===r.fbk){g.to=r.jr;g.calc=Math.max(g.calc,r.calc);}else G.push({from:r.jr,to:r.jr,fbk:r.fbk,fgk:r.fgk,calc:r.calc,z:r.z});}L.groups=G;}
   L.fbk=a;L.why=why;L.fgk=fgkOf(a);L.fpk=a*eta;L.fk=L.fpk*kf;L.util=a>0?L.calc/a:0;above=Math.max(above,a,...(L.reps||[]).map(r=>r.fbk));
   if(L.slender.length)L.warn.push('Esbeltez λ = h/t acima de 24 em '+L.slender.slice(0,6).join(', ')+(L.slender.length>6?'…':'')+' — conferir contraventamento ou armar a parede.');}
- return {levels:out,gG,gQ,gm,kf,eta};}
+ return {levels:out,gG,gQ,gm,kf,eta,fh:N(s.fh)||1,delta:N(s.delta)||1,ef:N(s.exc)||0};}
 function whyTxt(L){const s=S();return L.why==='min'?'Mínimo da norma: '+f1(N(s.min))+' MPa ('+normMin()+'). Cálculo: '+f1(L.calc,2)+' MPa.':L.why==='acima'?'Igual ao pavimento de cima (não diminuir de cima para baixo).':L.why==='ovr'?'Escolhido pelo projetista.':'Pela parede mais carregada ('+(L.crit?.label||'—')+').';}
 
 // ---------- tabela (tela e prancha)
@@ -7051,7 +7075,7 @@ const box=document.createElement('div');box.id='res96';box.className='noPrint';b
 function render(){const s=S(),D=compute();
  box.innerHTML='<div class="h96"><b>Resistências por pavimento</b><span>arraste por aqui</span><button type="button" class="mem96" title="Memorial de cálculo para imprimir ou salvar em PDF">📄 Memorial de cálculo</button><button type="button" class="x96" title="Fechar">✕</button></div><div class="b96">'+tableHTML(D,false)+
   '<details><summary>Parâmetros (norma e fornecedor)</summary><div class="p96">'+
-  inp('gm','γm alvenaria',s.gm)+inp('kfk','fk / fpk',s.kfk)+inp('eta','Eficiência fpk / fbk',s.eta)+inp('min','fbk mínimo (MPa)',s.min)+inp('minItem','Item da NBR 15270-1:2023',s.minItem,'text')+inp('gMin','fgk mínimo (MPa)',s.gMin)+inp('gItem','Item da NBR 16868-1',s.gItem,'text')+
+  inp('gm','γm alvenaria',s.gm)+inp('kfk','fk / fpk',s.kfk)+inp('eta','Eficiência fpk / fbk',s.eta)+inp('fh','hef / h (1 = travada no topo e na base; 2 = topo livre)',s.fh)+inp('delta','δ = tef / t (enrijecedores; 1 = sem)',s.delta)+inp('exc','Excentricidade da laje e / t (0 = desligada; ex.: 0,167)',s.exc)+inp('min','fbk mínimo (MPa)',s.min)+inp('minItem','Item da NBR 15270-1:2023',s.minItem,'text')+inp('gMin','fgk mínimo (MPa)',s.gMin)+inp('gItem','Item da NBR 16868-1',s.gItem,'text')+
   '</div>'+(String(s.minItem||'').trim()?'':'<p class="w96">Informe o item da NBR 15270-1:2023 do fbk mínimo, para ele sair nas notas e na tabela.</p>')+'</details></div>';
  box.querySelector('.x96').onclick=()=>{box.hidden=true;};
  box.querySelector('.mem96').onclick=()=>window.memorial?.imprimir();
@@ -8382,16 +8406,9 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
     const R = L.compute({}), D = R96.compute();
     if (!R?.LV?.length || !D) return null;
     const cfg = L.S().cfg, s = R96.S();
-    const P = { gm: D.gm, kf: D.kf, eta: D.eta };
-    const pav = D.levels.map((lv, i) => {
-      const paredes = (R.rows[i] || []).map(r => {
-        const t = N(r.x.t) || 14, H = N(r.x.H) || 280;
-        const nd = C.cargaDeCalculo(r.g, r.q, D.gG, D.gQ);
-        return { nome: r.label, gk: r.g, qk: r.q, ...C.compressaoSimples(nd, t, H, P) };
-      });
-      return { ...lv, paredes };
-    });
-    return { R, D, cfg, s, pav, P };
+    // resultados de cada parede vêm do próprio quadro de resistências (mesma conta)
+    const pav = D.levels.map(lv => ({ ...lv, paredes: lv.walls || [] }));
+    return { R, D, cfg, s, pav };
   }
 
   function passoAPasso(c, D) {
@@ -8399,8 +8416,12 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
       <p><b>Parede crítica: ${esc(c.label)}</b> (t = ${f(c.t, 0)} cm, h = ${f(c.H, 0)} cm)</p>
       <p>N<sub>d</sub> = ${f(c.pd)} kN/m <span class="obs">(γg·G<sub>k</sub> + γq·Q<sub>k</sub>, com γg = ${f(D.gG, 2)} e γq = ${f(D.gQ, 2)})</span></p>
       <p>σ<sub>d</sub> = N<sub>d</sub> / t = ${f(c.pd)} / ${f(c.t / 100, 2)} = ${f(c.sig * 1000, 1)} kN/m² = <b>${f(c.sig, 3)} MPa</b></p>
-      <p>λ = h<sub>ef</sub> / t<sub>ef</sub> = ${f(c.H, 0)} / ${f(c.t, 0)} = ${f(c.lam, 2)} &nbsp;→&nbsp; R = 1 − (λ/40)³ = <b>${f(c.R, 3)}</b></p>
-      <p>f<sub>k</sub> ≥ γm · σ<sub>d</sub> / R = ${f(D.gm, 1)} · ${f(c.sig, 3)} / ${f(c.R, 3)} = <b>${f(c.fk, 3)} MPa</b></p>
+      <p>h<sub>ef</sub> = ${f(D.fh, 2)} · ${f(c.H, 0)} = ${f(c.hef ?? c.H, 1)} cm &nbsp; t<sub>ef</sub> = ${f(D.delta, 2)} · ${f(c.t, 0)} = ${f(c.tef ?? c.t, 1)} cm</p>
+      <p>λ = h<sub>ef</sub> / t<sub>ef</sub> = ${f(c.hef ?? c.H, 1)} / ${f(c.tef ?? c.t, 1)} = ${f(c.lam, 2)} &nbsp;→&nbsp; R = 1 − (λ/40)³ = <b>${f(c.R, 3)}</b></p>
+      ${c.ef > 0 ? `<p>Excentricidade da laje: e = ${f(c.ef, 3)} · t = ${f(c.e, 2)} cm, aplicada à carga do próprio pavimento N<sub>exc</sub> = ${f(c.nexc)} kN/m</p>
+      <p>M<sub>d</sub> = N<sub>exc</sub> · e = ${f(c.nexc)} · ${f(c.e / 100, 4)} = ${f(c.md, 3)} kN·m/m &nbsp; σ<sub>M</sub> = M<sub>d</sub> / W = ${f(c.md, 3)} / (${f(c.t / 100, 2)}²/6) = <b>${f(c.sigM, 3)} MPa</b></p>
+      <p>f<sub>k</sub> ≥ γm · (σ<sub>d</sub> / R + σ<sub>M</sub> / 1,5) = ${f(D.gm, 1)} · (${f(c.sig, 3)} / ${f(c.R, 3)} + ${f(c.sigM, 3)} / 1,5) = <b>${f(c.fk, 3)} MPa</b> <span class="obs">(flexo-compressão; só compressão daria f<sub>bk</sub> = ${f(c.fbkN, 2)} MPa)</span></p>`
+      : `<p>f<sub>k</sub> ≥ γm · σ<sub>d</sub> / R = ${f(D.gm, 1)} · ${f(c.sig, 3)} / ${f(c.R, 3)} = <b>${f(c.fk, 3)} MPa</b></p>`}
       <p>f<sub>pk</sub> = f<sub>k</sub> / ${f(D.kf, 2)} = <b>${f(c.fpk, 3)} MPa</b> &nbsp;&nbsp; f<sub>bk</sub> = f<sub>pk</sub> / η = ${f(c.fpk, 3)} / ${f(D.eta, 2)} = <b>${f(c.fbk, 2)} MPa</b></p>
     </div>`;
   }
@@ -8424,12 +8445,12 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
         const uso = L.fbk > 0 ? p.fbk / L.fbk : 0;
         const crit = L.crit && p.nome === L.crit.label;
         return `<tr${crit ? ' class="crit"' : ''}><td>${esc(p.nome)}${crit ? ' ★' : ''}</td><td>${f(p.t, 0)}</td><td>${f(p.H, 0)}</td><td>${f(p.lambda, 1)}${p.lambda > 24 ? ' ⚠' : ''}</td><td>${f(p.R, 3)}</td>
-          <td>${f(p.gk)}</td><td>${f(p.qk)}</td><td>${f(p.nd)}</td><td>${f(p.sigma, 3)}</td><td>${f(p.fbk)}</td><td>${f(uso * 100, 0)}%</td></tr>`;
+          <td>${f(p.gk)}</td><td>${f(p.qk)}</td><td>${f(p.nd)}</td><td>${f(p.sigma, 3)}</td>${D.ef > 0 ? `<td>${f(p.sigmaM, 3)}</td>` : ''}<td>${f(p.fbk)}</td><td>${f(uso * 100, 0)}%</td></tr>`;
       }).join('');
       const tipo = L.rep > 1 && L.groups?.length ? `<p>Pavimento-tipo repetido ${L.rep}×. fbk por andar (1 = o de baixo): ${L.groups.map(g =>
         `andar${g.from === g.to ? ' ' + g.from : 'es ' + g.from + '–' + g.to}: fbk ${f(g.fbk, 0)} MPa / fgk ${f(g.fgk, 0)} MPa`).join(' · ')}.</p>` : '';
       return `<h2>${esc(L.name)}</h2>
-        <table><tr><th>Parede</th><th>t (cm)</th><th>h (cm)</th><th>λ</th><th>R</th><th>G<sub>k</sub> (kN/m)</th><th>Q<sub>k</sub> (kN/m)</th><th>N<sub>d</sub> (kN/m)</th><th>σ<sub>d</sub> (MPa)</th><th>f<sub>bk</sub> nec. (MPa)</th><th>uso</th></tr>${linhas}</table>
+        <table><tr><th>Parede</th><th>t (cm)</th><th>h (cm)</th><th>λ</th><th>R</th><th>G<sub>k</sub> (kN/m)</th><th>Q<sub>k</sub> (kN/m)</th><th>N<sub>d</sub> (kN/m)</th><th>σ<sub>d</sub> (MPa)</th>${D.ef > 0 ? '<th>σ<sub>M</sub> (MPa)</th>' : ''}<th>f<sub>bk</sub> nec. (MPa)</th><th>uso</th></tr>${linhas}</table>
         <p class="obs">★ parede crítica · uso = f<sub>bk</sub> necessário ÷ f<sub>bk</sub> adotado no pavimento · cargas acumuladas dos pavimentos de cima.</p>
         ${L.crit ? passoAPasso(L.crit, D) : ''}
         <p class="res">Adotado: <b>f<sub>bk</sub> = ${f(L.fbk, 1)} MPa</b> — ${motivo(L, s)} · <b>f<sub>gk</sub> = ${f(L.fgk, 0)} MPa</b> · f<sub>pk</sub> = ${f(L.fpk, 2)} MPa · f<sub>k</sub> = ${f(L.fk, 2)} MPa</p>
@@ -8454,7 +8475,8 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
       <h2>1. Normas e critérios</h2>
       <p>ABNT NBR 16868-1 (alvenaria estrutural — projeto) · ABNT NBR 6120:2019 (ações) · ABNT NBR 8681 (combinações) · ABNT NBR 15270-1:2023 (blocos cerâmicos).</p>
       <p>Verificação à compressão simples por metro de parede: N<sub>d</sub> ≤ f<sub>d</sub> · A · R, com f<sub>d</sub> = f<sub>k</sub> / γm, R = 1 − (λ/40)³ e λ = h<sub>ef</sub> / t<sub>ef</sub>; f<sub>k</sub> = k · f<sub>pk</sub> e f<sub>pk</sub> = η · f<sub>bk</sub>. Assim, f<sub>bk</sub> ≥ γm · σ<sub>d</sub> / (R · k · η).</p>
-      <p>Adotado h<sub>ef</sub> = altura da parede e t<sub>ef</sub> = espessura do bloco (paredes travadas no topo e na base pelas lajes, sem enrijecedores considerados).</p>
+      <p>Adotado h<sub>ef</sub> = ${f(D.fh, 2)} · h${D.fh === 1 ? ' (parede travada no topo e na base pelas lajes)' : ''} e t<sub>ef</sub> = ${f(D.delta, 2)} · t${D.delta === 1 ? ' (sem enrijecedores considerados)' : ' (enrijecedores)'}.</p>
+      ${D.ef > 0 ? `<p>Flexo-compressão: N<sub>d</sub> / (A · R) + M<sub>d</sub> / (1,5 · W) ≤ f<sub>d</sub>, com a reação da laje do próprio pavimento excêntrica de e = ${f(D.ef, 3)} · t (conservador: toda a carga do pavimento considerada excêntrica). Cargas dos pavimentos de cima consideradas centradas.</p>` : ''}
 
       <h2>2. Parâmetros adotados</h2>
       <dl><dt>γg (permanentes)</dt><dd>${f(D.gG, 2)}</dd><dt>γq (variáveis)</dt><dd>${f(D.gQ, 2)}</dd><dt>γm (alvenaria)</dt><dd>${f(D.gm, 2)}</dd>
@@ -8468,10 +8490,10 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
       ${(R.warn || []).length ? '<h3>Avisos do cálculo de cargas</h3>' + R.warn.map(w => `<p class="aviso">⚠ ${esc(w)}</p>`).join('') : ''}
 
       <h2>4. Escopo e limitações</h2>
-      <div class="lim"><p>Este memorial cobre <b>somente cargas verticais e compressão simples</b>. Não foram verificados:</p><ul>
+      <div class="lim"><p>Este memorial cobre <b>somente cargas verticais e ${D.ef > 0 ? 'flexo-compressão pela excentricidade das lajes' : 'compressão simples'}</b>. Não foram verificados:</p><ul>
         <li>ações horizontais (vento — ABNT NBR 6123 — e desaprumo) e estabilidade global;</li>
         <li>cisalhamento e flexão das paredes de contraventamento;</li>
-        <li>flexo-compressão por excentricidade das lajes apoiadas;</li>
+        ${D.ef > 0 ? '' : '<li>flexo-compressão por excentricidade das lajes apoiadas;</li>'}
         <li>compressão localizada sob apoios concentrados, dimensionamento de vergas e contravergas;</li>
         <li>situação de incêndio e colapso progressivo.</li></ul>
         <p>Cabe ao engenheiro responsável verificar esses itens e conferir os resultados deste memorial.</p></div>

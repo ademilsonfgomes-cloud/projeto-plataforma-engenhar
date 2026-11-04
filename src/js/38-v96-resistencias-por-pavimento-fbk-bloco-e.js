@@ -6,7 +6,7 @@
 'use strict';
 const N=Number,L7=()=>window.loads77;if(!L7())return;
 const f1=(v,d=1)=>(Number.isFinite(v)?v:0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
-const DEF={gm:2.0,kfk:0.7,eta:0.5,min:4,minItem:'',gMin:15,gItem:'6.1.3',list:[4,6,8,10,12,14,16,18,20],ovr:{}};
+const DEF={gm:2.0,kfk:0.7,eta:0.5,fh:1,delta:1,exc:0,min:4,minItem:'',gMin:15,gItem:'6.1.3',list:[4,6,8,10,12,14,16,18,20],ovr:{}};
 function S(){const s=L7().S();s.res96??={};const r=s.res96;for(const k in DEF)if(r[k]===undefined||r[k]===null||r[k]==='')r[k]=JSON.parse(JSON.stringify(DEF[k]));if(!r.ovr||typeof r.ovr!=='object')r.ovr={};return r;}
 const C=window.calcAlv; // src/calculo/alvenaria.js
 const fgkOf=fbk=>C.fgkDoGraute(fbk,S().gMin);
@@ -19,14 +19,17 @@ const fmV=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2).replace('.',',');
 function compute(){let R;try{R=L7().compute({});}catch(e){console.error('V96',e);return null;}if(!R?.LV?.length||!R.rows)return null;
  const c=L7().S().cfg,gG=N(c.gG)||1.4,gQ=N(c.gQ)||1.4,s=S(),gm=N(s.gm)||2,kf=N(s.kfk)||.7,eta=N(s.eta)||.5;
  const out=R.LV.map((l,i)=>{let own=null;try{own=L7().compute({lv:l.key});}catch{}
-  let crit=null,maxOwn=0;const slender=[];const RP=Math.max(1,N(l.rep)||1),repCalc=new Array(RP).fill(0);
-  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,nd=C.cargaDeCalculo(r.g,r.q,gG,gQ),P={gm,kf,eta},cs=C.compressaoSimples(nd,t,H,P),lam=cs.lambda;
-   const o=own?.rows?.[i]?.[j];const od=o?gG*o.g+gQ*o.q:0;if(od>maxOwn)maxOwn=od;if(lam>24)slender.push(r.label);
-   if(!crit||cs.fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:cs.R,sig:cs.sigma,fk:cs.fk,fpk:cs.fpk,fbk:cs.fbk};
+  let crit=null,maxOwn=0;const slender=[],walls=[];const RP=Math.max(1,N(l.rep)||1),repCalc=new Array(RP).fill(0);
+  // hef = fh·h, tef = δ·t; com excentricidade (exc = e/t > 0) a carga do próprio pavimento entra com momento (flexo-compressão).
+  const P={gm,kf,eta,fh:N(s.fh)||1,delta:N(s.delta)||1},ef=N(s.exc)||0;
+  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,nd=C.cargaDeCalculo(r.g,r.q,gG,gQ);
+   const o=own?.rows?.[i]?.[j];const od=o?gG*o.g+gQ*o.q:0;if(od>maxOwn)maxOwn=od;
+   const calc=(n,nx)=>ef>0?C.flexoCompressao(n,Math.min(n,nx),t,H,P,ef):C.compressaoSimples(n,t,H,P),cs=calc(nd,od),lam=cs.lambda;if(lam>24)slender.push(r.label);walls.push({nome:r.label,gk:r.g,qk:r.q,...cs});
+   if(!crit||cs.fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:cs.R,sig:cs.sigma,fk:cs.fk,fpk:cs.fpk,fbk:cs.fbk,hef:cs.hef,tef:cs.tef,ef,e:cs.e,nexc:cs.nexc,md:cs.md,sigM:cs.sigmaM,fbkN:cs.fbkCompressao};
    // V107.2 — andar a andar no pavimento-tipo (1 = o de baixo)
-   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=C.compressaoSimples(nj,t,H,P).fbk;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
+   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=calc(nj,od1).fbk;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
   const tt=N(window.opt3d74?.t)||10,step=((N(l.H)||280)+tt)/100,v0=N(String(l.key).split('|')[0])||0;
-  return {i,key:l.key,name:l.name,rep:RP,v:v0,step,repCalc,crit,maxOwn,slender,calc:crit?crit.fbk:0};});
+  return {i,key:l.key,name:l.name,rep:RP,v:v0,step,repCalc,crit,maxOwn,slender,walls,calc:crit?crit.fbk:0};});
  // de cima para baixo: nunca menor que o de cima
  let above=0;for(let i=out.length-1;i>=0;i--){const L=out[i];let a=up(Math.max(L.calc,N(s.min)||4)),why=L.calc<(N(s.min)||4)?'min':'calc';
   if(a<above){a=above;why='acima';}const o=N(s.ovr[L.key]);L.auto=a;L.warn=[];
@@ -36,7 +39,7 @@ function compute(){let R;try{R=L7().compute({});}catch(e){console.error('V96',e)
    L.reps=reps;a=Math.max(a,reps[0].fbk);const G=[];for(const r of reps){const g=G.at(-1);if(g&&g.fbk===r.fbk){g.to=r.jr;g.calc=Math.max(g.calc,r.calc);}else G.push({from:r.jr,to:r.jr,fbk:r.fbk,fgk:r.fgk,calc:r.calc,z:r.z});}L.groups=G;}
   L.fbk=a;L.why=why;L.fgk=fgkOf(a);L.fpk=a*eta;L.fk=L.fpk*kf;L.util=a>0?L.calc/a:0;above=Math.max(above,a,...(L.reps||[]).map(r=>r.fbk));
   if(L.slender.length)L.warn.push('Esbeltez λ = h/t acima de 24 em '+L.slender.slice(0,6).join(', ')+(L.slender.length>6?'…':'')+' — conferir contraventamento ou armar a parede.');}
- return {levels:out,gG,gQ,gm,kf,eta};}
+ return {levels:out,gG,gQ,gm,kf,eta,fh:N(s.fh)||1,delta:N(s.delta)||1,ef:N(s.exc)||0};}
 function whyTxt(L){const s=S();return L.why==='min'?'Mínimo da norma: '+f1(N(s.min))+' MPa ('+normMin()+'). Cálculo: '+f1(L.calc,2)+' MPa.':L.why==='acima'?'Igual ao pavimento de cima (não diminuir de cima para baixo).':L.why==='ovr'?'Escolhido pelo projetista.':'Pela parede mais carregada ('+(L.crit?.label||'—')+').';}
 
 // ---------- tabela (tela e prancha)
@@ -143,7 +146,7 @@ const box=document.createElement('div');box.id='res96';box.className='noPrint';b
 function render(){const s=S(),D=compute();
  box.innerHTML='<div class="h96"><b>Resistências por pavimento</b><span>arraste por aqui</span><button type="button" class="mem96" title="Memorial de cálculo para imprimir ou salvar em PDF">📄 Memorial de cálculo</button><button type="button" class="x96" title="Fechar">✕</button></div><div class="b96">'+tableHTML(D,false)+
   '<details><summary>Parâmetros (norma e fornecedor)</summary><div class="p96">'+
-  inp('gm','γm alvenaria',s.gm)+inp('kfk','fk / fpk',s.kfk)+inp('eta','Eficiência fpk / fbk',s.eta)+inp('min','fbk mínimo (MPa)',s.min)+inp('minItem','Item da NBR 15270-1:2023',s.minItem,'text')+inp('gMin','fgk mínimo (MPa)',s.gMin)+inp('gItem','Item da NBR 16868-1',s.gItem,'text')+
+  inp('gm','γm alvenaria',s.gm)+inp('kfk','fk / fpk',s.kfk)+inp('eta','Eficiência fpk / fbk',s.eta)+inp('fh','hef / h (1 = travada no topo e na base; 2 = topo livre)',s.fh)+inp('delta','δ = tef / t (enrijecedores; 1 = sem)',s.delta)+inp('exc','Excentricidade da laje e / t (0 = desligada; ex.: 0,167)',s.exc)+inp('min','fbk mínimo (MPa)',s.min)+inp('minItem','Item da NBR 15270-1:2023',s.minItem,'text')+inp('gMin','fgk mínimo (MPa)',s.gMin)+inp('gItem','Item da NBR 16868-1',s.gItem,'text')+
   '</div>'+(String(s.minItem||'').trim()?'':'<p class="w96">Informe o item da NBR 15270-1:2023 do fbk mínimo, para ele sair nas notas e na tabela.</p>')+'</details></div>';
  box.querySelector('.x96').onclick=()=>{box.hidden=true;};
  box.querySelector('.mem96').onclick=()=>window.memorial?.imprimir();
