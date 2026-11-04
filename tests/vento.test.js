@@ -140,3 +140,22 @@ test('vento e desaprumo: somar ou usar o maior', () => {
   assert.equal(m2.caso, 'desaprumo');
   assert.deepEqual(m2.F, [5, 5]);
 });
+
+test('limites opcionais do ângulo de desaprumo', () => {
+  // sem limites: só a fórmula (número)
+  perto(V.anguloDesaprumo(2.9), 1 / (100 * Math.sqrt(2.9)), 1e-12);  // = 1/170,29
+  // térreo de 2,9 m com máximo 1/200: fórmula dá 1/170 → limitado a 1/200
+  const a = V.anguloDesaprumo(2.9, { max: 200, min: 300 });
+  perto(a.theta, 1 / 200, 1e-9);
+  assert.equal(a.limite, 'máximo');
+  // sobrado de 6 m: 1/245, dentro dos limites → não muda
+  const b = V.anguloDesaprumo(6, { max: 200, min: 300 });
+  perto(b.theta, 1 / (100 * Math.sqrt(6)), 1e-9);
+  assert.equal(b.limite, null);
+  // prédio de 30 m: fórmula 1/548 → mínimo 1/300
+  const c = V.anguloDesaprumo(30, { max: 200, min: 300 });
+  perto(c.theta, 1 / 300, 1e-9);
+  assert.equal(c.limite, 'mínimo');
+  // campos vazios (0): sem limite
+  perto(V.anguloDesaprumo(30, { max: 0, min: 0 }).theta, 1 / (100 * Math.sqrt(30)), 1e-9);
+});

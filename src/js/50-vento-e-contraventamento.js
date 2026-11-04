@@ -13,7 +13,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const f = (v, d = 2) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
-  const DEF = { on: 0, V0: 35, S1: 1, S3: 1, cat: 'IV', cls: 'auto', CaX: 1.3, CaY: 1.3, desaprumo: 1,
+  const DEF = { on: 0, V0: 35, S1: 1, S3: 1, cat: 'IV', cls: 'auto', CaX: 1.3, CaY: 1.3, desaprumo: 1, thMax: 0, thMin: 0,
     arg: '3,5 a 7,0', gW: 1.4, psiQ: 0.5, psiW: 0.6, gmV: 2.0, Efat: 600, rEI: 1, fyk: 500, gs: 1.15 };
   function S() {
     const s = L7().S(); s.vento ??= {};
@@ -64,7 +64,7 @@
       return { G: rows.reduce((a, r) => a + (N(r.G) || 0), 0), Q: rows.reduce((a, r) => a + (N(r.Q) || 0), 0) };
     });
     const peso = pesoGQ.map(x => x.G + x.Q);
-    const theta = CV.anguloDesaprumo(H);
+    const ang = CV.anguloDesaprumo(H, { max: N(s.thMax), min: N(s.thMin) }), theta = ang.theta;
 
     const P = { gG: D.gG, gQ: D.gQ, gW: N(s.gW), psiQ: N(s.psiQ), psiW: N(s.psiW), gm: D.gm, gmV: N(s.gmV), kf: D.kf, eta: D.eta, arg: s.arg };
     const PR = { gm: D.gm, kf: D.kf, eta: D.eta, fh: N(s96.fh) || 1, delta: N(s96.delta) || 1 };
@@ -119,7 +119,7 @@
       return { dir, largura, Ca, forcas, niveis, gz, caso: comb.caso, modo, Mw: comb.Mw, Mdes: comb.Md };
     });
     if (inclinadas) avisos.push(inclinadas + ' parede(s) inclinadas (mais de 10°) não entraram no contraventamento.');
-    return { s, v, cls, H, Lx, Ly, theta, peso, pesoGQ, andares, dirs, avisos, P };
+    return { s, v, cls, H, Lx, Ly, theta, ang, peso, pesoGQ, andares, dirs, avisos, P };
   }
 
   // ---------- quadro na tela
@@ -154,9 +154,9 @@
   function render() {
     const s = S(), A = analisar();
     const params = `<div class="p109">${inp('V0', 'V<sub>0</sub> (m/s)', s.V0)}${inp('S1', 'S<sub>1</sub> (terreno)', s.S1)}${sel('cat', 'Categoria (S<sub>2</sub>)', s.cat, ['I', 'II', 'III', 'IV', 'V'])}${sel('cls', 'Classe', s.cls, ['auto', 'A', 'B', 'C'])}${inp('S3', 'S<sub>3</sub> (estatístico)', s.S3)}
-      ${inp('CaX', 'C<sub>a</sub> vento em X', s.CaX)}${inp('CaY', 'C<sub>a</sub> vento em Y', s.CaY)}${sel('desaprumo', 'Desaprumo', DESAP[N(s.desaprumo)] || DESAP[1], [DESAP[1], DESAP[2], DESAP[0]])}
+      ${inp('CaX', 'C<sub>a</sub> vento em X', s.CaX)}${inp('CaY', 'C<sub>a</sub> vento em Y', s.CaY)}${sel('desaprumo', 'Desaprumo', DESAP[N(s.desaprumo)] || DESAP[1], [DESAP[1], DESAP[2], DESAP[0]])}${inp('thMax', 'desaprumo: ângulo máximo 1/… (0 = sem)', s.thMax)}${inp('thMin', 'desaprumo: ângulo mínimo 1/… (0 = sem)', s.thMin)}
       ${sel('arg', 'Argamassa f<sub>a</sub> (MPa)', s.arg, Object.keys(CV.ARGAMASSA))}${inp('gW', 'γ<sub>q</sub> do vento', s.gW)}${inp('psiQ', 'ψ<sub>0</sub> sobrecarga', s.psiQ)}${inp('psiW', 'ψ<sub>0</sub> vento', s.psiW)}${inp('gmV', 'γ<sub>m</sub> cisalh./tração', s.gmV)}${inp('Efat', 'E<sub>alv</sub> = k · f<sub>pk</sub> (k)', s.Efat)}${inp('rEI', 'redução de rigidez (γ<sub>z</sub>)', s.rEI)}${inp('fyk', 'f<sub>yk</sub> do aço (MPa)', s.fyk)}${inp('gs', 'γ<sub>s</sub>', s.gs)}</div>`;
-    const resumo = A ? `<p class="n109">Altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m · classe ${A.cls} · θ<sub>a</sub> = 1/${f(1 / A.theta, 0)} · pesos dos pavimentos: ${A.peso.map(p => f(p, 0)).join(' · ')} kN</p>${A.avisos.map(w => `<p class="no109">⚠ ${esc(w)}</p>`).join('')}` : '<p class="no109">Lance as paredes na planta para calcular.</p>';
+    const resumo = A ? `<p class="n109">Altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m · classe ${A.cls} · θ<sub>a</sub> = 1/${f(1 / A.theta, 0)}${A.ang.limite ? ` (limite ${A.ang.limite}; fórmula daria 1/${f(1 / A.ang.formula, 0)})` : ''} · pesos dos pavimentos: ${A.peso.map(p => f(p, 0)).join(' · ')} kN</p>${A.avisos.map(w => `<p class="no109">⚠ ${esc(w)}</p>`).join('')}` : '<p class="no109">Lance as paredes na planta para calcular.</p>';
     box.innerHTML = `<div class="h109"><b>Vento e contraventamento</b><span>arraste por aqui</span>
       <label class="on109"><input type="checkbox" class="cb109"${s.on ? ' checked' : ''}> incluir no memorial</label>
       <button type="button" class="x109" title="Fechar">✕</button></div><div class="b109">
@@ -168,7 +168,7 @@
       const k = el.dataset.v;
       if (k === 'desaprumo') s[k] = N(Object.keys(DESAP).find(c => DESAP[c] === el.value) ?? 1);
       else if (el.tagName === 'SELECT') s[k] = el.value;
-      else { const x = N(String(el.value).replace(',', '.')); s[k] = Number.isFinite(x) && x > 0 ? x : DEF[k]; }
+      else { const x = N(String(el.value).replace(',', '.')); s[k] = Number.isFinite(x) && (x > 0 || k === 'thMax' || k === 'thMin') ? Math.max(0, x) : DEF[k]; }
       salvar(); render(); box.querySelector('details').open = true;
     });
     arrastar();

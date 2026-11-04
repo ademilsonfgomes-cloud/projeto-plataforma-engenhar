@@ -121,6 +121,13 @@ function diferencas(a, b, onde = '') {
   conferir(dm.caso === 'vento' && Math.abs(dm.F - 4.3558) < 1e-3 && Math.abs(dm.Fsoma - 6.9160) < 1e-3,
     `desaprumo: usar o maior → ${dm.caso} ${dm.F.toFixed(4)} kN ; somar → ${dm.Fsoma.toFixed(4)} kN`);
 
+  // Limite máximo do desaprumo 1/200 no térreo de 2,9 m: θ = 1/200 ; F = 435,99/200 = 2,1799 kN (sem limite: 2,5602)
+  const lm = await page.evaluate(() => {
+    const s = window.vento109.S(); s.thMax = 200; const A = window.vento109.analisar(); s.thMax = 0;
+    return { Fd: A.dirs[0].forcas[0].Fd, lim: A.ang.limite };
+  });
+  conferir(Math.abs(lm.Fd - 2.1799) < 1e-3 && lm.lim === 'máximo', `desaprumo limitado a 1/200: ${lm.Fd.toFixed(4)} kN`);
+
   // Vergas do exemplo (verga de 1 fiada, fk do pavimento = 1,4 MPa)
   const vg = await page.evaluate(() => {
     const A = window.vergas109.analisar(), v = A.niveis[0].vergas, p1 = v.find(x => x.nome === 'P1');

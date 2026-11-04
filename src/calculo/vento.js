@@ -52,8 +52,15 @@
     });
   }
 
-  function anguloDesaprumo(alturaTotal) {
-    return 1 / (100 * Math.sqrt(alturaTotal));
+  // Limites opcionais, como denominadores: lim = { max: 200 } → θa ≤ 1/200 ; { min: 300 } → θa ≥ 1/300.
+  // Sem limites (padrão), vale só a fórmula.
+  function anguloDesaprumo(alturaTotal, lim) {
+    const formula = 1 / (100 * Math.sqrt(alturaTotal));
+    if (!lim) return formula;
+    let th = formula, limite = null;
+    if (Number(lim.max) > 0 && th > 1 / lim.max) { th = 1 / lim.max; limite = 'máximo'; }
+    if (Number(lim.min) > 0 && th < 1 / lim.min) { th = 1 / lim.min; limite = 'mínimo'; }
+    return { theta: th, formula, limite };
   }
 
   // Junta vento e desaprumo em cada pavimento.
