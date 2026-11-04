@@ -28,7 +28,61 @@
 <section><h2>2. Blocos cerâmicos disponíveis</h2><div class="row"><label>Junta vertical entre blocos (cm)<input id="jh" type="number" value="1" min="0" step="0.1"></label><label>Junta horizontal entre fiadas (cm)<input id="jv" type="number" value="1" min="0" step="0.1"></label><label>Defasagem mínima entre fiadas (cm)<input id="bondMin53" type="number" value="10" min="0" step="0.5" oninput="invalidate()"><span class="note">Meta: meia amarração (20 cm no B39). Abaixo do mínimo a parede fica pendente.</span></label></div><div class="row"><label>Permitir fechamento com filete de bloco<input id="flex" type="checkbox" checked></label><label class="hidden">Junta mínima do projeto (cm)<input id="jMin" type="number" value="0.8" min="0.1" step="0.1"></label><label class="hidden">Junta máxima do projeto (cm)<input id="jMax" type="number" value="1.2" min="0.1" step="0.1"></label><label>Apoio inicial de verga / contraverga (cm)<input id="openingBearing" type="number" value="30" min="0" step="1"><span class="note">Conferir no projeto; o trecho acompanha blocos inteiros.</span></label><label>Filete de fechamento máximo (cm)<input id="fillMax" type="number" value="4" min="0" max="4" step="0.1"></label></div><p class="note">O comprimento é arredondado para baixo ao centímetro inteiro. A junta comum mantém o valor informado; o filete de bloco, quando habilitado, é desenhado e cotado separadamente. Até 4 cm, conforme detalhe do projetista. A medida da parede é preservada. Os limites de junta são parâmetros editáveis do projetista; os valores iniciais de 0,8 a 1,2 cm servem para teste e não são validação normativa. Uma pastilha física de 5 cm permanece com 5 cm no desenho; a junta é calculada separadamente. A busca resolve primeiro os encontros L/T/Cruz e depois fecha os trechos livres; na família 14/39 com junta de 1 cm, prioriza os gabaritos de encontro B29/B44 no L e B29 com B54/B44 no T. Depois favorece meia amarração entre alternativas admissíveis e preserva o bloco principal no pano e limita a 3 filetes de 5 cm consecutivos. Até três complementos são pesquisados por trecho, com cache de trechos iguais e busca ampliada e diversificada de arranjos, inclusive variando a junta dentro dos limites definidos; arranjos sem amarração ficam pendentes. Confira as juntas aplicadas no resultado.</p><p class="note">Informe dimensões físicas, sem a junta. Código único por peça. Selecione o uso de cada peça: Principal para o pano, Complementar para ajustes e alternância, Encontro para cantos e ligações. Peças de encontro são usadas na compatibilização ativada; canaletas substituem obrigatoriamente a última fiada. Vergas e contravergas usam U automaticamente. O respaldo usa J nas paredes externas e U nas internas. Confira e cadastre os perfis na seção Perfis de canaletas cadastrados. Perfis de referência: U 14×19×30 cm; J com largura 14 cm, comprimento 19 cm e laterais 19/31 cm. Não são criadas variantes fictícias de cada bloco. O fechamento longitudinal das canaletas usa cortes identificados no desenho; as juntas são consideradas separadamente. A lateral alta do J se projeta 12 cm acima da fiada. Na última fiada, a parede externa recebe J e a interna recebe U. Confira a correspondência dimensional com o catálogo do fabricante. A altura e a espessura devem corresponder ao módulo adotado; peças de outra altura exigem revisão da modulação vertical. Na biblioteca inicial: 39 cm = Principal; 14, 19, 29 e 34 cm = Complementar; 44 e 54 cm = Encontro. A peça de 5 cm se chama Partilha 5. Para a compatibilização, classifique a peça de encontro como L ou T conforme o catálogo. Auto testa peças cadastradas da família nos encontros; a geometria não verifica as células internas do bloco. Confira o detalhe do fabricante.</p><div class="scroll"><table><thead><tr><th>Usar</th><th>Código</th><th>Peça / fabricante</th><th>Compr. (cm)</th><th>Altura (cm)</th><th>Espess. (cm)</th><th>Tipo</th><th>Uso na modulação</th><th>Peça de encontro</th><th></th></tr></thead><tbody id="blocks"></tbody></table></div><div class="toolbar"><button id="addBlock" class="secondary">Adicionar peça</button><label>Permitir blocos de encontro como complemento<input id="meetingComplements" type="checkbox" checked onchange="invalidate()"></label></div></section>
 <section><h2>3. Paredes e aberturas</h2><p class="note">Comprimentos e alturas entre limites modulares. Cada bloco ocupa sua dimensão física mais a junta. Nos desenhos, fica meia junta em cada extremidade do módulo; não há corte automático de blocos. Para as aberturas, informe também limites modulares. Identificações seguem “Parede 1”, “Parede 2”… Defina cada parede: Interna usa canaleta U na última fiada; Externa usa canaleta J. A classificação automática depende de contornos fechados; trechos mistos recebem U/J. Você pode alterar a parede toda ou apenas um trecho. Sem definição segura ou fechamento com as canaletas cadastradas, a parede fica pendente.</p><div class="scroll"><table><thead><tr><th>Parede</th><th>Compr. (cm)</th><th>Altura (cm)</th><th>Espess. (cm)</th><th>Posição da parede</th><th>Conferida</th><th>Origem</th><th></th></tr></thead><tbody id="walls"></tbody></table></div><div class="toolbar"><button id="addWall" class="secondary">Adicionar parede</button><button id="generate">Gerar modulação</button><label>Compatibilizar encontros em L, T e X<input id="jointAuto" type="checkbox" checked></label></div></section></div>
 <dialog id="locationEditor24" class="steelDialog21 noPrint" aria-label="Classificação por trecho"></dialog><dialog id="dimensionsEditor24" class="steelDialog21 noPrint" aria-label="Cotas internas da planta"></dialog><dialog id="steelEditor" class="steelDialog21 noPrint" aria-labelledby="steelEditorTitle21"></dialog><section id="output"><h2>Modulação e quantitativos</h2><p>Cadastre ou marque as paredes e informe os blocos para gerar os desenhos.</p></section><section class="noPrint"><h2>Como usar os resultados</h2><p class="note">Os blocos comuns usam peças cadastradas; o B39 admite pequenos cortes dentro do limite indicado, com identificação do comprimento final. As canaletas U/J usam peças inteiras e cortes de fechamento identificados. O pano prioriza o bloco principal. A busca limitada compara arranjos das duas fiadas, priorizando meia amarração antes da economia de peças e verificando o deslocamento das juntas. Os filetes de bloco são cortados para completar o comprimento e não substituem a amarração. V53: o motor busca a meia amarração (metade do módulo do bloco principal) e aceita, no mínimo, a defasagem informada em “Defasagem mínima entre fiadas” (padrão 10 cm). Arranjos abaixo do mínimo permanecem pendentes; a menor defasagem de cada parede é informada no resultado. Complementos pequenos exigem revisão do detalhamento. Se a busca não encontrar uma combinação, o trecho fica pendente com mensagem de revisão. A compatibilização tenta L, T e X entre eixos ortogonais com dimensões e escala compatíveis. Arranjos com amarração insuficiente são bloqueados. Essa regra geométrica não verifica a resistência das ligações nem a continuidade das células dos blocos. O módulo vertical inclui meia junta inferior e superior em cada fiada. Comprimentos que não fecham e aberturas fora dos limites de fiadas impedem a geração daquela parede. Vergas, contravergas, graute, armaduras, canaletas e a resistência dos encontros não está dimensionada. Esta versão não escolhe quais paredes são estruturais nem verifica resistência.</p><p class="note">Importação PDF: Mozilla PDF.js, licença Apache 2.0 (incluída no pacote). Biblioteca inicial: Braúnas; famílias 14 e 19 com peças confirmadas no catálogo. Seções de graute adotadas pelo usuário, editáveis em Conferir dados de argamassa e graute. Partilha 5 é uma peça complementar configurada pelo usuário.</p></section></main>
-<script id="modEngines">// V87 — desníveis: paredes com base/topo deslocados em fiadas inteiras.
+<script>// Cálculos de alvenaria estrutural — funções puras, sem tela, testáveis à parte
+// (tests/calculo.test.js). Usadas pelo programa no navegador como window.calcAlv
+// e pelo Node.js como módulo.
+//
+// Compressão simples — ABNT NBR 16868-1:
+//   Nd ≤ fd · A · R      fd = fk / γm      R = 1 − (λ / 40)³      λ = hef / tef
+//   fk = k · fpk         fpk = η · fbk
+// Por metro de parede (A = t · 1 m), o fbk necessário fica:
+//   σd = Nd / t      fbk = γm · σd / (R · k · η)
+(function (root) {
+  'use strict';
+
+  // Fator redutor da resistência pela esbeltez: R = 1 − (λ/40)³.
+  // Limitado a 0,05 para não dividir por zero em paredes muito esbeltas
+  // (o programa já avisa quando λ > 24).
+  function fatorEsbeltez(lambda) {
+    return Math.max(0.05, 1 - Math.pow(lambda / 40, 3));
+  }
+
+  // Carga de cálculo por metro: Nd = γg · Gk + γq · Qk  (kN/m)
+  function cargaDeCalculo(gk, qk, gG, gQ) {
+    return gG * gk + gQ * qk;
+  }
+
+  // fbk necessário para a parede resistir a Nd (kN/m).
+  //   t: espessura (cm)   H: altura efetiva (cm)
+  //   p: { gm: γm, kf: fk/fpk, eta: fpk/fbk }
+  // Devolve todos os passos, para a tela e o memorial de cálculo.
+  function compressaoSimples(nd, t, H, p) {
+    const lambda = H / t;
+    const R = fatorEsbeltez(lambda);
+    const sigma = nd / (t / 100) / 1000; // kN/m ÷ m → kN/m² → MPa
+    const fk = p.gm * sigma / R;
+    const fpk = fk / p.kf;
+    const fbk = fpk / p.eta;
+    return { nd, t, H, lambda, R, sigma, fk, fpk, fbk };
+  }
+
+  // fgk do graute: o maior entre o mínimo informado e 2,3 · fbk arredondado
+  // para cima de 5 em 5 MPa (regra do programa; conferir a referência adotada).
+  function fgkDoGraute(fbk, gMin) {
+    return Math.max(Number(gMin) || 15, Math.ceil(2.3 * fbk / 5 - 1e-9) * 5);
+  }
+
+  // Primeiro valor da lista de fbk comerciais que atende ao necessário.
+  function fbkComercial(necessario, lista) {
+    const l = lista.map(Number).filter(x => x > 0).sort((a, b) => a - b);
+    return l.find(x => x >= necessario - 1e-9) ?? Math.ceil(necessario);
+  }
+
+  const api = { fatorEsbeltez, cargaDeCalculo, compressaoSimples, fgkDoGraute, fbkComercial };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.calcAlv = api;
+})(this);
+</script><script id="modEngines">// V87 — desníveis: paredes com base/topo deslocados em fiadas inteiras.
 // A amarração entre paredes passa a ser conferida pela fiada ABSOLUTA (altura real), não pelo número da fiada.
 (function(root){
 'use strict';
@@ -6858,8 +6912,9 @@ const N=Number,L7=()=>window.loads77;if(!L7())return;
 const f1=(v,d=1)=>(Number.isFinite(v)?v:0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const DEF={gm:2.0,kfk:0.7,eta:0.5,min:4,minItem:'',gMin:15,gItem:'6.1.3',list:[4,6,8,10,12,14,16,18,20],ovr:{}};
 function S(){const s=L7().S();s.res96??={};const r=s.res96;for(const k in DEF)if(r[k]===undefined||r[k]===null||r[k]==='')r[k]=JSON.parse(JSON.stringify(DEF[k]));if(!r.ovr||typeof r.ovr!=='object')r.ovr={};return r;}
-const fgkOf=fbk=>Math.max(N(S().gMin)||15,Math.ceil(2.3*fbk/5-1e-9)*5);
-const up=v=>{const l=S().list.map(N).filter(x=>x>0).sort((a,b)=>a-b);return l.find(x=>x>=v-1e-9)??Math.ceil(v);};
+const C=window.calcAlv; // src/calculo/alvenaria.js
+const fgkOf=fbk=>C.fgkDoGraute(fbk,S().gMin);
+const up=v=>C.fbkComercial(v,S().list);
 const normMin=()=>'ABNT NBR 15270-1:2023'+(String(S().minItem||'').trim()?', item '+String(S().minItem).trim():'');
 const normG=()=>'ABNT NBR 16868-1'+(String(S().gItem||'').trim()?', item '+String(S().gItem).trim():'');
 const fmV=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2).replace('.',',');
@@ -6869,12 +6924,11 @@ function compute(){let R;try{R=L7().compute({});}catch(e){console.error('V96',e)
  const c=L7().S().cfg,gG=N(c.gG)||1.4,gQ=N(c.gQ)||1.4,s=S(),gm=N(s.gm)||2,kf=N(s.kfk)||.7,eta=N(s.eta)||.5;
  const out=R.LV.map((l,i)=>{let own=null;try{own=L7().compute({lv:l.key});}catch{}
   let crit=null,maxOwn=0;const slender=[];const RP=Math.max(1,N(l.rep)||1),repCalc=new Array(RP).fill(0);
-  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,lam=H/t,Rr=Math.max(.05,1-Math.pow(lam/40,3)),nd=gG*r.g+gQ*r.q;
+  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,nd=C.cargaDeCalculo(r.g,r.q,gG,gQ),P={gm,kf,eta},cs=C.compressaoSimples(nd,t,H,P),lam=cs.lambda;
    const o=own?.rows?.[i]?.[j];const od=o?gG*o.g+gQ*o.q:0;if(od>maxOwn)maxOwn=od;if(lam>24)slender.push(r.label);
-   const sig=nd/(t/100)/1000,fk=gm*sig/Rr,fpk=fk/kf,fbk=fpk/eta;
-   if(!crit||fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:Rr,sig,fk,fpk,fbk};
+   if(!crit||cs.fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:cs.R,sig:cs.sigma,fk:cs.fk,fpk:cs.fpk,fbk:cs.fbk};
    // V107.2 — andar a andar no pavimento-tipo (1 = o de baixo)
-   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=nj/(t/100)/1000*gm/Rr/kf/eta;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
+   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=C.compressaoSimples(nj,t,H,P).fbk;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
   const tt=N(window.opt3d74?.t)||10,step=((N(l.H)||280)+tt)/100,v0=N(String(l.key).split('|')[0])||0;
   return {i,key:l.key,name:l.name,rep:RP,v:v0,step,repCalc,crit,maxOwn,slender,calc:crit?crit.fbk:0};});
  // de cima para baixo: nunca menor que o de cima

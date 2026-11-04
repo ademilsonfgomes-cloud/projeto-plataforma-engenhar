@@ -8,8 +8,9 @@ const N=Number,L7=()=>window.loads77;if(!L7())return;
 const f1=(v,d=1)=>(Number.isFinite(v)?v:0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
 const DEF={gm:2.0,kfk:0.7,eta:0.5,min:4,minItem:'',gMin:15,gItem:'6.1.3',list:[4,6,8,10,12,14,16,18,20],ovr:{}};
 function S(){const s=L7().S();s.res96??={};const r=s.res96;for(const k in DEF)if(r[k]===undefined||r[k]===null||r[k]==='')r[k]=JSON.parse(JSON.stringify(DEF[k]));if(!r.ovr||typeof r.ovr!=='object')r.ovr={};return r;}
-const fgkOf=fbk=>Math.max(N(S().gMin)||15,Math.ceil(2.3*fbk/5-1e-9)*5);
-const up=v=>{const l=S().list.map(N).filter(x=>x>0).sort((a,b)=>a-b);return l.find(x=>x>=v-1e-9)??Math.ceil(v);};
+const C=window.calcAlv; // src/calculo/alvenaria.js
+const fgkOf=fbk=>C.fgkDoGraute(fbk,S().gMin);
+const up=v=>C.fbkComercial(v,S().list);
 const normMin=()=>'ABNT NBR 15270-1:2023'+(String(S().minItem||'').trim()?', item '+String(S().minItem).trim():'');
 const normG=()=>'ABNT NBR 16868-1'+(String(S().gItem||'').trim()?', item '+String(S().gItem).trim():'');
 const fmV=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2).replace('.',',');
@@ -19,12 +20,11 @@ function compute(){let R;try{R=L7().compute({});}catch(e){console.error('V96',e)
  const c=L7().S().cfg,gG=N(c.gG)||1.4,gQ=N(c.gQ)||1.4,s=S(),gm=N(s.gm)||2,kf=N(s.kfk)||.7,eta=N(s.eta)||.5;
  const out=R.LV.map((l,i)=>{let own=null;try{own=L7().compute({lv:l.key});}catch{}
   let crit=null,maxOwn=0;const slender=[];const RP=Math.max(1,N(l.rep)||1),repCalc=new Array(RP).fill(0);
-  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,lam=H/t,Rr=Math.max(.05,1-Math.pow(lam/40,3)),nd=gG*r.g+gQ*r.q;
+  R.rows[i].forEach((r,j)=>{const t=N(r.x.t)||14,H=N(r.x.H)||280,nd=C.cargaDeCalculo(r.g,r.q,gG,gQ),P={gm,kf,eta},cs=C.compressaoSimples(nd,t,H,P),lam=cs.lambda;
    const o=own?.rows?.[i]?.[j];const od=o?gG*o.g+gQ*o.q:0;if(od>maxOwn)maxOwn=od;if(lam>24)slender.push(r.label);
-   const sig=nd/(t/100)/1000,fk=gm*sig/Rr,fpk=fk/kf,fbk=fpk/eta;
-   if(!crit||fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:Rr,sig,fk,fpk,fbk};
+   if(!crit||cs.fbk>crit.fbk)crit={label:r.label,pd:nd,od,t,H,lam,R:cs.R,sig:cs.sigma,fk:cs.fk,fpk:cs.fpk,fbk:cs.fbk};
    // V107.2 — andar a andar no pavimento-tipo (1 = o de baixo)
-   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=nj/(t/100)/1000*gm/Rr/kf/eta;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
+   const od1=od/RP;for(let jr=1;jr<=RP;jr++){const nj=Math.max(0,nd-(jr-1)*od1),fb=C.compressaoSimples(nj,t,H,P).fbk;if(fb>repCalc[jr-1])repCalc[jr-1]=fb;}});
   const tt=N(window.opt3d74?.t)||10,step=((N(l.H)||280)+tt)/100,v0=N(String(l.key).split('|')[0])||0;
   return {i,key:l.key,name:l.name,rep:RP,v:v0,step,repCalc,crit,maxOwn,slender,calc:crit?crit.fbk:0};});
  // de cima para baixo: nunca menor que o de cima

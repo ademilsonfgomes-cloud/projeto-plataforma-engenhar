@@ -4,7 +4,22 @@
 const path = require('path');
 const { chromium } = require('playwright');
 
+const fs = require('fs');
 const ARQ = path.resolve(__dirname, '..', 'dist', 'Modulacao_Alvenaria_Engenhar.html');
+const REF = path.resolve(__dirname, 'referencia', 'exemplo-didatico.json');
+const GRAVAR = process.argv.includes('--gravar-referencia');
+const TOL = 1e-6;
+
+// Compara dois valores (números com tolerância); devolve a lista de diferenças.
+function diferencas(a, b, onde = '') {
+  if (typeof a === 'number' && typeof b === 'number')
+    return Math.abs(a - b) <= TOL * Math.max(1, Math.abs(b)) ? [] : [`${onde}: ${a} ≠ ${b}`];
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const ks = new Set([...Object.keys(a), ...Object.keys(b)]);
+    return [...ks].flatMap(k => diferencas(a[k], b[k], onde + '.' + k));
+  }
+  return a === b ? [] : [`${onde}: ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`];
+}
 
 (async () => {
   const browser = await chromium.launch();
@@ -35,6 +50,25 @@ const ARQ = path.resolve(__dirname, '..', 'dist', 'Modulacao_Alvenaria_Engenhar.
   conferir(r.paredes > 0, `exemplo didático carregou ${r.paredes} paredes`);
   conferir(r.resultados === r.paredes, `modulação gerada para ${r.resultados}/${r.paredes} paredes`);
   conferir(/Modulação e quantitativos/.test(r.saida), 'quadro de resultados apareceu');
+  // Cálculos: cargas por parede e resistências por pavimento
+  const calc = await page.evaluate(() => {
+    const R = window.loads77.compute({});
+    const D = window.res96.compute();
+    return {
+      cargas: R.rows.map(lv => lv.map(r => ({ parede: r.label, gk: r.g, qk: r.q, t: r.x.t, H: r.x.H }))),
+      pavimentos: D.levels.map(L => ({ nome: L.name, fbkCalculado: L.calc, fbk: L.fbk, fgk: L.fgk, motivo: L.why,
+        critica: L.crit && { parede: L.crit.label, nd: L.crit.pd, lambda: L.crit.lam, R: L.crit.R, sigma: L.crit.sig, fk: L.crit.fk, fpk: L.crit.fpk, fbk: L.crit.fbk } })),
+    };
+  });
+  if (GRAVAR) {
+    fs.mkdirSync(path.dirname(REF), { recursive: true });
+    fs.writeFileSync(REF, JSON.stringify(calc, null, 1) + '\n');
+    console.log('  referência gravada em ' + path.relative(process.cwd(), REF));
+  } else {
+    const dif = diferencas(calc, JSON.parse(fs.readFileSync(REF, 'utf8')));
+    conferir(dif.length === 0, 'cargas e fbk/fgk iguais à referência' + (dif.length ? ':\n    ' + dif.slice(0, 10).join('\n    ') : ''));
+  }
+
   conferir(erros.length === 0, 'nenhum erro no navegador' + (erros.length ? ':\n    ' + erros.join('\n    ') : ''));
 
   await browser.close();
