@@ -131,8 +131,9 @@ const hud=document.createElement('div');hud.id='hud88';hud.className='noPrint';c
 function showHud(list){const seen=new Set(),items=(list||[]).filter(x=>x&&x.t&&!seen.has(x.t)&&seen.add(x.t));hudIn.innerHTML=items.map(x=>'<div style="color:'+x.c+'">'+String(x.t).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))+'</div>').join('');hud.style.display=items.length&&image?'':'none';}
 // ---------- (2) fundo e quadriculado
 const THEMES={branco:{bg:'#ffffff',mi:'#eef1f5',ma:'#d9e0e8',dark:false,nome:'Branco'},claro:{bg:'#eef1f4',mi:'#e1e6eb',ma:'#cbd3dc',dark:false,nome:'Cinza claro'},
- medio:{bg:'#d5dbe1',mi:'#c8cfd7',ma:'#b3bcc6',dark:false,nome:'Cinza médio'},escuro:{bg:'#212830',mi:'#2e3742',ma:'#41505f',dark:true,nome:'Escuro (CAD)'}};
-let theme=LS('bg88')in THEMES?LS('bg88'):'branco',grid=LS('grid88')!=='0';
+ medio:{bg:'#d5dbe1',mi:'#c8cfd7',ma:'#b3bcc6',dark:false,nome:'Cinza médio'},escuro:{bg:'#212830',mi:'#2e3742',ma:'#41505f',dark:true,nome:'Escuro (CAD)'},
+ preto:{bg:'#000000',mi:'#151a20',ma:'#262e38',dark:true,nome:'Preto'}};
+let theme=LS('bg88')in THEMES?LS('bg88'):'escuro',grid=LS('grid88')!=='0';
 // o desenho de fundo vira "tinta sobre transparente": o branco do DXF/PDF some e o quadriculado da tela inteira aparece por baixo
 const cache=new WeakMap();
 function ink(img,dark){const key=dark?'d':'l';let c=cache.get(img);if(!c||c.w!==img.width||c.h!==img.height){c={w:img.width,h:img.height};cache.set(img,c);}if(c[key]!==undefined)return c[key];
@@ -184,7 +185,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')pop.hidden=true;});
 {const b=document.createElement('button');b.id='bg88btn';b.type='button';b.className='secondary';b.textContent='Fundo da planta';b.style.display='none';b.onclick=e=>{e.stopPropagation();const rb=document.querySelector('#rib85 .tl85[title="Fundo"]');openAt(rb&&rb.offsetParent?rb:null);};document.body.append(b);}
 // atalho dentro do painel Visibilidade
 {const vp=$('vis87pop');if(vp)new MutationObserver(()=>{if(vp.hidden||vp.querySelector('.bg88lnk'))return;const f=vp.querySelector('.f87v');if(!f)return;const a=document.createElement('button');a.type='button';a.className='bg88lnk';a.textContent='▦ Fundo e quadriculado…';a.onclick=e=>{e.stopPropagation();vp.hidden=true;openAt($('vis87btn'));};f.before(a);}).observe(vp,{childList:true,attributes:true});}
-window.bg88={set:(t,g)=>{if(t in THEMES){theme=t;LS('bg88',t);}if(g!==undefined){grid=!!g;LS('grid88',grid?'1':'0');}drawPlan();},get:()=>({theme,grid}),open:openAt};
+window.bg88={THEMES,set:(t,g)=>{if(t in THEMES){theme=t;LS('bg88',t);}if(g!==undefined){grid=!!g;LS('grid88',grid?'1':'0');}drawPlan();},get:()=>({theme,grid}),open:openAt};
 
 // ---------- (3) zoom nas elevações e no editor (rodinha no cursor, rodinha apertada arrasta, duplo clique na rodinha volta)
 const ZMAX=8,STEP=1.25;let lastPass=0;

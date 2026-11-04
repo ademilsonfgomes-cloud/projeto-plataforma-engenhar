@@ -198,12 +198,15 @@ function cat(c){if(!CATS[c])return;giveBack();curCat=c;const C=CATS[c];
  C.groups.forEach((g,gi)=>{if(g[2]){const host=rib.querySelector('.g85[data-g="'+gi+'"] .t85');host.classList.add('ctl85');g[2].forEach(id=>borrow(id,host));}});
  const sx=$('sideCtl85');sx.innerHTML='';if(C.sideCtl){sx.innerHTML='<h4>'+CATNAME[c]+' · opções</h4>';C.sideCtl.forEach(id=>borrow(id,sx));}
  if(C.v)view(C.v);markTools();upd();}
-rib.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.act==='back'){cat('main');return;}if(b.dataset.k===undefined)return;const t=CATS[curCat].groups[N(b.dataset.g)][1][N(b.dataset.k)];
+rib.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.act==='back'){cat('main');return;}if(b.dataset.k===undefined)return;run(CATS[curCat].groups[N(b.dataset.g)][1][N(b.dataset.k)]);});
+// V109 — executar uma ferramenta (usado pela faixa e pela tela estilo CAD: barras, menus)
+function run(t){
  if(String(t.t).startsWith('#')){cat(t.t.slice(1));return;}if(String(t.t).startsWith('@')){view(t.t.slice(1));return;}
  if(t.t==='sel'){stopAll();try{$('cancel')?.click();}catch{}activeTool=null;markTools();upd();try{drawPlan();}catch{}return;}
  if(DRAW108.has(t.l))stopAll();
  if(t.v)view(t.v);let el;if(typeof t.t==='function'){const r=t.t();if(r===undefined){activeTool=null;markTools();upd();return;}el=r;}else el=$(t.t);if(!el){msg('Ferramenta indisponível neste projeto.');return;}if(el.disabled){activeTool=null;markTools();upd();msg('“'+t.l+'” indisponível agora: abra a planta e calibre a escala (Arquitetura → 📂 Abrir / 📏 Calibrar escala).');return;}
- activeTool=t.mode?t.l:null;el.click();markTools();upd();});
+ activeTool=t.mode?t.l:null;el.click();markTools();upd();}
+window.ui85={CATS,CATNAME,VNAME,run,cat:c=>cat(c),view:v=>view(v),get curCat(){return curCat;},get curView(){return curView;},get activeTool(){return activeTool;},set activeTool(v){activeTool=v;markTools();},stopAll,PM:()=>PM};
 function markTools(){rib.querySelectorAll('.tl85').forEach(b=>{if(b.dataset.k===undefined)return;const t=CATS[curCat].groups[N(b.dataset.g)][1][N(b.dataset.k)];b.classList.toggle('on',(!!activeTool&&t.l===activeTool)||(t.t==='sel'&&!activeTool)||(String(t.t).startsWith('@')&&t.t.slice(1)===curView));});}
 
 // ---------- vistas (uma de cada vez; as outras continuam montadas fora da tela para que pranchas e DXF meçam certo)

@@ -45,6 +45,14 @@ O quadro de vento está em `src/js/50-vento-e-contraventamento.js` (botão
 "🌬 Vento e contraventamento" no quadro "Resistências por pavimento"). O memorial de cálculo está em
 `src/js/52-memorial-de-calculo.js` (botão no quadro "Resistências por pavimento").
 
+## Tela
+
+A tela segue o estilo dos programas de CAD (`src/js/53-tela-estilo-cad.js`): menus no topo,
+barra do fluxo do projeto, barra lateral de desenho, abas das vistas e linha de comando no
+rodapé, fundo da área de desenho escuro (troca no rodapé ou em Ver). **As barras são
+personalizáveis**: arraste um ícone para outro lugar ou para fora; Ver → Personalizar barras
+abre a paleta com todas as ferramentas. A arrumação fica salva no navegador de cada pessoa.
+
 ## Depois de alterar o código
 
 ```bash
@@ -52,6 +60,7 @@ python3 build.py                  # monta dist/Modulacao_Alvenaria_Engenhar.html
 node --test tests/*.test.js    # fórmulas, com casos conferidos à mão
 node tests/teste-basico.js        # abre no navegador e confere modulação, cargas,
                                   # fbk/fgk e memorial com a referência gravada
+node tests/teste-tela.js          # tela: barras, arrastar, menus, linha de comando
 ```
 
 O teste no navegador precisa do Node.js e do Playwright (`npm install playwright`).
