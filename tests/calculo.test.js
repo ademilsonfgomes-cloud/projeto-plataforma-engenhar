@@ -1,6 +1,6 @@
 // Testes das fórmulas de alvenaria estrutural (src/calculo/alvenaria.js).
 // Os valores esperados foram calculados à mão; a conta está nos comentários.
-// Uso:  node --test tests/
+// Uso:  node --test tests/*.test.js
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const C = require('../src/calculo/alvenaria.js');

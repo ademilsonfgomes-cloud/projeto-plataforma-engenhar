@@ -36,15 +36,18 @@ dist/                   programa pronto para usar
 A ordem dos arquivos em `src/js/` importa: eles são executados na sequência
 numérica, como eram no arquivo original.
 
-Fórmulas de cálculo (compressão simples, fbk, fgk) ficam em `src/calculo/alvenaria.js`,
-separadas da tela, para poderem ser testadas. O memorial de cálculo está em
-`src/js/50-memorial-de-calculo.js` (botão no quadro "Resistências por pavimento").
+Fórmulas de cálculo ficam em `src/calculo/`, separadas da tela, para poderem ser testadas:
+`alvenaria.js` (compressão simples, flexo-compressão, hef/tef, fbk, fgk) e `vento.js`
+(vento NBR 6123, desaprumo, rigidez e verificação das paredes de contraventamento).
+O quadro de vento está em `src/js/50-vento-e-contraventamento.js` (botão
+"🌬 Vento e contraventamento" no quadro "Resistências por pavimento"). O memorial de cálculo está em
+`src/js/51-memorial-de-calculo.js` (botão no quadro "Resistências por pavimento").
 
 ## Depois de alterar o código
 
 ```bash
 python3 build.py                  # monta dist/Modulacao_Alvenaria_Engenhar.html
-node --test tests/calculo.test.js # fórmulas, com casos conferidos à mão
+node --test tests/*.test.js    # fórmulas, com casos conferidos à mão
 node tests/teste-basico.js        # abre no navegador e confere modulação, cargas,
                                   # fbk/fgk e memorial com a referência gravada
 ```

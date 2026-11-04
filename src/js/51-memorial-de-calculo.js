@@ -35,6 +35,31 @@
     </div>`;
   }
 
+  // Seção de ações horizontais (quando "incluir no memorial" estiver marcado no quadro do vento)
+  function secaoVento() {
+    const V = window.vento109; if (!V || !V.S().on) return null;
+    const A = V.analisar(); if (!A) return null;
+    const s = A.s, P = A.P;
+    const dirs = A.dirs.map(d => `<h3>Vento em ${d.dir} — fachada de ${f(d.largura)} m, C<sub>a</sub> = ${f(d.Ca)}</h3>
+      <table><tr><th>z (m)</th><th>V<sub>k</sub> (m/s)</th><th>q (kN/m²)</th><th>faixa (m)</th><th>F vento (kN)</th><th>F desaprumo (kN)</th><th>F total (kN)</th></tr>${
+        d.forcas.map(x => `<tr><td>${f(x.z)}</td><td>${f(x.Vk, 1)}</td><td>${f(x.q, 3)}</td><td>${f(x.hTrib)}</td><td>${f(x.Fw)}</td><td>${f(x.Fd)}</td><td>${f(x.F)}</td></tr>`).join('')}</table>
+      ${d.niveis.map(n => `<p><b>${esc(n.nome)}</b> — na base: V<sub>k</sub> = ${f(n.V)} kN, M<sub>k</sub> = ${f(n.M)} kN·m</p>
+        <table><tr><th>Trecho</th><th>L (m)</th><th>rigidez</th><th>V<sub>k</sub> (kN)</th><th>M<sub>k</sub> (kN·m)</th><th>σ (0,9G) (MPa)</th><th>f<sub>vk</sub> (MPa)</th><th>τ<sub>d</sub> / f<sub>vd</sub></th><th>σ<sub>t</sub> / f<sub>td</sub></th><th>f<sub>bk</sub> nec. (MPa)</th></tr>${
+          n.trechos.map(p => `<tr${!p.cisOk || !p.tracaOk || p.fbk > n.fbkAdot + 1e-9 ? ' class="crit"' : ''}><td>${esc(p.nome)}</td><td>${f(p.L)}</td><td>${f(p.parte * 100, 1)}%</td><td>${f(p.Vk)}</td><td>${f(p.Mk)}</td><td>${f(p.sigma09, 3)}</td><td>${f(p.fvk, 3)}</td>
+            <td>${f(p.tau, 3)} / ${f(p.fvd, 3)} ${p.cisOk ? '✓' : '✗'}</td><td>${f(p.sigt, 3)} / ${f(p.ftd, 3)} ${p.tracaOk ? '✓' : '✗'}</td><td>${f(p.fbk)}</td></tr>`).join('')}</table>
+        <p class="${n.fbkMax > n.fbkAdot + 1e-9 || n.falhasCis || n.falhasTr ? 'aviso' : 'res'}">${n.fbkMax > n.fbkAdot + 1e-9 ? `⚠ Com vento, f<sub>bk</sub> necessário = ${f(n.fbkMax)} MPa, acima do adotado (${f(n.fbkAdot, 1)} MPa).` : `f<sub>bk</sub> adotado (${f(n.fbkAdot, 1)} MPa) atende com vento (máx. ${f(n.fbkMax)} MPa).`}
+          ${n.falhasCis ? ` ⚠ ${n.falhasCis} trecho(s) não passam no cisalhamento.` : ' Cisalhamento atendido.'}
+          ${n.falhasTr ? ` ⚠ ${n.falhasTr} trecho(s) com tração na flexão acima de f<sub>td</sub>: armar e grautear as extremidades (dimensionamento à parte).` : ' Sem tração acima de f<sub>td</sub>.'}</p>`).join('')}`).join('');
+    return `<h2>4. Ações horizontais e contraventamento</h2>
+      <p>Vento pela ABNT NBR 6123 (método estático): V<sub>k</sub> = V<sub>0</sub> · S<sub>1</sub> · S<sub>2</sub> · S<sub>3</sub>, S<sub>2</sub> = b · F<sub>r</sub> · (z/10)<sup>p</sup>, q = 0,613 · V<sub>k</sub>², F = C<sub>a</sub> · q · A<sub>e</sub>, com a força de cada pavimento na cota da laje e faixa de meia altura abaixo e acima.
+      ${s.desaprumo ? `Desaprumo (ABNT NBR 16868-1): θ<sub>a</sub> = 1/(100·√H) = 1/${f(1 / A.theta, 0)}, força = θ<sub>a</sub> · peso do pavimento, somada ao vento.` : 'Desaprumo não considerado.'}</p>
+      <dl><dt>V<sub>0</sub></dt><dd>${f(N(s.V0), 1)} m/s</dd><dt>S<sub>1</sub> / S<sub>3</sub></dt><dd>${f(N(s.S1), 2)} / ${f(N(s.S3), 2)}</dd><dt>S<sub>2</sub></dt><dd>categoria ${esc(s.cat)}, classe ${esc(A.cls)}</dd>
+      <dt>Edificação</dt><dd>altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m</dd><dt>Argamassa</dt><dd>f<sub>a</sub> ${esc(s.arg)} MPa</dd>
+      <dt>Combinações</dt><dd>vento principal: γg·G + γq·(W + ψ<sub>0</sub>·Q), ψ<sub>0</sub> = ${f(P.psiQ, 2)}; sobrecarga principal: γg·G + γq·(Q + ψ<sub>0</sub>·W), ψ<sub>0</sub> = ${f(P.psiW, 2)}; γq do vento = ${f(P.gW, 2)}; γm (cisalhamento e tração) = ${f(P.gmV, 2)}</dd></dl>
+      <p>Distribuição: laje como diafragma rígido, sem torção; cada parede como trechos isolados entre aberturas, em balanço, sem abas; rigidez 1/k = h³/(3EI) + 1,2h/(GA), G = 0,4E. Verificações em cada trecho, na base de cada pavimento: cisalhamento τ<sub>d</sub> = V<sub>d</sub>/(t·L) ≤ f<sub>vk</sub>/γm, f<sub>vk</sub> = a + 0,5·σ (σ com 0,9·G); tração σ<sub>t</sub> = M<sub>d</sub>/W − 0,9·G/A ≤ f<sub>tk</sub>/γm; flexo-compressão f<sub>k</sub> ≥ γm·(N<sub>d</sub>/(A·R) + M<sub>d</sub>/(1,5·W)).</p>
+      ${A.avisos.map(w => `<p class="aviso">⚠ ${esc(w)}</p>`).join('')}${dirs}`;
+  }
+
   function motivo(L, s) {
     return L.why === 'min' ? `mínimo adotado (${f(N(s.min), 1)} MPa)` :
       L.why === 'acima' ? 'igual ao pavimento de cima (não diminui de cima para baixo)' :
@@ -47,6 +72,7 @@
     const { R, D, cfg, s, pav } = X;
     const projeto = (document.getElementById('project')?.value || '').trim() || 'Projeto sem nome';
     const hoje = new Date().toLocaleDateString('pt-BR');
+    const vento = secaoVento();
     const modo = cfg.mode === 'grp' ? 'grupos de paredes (cargas uniformizadas no grupo)' : 'paredes isoladas';
 
     const secPav = pav.map(L => {
@@ -79,7 +105,7 @@
       .ass{margin-top:40px;display:flex;justify-content:flex-end}.ass div{border-top:1px solid #102e4b;width:80mm;text-align:center;padding-top:4px;font-size:9pt}
       @page{size:A4;margin:10mm}</style></head><body>
       <h1>Memorial de cálculo — alvenaria estrutural</h1>
-      <p class="sub">${esc(projeto)} · cargas verticais e compressão simples · ${hoje}</p>
+      <p class="sub">${esc(projeto)} · cargas verticais${vento ? ', vento e contraventamento' : ' e compressão simples'} · ${hoje}</p>
 
       <h2>1. Normas e critérios</h2>
       <p>ABNT NBR 16868-1 (alvenaria estrutural — projeto) · ABNT NBR 6120:2019 (ações) · ABNT NBR 8681 (combinações) · ABNT NBR 15270-1:2023 (blocos cerâmicos).</p>
@@ -98,10 +124,10 @@
       ${secPav}
       ${(R.warn || []).length ? '<h3>Avisos do cálculo de cargas</h3>' + R.warn.map(w => `<p class="aviso">⚠ ${esc(w)}</p>`).join('') : ''}
 
-      <h2>4. Escopo e limitações</h2>
-      <div class="lim"><p>Este memorial cobre <b>somente cargas verticais e ${D.ef > 0 ? 'flexo-compressão pela excentricidade das lajes' : 'compressão simples'}</b>. Não foram verificados:</p><ul>
-        <li>ações horizontais (vento — ABNT NBR 6123 — e desaprumo) e estabilidade global;</li>
-        <li>cisalhamento e flexão das paredes de contraventamento;</li>
+      ${vento || ''}
+      <h2>${vento ? 5 : 4}. Escopo e limitações</h2>
+      <div class="lim"><p>Este memorial cobre <b>cargas verticais, ${D.ef > 0 ? 'flexo-compressão pela excentricidade das lajes' : 'compressão simples'}${vento ? ' e ações horizontais (vento e desaprumo) com as paredes de contraventamento' : ''}</b>. Não foram verificados:</p><ul>
+        ${vento ? '<li>estabilidade global (γ<sub>z</sub>), torção do edifício e contribuição das abas e das vergas no contraventamento;</li><li>dimensionamento das armaduras dos trechos tracionados;</li>' : '<li>ações horizontais (vento — ABNT NBR 6123 — e desaprumo) e estabilidade global;</li><li>cisalhamento e flexão das paredes de contraventamento;</li>'}
         ${D.ef > 0 ? '' : '<li>flexo-compressão por excentricidade das lajes apoiadas;</li>'}
         <li>compressão localizada sob apoios concentrados, dimensionamento de vergas e contravergas;</li>
         <li>situação de incêndio e colapso progressivo.</li></ul>
