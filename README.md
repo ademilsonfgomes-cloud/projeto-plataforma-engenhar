@@ -62,6 +62,7 @@ node tests/teste-basico.js        # abre no navegador e confere modulação, car
                                   # fbk/fgk e memorial com a referência gravada
 node tests/teste-tela.js          # tela: barras, arrastar, menus, linha de comando
 node tests/teste-encaixe.js       # paredes fora do eixo no encontro: nenhum vão nas fiadas
+node tests/estresse.js 12         # 12 plantas aleatórias: vãos, filetes, cortes e % de B39
 ```
 
 O teste no navegador precisa do Node.js e do Playwright (`npm install playwright`).
