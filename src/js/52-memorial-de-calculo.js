@@ -65,6 +65,19 @@
       ${A.avisos.map(w => `<p class="aviso">⚠ ${esc(w)}</p>`).join('')}${dirs}`;
   }
 
+  // Seção de vergas (quando "incluir no memorial" estiver marcado no quadro das vergas)
+  function secaoVergas(num) {
+    const G = window.vergas109; if (!G || !G.S().on) return null;
+    const A = G.analisar(); if (!A) return null;
+    const s = A.s, todas = A.niveis.flatMap(n => n.vergas), falhas = todas.filter(v => !v.ok);
+    return `<h2>${num}. Vergas</h2>
+      <p>Verga em canaleta grauteada de ${f(N(s.hv), 0)} cm (d = ${f(N(s.hv) - N(s.cob), 0)} cm), apoio de ${f(N(s.apoio), 0)} cm de cada lado. Vão efetivo l = vão livre + d, limitado à distância entre os centros dos apoios.
+      Efeito arco quando a altura de parede acima da verga supera 0,866·l (triângulo de 60°): carga = peso da alvenaria do triângulo (${f(N(s.gAlv), 1)} kN/m³), M = W·l/6; caso contrário, carga uniforme = parede acima + carga no topo da parede, M = q·l²/8. Peso próprio da verga sempre incluído. γ<sub>f</sub> = ${f(N(s.gf), 2)}.</p>
+      <p>Flexão: compressão na alvenaria em retângulo de 0,8·x com f<sub>d</sub> = f<sub>k</sub>/γm (γm = ${f(N(s.gm), 1)}${N(s.fkV) > 0 ? `, f<sub>k</sub> da verga grauteada = ${f(N(s.fkV), 2)} MPa` : ', f<sub>k</sub> do pavimento — conservador'}), x ≤ 0,5·d, z = d − 0,4·x ≤ 0,95·d, A<sub>s</sub> = M<sub>d</sub>/(f<sub>yd</sub>·z) ≥ 0,10 %·b·d, f<sub>yd</sub> = ${f(N(s.fyk) / N(s.gs), 1)} MPa. Cisalhamento: τ<sub>d</sub> = V<sub>d</sub>/(b·d) ≤ f<sub>vk</sub>/γm, f<sub>vk</sub> = 0,35 + 17,5·ρ ≤ 0,7 MPa.</p>
+      ${A.niveis.map(G.tabela).join('')}
+      <p class="${falhas.length ? 'aviso' : 'res'}">${falhas.length ? `⚠ ${falhas.length} de ${todas.length} verga(s) não atendem com a barra detalhada em 1 fiada; ver a coluna "sugerido".` : `Todas as ${todas.length} vergas atendem com a barra detalhada.`}</p>`;
+  }
+
   function motivo(L, s) {
     return L.why === 'min' ? `mínimo adotado (${f(N(s.min), 1)} MPa)` :
       L.why === 'acima' ? 'igual ao pavimento de cima (não diminui de cima para baixo)' :
@@ -77,7 +90,7 @@
     const { R, D, cfg, s, pav } = X;
     const projeto = (document.getElementById('project')?.value || '').trim() || 'Projeto sem nome';
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const vento = secaoVento();
+    const vento = secaoVento(), vergas = secaoVergas(vento ? 5 : 4);
     const modo = cfg.mode === 'grp' ? 'grupos de paredes (cargas uniformizadas no grupo)' : 'paredes isoladas';
 
     const secPav = pav.map(L => {
@@ -108,6 +121,7 @@
       .lim{background:#fff4dc;border-left:4px solid #dfa03e;padding:6px 12px}.lim li{margin:2px 0}
       dl{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;margin:6px 0}dt{color:#586c7c}dd{margin:0}
       .ass{margin-top:40px;display:flex;justify-content:flex-end}.ass div{border-top:1px solid #102e4b;width:80mm;text-align:center;padding-top:4px;font-size:9pt}
+      tr.bad109 td{background:#fdecec}.no109{color:#a33a00}.ok109{color:#1d7a3a}.n109{color:#586c7c;font-size:8pt}h4{font-size:10.5pt;margin:10px 0 3px}
       @page{size:A4;margin:10mm}</style></head><body>
       <h1>Memorial de cálculo — alvenaria estrutural</h1>
       <p class="sub">${esc(projeto)} · cargas verticais${vento ? ', vento e contraventamento' : ' e compressão simples'} · ${hoje}</p>
@@ -130,11 +144,12 @@
       ${(R.warn || []).length ? '<h3>Avisos do cálculo de cargas</h3>' + R.warn.map(w => `<p class="aviso">⚠ ${esc(w)}</p>`).join('') : ''}
 
       ${vento || ''}
-      <h2>${vento ? 5 : 4}. Escopo e limitações</h2>
-      <div class="lim"><p>Este memorial cobre <b>cargas verticais, ${D.ef > 0 ? 'flexo-compressão pela excentricidade das lajes' : 'compressão simples'}${vento ? ' e ações horizontais (vento e desaprumo) com as paredes de contraventamento' : ''}</b>. Não foram verificados:</p><ul>
+      ${vergas || ''}
+      <h2>${4 + (vento ? 1 : 0) + (vergas ? 1 : 0)}. Escopo e limitações</h2>
+      <div class="lim"><p>Este memorial cobre <b>cargas verticais, ${D.ef > 0 ? 'flexo-compressão pela excentricidade das lajes' : 'compressão simples'}${vento ? ', ações horizontais (vento e desaprumo) com as paredes de contraventamento' : ''}${vergas ? ' e vergas' : ''}</b>. Não foram verificados:</p><ul>
         ${vento ? '<li>torção do edifício e contribuição das abas e das vergas no contraventamento;</li><li>detalhamento final das armaduras dos trechos tracionados (o valor indicado é pré-dimensionamento);</li>' : '<li>ações horizontais (vento — ABNT NBR 6123 — e desaprumo) e estabilidade global;</li><li>cisalhamento e flexão das paredes de contraventamento;</li>'}
         ${D.ef > 0 ? '' : '<li>flexo-compressão por excentricidade das lajes apoiadas;</li>'}
-        <li>compressão localizada sob apoios concentrados, dimensionamento de vergas e contravergas;</li>
+        <li>compressão localizada sob apoios concentrados${vergas ? ' e contravergas' : ', dimensionamento de vergas e contravergas'};</li>
         <li>situação de incêndio e colapso progressivo.</li></ul>
         <p>Cabe ao engenheiro responsável verificar esses itens e conferir os resultados deste memorial.</p></div>
 

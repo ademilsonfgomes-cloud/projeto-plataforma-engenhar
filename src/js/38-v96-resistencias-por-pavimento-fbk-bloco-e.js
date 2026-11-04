@@ -144,13 +144,14 @@ window.notes96=notes;
 // ---------- janelinha
 const box=document.createElement('div');box.id='res96';box.className='noPrint';box.hidden=true;document.body.append(box);
 function render(){const s=S(),D=compute();
- box.innerHTML='<div class="h96"><b>Resistências por pavimento</b><span>arraste por aqui</span><button type="button" class="vto96" title="Vento (NBR 6123), desaprumo e paredes de contraventamento">🌬 Vento e contraventamento</button><button type="button" class="mem96" title="Memorial de cálculo para imprimir ou salvar em PDF">📄 Memorial de cálculo</button><button type="button" class="x96" title="Fechar">✕</button></div><div class="b96">'+tableHTML(D,false)+
+ box.innerHTML='<div class="h96"><b>Resistências por pavimento</b><span>arraste por aqui</span><button type="button" class="vrg96" title="Cálculo das vergas sobre as aberturas">🪟 Vergas</button><button type="button" class="vto96" title="Vento (NBR 6123), desaprumo e paredes de contraventamento">🌬 Vento e contraventamento</button><button type="button" class="mem96" title="Memorial de cálculo para imprimir ou salvar em PDF">📄 Memorial de cálculo</button><button type="button" class="x96" title="Fechar">✕</button></div><div class="b96">'+tableHTML(D,false)+
   '<details><summary>Parâmetros (norma e fornecedor)</summary><div class="p96">'+
   inp('gm','γm alvenaria',s.gm)+inp('kfk','fk / fpk',s.kfk)+inp('eta','Eficiência fpk / fbk',s.eta)+inp('fh','hef / h (1 = travada no topo e na base; 2 = topo livre)',s.fh)+inp('delta','δ = tef / t (enrijecedores; 1 = sem)',s.delta)+inp('exc','Excentricidade da laje e / t (0 = desligada; ex.: 0,167)',s.exc)+inp('min','fbk mínimo (MPa)',s.min)+inp('minItem','Item da NBR 15270-1:2023',s.minItem,'text')+inp('gMin','fgk mínimo (MPa)',s.gMin)+inp('gItem','Item da NBR 16868-1',s.gItem,'text')+
   '</div>'+(String(s.minItem||'').trim()?'':'<p class="w96">Informe o item da NBR 15270-1:2023 do fbk mínimo, para ele sair nas notas e na tabela.</p>')+'</details></div>';
  box.querySelector('.x96').onclick=()=>{box.hidden=true;};
  box.querySelector('.mem96').onclick=()=>window.memorial?.imprimir();
  box.querySelector('.vto96').onclick=()=>window.vento109?.open();
+ box.querySelector('.vrg96').onclick=()=>window.vergas109?.open();
  box.querySelectorAll('.o96').forEach(sel=>sel.onchange=()=>{const v=N(sel.value);if(v>0)s.ovr[sel.dataset.k]=v;else delete s.ovr[sel.dataset.k];after();});
  box.querySelectorAll('[data-p96]').forEach(i=>i.onchange=()=>{const k=i.dataset.p96;s[k]=i.type==='text'?i.value:N(String(i.value).replace(',','.'))||DEF[k];after();});
  drag();}
@@ -162,7 +163,7 @@ function open(){render();box.hidden=false;}
 window.res96={compute,open,S,notes,tableHTML,buyHTML,repAt,lvTag};
 const css=document.createElement('style');css.textContent=
  '#res96{position:fixed;top:120px;right:20px;width:min(980px,calc(100vw - 40px));max-height:calc(100vh - 160px);overflow:auto;z-index:63;background:#fff;border:1px solid #b9c6d3;border-radius:9px;box-shadow:0 10px 28px rgba(16,46,75,.22);font-size:12.5px}#res96[hidden]{display:none}'+
- '#res96 .h96{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#eef3f8;border-bottom:1px solid #d5dee7;cursor:move;user-select:none;position:sticky;top:0;z-index:1}#res96 .h96 span{color:#8a9aaa;font-size:11px;flex:1}#res96 .mem96,#res96 .vto96{font-size:11.5px;padding:3px 9px;margin:0}#res96 .x96{border:0;background:none;font-size:15px;cursor:pointer;margin:0;padding:0 4px;color:#40566b}'+
+ '#res96 .h96{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#eef3f8;border-bottom:1px solid #d5dee7;cursor:move;user-select:none;position:sticky;top:0;z-index:1}#res96 .h96 span{color:#8a9aaa;font-size:11px;flex:1}#res96 .mem96,#res96 .vto96,#res96 .vrg96{font-size:11.5px;padding:3px 9px;margin:0}#res96 .x96{border:0;background:none;font-size:15px;cursor:pointer;margin:0;padding:0 4px;color:#40566b}'+
  '#res96 .b96{padding:8px 10px}.t96{border-collapse:collapse;width:100%}.t96 th,.t96 td{border:1px solid #c9d4df;padding:3px 5px;text-align:center;vertical-align:middle}.t96 th{background:#eef3f8;font-weight:600}.t96 td:last-child{text-align:left}'+
  '.n96{font-size:11px;color:#40566b;margin:5px 0}.w96{color:#a33a00;font-size:11.5px}#res96 select.o96{font-size:11px;padding:0 2px;margin:0;width:auto}#res96 details{margin-top:6px}#res96 summary{cursor:pointer;font-weight:600;color:#174a78}'+
  '.p96{display:flex;flex-wrap:wrap;gap:6px 12px;margin:6px 0}.p96 label{display:flex;flex-direction:column;font-size:11px;color:#40566b}.p96 input{width:130px;margin:0}.tag96{margin:4px 0;color:#174a78}';

@@ -37,11 +37,13 @@ A ordem dos arquivos em `src/js/` importa: eles são executados na sequência
 numérica, como eram no arquivo original.
 
 Fórmulas de cálculo ficam em `src/calculo/`, separadas da tela, para poderem ser testadas:
-`alvenaria.js` (compressão simples, flexo-compressão, hef/tef, fbk, fgk) e `vento.js`
-(vento NBR 6123, desaprumo, rigidez e verificação das paredes de contraventamento).
+`alvenaria.js` (compressão simples, flexo-compressão, hef/tef, fbk, fgk), `vento.js`
+(vento NBR 6123, desaprumo, rigidez, verificação das paredes de contraventamento, γz e
+armadura dos trechos tracionados) e `vergas.js` (flexão e cisalhamento das vergas).
+O quadro das vergas está em `src/js/51-vergas.js` (botão "🪟 Vergas").
 O quadro de vento está em `src/js/50-vento-e-contraventamento.js` (botão
 "🌬 Vento e contraventamento" no quadro "Resistências por pavimento"). O memorial de cálculo está em
-`src/js/51-memorial-de-calculo.js` (botão no quadro "Resistências por pavimento").
+`src/js/52-memorial-de-calculo.js` (botão no quadro "Resistências por pavimento").
 
 ## Depois de alterar o código
 

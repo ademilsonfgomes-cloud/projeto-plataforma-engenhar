@@ -112,6 +112,18 @@ function diferencas(a, b, onde = '') {
   conferir(Math.abs(vt.gz - 1.000631) < 1e-5, `γz em X = ${vt.gz.toFixed(6)} (esperado 1,000631)`);
   conferir(vt.arm === 'P2.2:1x10 P4.1:1x10 P4.2:1x8 P5.1:1x10', `armadura nos trechos tracionados com V0 = 120 m/s: ${vt.arm}`);
 
+  // Vergas do exemplo (verga de 1 fiada, fk do pavimento = 1,4 MPa)
+  const vg = await page.evaluate(() => {
+    const A = window.vergas109.analisar(), v = A.niveis[0].vergas, p1 = v.find(x => x.nome === 'P1');
+    window.vergas109.S().on = 1; const mem = window.memorial.html(); window.vergas109.S().on = 0;
+    return { n: v.length, p1Md: p1.Md, p1alt: p1.alt?.sug ? p1.alt.sug.n + 'x' + p1.alt.sug.d : null, p2ok: v.find(x => x.nome === 'P2').ok,
+      mem: /\. Vergas<\/h2>/.test(mem) };
+  });
+  // P1 em P3: q = 0,784 + 0,392 + (11,1247 − 5,488) + 1,5614 = 8,374 kN/m ; l = 0,96 ; Md = 1,4·8,374·0,96²/8 = 1,3506
+  conferir(vg.n === 6 && Math.abs(vg.p1Md - 1.3506) < 1e-3, `vergas: ${vg.n} aberturas, P1 Md = ${vg.p1Md.toFixed(4)} kN·m`);
+  conferir(vg.p1alt === '1x10' && vg.p2ok === true, `P1 pede 2 fiadas (1 ϕ 10); P2 passa com 1 fiada`);
+  conferir(vg.mem, 'memorial inclui as vergas quando marcado');
+
   conferir(erros.length === 0, 'nenhum erro no navegador' + (erros.length ? ':\n    ' + erros.join('\n    ') : ''));
 
   await browser.close();
