@@ -73,6 +73,9 @@ function diferencas(a, b, onde = '') {
     conferir(dif.length === 0, 'modulação, cargas e fbk/fgk iguais à referência' + (dif.length ? ':\n    ' + dif.slice(0, 10).join('\n    ') : ''));
   }
 
+  const mem = await page.evaluate(() => window.memorial?.html() || '');
+  conferir(/Memorial de cálculo/.test(mem) && /P6 ★/.test(mem) && /Escopo e limitações/.test(mem), 'memorial de cálculo gerado (parede crítica P6)');
+
   conferir(erros.length === 0, 'nenhum erro no navegador' + (erros.length ? ':\n    ' + erros.join('\n    ') : ''));
 
   await browser.close();
