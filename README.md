@@ -36,14 +36,22 @@ dist/                   programa pronto para usar
 A ordem dos arquivos em `src/js/` importa: eles são executados na sequência
 numérica, como eram no arquivo original.
 
+Fórmulas de cálculo (compressão simples, fbk, fgk) ficam em `src/calculo/alvenaria.js`,
+separadas da tela, para poderem ser testadas. O memorial de cálculo está em
+`src/js/50-memorial-de-calculo.js` (botão no quadro "Resistências por pavimento").
+
 ## Depois de alterar o código
 
 ```bash
-python3 build.py              # monta dist/Modulacao_Alvenaria_Engenhar.html
-node tests/teste-basico.js    # abre no navegador e confere se tudo funciona
+python3 build.py                  # monta dist/Modulacao_Alvenaria_Engenhar.html
+node --test tests/calculo.test.js # fórmulas, com casos conferidos à mão
+node tests/teste-basico.js        # abre no navegador e confere modulação, cargas,
+                                  # fbk/fgk e memorial com a referência gravada
 ```
 
-O teste precisa do Node.js e do Playwright (`npm install playwright`).
+O teste no navegador precisa do Node.js e do Playwright (`npm install playwright`).
+Se uma mudança **deve** alterar os resultados (por exemplo, um cálculo novo), confira
+os números e grave a nova referência com `node tests/teste-basico.js --gravar-referencia`.
 
 ## Histórico
 
