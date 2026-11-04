@@ -379,8 +379,12 @@ const N=Number,E=()=>root.ModEngine;
 function detect(walls){const located=walls.map((w,i)=>{if(!w.line||w.line.length!==2)return null;const[a,b]=w.line,len=Math.hypot(b.x-a.x,b.y-a.y),k=N(w.planScale)||len/N(w.length);if(!(len>0&&k>0))return null;return {w,i,a,b,k,u:{x:(b.x-a.x)/len,y:(b.y-a.y)/len}};}).filter(Boolean),out=[];
 for(let i=0;i<located.length;i++)for(let j=i+1;j<located.length;j++){const a=located[i],b=located[j];if(N(a.w.page||1)!==N(b.w.page||1))continue;if(Math.abs(a.u.x*b.u.x+a.u.y*b.u.y)>.005)continue;
 const vx=b.a.x-a.a.x,vy=b.a.y-a.a.y,cross=a.u.x*b.u.y-a.u.y*b.u.x,ta=(vx*b.u.y-vy*b.u.x)/cross/a.k,tb=(vx*a.u.y-vy*a.u.x)/cross/b.k;
-if(ta<-1.1||tb<-1.1||ta>N(a.w.length)+1.1||tb>N(b.w.length)+1.1)continue;
-const end=(t,L)=>Math.abs(t)<=1.1?0:Math.abs(t-L)<=1.1?1:-1,ae=end(ta,N(a.w.length)),be=end(tb,N(b.w.length));
+// V109 — a ponta que fica DENTRO do corpo da outra parede (até meia espessura + 0,5 cm) também é encontro.
+// Antes só valia até 1,1 cm: uma parede desenhada 3 cm curta ou longa (comum em planta importada)
+// ficava sem encontro, os blocos das duas se sobrepunham e a amarração dos cantos se perdia (vãos nas fiadas).
+const tolA=Math.max(1.1,N(b.w.width)/2+.5),tolB=Math.max(1.1,N(a.w.width)/2+.5);
+if(ta<-tolA||tb<-tolB||ta>N(a.w.length)+tolA||tb>N(b.w.length)+tolB)continue;
+const end=(t,L,tol)=>Math.abs(t)<=tol?0:Math.abs(t-L)<=tol?1:-1,ae=end(ta,N(a.w.length),tolA),be=end(tb,N(b.w.length),tolB);
 out.push({a,b,ta:ae===0?0:ae===1?N(a.w.length):ta,tb:be===0?0:be===1?N(b.w.length):tb,ae,be,type:ae>=0&&be>=0?'L':ae>=0||be>=0?'T':'X',id:'Parede '+(a.i+1)+' × Parede '+(b.i+1)});
 }return out;}
 function candidates(L,blocks,j,min,max,flex){return root.V7Rules.candidates(L,blocks,j,flex?min:j,flex?max:j);}

@@ -736,8 +736,12 @@ const N=Number,E=()=>root.ModEngine;
 function detect(walls){const located=walls.map((w,i)=>{if(!w.line||w.line.length!==2)return null;const[a,b]=w.line,len=Math.hypot(b.x-a.x,b.y-a.y),k=N(w.planScale)||len/N(w.length);if(!(len>0&&k>0))return null;return {w,i,a,b,k,u:{x:(b.x-a.x)/len,y:(b.y-a.y)/len}};}).filter(Boolean),out=[];
 for(let i=0;i<located.length;i++)for(let j=i+1;j<located.length;j++){const a=located[i],b=located[j];if(N(a.w.page||1)!==N(b.w.page||1))continue;if(Math.abs(a.u.x*b.u.x+a.u.y*b.u.y)>.005)continue;
 const vx=b.a.x-a.a.x,vy=b.a.y-a.a.y,cross=a.u.x*b.u.y-a.u.y*b.u.x,ta=(vx*b.u.y-vy*b.u.x)/cross/a.k,tb=(vx*a.u.y-vy*a.u.x)/cross/b.k;
-if(ta<-1.1||tb<-1.1||ta>N(a.w.length)+1.1||tb>N(b.w.length)+1.1)continue;
-const end=(t,L)=>Math.abs(t)<=1.1?0:Math.abs(t-L)<=1.1?1:-1,ae=end(ta,N(a.w.length)),be=end(tb,N(b.w.length));
+// V109 — a ponta que fica DENTRO do corpo da outra parede (até meia espessura + 0,5 cm) também é encontro.
+// Antes só valia até 1,1 cm: uma parede desenhada 3 cm curta ou longa (comum em planta importada)
+// ficava sem encontro, os blocos das duas se sobrepunham e a amarração dos cantos se perdia (vãos nas fiadas).
+const tolA=Math.max(1.1,N(b.w.width)/2+.5),tolB=Math.max(1.1,N(a.w.width)/2+.5);
+if(ta<-tolA||tb<-tolB||ta>N(a.w.length)+tolA||tb>N(b.w.length)+tolB)continue;
+const end=(t,L,tol)=>Math.abs(t)<=tol?0:Math.abs(t-L)<=tol?1:-1,ae=end(ta,N(a.w.length),tolA),be=end(tb,N(b.w.length),tolB);
 out.push({a,b,ta:ae===0?0:ae===1?N(a.w.length):ta,tb:be===0?0:be===1?N(b.w.length):tb,ae,be,type:ae>=0&&be>=0?'L':ae>=0||be>=0?'T':'X',id:'Parede '+(a.i+1)+' × Parede '+(b.i+1)});
 }return out;}
 function candidates(L,blocks,j,min,max,flex){return root.V7Rules.candidates(L,blocks,j,flex?min:j,flex?max:j);}
@@ -5639,6 +5643,89 @@ for(const id of ['newProject','example']){const b=$(id);if(!b)continue;const old
 const st=document.createElement('style');st.textContent=`.dg84{background:#eef6ff;border:1px solid #9fb6cf;border-radius:8px;padding:8px 12px;margin:6px 0;font-size:13.5px}.dg84 .unc84{margin:6px 0;padding:6px 8px;background:#fff7e6;border:1px solid #f2c86b;border-radius:6px}.dg84 .unc84 button{margin-left:6px}.dg84 ul{margin:6px 0 4px 18px;padding:0;font-size:12.5px}.ind84{background:#fff7e6;border-left:3px solid #f2b705;padding:4px 8px}`;document.head.append(st);
 setTimeout(syncUI,0);
 })();
+</script><script>// V109 — ENCAIXE DAS PONTAS antes de gerar a modulação.
+// Planta importada costuma ter parede que termina alguns centímetros antes (ou depois) do eixo da
+// parede que ela encontra. Quando a ponta fica DENTRO do corpo da outra parede (até meia espessura
+// + 0,5 cm), ela é levada exatamente até o eixo da outra — como o encaixe de um programa de CAD.
+// Sem isso, o encontro não era reconhecido, os blocos das duas se sobrepunham e a amarração dos
+// cantos se perdia (vãos nas fiadas). Ajuste de poucos centímetros, avisado na linha de comando.
+(function () {
+  'use strict';
+  const N = Number;
+  function encaixar(walls) {
+    const L = walls.map((w, i) => {
+      if (!w?.line || w.line.length !== 2) return null;
+      const [a, b] = w.line, len = Math.hypot(b.x - a.x, b.y - a.y), k = N(w.planScale) || len / N(w.length);
+      if (!(len > 0 && k > 0)) return null;
+      return { w, i, k, u: { x: (b.x - a.x) / len, y: (b.y - a.y) / len } };
+    });
+    const log = [], perto = [];
+    for (const B of L) {
+      if (!B) continue;
+      for (const ponta of [0, 1]) {
+        let melhor = null;
+        for (const A of L) {
+          if (!A || A === B || N(A.w.page || 1) !== N(B.w.page || 1)) continue;
+          if (Math.abs(A.u.x * B.u.x + A.u.y * B.u.y) > 0.005) continue;       // só encontros em ângulo reto
+          if (Math.abs(A.k / B.k - 1) > 0.005) continue;
+          const E = B.w.line[ponta], A0 = A.w.line[0];
+          // distância da ponta ao eixo de A (cm) e posição ao longo de A (cm)
+          const dx = E.x - A0.x, dy = E.y - A0.y;
+          const d = (dx * -A.u.y + dy * A.u.x) / A.k, t = (dx * A.u.x + dy * A.u.y) / A.k;
+          const tol = N(A.w.width) / 2 + 0.5;
+          if (Math.abs(d) <= 0.05) continue;                                    // já encaixada
+          if (Math.abs(d) > tol) { if (Math.abs(d) <= tol + 15 && t >= -tol && t <= N(A.w.length) + tol) perto.push({ B: B.i, A: A.i, d: Math.abs(d) - N(A.w.width) / 2 }); continue; }  // longe: só avisa
+          if (t < -tol || t > N(A.w.length) + tol) continue;                    // fora do comprimento de A
+          // a ponta precisa ser mesmo a ponta voltada para A (a parede não atravessa A)
+          const outra = B.w.line[1 - ponta], dOutra = ((outra.x - A0.x) * -A.u.y + (outra.y - A0.y) * A.u.x) / A.k;
+          if (Math.sign(dOutra) === Math.sign(d) && Math.abs(dOutra) < Math.abs(d)) continue;
+          if (Math.sign(dOutra) !== Math.sign(d) && Math.abs(dOutra) <= tol) continue;
+          if (!melhor || Math.abs(d) < Math.abs(melhor.d)) melhor = { A, d };
+        }
+        if (!melhor) continue;
+        // move a ponta ao longo da própria parede até o eixo de A
+        const { A, d } = melhor, E = B.w.line[ponta];
+        const sentido = (B.u.x * -A.u.y + B.u.y * A.u.x);                     // quanto a parede B anda na direção normal de A
+        const s = -d / sentido;                                               // cm ao longo de B
+        const novo = { x: E.x + B.u.x * s * B.k, y: E.y + B.u.y * s * B.k };
+        const antes = N(B.w.length);
+        B.w.line = ponta === 0 ? [novo, { ...B.w.line[1] }] : [{ ...B.w.line[0] }, novo];
+        const comp = Math.round(Math.hypot(B.w.line[1].x - B.w.line[0].x, B.w.line[1].y - B.w.line[0].y) / B.k * 10) / 10;
+        const delta = Math.round((comp - antes) * 10) / 10;
+        B.w.length = comp;
+        if (ponta === 0 && delta) (B.w.openings || []).forEach(o => { o.start = Math.max(0, Math.round((N(o.start) + delta) * 10) / 10); });
+        delete B.w.locked76;
+        log.push('Parede ' + (B.i + 1) + ': ponta ' + (delta >= 0 ? 'estendida ' : 'recuada ') + Math.abs(delta).toLocaleString('pt-BR') + ' cm até o eixo da Parede ' + (A.i + 1));
+      }
+    }
+    // pontas que ficaram perto, mas fora do corpo da outra parede (podem ser intencionais): só avisar
+    const ja = new Set();
+    log.aviso = perto.filter(p => { const k = p.B + '|' + p.A; if (ja.has(k)) return false; ja.add(k); return true; })
+      .map(p => 'Parede ' + (p.B + 1) + ' termina a ' + (Math.round(p.d * 10) / 10).toLocaleString('pt-BR') + ' cm da face da Parede ' + (p.A + 1) + ' — confira se deveria encostar');
+    return log;
+  }
+  window.encaixe109 = encaixar;
+  try {
+    const gp = generationPayload;
+    generationPayload = function (...a) {
+      try {
+        const log = encaixar(state.walls);
+        // aviso fixo na linha de comando até a próxima geração (a tela estilo CAD cria #enc109)
+        // a geração chama esta preparação mais de uma vez: dentro de alguns segundos, soma ao registro
+        const agora = Date.now(), ant = state.enc109;
+        const junto = ant && agora - (ant.t || 0) < 8000;
+        state.enc109 = { t: agora, ajustes: [...(junto ? ant.ajustes : []), ...log], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
+        try { window.dispatchEvent(new Event('encaixe109')); } catch {}
+        if (log.length || log.aviso?.length) {
+          const t = (log.length ? 'Encaixe das pontas antes de gerar: ' + log.join(' · ') + '. ' : '') + (log.aviso?.length ? '⚠ ' + log.aviso.join(' · ') + '.' : '');
+          state.log109 = log;
+          setTimeout(() => { try { if (typeof msg === 'function') msg(t); else { const m = document.getElementById('sMsg85'); if (m) m.textContent = t; } } catch {} }, 50);
+        }
+      } catch (e) { console.error('V109 encaixe', e); }
+      return gp.apply(this, a);
+    };
+  } catch {}
+})();
 </script><script>// V85.3 — tamanho dos textos em mm no papel (altura da letra maiúscula), igual em qualquer escala, no padrão TQS (“cm plotado”) / CYPE (mm).
 // Vale para as pranchas, o PDF e o DXF (com uma layer por tipo de texto). Nenhum cálculo muda.
 (function(){
@@ -9477,6 +9564,13 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
   if (st) {
     st.insertAdjacentHTML('afterbegin', '<span class="cmdL109">Comando ▸</span>');
     const hud = E('span', 'hudMsg109'); const sM = $('sMsg85'); st.insertBefore(hud, sM || null);
+    // encaixe das pontas (V109): fica visível até a próxima geração
+    const enc = E('span', 'enc109'); st.insertBefore(enc, sM || null);
+    const mostrarEnc = () => { const e = state.enc109 || {}, a = e.ajustes || [], w = e.avisos || [];
+      enc.textContent = a.length || w.length ? (a.length ? '⇥ ' + a.length + ' ponta(s) encaixada(s)' : '') + (a.length && w.length ? ' · ' : '') + (w.length ? '⚠ ' + w.length + ' parede(s) perto sem encostar' : '') : '';
+      enc.title = [...a, ...w].join('\n'); enc.classList.toggle('w109', !!w.length); };
+    window.addEventListener('encaixe109', mostrarEnc); mostrarEnc();
+    enc.onclick = () => { const e = state.enc109 || {}; const l = [...(e.ajustes || []), ...(e.avisos || [])]; if (l.length) alert('Encaixe das pontas na última geração:\n\n' + l.join('\n')); };
     const tg = E('div', null, 'tg109'); st.append(tg);
     const copiar = () => { const h = document.querySelector('#hud88 .in88'); hud.textContent = h ? [...h.children].map(x => x.textContent.trim()).filter(Boolean).join(' · ') || h.textContent.trim() : ''; hud.title = hud.textContent; };
     const ligarHud = () => { const h = document.querySelector('#hud88 .in88'); if (!h) return false; new MutationObserver(copiar).observe(h, { childList: true, subtree: true, characterData: true }); copiar(); return true; };
@@ -9561,6 +9655,7 @@ body.cad109 main{left:38px!important;right:var(--sw85)!important;top:var(--t109)
 #stat85 .cmdL109{color:#1f6fc5;font-weight:700}#stat85 b{color:#102e4b!important}#stat85 #sT85{text-transform:uppercase}
 #stat85>span{flex:none}#hudMsg109{color:#40566b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 0!important}
 #stat85 #sMsg85{margin-left:0!important;color:#a35a00!important;max-width:34vw;flex:0 1 auto!important;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#enc109{flex:none;color:#1d8a4c;cursor:pointer;font-weight:700}#enc109.w109{color:#c4422b}#enc109:empty{display:none}
 #stat85 .tg109{display:flex;gap:3px;margin-left:auto;flex:none}#stat85 .tg109 button{height:17px;padding:0 7px;margin:0;border:0;border-radius:3px;background:#e6ecf2;color:#7b8ea3;font:700 10px Arial;letter-spacing:.4px;cursor:pointer;box-shadow:none}
 #stat85 .tg109 button.on{background:#2a7fd4;color:#fff}#stat85 .tg109 .fd109{background:#fff;border:1px solid #9fb6cc;color:#174a78;margin-left:4px}
 #hud88{display:none!important}

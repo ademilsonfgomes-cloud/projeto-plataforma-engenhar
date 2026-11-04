@@ -61,6 +61,7 @@ node --test tests/*.test.js    # fórmulas, com casos conferidos à mão
 node tests/teste-basico.js        # abre no navegador e confere modulação, cargas,
                                   # fbk/fgk e memorial com a referência gravada
 node tests/teste-tela.js          # tela: barras, arrastar, menus, linha de comando
+node tests/teste-encaixe.js       # paredes fora do eixo no encontro: nenhum vão nas fiadas
 ```
 
 O teste no navegador precisa do Node.js e do Playwright (`npm install playwright`).

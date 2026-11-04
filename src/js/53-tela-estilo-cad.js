@@ -334,6 +334,13 @@
   if (st) {
     st.insertAdjacentHTML('afterbegin', '<span class="cmdL109">Comando ▸</span>');
     const hud = E('span', 'hudMsg109'); const sM = $('sMsg85'); st.insertBefore(hud, sM || null);
+    // encaixe das pontas (V109): fica visível até a próxima geração
+    const enc = E('span', 'enc109'); st.insertBefore(enc, sM || null);
+    const mostrarEnc = () => { const e = state.enc109 || {}, a = e.ajustes || [], w = e.avisos || [];
+      enc.textContent = a.length || w.length ? (a.length ? '⇥ ' + a.length + ' ponta(s) encaixada(s)' : '') + (a.length && w.length ? ' · ' : '') + (w.length ? '⚠ ' + w.length + ' parede(s) perto sem encostar' : '') : '';
+      enc.title = [...a, ...w].join('\n'); enc.classList.toggle('w109', !!w.length); };
+    window.addEventListener('encaixe109', mostrarEnc); mostrarEnc();
+    enc.onclick = () => { const e = state.enc109 || {}; const l = [...(e.ajustes || []), ...(e.avisos || [])]; if (l.length) alert('Encaixe das pontas na última geração:\n\n' + l.join('\n')); };
     const tg = E('div', null, 'tg109'); st.append(tg);
     const copiar = () => { const h = document.querySelector('#hud88 .in88'); hud.textContent = h ? [...h.children].map(x => x.textContent.trim()).filter(Boolean).join(' · ') || h.textContent.trim() : ''; hud.title = hud.textContent; };
     const ligarHud = () => { const h = document.querySelector('#hud88 .in88'); if (!h) return false; new MutationObserver(copiar).observe(h, { childList: true, subtree: true, characterData: true }); copiar(); return true; };
@@ -418,6 +425,7 @@ body.cad109 main{left:38px!important;right:var(--sw85)!important;top:var(--t109)
 #stat85 .cmdL109{color:#1f6fc5;font-weight:700}#stat85 b{color:#102e4b!important}#stat85 #sT85{text-transform:uppercase}
 #stat85>span{flex:none}#hudMsg109{color:#40566b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 0!important}
 #stat85 #sMsg85{margin-left:0!important;color:#a35a00!important;max-width:34vw;flex:0 1 auto!important;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#enc109{flex:none;color:#1d8a4c;cursor:pointer;font-weight:700}#enc109.w109{color:#c4422b}#enc109:empty{display:none}
 #stat85 .tg109{display:flex;gap:3px;margin-left:auto;flex:none}#stat85 .tg109 button{height:17px;padding:0 7px;margin:0;border:0;border-radius:3px;background:#e6ecf2;color:#7b8ea3;font:700 10px Arial;letter-spacing:.4px;cursor:pointer;box-shadow:none}
 #stat85 .tg109 button.on{background:#2a7fd4;color:#fff}#stat85 .tg109 .fd109{background:#fff;border:1px solid #9fb6cc;color:#174a78;margin-left:4px}
 #hud88{display:none!important}
