@@ -1,0 +1,83 @@
+// V109 — ENCAIXE DAS PONTAS antes de gerar a modulação.
+// Planta importada costuma ter parede que termina alguns centímetros antes (ou depois) do eixo da
+// parede que ela encontra. Quando a ponta fica DENTRO do corpo da outra parede (até meia espessura
+// + 0,5 cm), ela é levada exatamente até o eixo da outra — como o encaixe de um programa de CAD.
+// Sem isso, o encontro não era reconhecido, os blocos das duas se sobrepunham e a amarração dos
+// cantos se perdia (vãos nas fiadas). Ajuste de poucos centímetros, avisado na linha de comando.
+(function () {
+  'use strict';
+  const N = Number;
+  function encaixar(walls) {
+    const L = walls.map((w, i) => {
+      if (!w?.line || w.line.length !== 2) return null;
+      const [a, b] = w.line, len = Math.hypot(b.x - a.x, b.y - a.y), k = N(w.planScale) || len / N(w.length);
+      if (!(len > 0 && k > 0)) return null;
+      return { w, i, k, u: { x: (b.x - a.x) / len, y: (b.y - a.y) / len } };
+    });
+    const log = [], perto = [];
+    for (const B of L) {
+      if (!B) continue;
+      for (const ponta of [0, 1]) {
+        let melhor = null;
+        for (const A of L) {
+          if (!A || A === B || N(A.w.page || 1) !== N(B.w.page || 1)) continue;
+          if (Math.abs(A.u.x * B.u.x + A.u.y * B.u.y) > 0.005) continue;       // só encontros em ângulo reto
+          if (Math.abs(A.k / B.k - 1) > 0.005) continue;
+          const E = B.w.line[ponta], A0 = A.w.line[0];
+          // distância da ponta ao eixo de A (cm) e posição ao longo de A (cm)
+          const dx = E.x - A0.x, dy = E.y - A0.y;
+          const d = (dx * -A.u.y + dy * A.u.x) / A.k, t = (dx * A.u.x + dy * A.u.y) / A.k;
+          const tol = N(A.w.width) / 2 + 0.5;
+          if (Math.abs(d) <= 0.05) continue;                                    // já encaixada
+          if (Math.abs(d) > tol) { if (Math.abs(d) <= tol + 15 && t >= -tol && t <= N(A.w.length) + tol) perto.push({ B: B.i, A: A.i, d: Math.abs(d) - N(A.w.width) / 2 }); continue; }  // longe: só avisa
+          if (t < -tol || t > N(A.w.length) + tol) continue;                    // fora do comprimento de A
+          // a ponta precisa ser mesmo a ponta voltada para A (a parede não atravessa A)
+          const outra = B.w.line[1 - ponta], dOutra = ((outra.x - A0.x) * -A.u.y + (outra.y - A0.y) * A.u.x) / A.k;
+          if (Math.sign(dOutra) === Math.sign(d) && Math.abs(dOutra) < Math.abs(d)) continue;
+          if (Math.sign(dOutra) !== Math.sign(d) && Math.abs(dOutra) <= tol) continue;
+          if (!melhor || Math.abs(d) < Math.abs(melhor.d)) melhor = { A, d };
+        }
+        if (!melhor) continue;
+        // move a ponta ao longo da própria parede até o eixo de A
+        const { A, d } = melhor, E = B.w.line[ponta];
+        const sentido = (B.u.x * -A.u.y + B.u.y * A.u.x);                     // quanto a parede B anda na direção normal de A
+        const s = -d / sentido;                                               // cm ao longo de B
+        const novo = { x: E.x + B.u.x * s * B.k, y: E.y + B.u.y * s * B.k };
+        const antes = N(B.w.length);
+        B.w.line = ponta === 0 ? [novo, { ...B.w.line[1] }] : [{ ...B.w.line[0] }, novo];
+        const comp = Math.round(Math.hypot(B.w.line[1].x - B.w.line[0].x, B.w.line[1].y - B.w.line[0].y) / B.k * 10) / 10;
+        const delta = Math.round((comp - antes) * 10) / 10;
+        B.w.length = comp;
+        if (ponta === 0 && delta) (B.w.openings || []).forEach(o => { o.start = Math.max(0, Math.round((N(o.start) + delta) * 10) / 10); });
+        delete B.w.locked76;
+        log.push('Parede ' + (B.i + 1) + ': ponta ' + (delta >= 0 ? 'estendida ' : 'recuada ') + Math.abs(delta).toLocaleString('pt-BR') + ' cm até o eixo da Parede ' + (A.i + 1));
+      }
+    }
+    // pontas que ficaram perto, mas fora do corpo da outra parede (podem ser intencionais): só avisar
+    const ja = new Set();
+    log.aviso = perto.filter(p => { const k = p.B + '|' + p.A; if (ja.has(k)) return false; ja.add(k); return true; })
+      .map(p => 'Parede ' + (p.B + 1) + ' termina a ' + (Math.round(p.d * 10) / 10).toLocaleString('pt-BR') + ' cm da face da Parede ' + (p.A + 1) + ' — confira se deveria encostar');
+    return log;
+  }
+  window.encaixe109 = encaixar;
+  try {
+    const gp = generationPayload;
+    generationPayload = function (...a) {
+      try {
+        const log = encaixar(state.walls);
+        // aviso fixo na linha de comando até a próxima geração (a tela estilo CAD cria #enc109)
+        // a geração chama esta preparação mais de uma vez: dentro de alguns segundos, soma ao registro
+        const agora = Date.now(), ant = state.enc109;
+        const junto = ant && agora - (ant.t || 0) < 8000;
+        state.enc109 = { t: agora, ajustes: [...(junto ? ant.ajustes : []), ...log], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
+        try { window.dispatchEvent(new Event('encaixe109')); } catch {}
+        if (log.length || log.aviso?.length) {
+          const t = (log.length ? 'Encaixe das pontas antes de gerar: ' + log.join(' · ') + '. ' : '') + (log.aviso?.length ? '⚠ ' + log.aviso.join(' · ') + '.' : '');
+          state.log109 = log;
+          setTimeout(() => { try { if (typeof msg === 'function') msg(t); else { const m = document.getElementById('sMsg85'); if (m) m.textContent = t; } } catch {} }, 50);
+        }
+      } catch (e) { console.error('V109 encaixe', e); }
+      return gp.apply(this, a);
+    };
+  } catch {}
+})();
