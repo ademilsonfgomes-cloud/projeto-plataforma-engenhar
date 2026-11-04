@@ -5,7 +5,7 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const fs = require('fs');
-const ARQ = path.resolve(__dirname, '..', 'dist', 'Modulacao_Alvenaria_Engenhar.html');
+const ARQ = process.env.ARQ || path.resolve(__dirname, '..', 'dist', 'Modulacao_Alvenaria_Engenhar.html');
 const REF = path.resolve(__dirname, 'referencia', 'exemplo-didatico.json');
 const GRAVAR = process.argv.includes('--gravar-referencia');
 const TOL = 1e-6;
@@ -54,7 +54,11 @@ function diferencas(a, b, onde = '') {
   const calc = await page.evaluate(() => {
     const R = window.loads77.compute({});
     const D = window.res96.compute();
+    // modulação: todas as peças de todas as fiadas de todas as paredes
+    const modulacao = (state.results || []).map(m => (m.rows || []).map(r =>
+      (r.pieces || []).map(p => [p.code, +(+p.x).toFixed(3), +(+p.length).toFixed(3)].join(' ')).join(' | ')));
     return {
+      modulacao,
       cargas: R.rows.map(lv => lv.map(r => ({ parede: r.label, gk: r.g, qk: r.q, t: r.x.t, H: r.x.H }))),
       pavimentos: D.levels.map(L => ({ nome: L.name, fbkCalculado: L.calc, fbk: L.fbk, fgk: L.fgk, motivo: L.why,
         critica: L.crit && { parede: L.crit.label, nd: L.crit.pd, lambda: L.crit.lam, R: L.crit.R, sigma: L.crit.sig, fk: L.crit.fk, fpk: L.crit.fpk, fbk: L.crit.fbk } })),
@@ -66,7 +70,7 @@ function diferencas(a, b, onde = '') {
     console.log('  referência gravada em ' + path.relative(process.cwd(), REF));
   } else {
     const dif = diferencas(calc, JSON.parse(fs.readFileSync(REF, 'utf8')));
-    conferir(dif.length === 0, 'cargas e fbk/fgk iguais à referência' + (dif.length ? ':\n    ' + dif.slice(0, 10).join('\n    ') : ''));
+    conferir(dif.length === 0, 'modulação, cargas e fbk/fgk iguais à referência' + (dif.length ? ':\n    ' + dif.slice(0, 10).join('\n    ') : ''));
   }
 
   conferir(erros.length === 0, 'nenhum erro no navegador' + (erros.length ? ':\n    ' + erros.join('\n    ') : ''));

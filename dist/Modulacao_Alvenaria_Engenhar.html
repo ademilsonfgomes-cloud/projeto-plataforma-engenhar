@@ -186,9 +186,13 @@ function dp(from,to,neighs,ctx,stage){
   const small=e=>!e.fill&&e.len<10-EPS,macro=[];for(const e of edges){if(!small(e))continue;for(let r=1;r<=3;r++)macro.push({s:e.s*r,cost:e.cost*r,run:r,e});}
   const big=edges.filter(e=>!small(e)),S=2,idx=(k,st)=>k*S+st;
   const cost=new Float64Array((n+1)*S).fill(Infinity),back=new Int32Array((n+1)*S).fill(-1),via=new Int32Array((n+1)*S).fill(-1);cost[idx(0,0)]=base;
-  for(let k=0;k<n;k++)for(let st=0;st<S;st++){const c0=cost[idx(k,st)];if(c0===Infinity)continue;
-   for(let e=0;e<big.length;e++){const k2=k+big[e].s;if(k2>n)continue;const c=c0+big[e].cost+(k2<n?pen[k2]:0),t=idx(k2,0);if(c<cost[t]-1e-9){cost[t]=c;back[t]=idx(k,st);via[t]=e;}}
-   if(st===0)for(let e=0;e<macro.length;e++){const m=macro[e],k2=k+m.s;if(k2>n)continue;let c=c0+m.cost;for(let r=1;r<=m.run;r++){const kk=k+m.e.s*r;if(kk<n)c+=pen[kk];}const t=idx(k2,1);if(c<cost[t]-1e-9){cost[t]=c;back[t]=idx(k,st);via[t]=big.length+e;}}}
+  // Laço principal com vetores numéricos (mais rápido). A ordem das operações é a mesma
+  // de antes, para o resultado ser idêntico — inclusive nos empates.
+  const nb=big.length,bS=new Int32Array(nb),bC=new Float64Array(nb);for(let e=0;e<nb;e++){bS[e]=big[e].s;bC[e]=big[e].cost;}
+  const nm=macro.length,mS=new Int32Array(nm),mC=new Float64Array(nm),mR=new Int32Array(nm),mE=new Int32Array(nm);for(let e=0;e<nm;e++){mS[e]=macro[e].s;mC[e]=macro[e].cost;mR[e]=macro[e].run;mE[e]=macro[e].e.s;}
+  for(let k=0;k<n;k++)for(let st=0;st<S;st++){const from=k*S+st,c0=cost[from];if(c0===Infinity)continue;
+   for(let e=0;e<nb;e++){const k2=k+bS[e];if(k2>n)continue;const c=c0+bC[e]+(k2<n?pen[k2]:0),t=k2*S;if(c<cost[t]-1e-9){cost[t]=c;back[t]=from;via[t]=e;}}
+   if(st===0)for(let e=0;e<nm;e++){const k2=k+mS[e];if(k2>n)continue;let c=c0+mC[e];const es=mE[e],run=mR[e];for(let r=1;r<=run;r++){const kk=k+es*r;if(kk<n)c+=pen[kk];}const t=k2*S+1;if(c<cost[t]-1e-9){cost[t]=c;back[t]=from;via[t]=nb+e;}}}
   const endState=cost[idx(n,0)]<=cost[idx(n,1)]?0:1;if(cost[idx(n,endState)]===Infinity)continue;
   const seq=[];let t=idx(n,endState);while(t!==idx(0,0)){const v=via[t];if(v<big.length)seq.push(big[v]);else{const m=macro[v-big.length];for(let r=0;r<m.run;r++)seq.push(m.e);}t=back[t];}seq.reverse();
   results.push({cost:cost[idx(n,endState)],seq});}
