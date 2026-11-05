@@ -562,13 +562,9 @@ function dp(from,to,neighs,ctx,stage){
  for(const[jj,base]of joints){
   const edges=ctx.blocks.map(x=>({s:Math.round((x.L+jj)*10),cost:x.cost+(base?Math.abs(jj-ctx.j)*80:0),x,len:x.L,joint:jj}));
   if(stage.cut&&ctx.cut>0&&ctx.main){const m=ctx.main;for(let c=1;c<=Math.round(ctx.cut*10);c++){const len=Math.round((m.L-c/10)*10)/10;if(len>=Math.max(29,m.L*.7))edges.push({s:Math.round((len+jj)*10),cost:450+c,x:m,len,joint:jj,cut:true});}}
-  // V115 — boneca de até 5 cm: um único enchimento grauteado (filete), no máximo 5 cm
-  if(stage.fill&&ctx.fillMax>0){for(let c=1;c<=50;c++)edges.push({s:c,cost:1500,x:null,len:c/10,joint:0,fill:true});}
-  // V115 — boneca acima de 5 cm: bloco cortado (5,1 cm em diante), nunca enchimento. Só nas etapas de emergência.
-  // (a regra vale para o tamanho da boneca: peça + junta acima de 5 cm; ex.: boneca de 6 cm = peça de 5 cm + junta de 1 cm)
-  if(stage.fill&&ctx.main){const m=ctx.main;for(let c=Math.max(10,Math.round((5.1-jj)*10));c<Math.round(Math.min(29,m.L*.7)*10);c++){const len=c/10;edges.push({s:Math.round((len+jj)*10),cost:900,x:m,len,joint:jj,cut:true,boneca:true});}}
+  if(stage.fill&&ctx.fillMax>0){for(let c=1;c<=Math.round(ctx.fillMax*10);c++)edges.push({s:c,cost:1500,x:null,len:c/10,joint:0,fill:true});}
   // Estado 0: livre; estado 1: acabou de usar peça pequena (< 10 cm). Peças pequenas entram em grupos de 1 a 3, nunca seguidos de outro grupo.
-  const small=e=>e.fill||e.len<10-EPS,macro=[];for(const e of edges){if(!small(e))continue;for(let r=1;r<=(e.fill?1:3);r++)macro.push({s:e.s*r,cost:e.cost*r,run:r,e});}
+  const small=e=>!e.fill&&e.len<10-EPS,macro=[];for(const e of edges){if(!small(e))continue;for(let r=1;r<=3;r++)macro.push({s:e.s*r,cost:e.cost*r,run:r,e});}
   const big=edges.filter(e=>!small(e)),S=2,idx=(k,st)=>k*S+st;
   const cost=new Float64Array((n+1)*S).fill(Infinity),back=new Int32Array((n+1)*S).fill(-1),via=new Int32Array((n+1)*S).fill(-1);cost[idx(0,0)]=base;
   // Laço principal com vetores numéricos (mais rápido). A ordem das operações é a mesma
@@ -584,7 +580,7 @@ function dp(from,to,neighs,ctx,stage){
  if(!results.length)return null;return results.sort((a,b)=>a.cost-b.cost)[0];}
 
 function piecesOf(res,from,y,ctx){let x=from;return res.seq.map(e=>{let p;if(e.fill)p={code:'FILETE',x,y,length:e.len,height:ctx.h,width:ctx.width,joint:0,fill:true};
- else{const b=e.x.b;p={code:e.cut?(b.code+'_C'+e.len.toFixed(2)):b.code,x,y,length:e.len,height:ctx.h,width:ctx.width,joint:e.joint,fill:false};if(e.cut)Object.assign(p,{cut:true,sourceCode:b.code,sourceLength:N(b.length),cutAmount:Math.round((N(b.length)-e.len)*10)/10});if(e.boneca)p.boneca109=true;}
+ else{const b=e.x.b;p={code:e.cut?(b.code+'_C'+e.len.toFixed(2)):b.code,x,y,length:e.len,height:ctx.h,width:ctx.width,joint:e.joint,fill:false};if(e.cut)Object.assign(p,{cut:true,sourceCode:b.code,sourceLength:N(b.length),cutAmount:Math.round((N(b.length)-e.len)*10)/10});}
  x=Math.round((x+e.len+(e.fill?0:e.joint))*10000)/10000;return p;});}
 
 function fillSegment(from,to,neighs,ctx){
@@ -5650,7 +5646,7 @@ const uid=()=>'wall-'+Date.now().toString(36)+'-'+Math.random().toString(36).sli
 let boost84=false;
 try{const gp=generationPayload;generationPayload=function(...a){const p=gp.apply(this,a);try{const mp=window.__noMin84?0:(N(CFG().minPiece)||0);
  if(mp>0)p.blocks=p.blocks.filter(b=>!(b.type!=='Canaleta'&&N(b.length)<mp));
- if(mp>0&&p.opts?.stableModels){const sm=Array.isArray(p.opts.stableModels)?p.opts.stableModels.slice():{...p.opts.stableModels};let cut=0;for(const k of Object.keys(sm)){const m=sm[k];if(m&&(m.rows||[]).some(r=>(r.pieces||[]).some(q=>!q.fill&&!q.channel&&!q.gap&&!q.boneca109&&N(q.length)<mp))){if(Array.isArray(sm))sm[k]=undefined;else delete sm[k];cut++;}}if(cut)p.opts={...p.opts,stableModels:sm};}
+ if(mp>0&&p.opts?.stableModels){const sm=Array.isArray(p.opts.stableModels)?p.opts.stableModels.slice():{...p.opts.stableModels};let cut=0;for(const k of Object.keys(sm)){const m=sm[k];if(m&&(m.rows||[]).some(r=>(r.pieces||[]).some(q=>!q.fill&&!q.channel&&!q.gap&&N(q.length)<mp))){if(Array.isArray(sm))sm[k]=undefined;else delete sm[k];cut++;}}if(cut)p.opts={...p.opts,stableModels:sm};}
  p.opts={...(p.opts||{}),release84:true,relLoops84:window.__relLoops84||1};p.walls=p.walls.map((w,i)=>state.walls[i]?.inGap84?{...w,page:800000+i,gap84:true}:state.walls[i]&&!state.walls[i].confirmed?{...w,page:700000+i}:w);if(boost84)p.cutOptions23={enabled:true,max:10};}catch(e){console.error('V84',e);}return p;};}catch(e){console.error('V84',e);}
 // o desenho parcial (feito fora do motor quando um conjunto não fecha) também respeita a peça mínima
 try{const pm=partialModel;partialModel=function(...a){const mp=window.__noMin84?0:(N(CFG().minPiece)||0);if(!(mp>0))return pm.apply(this,a);const keep=state.blocks;state.blocks=keep.filter(b=>!(b.type!=='Canaleta'&&N(b.length)<mp));try{return pm.apply(this,a);}finally{state.blocks=keep;}};}catch(e){console.error('V85',e);}
@@ -5713,7 +5709,7 @@ window.indirect84=indirectFor;
 
 // ---------- 4. Ciclo da geração: antes (parede dupla) e depois (encontros próximos, corte de reforço, diagnóstico)
 let run=null;const regen84=()=>{const pv=window.__noCheck71;window.__noCheck71=true;try{$('generate').click();}finally{window.__noCheck71=pv;}};
-$('generate')?.addEventListener('click',()=>{if($('generate').textContent.includes('Cancelar'))return;if(!run){run={loops:0};state.log84=[];try{window.bars84?.clear();}catch{}}try{const mp=N(CFG().minPiece)||0,SR=state.savedResults;if(mp>0&&SR)for(const w of state.walls){const c=SR[w.uid];if(!c||w.locked76)continue;if((c.result?.rows||[]).some(r=>(r.pieces||[]).some(q=>!q.fill&&!q.channel&&!q.gap&&!q.boneca109&&N(q.length)<mp)))delete SR[w.uid];}}catch{}try{const prev=new Set(state.unc84||[]);if(prev.size){const qs=JunctionEngine.detect(state.walls);const idx=new Map(state.walls.map((w,i)=>[w.uid,i]));let un=0;const adj=new Map();for(const q of qs){adj.set(q.a.i,(adj.get(q.a.i)||[]).concat(q.b.i));adj.set(q.b.i,(adj.get(q.b.i)||[]).concat(q.a.i));}const seen=new Set(),st=[];for(const u of prev){const k=idx.get(u);if(k!==undefined&&state.walls[k].confirmed){st.push(k);seen.add(k);}}while(st.length){const k=st.pop();for(const o of adj.get(k)||[])if(!seen.has(o)){seen.add(o);st.push(o);}}for(const o of seen){const W=state.walls[o],sr=state.savedResults?.[W.uid]?.result,manual=W.locked76&&(sr?.approvedBy78||sr?.edited86||state.results?.[o]?.approvedBy78||state.results?.[o]?.edited86);if(manual)continue;if(W.locked76){delete W.locked76;un++;}if(state.savedResults)delete state.savedResults[W.uid];}if(un)state.log84=(state.log84||[]).concat(['Paredes que acabaram de ser conferidas: '+un+' parede(s) ligadas a elas foram destravadas para os encontros serem recalculados juntos (as aprovadas à mão / editadas no editor foram preservadas).']);}}catch(e){console.error('V85 conferidas',e);}
+$('generate')?.addEventListener('click',()=>{if($('generate').textContent.includes('Cancelar'))return;if(!run){run={loops:0};state.log84=[];try{window.bars84?.clear();}catch{}}try{const mp=N(CFG().minPiece)||0,SR=state.savedResults;if(mp>0&&SR)for(const w of state.walls){const c=SR[w.uid];if(!c||w.locked76)continue;if((c.result?.rows||[]).some(r=>(r.pieces||[]).some(q=>!q.fill&&!q.channel&&!q.gap&&N(q.length)<mp)))delete SR[w.uid];}}catch{}try{const prev=new Set(state.unc84||[]);if(prev.size){const qs=JunctionEngine.detect(state.walls);const idx=new Map(state.walls.map((w,i)=>[w.uid,i]));let un=0;const adj=new Map();for(const q of qs){adj.set(q.a.i,(adj.get(q.a.i)||[]).concat(q.b.i));adj.set(q.b.i,(adj.get(q.b.i)||[]).concat(q.a.i));}const seen=new Set(),st=[];for(const u of prev){const k=idx.get(u);if(k!==undefined&&state.walls[k].confirmed){st.push(k);seen.add(k);}}while(st.length){const k=st.pop();for(const o of adj.get(k)||[])if(!seen.has(o)){seen.add(o);st.push(o);}}for(const o of seen){const W=state.walls[o],sr=state.savedResults?.[W.uid]?.result,manual=W.locked76&&(sr?.approvedBy78||sr?.edited86||state.results?.[o]?.approvedBy78||state.results?.[o]?.edited86);if(manual)continue;if(W.locked76){delete W.locked76;un++;}if(state.savedResults)delete state.savedResults[W.uid];}if(un)state.log84=(state.log84||[]).concat(['Paredes que acabaram de ser conferidas: '+un+' parede(s) ligadas a elas foram destravadas para os encontros serem recalculados juntos (as aprovadas à mão / editadas no editor foram preservadas).']);}}catch(e){console.error('V85 conferidas',e);}
 const snap=JSON.stringify(state.walls);let ch=0;try{ch+=splitDual();}catch(e){console.error('V84 parede dupla',e);}try{ch+=mixedWidths();}catch(e){console.error('V86 espessuras',e);}try{for(let c=0;c<state.walls.length;c++)ch+=indirectFor(c,60);}catch(e){console.error('V84 indireta',e);}if(ch){if(!state.geo84Undo)state.geo84Undo=snap;try{renderWalls();}catch{}}state.unc84=state.walls.filter(w=>!w.confirmed).map(w=>w.uid);},true);
 const gapStatus=()=>{try{(state.results||[]).forEach((m,i)=>{const w=state.walls[i];if(!m||!w?.inGap84)return;const nm=u=>state.walls.findIndex(x=>x.uid===u)+1;m.pending=true;m.gap84=true;m.statusReason='Parede dentro da parede dupla (entre as Paredes '+nm(w.inGap84.a)+' e '+nm(w.inGap84.b)+'): sobrepõe as duas e não entra na amarração. Confira se ela deve existir.';});}catch{}};const rr=renderResults;renderResults=function(...a){gapStatus();const r=rr.apply(this,a);gapStatus();if(!run)return r;const cur=run;
  setTimeout(()=>{if(run!==cur||!Array.isArray(state.results)||state.results.length!==state.walls.length)return;
@@ -5845,8 +5841,8 @@ setTimeout(syncUI,0);
         // aviso fixo na linha de comando até a próxima geração (a tela estilo CAD cria #enc109)
         // a geração chama esta preparação mais de uma vez: dentro de alguns segundos, soma ao registro
         const agora = Date.now(), ant = state.enc109;
-        const junto = ant && agora - (ant.t || 0) < 8000;
-        state.enc109 = { t: agora, ajustes: [...(junto ? ant.ajustes : []), ...log], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
+        const junto = ant && agora - (ant.t || 0) < 60000;  // o ciclo de geração pode levar dezenas de segundos
+        state.enc109 = { t: agora, ajustes: [...new Set([...(junto ? ant.ajustes : []), ...log])], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
         try { window.dispatchEvent(new Event('encaixe109')); } catch {}
         if (log.length || log.aviso?.length) {
           const t = (log.length ? 'Encaixe das pontas antes de gerar: ' + log.join(' · ') + '. ' : '') + (log.aviso?.length ? '⚠ ' + log.aviso.join(' · ') + '.' : '');

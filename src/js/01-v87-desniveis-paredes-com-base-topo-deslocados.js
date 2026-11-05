@@ -97,13 +97,9 @@ function dp(from,to,neighs,ctx,stage){
  for(const[jj,base]of joints){
   const edges=ctx.blocks.map(x=>({s:Math.round((x.L+jj)*10),cost:x.cost+(base?Math.abs(jj-ctx.j)*80:0),x,len:x.L,joint:jj}));
   if(stage.cut&&ctx.cut>0&&ctx.main){const m=ctx.main;for(let c=1;c<=Math.round(ctx.cut*10);c++){const len=Math.round((m.L-c/10)*10)/10;if(len>=Math.max(29,m.L*.7))edges.push({s:Math.round((len+jj)*10),cost:450+c,x:m,len,joint:jj,cut:true});}}
-  // V115 — boneca de até 5 cm: um único enchimento grauteado (filete), no máximo 5 cm
-  if(stage.fill&&ctx.fillMax>0){for(let c=1;c<=50;c++)edges.push({s:c,cost:1500,x:null,len:c/10,joint:0,fill:true});}
-  // V115 — boneca acima de 5 cm: bloco cortado (5,1 cm em diante), nunca enchimento. Só nas etapas de emergência.
-  // (a regra vale para o tamanho da boneca: peça + junta acima de 5 cm; ex.: boneca de 6 cm = peça de 5 cm + junta de 1 cm)
-  if(stage.fill&&ctx.main){const m=ctx.main;for(let c=Math.max(10,Math.round((5.1-jj)*10));c<Math.round(Math.min(29,m.L*.7)*10);c++){const len=c/10;edges.push({s:Math.round((len+jj)*10),cost:900,x:m,len,joint:jj,cut:true,boneca:true});}}
+  if(stage.fill&&ctx.fillMax>0){for(let c=1;c<=Math.round(ctx.fillMax*10);c++)edges.push({s:c,cost:1500,x:null,len:c/10,joint:0,fill:true});}
   // Estado 0: livre; estado 1: acabou de usar peça pequena (< 10 cm). Peças pequenas entram em grupos de 1 a 3, nunca seguidos de outro grupo.
-  const small=e=>e.fill||e.len<10-EPS,macro=[];for(const e of edges){if(!small(e))continue;for(let r=1;r<=(e.fill?1:3);r++)macro.push({s:e.s*r,cost:e.cost*r,run:r,e});}
+  const small=e=>!e.fill&&e.len<10-EPS,macro=[];for(const e of edges){if(!small(e))continue;for(let r=1;r<=3;r++)macro.push({s:e.s*r,cost:e.cost*r,run:r,e});}
   const big=edges.filter(e=>!small(e)),S=2,idx=(k,st)=>k*S+st;
   const cost=new Float64Array((n+1)*S).fill(Infinity),back=new Int32Array((n+1)*S).fill(-1),via=new Int32Array((n+1)*S).fill(-1);cost[idx(0,0)]=base;
   // Laço principal com vetores numéricos (mais rápido). A ordem das operações é a mesma
@@ -119,7 +115,7 @@ function dp(from,to,neighs,ctx,stage){
  if(!results.length)return null;return results.sort((a,b)=>a.cost-b.cost)[0];}
 
 function piecesOf(res,from,y,ctx){let x=from;return res.seq.map(e=>{let p;if(e.fill)p={code:'FILETE',x,y,length:e.len,height:ctx.h,width:ctx.width,joint:0,fill:true};
- else{const b=e.x.b;p={code:e.cut?(b.code+'_C'+e.len.toFixed(2)):b.code,x,y,length:e.len,height:ctx.h,width:ctx.width,joint:e.joint,fill:false};if(e.cut)Object.assign(p,{cut:true,sourceCode:b.code,sourceLength:N(b.length),cutAmount:Math.round((N(b.length)-e.len)*10)/10});if(e.boneca)p.boneca109=true;}
+ else{const b=e.x.b;p={code:e.cut?(b.code+'_C'+e.len.toFixed(2)):b.code,x,y,length:e.len,height:ctx.h,width:ctx.width,joint:e.joint,fill:false};if(e.cut)Object.assign(p,{cut:true,sourceCode:b.code,sourceLength:N(b.length),cutAmount:Math.round((N(b.length)-e.len)*10)/10});}
  x=Math.round((x+e.len+(e.fill?0:e.joint))*10000)/10000;return p;});}
 
 function fillSegment(from,to,neighs,ctx){
