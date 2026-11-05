@@ -353,6 +353,8 @@
       ['GRADE', !!bg.grid, () => window.bg88.set(undefined, !bg.grid), 'Grade da área de desenho'],
       ['TRAÇO FINO', !!window.fino108?.on, () => window.fino108?.toggle(), 'Linhas finas na planta'],
       ['FANTASMA', ghostOn(), () => $('ghost74btn')?.click(), 'Pavimento de baixo em fantasma']];
+    const PM = { eixo: 'EIXO', faces: 'FACES', ambos: 'FACES + EIXO' }, pm = window.parede109?.get?.() || 'eixo';
+    B.unshift(['PAREDE: ' + PM[pm], true, () => { const o = ['eixo', 'faces', 'ambos'], k = o[(o.indexOf(pm) + 1) % 3]; window.parede109?.set(k); }, 'Como a parede aparece na planta: só o eixo, as faces com hachura, ou os dois (clique para trocar)']);
     t.innerHTML = B.map((b, i) => `<button type="button" data-t="${i}" class="${b[1] ? 'on' : ''}" title="${b[3]}">${b[0]}</button>`).join('') +
       `<button type="button" class="fd109" title="Fundo da área de desenho">Fundo: ${esc(T?.nome || '—')} ▴</button>`;
     t.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { B[Number(b.dataset.t)][2](); setTimeout(toggles, 60); });
