@@ -30,7 +30,7 @@ const ARQ = process.env.ARQ || path.resolve(__dirname, '..', 'dist', 'Modulacao_
   conferir(await p.evaluate(() => window.bg88.get().theme === 'escuro'), 'fundo padrão: Escuro (CAD)');
   conferir(await p.evaluate(() => getComputedStyle(document.getElementById('hud88') || document.body).display === 'none'), 'aviso de cima da planta escondido');
   conferir(/sem laje/.test(await p.evaluate(() => document.getElementById('hudMsg109').textContent)), 'aviso do piso aparece na linha de comando');
-  conferir(await p.evaluate(() => document.querySelectorAll('#stat85 .tg109 button').length) === 5, 'liga/desliga e fundo na linha de comando');
+  conferir(await p.evaluate(() => document.querySelectorAll('#stat85 .tg109 button').length) === 6, 'PAREDE, liga/desliga e fundo na linha de comando');
 
   // clique simples executa
   await p.click('#leftBar109 [data-key="Nova parede|fn"]'); await p.waitForTimeout(150);
