@@ -82,8 +82,8 @@
         // aviso fixo na linha de comando até a próxima geração (a tela estilo CAD cria #enc109)
         // a geração chama esta preparação mais de uma vez: dentro de alguns segundos, soma ao registro
         const agora = Date.now(), ant = state.enc109;
-        const junto = ant && agora - (ant.t || 0) < 8000;
-        state.enc109 = { t: agora, ajustes: [...(junto ? ant.ajustes : []), ...log], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
+        const junto = ant && agora - (ant.t || 0) < 60000;  // o ciclo de geração pode levar dezenas de segundos
+        state.enc109 = { t: agora, ajustes: [...new Set([...(junto ? ant.ajustes : []), ...log])], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
         try { window.dispatchEvent(new Event('encaixe109')); } catch {}
         if (log.length || log.aviso?.length) {
           const t = (log.length ? 'Encaixe das pontas antes de gerar: ' + log.join(' · ') + '. ' : '') + (log.aviso?.length ? '⚠ ' + log.aviso.join(' · ') + '.' : '');
