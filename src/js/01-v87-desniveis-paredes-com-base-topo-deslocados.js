@@ -173,6 +173,12 @@ root.fitOpenings53=function(fixed,cfg,ops,all,j,width,h,otherMarks=[]){
  // penalidade de amarração de uma junta em relação às juntas da fiada vizinha (bordas de vão não são juntas)
  const markPen=m=>{if(edges.some(e=>Math.abs(e-m)<.01)||m<=cfg.from+.01||m>=cfg.to-.01||!otherMarks.length)return 0;const d=Math.min(...otherMarks.map(o=>Math.abs(o-m)));return d<minB-.001?1000+(minB-d)*10:Math.max(0,20-d)*10;};
  for(const p of fixed.slice()){if(!physHits(p.x,N(p.length)))continue;const k=fixed.indexOf(p);
+  // V108.9 / V109 — abertura encostada na extremidade (sem boneca, ou boneca de até 5 cm): nesta fiada
+  // não existe alvenaria para receber a peça de encontro; a peça que invadiria o vão é liberada.
+  // A amarração permanece nas fiadas acima/abaixo, onde a abertura não intercepta.
+  const nearOpening=ops.some(([a,b])=>{const leftGap=a-cfg.from,rightGap=cfg.to-b;
+   return ((leftGap>=-.01&&leftGap<=5.01)||(rightGap>=-.01&&rightGap<=5.01))&&Math.min(p.x+j/2+N(p.length),b)-Math.max(p.x+j/2,a)>.001;});
+  if(nearOpening){fixed.splice(k,1);notes.push('encontro junto a abertura com boneca de até 5 cm: peça conflitante liberada nesta fiada');continue;}
   if(!p.zone53){fixed.splice(k,1);notes.push('peça lateral '+p.code+' dispensada junto à abertura');continue;}
   const z=p.zone53,others=fixed.filter(q=>q!==p);let best=null,bestScore=Infinity;
   for(const f of fam){if(f.L<z[1]-z[0]-.01)continue;const lo=z[1]-f.L-j/2,hi=z[0]-j/2;if(hi<lo-1e-6)continue;
