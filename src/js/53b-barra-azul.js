@@ -15,7 +15,7 @@
     ['Planta', '<path d="M3 3h18v18H3z"/><path d="M3 11h9v10M12 3v5M15 11h6"/>', () => { U.cat('main'); U.view('plan'); }, 'Planta (área de desenho)'],
     ['Aberturas', '<path d="M5 21V3h14v18M5 21h14M9 18h.01"/>', () => run('Novo vão|newvao54'), 'Novo vão: porta ou janela'],
     ['Modulação', '<path d="M3 5h18v14H3zM3 12h18M9 5v7m6 0v7"/>', () => { U.cat('mod'); U.view('fiadas'); }, 'Modulação: gerar e ver as fiadas'],
-    ['Blocos', '<path d="m12 2 9 5-9 5-9-5 9-5Zm-9 5v10l9 5 9-5V7M12 12v10"/>', () => U.view('blocks'), 'Blocos e juntas'],
+    ['Blocos', '<rect x="1.8" y="15.6" width="6.4" height="4.6" rx=".5"/><rect x="8.8" y="15.6" width="6.4" height="4.6" rx=".5"/><rect x="15.8" y="15.6" width="6.4" height="4.6" rx=".5"/><rect x="5.3" y="10.4" width="6.4" height="4.6" rx=".5"/><rect x="12.3" y="10.4" width="6.4" height="4.6" rx=".5"/><rect x="8.8" y="5.2" width="6.4" height="4.6" rx=".5"/><path d="M4 17.9h2M11 17.9h2M18 17.9h2M7.5 12.7h2M14.5 12.7h2M11 7.5h2" stroke-width="1.1"/>', () => U.view('blocks'), 'Blocos e juntas'],
     ['Lajes', '<path d="M2.5 14.5 8 9.5h13.5L16 14.5z"/><path d="M2.5 14.5v2.5H16l5.5-5v-2.5M16 14.5V17"/>', () => { U.cat('laje'); U.view('plan'); }, 'Lajes e beirais'],
     ['Resultados', '<path d="M4 20V12h4v8M10 20V4h4v16M16 20v-9h4v9M2 20h20"/>', () => U.view('quant'), 'Quantitativos'],
     ['Exportar', '<path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/>', e => menuExportar(e), 'Pranchas em PDF, DXF, Excel e memorial'],
@@ -69,7 +69,14 @@ body.cad109 #mb109,body.cad109 #fl109,body.cad109 #stat85,body.cad109 #rib85{lef
 body.cad109 #lb109{left:var(--sb109)!important}
 body.cad109 main{left:calc(var(--sb109) + 38px)!important}
 body.cad109 #tabs85{left:calc(var(--sb109) + 38px)!important}
-body.cad109 #mb109 .logo109{display:none}`;
+body.cad109 #mb109 .logo109{display:none}
+/* V116 — barras de ferramentas em azul-claro, combinando com a barra azul-marinho */
+body.cad109 #fl109{background:linear-gradient(180deg,#e8f2fb,#dceaf7)!important;border-bottom:1px solid #b9d0e6!important}
+body.cad109 #lb109{background:linear-gradient(90deg,#e3eef9,#d9e8f6)!important;border-right:1px solid #b9d0e6!important}
+body.cad109 #rib85{background:#eaf3fb!important;border-bottom:1px solid #c6d9ec!important}
+body.cad109 .b109:hover{background:#c9def2!important;border-color:#9fc0de!important}body.cad109 .b109.on{background:#b9d5ef!important;border-color:#6f9fcb!important}
+body.cad109 .sp109{background:#b4cbe1!important}
+body.cad109 #flowR109 select,body.cad109 #flowR109 input,body.cad109 #flowR109 button{border-color:#a9c4de!important}`;
   document.head.append(css);
   setTimeout(redraw, 60);
 })();

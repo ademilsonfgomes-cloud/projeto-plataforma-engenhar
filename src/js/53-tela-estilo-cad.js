@@ -156,7 +156,7 @@
   const top = $('top85');
   top?.querySelectorAll('.lv85').forEach(el => flowR.append(el));
   if ($('md94')) flowR.insertBefore($('md94'), flowR.children[1] || null);
-  if ($('vis87btn')) { const v = $('vis87btn'); v.innerHTML = svg('Visibilidade', 18); v.title = 'Visibilidade (camadas)'; flowR.append(v); }
+  if ($('vis87btn')) { const v = $('vis87btn'); v.innerHTML = '<span class="e87v">' + svg('Visibilidade', 18) + '</span>'; v.title = 'Visibilidade (camadas)'; flowR.append(v); }
   if ($('diag85')) flowR.append($('diag85'));
 
   // ---------- desenhar as barras

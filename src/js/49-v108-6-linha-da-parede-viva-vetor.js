@@ -41,9 +41,12 @@ function render(){if(!on()||typeof image==='undefined'||!image){sv.innerHTML='';
   state.walls.forEach((w,i)=>{if(!w.line||N(w.page||1)!==p)return;const c=colorOf(w);cores.add(c);const id='h109'+c.replace('#','');
    for(const Q of corpo(w,i)){const pts=Q.map(q=>X(q)+','+Y(q)).join(' ');
     st+='<polygon points="'+pts+'" fill="none" stroke="'+c+'" stroke-width="'+(i===sel?3.4:2.4)+'" vector-effect="non-scaling-stroke" stroke-linejoin="miter"/>';
-    fi+='<polygon points="'+pts+'" fill="'+bg+'"/>';ha+='<polygon points="'+pts+'" fill="url(#'+id+')"/>';}});
+    fi+='<polygon points="'+pts+'" fill="#000"/>';ha+='<polygon points="'+pts+'" fill="url(#'+id+')"/>';}});
   // contorno da união: traço grosso por baixo, corpo opaco por cima (só sobra a metade de fora do traço)
-  h+='<defs>'+[...cores].map(c=>'<pattern id="h109'+c.replace('#','')+'" patternUnits="userSpaceOnUse" width="'+sp+'" height="'+sp+'" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="'+sp+'" stroke="'+c+'" stroke-opacity=".45" stroke-width="'+(1/sc).toFixed(2)+'"/></pattern>').join('')+'</defs>'+st+fi+ha;}
+  // V116 — o desenho de fundo (PDF/DXF) continua visível: a parte de dentro das paredes é escondida por MÁSCARA
+  // (some só o traço interno), sem preenchimento opaco; a hachura é transparente.
+  h+='<defs>'+[...cores].map(c=>'<pattern id="h109'+c.replace('#','')+'" patternUnits="userSpaceOnUse" width="'+sp+'" height="'+sp+'" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="'+sp+'" stroke="'+c+'" stroke-opacity=".32" stroke-width="'+(1/sc).toFixed(2)+'"/></pattern>').join('')+
+   '<mask id="m109" maskUnits="userSpaceOnUse" x="-100000" y="-100000" width="300000" height="300000"><rect x="-100000" y="-100000" width="300000" height="300000" fill="#fff"/>'+fi+'</mask></defs><g mask="url(#m109)">'+st+'</g>'+ha;}
  state.walls.forEach((w,i)=>{if(!w.line||N(w.page||1)!==p)return;if(modo109==='faces'&&i!==sel)return;const c=colorOf(w),dash=modo109!=='eixo'&&i!==sel?' stroke-dasharray="12 3 2 3" stroke-opacity=".8"':pos&&!okLoc(w.location)?' stroke-dasharray="6 4"':'';
   for(const[a,b]of segs(w))h+='<line x1="'+X(a)+'" y1="'+Y(a)+'" x2="'+X(b)+'" y2="'+Y(b)+'" stroke="'+c+'" stroke-width="'+(i===sel?2.2:modo109==='eixo'?1.25:.7)+'" vector-effect="non-scaling-stroke" stroke-linecap="square"'+dash+'/>';});
  // pegadores

@@ -10,6 +10,7 @@ const isOn=k=>k==='cargas'||k==='infl'?ld(k):!hid.has(k);
 function setOn(k,on){if(k==='cargas'||k==='infl'){setLd(k,on);}else{if(on)hid.delete(k);else hid.add(k);save();}window.dn87hide=hid.has('desniveis');}
 window.dn87hide=hid.has('desniveis');
 window.vis87={isOn,setOn,hidden:()=>[...hid]};
+{const c=document.createElement('style');c.textContent='.busy87{opacity:.45!important;transition:opacity .1s}body.busy87,body.busy87 *{cursor:progress!important}';document.head.append(c);}
 
 // desenho: tira só da tela durante o desenho da planta
 try{const dp=drawPlan;drawPlan=function(...a){if(!hid.size)return dp.apply(this,a);const P=CanvasRenderingContext2D.prototype,di=P.drawImage,ft=P.fillText,st=P.strokeText;let saved=null;
@@ -30,11 +31,14 @@ function render(){const off=L.filter(([k])=>!isOn(k)).length;btn.classList.toggl
 function place(){const r=btn.getBoundingClientRect();pop.style.left=Math.max(8,Math.min(innerWidth-330,r.left))+'px';pop.style.top=(r.bottom+4)+'px';}
 btn.onclick=e=>{e.stopPropagation();pop.hidden=!pop.hidden;if(!pop.hidden){render();place();}};
 let solo=null;
+// V116 — enquanto a planta redesenha: olhinho e quadro transparentes + cursor de espera; o redesenho espera a tela responder
+function redesenhar(){btn.classList.add('busy87');pop.classList.add('busy87');document.body.classList.add('busy87');
+ requestAnimationFrame(()=>setTimeout(()=>{try{drawPlan();}catch{}finally{btn.classList.remove('busy87');pop.classList.remove('busy87');document.body.classList.remove('busy87');}},20));}
 pop.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;
  if(b.dataset.all){for(const[k]of L)setOn(k,true);solo=null;}else{const k=b.dataset.k;setOn(k,!isOn(k));}
- render();try{drawPlan();}catch{}});
+ render();redesenhar();});
 pop.addEventListener('contextmenu',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();const k=b.dataset.k;
- if(solo===k){for(const[x]of L)setOn(x,true);solo=null;}else{for(const[x]of L)setOn(x,x===k);solo=k;}render();try{drawPlan();}catch{}});
+ if(solo===k){for(const[x]of L)setOn(x,true);solo=null;}else{for(const[x]of L)setOn(x,x===k);solo=k;}render();redesenhar();});
 document.addEventListener('click',e=>{if(!pop.hidden&&!pop.contains(e.target)&&e.target!==btn)pop.hidden=true;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pop.hidden)pop.hidden=true;});
 function mount(){const host=$('top85');if(!host){document.body.append(pop);return;}const lv=host.querySelector('.lv85');if(lv)lv.after(btn);else host.append(btn);document.body.append(pop);render();}

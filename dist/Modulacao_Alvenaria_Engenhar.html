@@ -6727,6 +6727,7 @@ const isOn=k=>k==='cargas'||k==='infl'?ld(k):!hid.has(k);
 function setOn(k,on){if(k==='cargas'||k==='infl'){setLd(k,on);}else{if(on)hid.delete(k);else hid.add(k);save();}window.dn87hide=hid.has('desniveis');}
 window.dn87hide=hid.has('desniveis');
 window.vis87={isOn,setOn,hidden:()=>[...hid]};
+{const c=document.createElement('style');c.textContent='.busy87{opacity:.45!important;transition:opacity .1s}body.busy87,body.busy87 *{cursor:progress!important}';document.head.append(c);}
 
 // desenho: tira só da tela durante o desenho da planta
 try{const dp=drawPlan;drawPlan=function(...a){if(!hid.size)return dp.apply(this,a);const P=CanvasRenderingContext2D.prototype,di=P.drawImage,ft=P.fillText,st=P.strokeText;let saved=null;
@@ -6747,11 +6748,14 @@ function render(){const off=L.filter(([k])=>!isOn(k)).length;btn.classList.toggl
 function place(){const r=btn.getBoundingClientRect();pop.style.left=Math.max(8,Math.min(innerWidth-330,r.left))+'px';pop.style.top=(r.bottom+4)+'px';}
 btn.onclick=e=>{e.stopPropagation();pop.hidden=!pop.hidden;if(!pop.hidden){render();place();}};
 let solo=null;
+// V116 — enquanto a planta redesenha: olhinho e quadro transparentes + cursor de espera; o redesenho espera a tela responder
+function redesenhar(){btn.classList.add('busy87');pop.classList.add('busy87');document.body.classList.add('busy87');
+ requestAnimationFrame(()=>setTimeout(()=>{try{drawPlan();}catch{}finally{btn.classList.remove('busy87');pop.classList.remove('busy87');document.body.classList.remove('busy87');}},20));}
 pop.addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;
  if(b.dataset.all){for(const[k]of L)setOn(k,true);solo=null;}else{const k=b.dataset.k;setOn(k,!isOn(k));}
- render();try{drawPlan();}catch{}});
+ render();redesenhar();});
 pop.addEventListener('contextmenu',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();const k=b.dataset.k;
- if(solo===k){for(const[x]of L)setOn(x,true);solo=null;}else{for(const[x]of L)setOn(x,x===k);solo=k;}render();try{drawPlan();}catch{}});
+ if(solo===k){for(const[x]of L)setOn(x,true);solo=null;}else{for(const[x]of L)setOn(x,x===k);solo=k;}render();redesenhar();});
 document.addEventListener('click',e=>{if(!pop.hidden&&!pop.contains(e.target)&&e.target!==btn)pop.hidden=true;});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pop.hidden)pop.hidden=true;});
 function mount(){const host=$('top85');if(!host){document.body.append(pop);return;}const lv=host.querySelector('.lv85');if(lv)lv.after(btn);else host.append(btn);document.body.append(pop);render();}
@@ -8843,9 +8847,12 @@ function render(){if(!on()||typeof image==='undefined'||!image){sv.innerHTML='';
   state.walls.forEach((w,i)=>{if(!w.line||N(w.page||1)!==p)return;const c=colorOf(w);cores.add(c);const id='h109'+c.replace('#','');
    for(const Q of corpo(w,i)){const pts=Q.map(q=>X(q)+','+Y(q)).join(' ');
     st+='<polygon points="'+pts+'" fill="none" stroke="'+c+'" stroke-width="'+(i===sel?3.4:2.4)+'" vector-effect="non-scaling-stroke" stroke-linejoin="miter"/>';
-    fi+='<polygon points="'+pts+'" fill="'+bg+'"/>';ha+='<polygon points="'+pts+'" fill="url(#'+id+')"/>';}});
+    fi+='<polygon points="'+pts+'" fill="#000"/>';ha+='<polygon points="'+pts+'" fill="url(#'+id+')"/>';}});
   // contorno da união: traço grosso por baixo, corpo opaco por cima (só sobra a metade de fora do traço)
-  h+='<defs>'+[...cores].map(c=>'<pattern id="h109'+c.replace('#','')+'" patternUnits="userSpaceOnUse" width="'+sp+'" height="'+sp+'" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="'+sp+'" stroke="'+c+'" stroke-opacity=".45" stroke-width="'+(1/sc).toFixed(2)+'"/></pattern>').join('')+'</defs>'+st+fi+ha;}
+  // V116 — o desenho de fundo (PDF/DXF) continua visível: a parte de dentro das paredes é escondida por MÁSCARA
+  // (some só o traço interno), sem preenchimento opaco; a hachura é transparente.
+  h+='<defs>'+[...cores].map(c=>'<pattern id="h109'+c.replace('#','')+'" patternUnits="userSpaceOnUse" width="'+sp+'" height="'+sp+'" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="'+sp+'" stroke="'+c+'" stroke-opacity=".32" stroke-width="'+(1/sc).toFixed(2)+'"/></pattern>').join('')+
+   '<mask id="m109" maskUnits="userSpaceOnUse" x="-100000" y="-100000" width="300000" height="300000"><rect x="-100000" y="-100000" width="300000" height="300000" fill="#fff"/>'+fi+'</mask></defs><g mask="url(#m109)">'+st+'</g>'+ha;}
  state.walls.forEach((w,i)=>{if(!w.line||N(w.page||1)!==p)return;if(modo109==='faces'&&i!==sel)return;const c=colorOf(w),dash=modo109!=='eixo'&&i!==sel?' stroke-dasharray="12 3 2 3" stroke-opacity=".8"':pos&&!okLoc(w.location)?' stroke-dasharray="6 4"':'';
   for(const[a,b]of segs(w))h+='<line x1="'+X(a)+'" y1="'+Y(a)+'" x2="'+X(b)+'" y2="'+Y(b)+'" stroke="'+c+'" stroke-width="'+(i===sel?2.2:modo109==='eixo'?1.25:.7)+'" vector-effect="non-scaling-stroke" stroke-linecap="square"'+dash+'/>';});
  // pegadores
@@ -9537,7 +9544,7 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
   const top = $('top85');
   top?.querySelectorAll('.lv85').forEach(el => flowR.append(el));
   if ($('md94')) flowR.insertBefore($('md94'), flowR.children[1] || null);
-  if ($('vis87btn')) { const v = $('vis87btn'); v.innerHTML = svg('Visibilidade', 18); v.title = 'Visibilidade (camadas)'; flowR.append(v); }
+  if ($('vis87btn')) { const v = $('vis87btn'); v.innerHTML = '<span class="e87v">' + svg('Visibilidade', 18) + '</span>'; v.title = 'Visibilidade (camadas)'; flowR.append(v); }
   if ($('diag85')) flowR.append($('diag85'));
 
   // ---------- desenhar as barras
@@ -9845,7 +9852,7 @@ body.cad109 main{left:38px!important;right:var(--sw85)!important;top:var(--t109)
     ['Planta', '<path d="M3 3h18v18H3z"/><path d="M3 11h9v10M12 3v5M15 11h6"/>', () => { U.cat('main'); U.view('plan'); }, 'Planta (área de desenho)'],
     ['Aberturas', '<path d="M5 21V3h14v18M5 21h14M9 18h.01"/>', () => run('Novo vão|newvao54'), 'Novo vão: porta ou janela'],
     ['Modulação', '<path d="M3 5h18v14H3zM3 12h18M9 5v7m6 0v7"/>', () => { U.cat('mod'); U.view('fiadas'); }, 'Modulação: gerar e ver as fiadas'],
-    ['Blocos', '<path d="m12 2 9 5-9 5-9-5 9-5Zm-9 5v10l9 5 9-5V7M12 12v10"/>', () => U.view('blocks'), 'Blocos e juntas'],
+    ['Blocos', '<rect x="1.8" y="15.6" width="6.4" height="4.6" rx=".5"/><rect x="8.8" y="15.6" width="6.4" height="4.6" rx=".5"/><rect x="15.8" y="15.6" width="6.4" height="4.6" rx=".5"/><rect x="5.3" y="10.4" width="6.4" height="4.6" rx=".5"/><rect x="12.3" y="10.4" width="6.4" height="4.6" rx=".5"/><rect x="8.8" y="5.2" width="6.4" height="4.6" rx=".5"/><path d="M4 17.9h2M11 17.9h2M18 17.9h2M7.5 12.7h2M14.5 12.7h2M11 7.5h2" stroke-width="1.1"/>', () => U.view('blocks'), 'Blocos e juntas'],
     ['Lajes', '<path d="M2.5 14.5 8 9.5h13.5L16 14.5z"/><path d="M2.5 14.5v2.5H16l5.5-5v-2.5M16 14.5V17"/>', () => { U.cat('laje'); U.view('plan'); }, 'Lajes e beirais'],
     ['Resultados', '<path d="M4 20V12h4v8M10 20V4h4v16M16 20v-9h4v9M2 20h20"/>', () => U.view('quant'), 'Quantitativos'],
     ['Exportar', '<path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/>', e => menuExportar(e), 'Pranchas em PDF, DXF, Excel e memorial'],
@@ -9899,7 +9906,14 @@ body.cad109 #mb109,body.cad109 #fl109,body.cad109 #stat85,body.cad109 #rib85{lef
 body.cad109 #lb109{left:var(--sb109)!important}
 body.cad109 main{left:calc(var(--sb109) + 38px)!important}
 body.cad109 #tabs85{left:calc(var(--sb109) + 38px)!important}
-body.cad109 #mb109 .logo109{display:none}`;
+body.cad109 #mb109 .logo109{display:none}
+/* V116 — barras de ferramentas em azul-claro, combinando com a barra azul-marinho */
+body.cad109 #fl109{background:linear-gradient(180deg,#e8f2fb,#dceaf7)!important;border-bottom:1px solid #b9d0e6!important}
+body.cad109 #lb109{background:linear-gradient(90deg,#e3eef9,#d9e8f6)!important;border-right:1px solid #b9d0e6!important}
+body.cad109 #rib85{background:#eaf3fb!important;border-bottom:1px solid #c6d9ec!important}
+body.cad109 .b109:hover{background:#c9def2!important;border-color:#9fc0de!important}body.cad109 .b109.on{background:#b9d5ef!important;border-color:#6f9fcb!important}
+body.cad109 .sp109{background:#b4cbe1!important}
+body.cad109 #flowR109 select,body.cad109 #flowR109 input,body.cad109 #flowR109 button{border-color:#a9c4de!important}`;
   document.head.append(css);
   setTimeout(redraw, 60);
 })();
