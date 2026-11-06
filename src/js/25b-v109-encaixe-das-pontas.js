@@ -74,24 +74,23 @@
   }
   const root109 = () => window.JunctionEngine;
   window.encaixe109 = encaixar;
-  try {
-    const gp = generationPayload;
-    generationPayload = function (...a) {
-      try {
-        const log = encaixar(state.walls);
-        // aviso fixo na linha de comando até a próxima geração (a tela estilo CAD cria #enc109)
-        // a geração chama esta preparação mais de uma vez: dentro de alguns segundos, soma ao registro
-        const agora = Date.now(), ant = state.enc109;
-        const junto = ant && agora - (ant.t || 0) < 60000;  // o ciclo de geração pode levar dezenas de segundos
-        state.enc109 = { t: agora, ajustes: [...new Set([...(junto ? ant.ajustes : []), ...log])], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
-        try { window.dispatchEvent(new Event('encaixe109')); } catch {}
-        if (log.length || log.aviso?.length) {
-          const t = (log.length ? 'Encaixe das pontas antes de gerar: ' + log.join(' · ') + '. ' : '') + (log.aviso?.length ? '⚠ ' + log.aviso.join(' · ') + '.' : '');
-          state.log109 = log;
-          setTimeout(() => { try { if (typeof msg === 'function') msg(t); else { const m = document.getElementById('sMsg85'); if (m) m.textContent = t; } } catch {} }, 50);
-        }
-      } catch (e) { console.error('V109 encaixe', e); }
-      return gp.apply(this, a);
-    };
-  } catch {}
+  // V116 — o encaixe roda NO CLIQUE em "Gerar", antes de o programa registrar as medidas do cálculo.
+  // (Antes rodava durante o cálculo: as medidas mudavam no meio e o resultado era descartado —
+  //  "As entradas mudaram durante o cálculo" — e nenhuma parede modulava.)
+  function aoGerar() {
+    try {
+      const log = encaixar(state.walls);
+      const agora = Date.now(), ant = state.enc109;
+      const junto = ant && agora - (ant.t || 0) < 60000;  // o ciclo de geração pode repetir o clique sozinho
+      state.enc109 = { t: agora, ajustes: [...new Set([...(junto ? ant.ajustes : []), ...log])], avisos: [...new Set([...(junto ? ant.avisos : []), ...(log.aviso || [])])] };
+      try { window.dispatchEvent(new Event('encaixe109')); } catch {}
+      if (log.length) { try { renderWalls(); } catch {} }
+      if (log.length || log.aviso?.length) {
+        const t = (log.length ? 'Encaixe das pontas antes de gerar: ' + log.join(' · ') + '. ' : '') + (log.aviso?.length ? '⚠ ' + log.aviso.join(' · ') + '.' : '');
+        setTimeout(() => { try { if (typeof msg === 'function') msg(t); else { const m = document.getElementById('sMsg85'); if (m) m.textContent = t; } } catch {} }, 50);
+      }
+    } catch (e) { console.error('V109 encaixe', e); }
+  }
+  const gb = document.getElementById('generate');
+  if (gb) gb.addEventListener('click', () => { if (/Cancelar/i.test(gb.textContent)) return; aoGerar(); }, true);
 })();
