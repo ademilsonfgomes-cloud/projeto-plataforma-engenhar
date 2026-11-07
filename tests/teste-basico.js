@@ -45,7 +45,7 @@ function diferencas(a, b, onde = '') {
   const r = await page.evaluate(() => ({
     paredes: (typeof state !== 'undefined' ? state.walls || [] : []).length,
     resultados: (typeof state !== 'undefined' ? state.results || [] : []).length,
-    saida: document.getElementById('output')?.innerText || '',
+    saida: document.getElementById('output')?.textContent || '',
   }));
   conferir(r.paredes > 0, `exemplo didático carregou ${r.paredes} paredes`);
   conferir(r.resultados === r.paredes, `modulação gerada para ${r.resultados}/${r.paredes} paredes`);
