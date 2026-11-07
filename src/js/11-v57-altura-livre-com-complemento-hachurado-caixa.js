@@ -47,7 +47,8 @@ function report(){
  const ok=[],bad=[],pend=[],comp=[],noLine=[];
  state.walls.forEach((w,i)=>{const m=R[i];if(!w.line)noLine.push(i+1);
   if(!m){bad.push({i,w,items:[['Sem resultado','Clique em “Gerar modulação” novamente.']]});return;}
-  const errs=m.errors?.length?m.errors:m.sourceErrors?.length?m.sourceErrors:null;
+  const errs=m.errors?.length?m.errors:m.sourceErrors?.length&&!m.isolated116?m.sourceErrors:null;
+  if(m.isolated116&&!errs){pend.push({i,w,msg:(m.statusReason||'')+(m.sourceErrors?.length?' Motivo: '+String(m.sourceErrors.find(e=>!/^Compatibiliza|^Encaixe não resolvido/.test(e))||m.sourceErrors[0]).replace(/^Compatibilização pendente: este conjunto não foi liberado\. /,''):'')});return;}
   if(errs){const own=errs.filter(e=>!/^Compatibiliza/.test(e));bad.push({i,w,old:!m.errors?.length,blocked:!own.length,items:own.map(e=>tips(e,w,i,m))});return;}
   if(m.pending){pend.push({i,w,msg:m.statusReason||'Pendente — revise o desenho.'});return;}
   ok.push(i+1);const g=gapOf(m,w);if(g>0)comp.push(i+1+' ('+fmt57(g)+' cm)');});
