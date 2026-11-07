@@ -6940,7 +6940,7 @@ const tsv=document.createElementNS('http://www.w3.org/2000/svg','svg');tsv.id='t
 function txtPos(){tsv.style.left=cv.offsetLeft+'px';tsv.style.top=cv.offsetTop+'px';tsv.style.width=cv.style.width;tsv.style.height=cv.style.height;tsv.setAttribute('viewBox','0 0 '+cv.width+' '+cv.height);}
 const escX=t=>String(t).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 function txtDraw(){txtPos();let zRef=1;try{zRef=window.zoom88?.fitZ?.()||1;}catch{}if(!(zRef>0))zRef=1;const T=THEMES[theme],halo=T.dark?'rgba(22,27,33,.92)':'rgba(255,255,255,.95)';let h='';
- for(const q of texts){const mm=/(bold|[6-9]00)?[^\d]*?([\d.]+)px\s*(.*)$/i.exec(q.font||'')||[];let fs=Number(mm[2])||10;const fam=(mm[3]||'Arial').replace(/"/g,"'");const big=/^Parede \d+$/.test(q.t);if(big)fs*=1.8;else if(!q.fx&&!/✓|×/.test(q.t)){fs=fs*q.z/zRef;} // V94.1: todos os textos com tamanho fixo no desenho (acompanham o zoom, como SALA/COZINHA)
+ for(const q of texts){const mm=/(bold|[6-9]00)?[^\d]*?([\d.]+)px\s*(.*)$/i.exec(q.font||'')||[];let fs=Number(mm[2])||10;const fam=(mm[3]||'Arial').replace(/"/g,"'");const big=/^Parede \d+$/.test(q.t);if(big)fs*=(window.lbl118?.fator||1.8);else if(!q.fx&&!/✓|×/.test(q.t)){fs=fs*q.z/zRef;} // V94.1: todos os textos com tamanho fixo no desenho (acompanham o zoom, como SALA/COZINHA)
   const anc=q.align==='center'?'middle':q.align==='right'||q.align==='end'?'end':'start',bl=q.base==='middle'?'middle':q.base==='top'||q.base==='hanging'?'hanging':q.base==='bottom'?'text-after-edge':'auto';
   let fill=typeof q.fill==='string'?q.fill:'#102e4b';if(T.dark&&/^#(1|0|2[0-9a-f])/i.test(fill))fill='#d6e4f2';
   h+='<text transform="matrix('+q.M.join(' ')+')" x="'+q.x+'" y="'+q.y+'" font-size="'+fs+'" font-family="'+fam+'" font-weight="'+(window.fino108?.on?'400':(mm[1]||big?'700':'400'))+'" text-anchor="'+anc+'" dominant-baseline="'+bl+'" fill="'+fill+'"'+(q.a<1?' opacity="'+q.a+'"':'')+' stroke="'+halo+'" stroke-width="'+(fs*(window.fino108?.on?.18:.28))+'" stroke-linejoin="round" paint-order="stroke">'+escX(q.t)+'</text>';}
@@ -9489,6 +9489,7 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
     '3D': ['ver', '<path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6" stroke-width="1.2"/>'],
     'Importar IFC': ['ver', '<path d="M12 2.8 19 6.7v7.6L12 18.2 5 14.3V6.7z" stroke-width="1.3"/><path d="M5 6.7 12 10.6l7-3.9M12 10.6v7.6" stroke-width="1"/><path d="M17.5 18.5V23M15.5 21l2 2 2-2" stroke-width="1.3"/>'],
     'Limpar marcas': ['ver', '<path d="m14 4 6 6-9 9H6l-3-3z"/><path d="m9 9 6 6M3 20h18" stroke-width="1.2"/>'],
+    'Trena': ['des', '<rect x="2.5" y="8" width="13" height="10" rx="5"/><circle cx="9" cy="13" r="2.2"/><path d="M15.5 15.5h6v2.5h-6" stroke-width="1.4"/><path d="M17.5 15.5v1.3M19.5 15.5v1.3" stroke-width="1"/>'],
     'Verificar geometria': ['des', '<rect x="2.5" y="13" width="12" height="5" rx=".5"/><path d="M2.5 13V6h5" stroke-width="1.2"/><circle cx="16" cy="9" r="4.6"/><path d="m19.4 12.4 3 3" stroke-width="2"/><path d="m13.9 9 1.5 1.5 2.8-3" stroke-width="1.4"/>'],
     'Separador': ['arq', '<path d="M12 3v18" stroke-width="2"/>'],
   };
@@ -9518,7 +9519,7 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
     ['Exemplo didático', () => $('example')?.click()], ['Desfazer', () => window.undo58?.undo?.()], ['Refazer', () => window.undo58?.redo?.()],
     ['Resistências', () => window.res96?.open()], ['Vento e contraventamento', () => window.vento109?.open()], ['Vergas', () => window.vergas109?.open()],
     ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Visibilidade', () => $('vis87btn')?.click()],
-    ['Verificar geometria', () => window.geo116?.abrir()], ['Renumerar', () => window.renum116?.()],
+    ['Verificar geometria', () => window.geo116?.abrir()], ['Trena', () => window.trena118?.ligar()], ['Renumerar', () => window.renum116?.()],
   ];
   for (const [l, f] of EXTRA) REG.set('x:' + l, { key: 'x:' + l, t: { l, ic: '', t: () => { f(); } }, cat: 'extra' });
   REG.set('sep', { key: 'sep', t: { l: 'Separador' } });
@@ -9529,7 +9530,7 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
     flow: ['x:Novo projeto', 'x:Abrir projeto', 'x:Salvar', 'sep', 'x:Desfazer', 'x:Refazer', 'sep',
       'Arquitetura|#arq', 'Paredes|#paredes', 'Gerar|gen85', 'x:Verificar geometria', 'Elevações|#elev', 'Armaduras|#arm', 'Laje|#laje', 'Cargas|#cargas', 'sep',
       'x:Resistências', 'x:Vento e contraventamento', 'x:Vergas', 'sep', 'Pranchas|#pranchas', 'Quantitat.|#quant', 'x:Memorial de cálculo', 'Ajustes|#ajustes'],
-    left: ['Selecionar|sel', 'Nova parede|fn', 'Novo vão|newvao54', 'sep', 'Mover|fn', 'Aparar|trim88', 'Estender|extend88', 'Unir|join56', 'Mover p/ eixo|axis56',
+    left: ['Selecionar|sel', 'Nova parede|fn', 'Novo vão|newvao54', 'sep', 'Mover|fn', 'Aparar|trim88', 'Estender|extend88', 'Unir|join56', 'Mover p/ eixo|axis56', 'x:Trena',
       'Apagar parede|deleteWall', 'x:Renumerar', 'sep', 'Desníveis|dn87btn', 'Editar elevação|fn', 'spacer', 'x:Visibilidade', 'Ver tudo|fit88', 'Ver em 3D|v3d74btn'],
   };
   const PASSO = { 'Arquitetura|#arq': 1, 'Paredes|#paredes': 2, 'Gerar|gen85': 3, 'Elevações|#elev': 4, 'Armaduras|#arm': 5, 'Laje|#laje': 6, 'Cargas|#cargas': 7 };
@@ -9544,6 +9545,10 @@ const css=document.createElement('style');css.textContent='#wl108{position:absol
     const pos = (l, k, depois) => { if (l.includes(k)) return; const j = l.indexOf(depois); l.splice(j >= 0 ? j + 1 : l.length, 0, k); };
     pos(barras.flow, 'x:Verificar geometria', 'Gerar|gen85'); pos(barras.left, 'x:Renumerar', 'Apagar parede|deleteWall');
     LS('barras116', '1'); salvar();
+  }
+  if (LS('barras118') !== '1') {
+    if (!barras.left.includes('x:Trena')) { const j = barras.left.indexOf('Mover p/ eixo|axis56'); barras.left.splice(j >= 0 ? j + 1 : barras.left.length, 0, 'x:Trena'); }
+    LS('barras118', '1'); salvar();
   }
 
   // ---------- estrutura
@@ -10346,6 +10351,310 @@ body.cad109 #flowR109 select,body.cad109 #flowR109 input,body.cad109 #flowR109 b
 #iguaisBox117{margin:8px 0;padding:8px 10px;border:1px solid #b9d0e6;border-radius:6px;background:#f3f8fd;font-size:12.5px}#iguaisBox117[hidden]{display:none}
 #iguaisBox117>span{color:#4a5d70}#iguaisBox117 .g117{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0}#iguaisBox117 .g117 label{display:flex;align-items:center;gap:5px;font-weight:600;white-space:nowrap}
 #iguaisBox117 .g117 input{width:auto;margin:0}#iguaisBox117 .e117{color:#1d6b34;font-weight:600}`;
+  document.head.append(css);
+})();
+</script><script>// V118 — 05/06. IDENTIFICAÇÃO DAS PAREDES NA PLANTA
+//  05. Texto "Parede N" um pouco menor. Parede horizontal: acima ou abaixo, perto da ponta esquerda.
+//      Parede vertical: junto da ponta de baixo, de um lado ou do outro. Sem sobrepor; se precisar afastar,
+//      sai com seta apontando a parede.
+//  06. Arrastar o texto com o Selecionar (na planta principal): a posição fica gravada no projeto e não
+//      mexe na parede nem na modulação. Dois cliques no texto: volta para a posição automática.
+(function () {
+  'use strict';
+  const N = Number, $id = id => document.getElementById(id);
+  window.lbl118 = { fator: 1.35 };                       // antes 1,8 × o texto da planta
+  const FS = 8.4 * 1.35;                                  // tamanho do texto na planta (unidades do desenho)
+  const larg = t => t.length * FS * 0.6 + 4, alt = FS + 3;
+  const SETA = 6;                                         // a partir desta folga além da face, vai com seta
+
+  function geoW(w) {
+    let [a, b] = w.line; if (a.x > b.x || Math.abs(a.x - b.x) < .01 && a.y > b.y) [a, b] = [b, a];
+    const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy); if (!L) return null;
+    const k = N(w.planScale) || L / N(w.length), half = N(w.width) * k / 2, hz = Math.abs(dx) >= Math.abs(dy);
+    return { a, b, dx, dy, L, half, hz, u: { x: dx / L, y: dy / L } };
+  }
+  // ponto da parede mais perto de (x,y) e a distância até a face
+  function maisPerto(g, x, y) {
+    const t = Math.max(0, Math.min(g.L, (x - g.a.x) * g.u.x + (y - g.a.y) * g.u.y)), p = { x: g.a.x + g.u.x * t, y: g.a.y + g.u.y * t };
+    const d = Math.hypot(x - p.x, y - p.y); return { p, d, face: d - g.half };
+  }
+  function seta(g, l) {
+    const box = pointsRect25(l.box), cx = box.x + box.w / 2, cy = box.y + box.h / 2, m = maisPerto(g, cx, cy);
+    // distância da caixa do texto até a face da parede
+    const fx = Math.max(box.x - m.p.x, 0, m.p.x - (box.x + box.w)), fy = Math.max(box.y - m.p.y, 0, m.p.y - (box.y + box.h));
+    if (Math.hypot(fx, fy) - g.half <= SETA) return null;
+    const vx = cx - m.p.x, vy = cy - m.p.y, vl = Math.hypot(vx, vy) || 1;
+    // começa na borda da caixa do texto e termina na face da parede
+    const sx = Math.abs(vx) / (box.w / 2 + 1e-9) > Math.abs(vy) / (box.h / 2 + 1e-9) ? (box.w / 2) / Math.abs(vx) : (box.h / 2) / Math.abs(vy);
+    return { x1: cx - vx * sx, y1: cy - vy * sx, x2: m.p.x + vx / vl * g.half, y2: m.p.y + vy / vl * g.half };
+  }
+  function rotulos(walls, page) {
+    const barreiras = wallRects25(walls, page), usados = [], out = [];
+    const lista = [];
+    for (const [i, w] of walls.entries()) { if (!w.line || N(w.page || 1) !== N(page)) continue; const g = geoW(w); if (g) lista.push({ i, w, g }); }
+    // primeiro as posições manuais (ocupam o lugar delas), depois as automáticas
+    lista.sort((x, y) => (y.w.labelPosition28 ? 1 : 0) - (x.w.labelPosition28 ? 1 : 0));
+    for (const { i, w, g } of lista) {
+      const texto = 'Parede ' + (i + 1), W0 = larg(texto), H0 = alt;
+      const ang = readableAngle(Math.atan2(g.dy, g.dx) * 180 / Math.PI), r = ang * Math.PI / 180;
+      const W = Math.abs(Math.cos(r)) * W0 + Math.abs(Math.sin(r)) * H0, H = Math.abs(Math.sin(r)) * W0 + Math.abs(Math.cos(r)) * H0;
+      const faz = (x, y) => ({ wall: i + 1, x, y, angle: ang, box: rectPoints25(rect25(x, y, W, H)) });
+      let l = null;
+      if (w.labelPosition28) l = faz(N(w.labelPosition28.x), N(w.labelPosition28.y));
+      else {
+        // ao longo da parede: horizontal a partir da ponta esquerda; vertical a partir da ponta de baixo
+        const comp = g.hz ? W : H, ini = g.hz ? g.a : (g.a.y > g.b.y ? g.a : g.b), sent = g.hz ? 1 : (ini === g.a ? 1 : -1);
+        const passo = Math.max(4, comp / 3), posicoes = [];
+        for (let s = comp / 2 + 2 * g.half + 2; s <= g.L - comp / 2; s += passo) posicoes.push(s);
+        if (!posicoes.length) posicoes.push(g.L / 2);
+        const em = (s, lado, folga) => {
+          const t = ini === g.a ? s : g.L - s, px = g.a.x + g.u.x * t, py = g.a.y + g.u.y * t;
+          const off = g.half + (g.hz ? H : W) / 2 + folga;
+          return g.hz ? faz(px, py + lado * off) : faz(px + lado * off, py);
+        };
+        busca: for (const folga of [1.5, 4, 8, 14, 22, 34, 50, 75]) for (const s of posicoes) for (const lado of [-1, 1]) {
+          const q = em(s, lado, folga), bx = pointsRect25(q.box);
+          if (barreiras.some(z => overlap25(bx, z, 1)) || usados.some(z => overlap25(bx, z, 2))) continue;
+          l = q; break busca;
+        }
+        l ??= em(posicoes[0], -1, 1.5);
+        void sent;
+      }
+      const sl = seta(g, l); if (sl) l.seta118 = sl;
+      usados.push(pointsRect25(l.box)); out.push(l);
+    }
+    return out;
+  }
+  let cacheK = '', cacheV = null;
+  const copia = ls => ls.map(l => ({ ...l, box: l.box.map(p => ({ ...p })) }));
+  try { PlanEngine.labels = function (walls, page) { try {
+    const k = page + '|' + walls.map((w, i) => w.line && N(w.page || 1) === N(page) ? i + ':' + w.line.map(p => p.x + ',' + p.y).join(';') + ':' + w.width + ':' + w.length + ':' + w.planScale + ':' + (w.labelPosition28 ? w.labelPosition28.x + ',' + w.labelPosition28.y : '') : '').join('/');
+    if (k !== cacheK) { cacheV = rotulos(walls, page); cacheK = k; }
+    return copia(cacheV); } catch (e) { console.error('V118 rótulos', e); return []; } }; } catch (e) { console.error('V118', e); }
+  // a posição do texto não é mudança da parede: não pode invalidar a modulação
+  try { const ss = sourceSignature; sourceSignature = function (w) { if (!w || !w.labelPosition28) return ss(w); const { labelPosition28, ...rest } = w; return ss(rest); }; } catch (e) { console.error('V118 assinatura', e); }
+
+  // ---------------------------------------------------------------- setas: planta principal (camada de vetor) e pranchas
+  const ponta = (s, tam) => { const vx = s.x2 - s.x1, vy = s.y2 - s.y1, L = Math.hypot(vx, vy) || 1, ux = vx / L, uy = vy / L; return `${s.x2},${s.y2} ${s.x2 - ux * tam - uy * tam * .45},${s.y2 - uy * tam + ux * tam * .45} ${s.x2 - ux * tam + uy * tam * .45},${s.y2 - uy * tam - ux * tam * .45}`; };
+  const setaSVG = (s, cor, lw, tam, dx = 0, dy = 0) => { const q = { x1: s.x1 - dx, y1: s.y1 - dy, x2: s.x2 - dx, y2: s.y2 - dy }; return `<line x1="${q.x1.toFixed(1)}" y1="${q.y1.toFixed(1)}" x2="${q.x2.toFixed(1)}" y2="${q.y2.toFixed(1)}" stroke="${cor}" stroke-width="${lw}"/><polygon points="${ponta(q, tam)}" fill="${cor}"/>`; };
+  const cv = $id('plan'), wrap = $id('planWrap'), sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  sv.id = 'lbl118'; sv.setAttribute('aria-hidden', 'true'); if (wrap) wrap.append(sv);
+  function setasPlanta() {
+    if (!cv || typeof image === 'undefined' || !image) { sv.innerHTML = ''; return; }
+    sv.style.left = cv.offsetLeft + 'px'; sv.style.top = cv.offsetTop + 'px'; sv.style.width = cv.style.width || cv.getBoundingClientRect().width + 'px'; sv.style.height = cv.style.height || cv.getBoundingClientRect().height + 'px';
+    sv.setAttribute('viewBox', '0 0 ' + cv.width + ' ' + cv.height);
+    const O = cv.planOrigin25 || { x: 0, y: 0 }, escuro = !!window.bg88?.THEMES?.[window.bg88?.get?.().theme]?.dark, cor = escuro ? '#d6e4f2' : '#16456b';
+    let h = '';
+    try { for (const l of PlanEngine.labels(state.walls, N($id('page')?.value) || 1)) if (l.seta118) h += setaSVG(l.seta118, cor, 0.9, 4, O.x, O.y); } catch {}
+    sv.innerHTML = h;
+  }
+  try { const dp = drawPlan; drawPlan = function (...a) { const r = dp.apply(this, a); try { setasPlanta(); } catch (e) { console.error('V118 setas', e); } return r; }; } catch {}
+  try {
+    const gs = generalSVG;
+    generalSVG = function (g, ...rest) {
+      const r = gs.call(this, g, ...rest);
+      try {
+        if (typeof r === 'string' && g?.labels?.some(l => l.seta118)) {
+          const add = g.labels.filter(l => l.seta118).map(l => setaSVG(l.seta118, '#174a78', 0.8, 3.5)).join('');
+          const k = r.lastIndexOf('</svg>'); if (k > 0) return r.slice(0, k) + '<g class="setas118">' + add + '</g>' + r.slice(k);
+        }
+      } catch (e) { console.error('V118 setas prancha', e); }
+      return r;
+    };
+  } catch {}
+
+  // ---------------------------------------------------------------- 06. arrastar o texto na planta principal
+  let arr = null, raf = 0;
+  const ponto = e => { const r = cv.getBoundingClientRect(), sc = r.width && cv.width ? r.width / cv.width : 1, O = cv.planOrigin25 || { x: 0, y: 0 }; return { x: (e.clientX - r.left) / sc + O.x, y: (e.clientY - r.top) / sc + O.y }; };
+  const selecionando = () => { if (window.trena118?.ativo?.()) return false; const t = $id('sT85')?.textContent || ''; return !t || /selecionar/i.test(t); };
+  function acha(e) {
+    if (!cv || !wrap?.contains(e.target) || typeof image === 'undefined' || !image) return null;
+    const p = ponto(e), pg = N($id('page')?.value) || 1;
+    let ls = []; try { ls = PlanEngine.labels(state.walls, pg); } catch { return null; }
+    for (const l of ls) { const b = pointsRect25(l.box); if (p.x >= b.x - 2 && p.x <= b.x + b.w + 2 && p.y >= b.y - 2 && p.y <= b.y + b.h + 2) return { l, p }; }
+    return null;
+  }
+  document.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !selecionando()) return;
+    const h = acha(e); if (!h) return;
+    const w = state.walls[h.l.wall - 1]; if (!w) return;
+    arr = { w, i: h.l.wall - 1, ini: h.p, orig: { x: h.l.x, y: h.l.y }, antes: w.labelPosition28 ? { ...w.labelPosition28 } : null, moveu: false };
+    e.stopImmediatePropagation(); e.preventDefault();
+    try { cv.setPointerCapture?.(e.pointerId); } catch {}
+  }, true);
+  document.addEventListener('pointermove', e => {
+    if (!arr) return;
+    const p = ponto(e), dx = p.x - arr.ini.x, dy = p.y - arr.ini.y;
+    if (!arr.moveu && Math.hypot(dx, dy) < 1.5) return;
+    arr.moveu = true; arr.w.labelPosition28 = { x: arr.orig.x + dx, y: arr.orig.y + dy };
+    e.stopImmediatePropagation();
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; try { drawPlan(); } catch {} });
+  }, true);
+  document.addEventListener('pointerup', e => {
+    if (!arr) return; const a = arr; arr = null; e.stopImmediatePropagation();
+    if (!a.moveu) return;
+    try { window.plotSignature26 = ''; } catch {}
+    try { typeof plotSignature26 !== 'undefined' && (plotSignature26 = ''); } catch {}
+    try { drawPlan(); } catch {}
+    try { msg('Texto da Parede ' + (a.i + 1) + ' reposicionado (fica salvo no projeto). Dois cliques no texto voltam para a posição automática.'); } catch {}
+  }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && arr) { if (arr.antes) arr.w.labelPosition28 = arr.antes; else delete arr.w.labelPosition28; arr = null; try { drawPlan(); } catch {} } }, true);
+  document.addEventListener('dblclick', e => {
+    if (!selecionando()) return;
+    const h = acha(e); if (!h) return;
+    const w = state.walls[h.l.wall - 1]; if (!w?.labelPosition28) return;
+    delete w.labelPosition28; e.stopImmediatePropagation(); e.preventDefault();
+    try { drawPlan(); msg('Texto da Parede ' + h.l.wall + ' de volta à posição automática.'); } catch {}
+  }, true);
+  // cursor de mover sobre o texto
+  document.addEventListener('pointermove', e => {
+    if (arr || !cv || !wrap?.contains(e.target)) return;
+    const h = selecionando() ? acha(e) : null; wrap.classList.toggle('lblHover118', !!h);
+  });
+
+  const css = document.createElement('style');
+  css.textContent = '#lbl118{position:absolute;pointer-events:none;z-index:4;overflow:visible}#planWrap.lblHover118,#planWrap.lblHover118 canvas{cursor:move!important}';
+  document.head.append(css);
+})();
+</script><script>// V118 — 08. TRENA: mede a distância entre dois pontos da planta, com captura (snap) nos pontos da máscara DXF,
+// pontas e cantos das paredes, e no eixo/faces das paredes. Medida em cm (escala da planta), com Δx e Δy.
+// Clique no 1º ponto, clique no 2º: a medida fica na tela. Pode medir várias. Esc ou botão direito: sai e limpa.
+// Shift: sem captura (ponto livre).
+(function () {
+  'use strict';
+  const N = Number, $id = id => document.getElementById(id);
+  const cv = $id('plan'), wrap = $id('planWrap'); if (!cv || !wrap) return;
+  const pg = () => N($id('page')?.value) || 1;
+  const kPg = () => { if (typeof pxCm === 'number' && pxCm > 0) return pxCm; const w = state.walls.find(w => w.line && N(w.page || 1) === pg() && N(w.planScale) > 0); return w ? N(w.planScale) : 1; };
+  const fmt = v => (Math.round(v * 10) / 10).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  let ativo = false, A = null, cursor = null, medidas = [], snapAtual = null, ferrAntes = '';
+  const extras = [];                                       // outras ferramentas (ex.: lápis de referência) podem somar pontos
+  const sv = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); sv.id = 'trena118'; sv.setAttribute('aria-hidden', 'true'); wrap.append(sv);
+  const escala = () => { const r = cv.getBoundingClientRect(); return r.width && cv.width ? r.width / cv.width : 1; };
+  const ponto = e => { const r = cv.getBoundingClientRect(), sc = escala(), O = cv.planOrigin25 || { x: 0, y: 0 }; return { x: (e.clientX - r.left) / sc + O.x, y: (e.clientY - r.top) / sc + O.y }; };
+
+  // ---------------------------------------------------------------- captura
+  function vertices() {
+    const out = [], p = pg(), k = kPg();
+    try { for (const q of (typeof fixedPoints !== 'undefined' && fixedPoints) || []) out.push({ x: q.x, y: q.y, t: 'DXF' }); } catch {}
+    for (const w of state.walls) {
+      if (!w.line || N(w.page || 1) !== p) continue;
+      const [a, b] = w.line, L = Math.hypot(b.x - a.x, b.y - a.y); if (!L) continue;
+      const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, h = (N(w.width) || 14) * k / 2;
+      out.push({ ...a, t: 'ponta' }, { ...b, t: 'ponta' });
+      for (const E of [a, b]) for (const s of [-1, 1]) out.push({ x: E.x - uy * h * s, y: E.y + ux * h * s, t: 'canto' });
+      for (const o of w.openings || []) for (const t of [N(o.start), N(o.start) + N(o.width)]) for (const s of [-1, 1]) out.push({ x: a.x + ux * t * k - uy * h * s, y: a.y + uy * t * k + ux * h * s, t: 'vão' });
+    }
+    for (const f of extras) { try { out.push(...f(p)); } catch {} }
+    return out;
+  }
+  function linhas() {
+    const out = [], p = pg(), k = kPg();
+    for (const w of state.walls) {
+      if (!w.line || N(w.page || 1) !== p) continue;
+      const [a, b] = w.line, L = Math.hypot(b.x - a.x, b.y - a.y); if (!L) continue;
+      const ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, h = (N(w.width) || 14) * k / 2;
+      out.push({ a, ux, uy, L, t: 'eixo' });
+      for (const s of [-1, 1]) out.push({ a: { x: a.x - uy * h * s, y: a.y + ux * h * s }, ux, uy, L, t: 'face' });
+    }
+    return out;
+  }
+  function capturar(P, livre) {
+    if (livre) return { ...P, t: '' };
+    const tol = 10 / escala();
+    let b = null, bd = tol;
+    // cantos das faces valem um pouco menos que pontas e pontos do DXF (ficam a poucos pixels um do outro)
+    for (const q of vertices()) { const d = Math.hypot(q.x - P.x, q.y - P.y) + (q.t === 'canto' || q.t === 'vão' ? 4 / escala() : 0); if (d < bd) { bd = d; b = q; } }
+    if (b) return { x: b.x, y: b.y, t: b.t };
+    let e = null, ed = tol * .8;
+    for (const l of linhas()) {
+      const t = Math.max(0, Math.min(l.L, (P.x - l.a.x) * l.ux + (P.y - l.a.y) * l.uy)), X = { x: l.a.x + l.ux * t, y: l.a.y + l.uy * t }, d = Math.hypot(X.x - P.x, X.y - P.y);
+      if (d < ed) { ed = d; e = { ...X, t: l.t }; }
+    }
+    return e || { ...P, t: '' };
+  }
+
+  // ---------------------------------------------------------------- desenho
+  function texto(x, y, t, fs, cor, ang = 0) {
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${fs.toFixed(2)}" font-family="Segoe UI,Arial" font-weight="700" fill="${cor}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${ang.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})" stroke="rgba(0,0,0,.55)" stroke-width="${(fs * .22).toFixed(2)}" paint-order="stroke">${t}</text>`;
+  }
+  function cota(P, Q, cor, sc, k, viva) {
+    const dx = Q.x - P.x, dy = Q.y - P.y, L = Math.hypot(dx, dy); if (L < 1e-6) return '';
+    const O = cv.planOrigin25 || { x: 0, y: 0 }, X = p => (p.x - O.x), Y = p => (p.y - O.y);
+    let ang = Math.atan2(dy, dx) * 180 / Math.PI; if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+    const nx = -dy / L, ny = dx / L, fs = 12 / sc, t = 5 / sc, mx = (P.x + Q.x) / 2 + nx * 9 / sc, my = (P.y + Q.y) / 2 + ny * 9 / sc;
+    const cm = L / k, ddx = Math.abs(dx) / k, ddy = Math.abs(dy) / k;
+    let h = `<line x1="${X(P)}" y1="${Y(P)}" x2="${X(Q)}" y2="${Y(Q)}" stroke="${cor}" stroke-width="${1.6 / sc}"${viva ? ` stroke-dasharray="${6 / sc} ${4 / sc}"` : ''}/>`;
+    for (const E of [P, Q]) h += `<line x1="${X(E) - nx * t}" y1="${Y(E) - ny * t}" x2="${X(E) + nx * t}" y2="${Y(E) + ny * t}" stroke="${cor}" stroke-width="${1.6 / sc}"/>`;
+    h += texto(mx - O.x, my - O.y, fmt(cm) + ' cm', fs, cor, ang);
+    if (ddx > .5 && ddy > .5) h += texto(mx - O.x, my - O.y + 14 / sc, 'Δx ' + fmt(ddx) + ' · Δy ' + fmt(ddy), fs * .72, cor, 0);
+    return h;
+  }
+  function marca(s, sc, cor) {
+    if (!s) return '';
+    const O = cv.planOrigin25 || { x: 0, y: 0 }, x = s.x - O.x, y = s.y - O.y, r = 6 / sc;
+    const forma = s.t === 'ponta' || s.t === 'canto' || s.t === 'DXF' || s.t === 'vão' ? `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" fill="none" stroke="${cor}" stroke-width="${1.6 / sc}"/>` : s.t ? `<path d="M${x - r},${y + r}L${x},${y - r}L${x + r},${y + r}Z" fill="none" stroke="${cor}" stroke-width="${1.6 / sc}"/>` : `<path d="M${x - r},${y}H${x + r}M${x},${y - r}V${y + r}" stroke="${cor}" stroke-width="${1.2 / sc}"/>`;
+    return forma + (s.t ? texto(x + 2.2 * r, y - 2.2 * r, s.t, 9 / sc, cor) : '');
+  }
+  function desenhar() {
+    if (!ativo && !medidas.length) { sv.innerHTML = ''; sv.style.display = 'none'; return; }
+    sv.style.display = ''; sv.style.left = cv.offsetLeft + 'px'; sv.style.top = cv.offsetTop + 'px'; sv.style.width = cv.style.width || cv.getBoundingClientRect().width + 'px'; sv.style.height = cv.style.height || cv.getBoundingClientRect().height + 'px';
+    sv.setAttribute('viewBox', '0 0 ' + cv.width + ' ' + cv.height);
+    const sc = escala(), k = kPg(), cor = '#ffcc00', viva = '#5fe0ff';
+    let h = medidas.filter(m => m.page === pg()).map(m => cota(m.A, m.B, cor, sc, k)).join('');
+    if (ativo && A && cursor) h += cota(A, cursor, viva, sc, k, true);
+    if (ativo) h += marca(snapAtual, sc, viva);
+    sv.innerHTML = h;
+  }
+  try { const dp = drawPlan; drawPlan = function (...a) { const r = dp.apply(this, a); try { desenhar(); } catch {} return r; }; } catch {}
+
+  // ---------------------------------------------------------------- ferramenta
+  function ligar() {
+    if (ativo) { desligar(); return; }
+    try { window.cancelTool56?.(); } catch {}
+    ativo = true; A = null; cursor = null; medidas = [];
+    const st = $id('sT85'); if (st) { ferrAntes = st.textContent; st.textContent = 'Trena'; }
+    wrap.classList.add('trena118');
+    try { msg('📏 Trena: clique no 1º ponto e depois no 2º. Captura nos pontos do DXF, pontas, cantos, vãos e faces das paredes (Shift = ponto livre). Esc ou botão direito: sair.'); } catch {}
+    desenhar(); marcarBotao();
+  }
+  function desligar() {
+    ativo = false; A = null; cursor = null; snapAtual = null; medidas = [];
+    const st = $id('sT85'); if (st && st.textContent === 'Trena') st.textContent = ferrAntes || 'Selecionar';
+    wrap.classList.remove('trena118'); desenhar(); marcarBotao();
+  }
+  function marcarBotao() { document.querySelectorAll('[data-key="x:Trena"]').forEach(b => b.classList.toggle('on', ativo)); }
+  const noDesenho = e => wrap.contains(e.target) && !e.target.closest('#geo116,.hud88,button,input,select');
+  document.addEventListener('pointerdown', e => {
+    if (!ativo || !noDesenho(e)) return;
+    if (e.button === 2) { e.preventDefault(); e.stopImmediatePropagation(); desligar(); return; }
+    if (e.button !== 0) return;                                  // rodinha/botão do meio: zoom e arrastar continuam
+    e.preventDefault(); e.stopImmediatePropagation();
+    const P = capturar(ponto(e), e.shiftKey);
+    if (!A) { A = P; cursor = P; }
+    else {
+      const k = kPg(), m = { A, B: P, page: pg() }, cm = Math.hypot(P.x - A.x, P.y - A.y) / k;
+      if (cm > 0.05) { medidas.push(m); try { msg('📏 ' + fmt(cm) + ' cm  (Δx ' + fmt(Math.abs(P.x - A.x) / k) + ' · Δy ' + fmt(Math.abs(P.y - A.y) / k) + ' cm). Clique para outra medida; Esc para sair.'); } catch {} }
+      A = null;
+    }
+    desenhar();
+  }, true);
+  document.addEventListener('pointermove', e => {
+    if (!ativo) return;
+    if (!noDesenho(e)) return;
+    snapAtual = capturar(ponto(e), e.shiftKey); cursor = snapAtual;
+    desenhar();
+  }, true);
+  document.addEventListener('pointerup', e => { if (ativo && noDesenho(e) && e.button === 0) e.stopImmediatePropagation(); }, true);
+  document.addEventListener('click', e => { if (ativo && noDesenho(e)) e.stopImmediatePropagation(); }, true);
+  document.addEventListener('contextmenu', e => { if (ativo && noDesenho(e)) e.preventDefault(); }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && ativo) { if (A) { A = null; desenhar(); } else desligar(); e.stopImmediatePropagation(); }
+  }, true);
+  window.trena118 = { ligar, desligar, ativo: () => ativo, medidas: () => medidas.slice(), pontos: f => extras.push(f), capturar: (P, l) => capturar(P, l) };
+
+  const css = document.createElement('style');
+  css.textContent = '#trena118{position:absolute;pointer-events:none;z-index:7;overflow:visible}#planWrap.trena118,#planWrap.trena118 canvas{cursor:crosshair!important}';
   document.head.append(css);
 })();
 </script><script type="module">try {

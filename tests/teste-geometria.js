@@ -110,6 +110,26 @@ const CASOS = [
     await p.close();
   }
 
+  // Trena (pontos livres com Shift) e texto da parede arrastado na planta principal
+  {
+    const { p, erros } = await abrir();
+    await paredes(p, ret);
+    await p.evaluate(() => { try { drawPlan(); } catch {} });
+    const tela = q => p.evaluate(q => { const cv = document.getElementById('plan'), r = cv.getBoundingClientRect(), sc = r.width / cv.width, O = cv.planOrigin25 || { x: 0, y: 0 }; return { x: r.left + (q.x - O.x) * sc, y: r.top + (q.y - O.y) * sc }; }, q);
+    await p.evaluate(() => window.trena118.ligar());
+    const A = await tela({ x: 200, y: 300 }), B = await tela({ x: 500, y: 300 });
+    await p.keyboard.down('Shift'); await p.mouse.click(A.x, A.y); await p.mouse.click(B.x, B.y); await p.keyboard.up('Shift');
+    const med = await p.evaluate(() => { const m = trena118.medidas()[0], k = state.walls[0].planScale; trena118.desligar(); return m ? Math.round(Math.hypot(m.B.x - m.A.x, m.B.y - m.A.y) / k) : null; });
+    const l = await p.evaluate(() => PlanEngine.labels(state.walls, 1).find(l => l.wall === 2)), L = await tela(l), sig = await p.evaluate(() => sourceSignature(state.walls[1]));
+    await p.mouse.move(L.x, L.y); await p.mouse.down(); await p.mouse.move(L.x - 60, L.y + 40, { steps: 5 }); await p.mouse.up();
+    const arr = await p.evaluate(s => ({ gravou: !!state.walls[1].labelPosition28, mesma: sourceSignature(state.walls[1]) === s, seta: !!PlanEngine.labels(state.walls, 1).find(l => l.wall === 2).seta118 }), sig);
+    const l2 = await tela(await p.evaluate(() => PlanEngine.labels(state.walls, 1).find(l => l.wall === 2)));
+    await p.mouse.dblclick(l2.x, l2.y);
+    const volta = await p.evaluate(() => !state.walls[1].labelPosition28);
+    conferir(med === 300 && arr.gravou && arr.mesma && arr.seta && volta && !erros.length, 'trena e texto da parede: ' + JSON.stringify({ med, ...arr, volta }));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();
