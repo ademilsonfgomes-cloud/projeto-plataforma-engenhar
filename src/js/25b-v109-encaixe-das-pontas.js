@@ -20,6 +20,7 @@
       for (const ponta of [0, 1]) {
         // ponta recuada DE PROPÓSITO (amarração indireta / espessuras diferentes, V84/V86): não mexer
         if ((B.w.indirect84 || []).some(x => N(x.end) === ponta) || (B.w.extended86 || []).some(x => N(x.end) === ponta)) continue;
+        if ((B.w.noSnap116 || []).includes(ponta)) continue;                    // folga marcada como intencional no Verificar geometria (V116)
         let melhor = null;
         for (const A of L) {
           if (!A || A === B || N(A.w.page || 1) !== N(B.w.page || 1)) continue;

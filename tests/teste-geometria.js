@@ -64,6 +64,20 @@ const CASOS = [
     await p.close();
   }
 
+  // folga de 2 cm (o Gerar encaixaria sozinho): marcada como intencional, o encaixe não mexe
+  {
+    const { p, erros } = await abrir();
+    await paredes(p, [...ret, R(463, 9, 463, 250)]);
+    const r = await p.evaluate(() => {
+      geo116.abrir(); const it = geo116.lista().find(x => x.snap); if (!it) return { achou: false };
+      const b = document.querySelector('#geo116 [data-ok="' + geo116.lista().indexOf(it) + '"]'); b.click();
+      const L0 = state.walls[4].length, log = window.encaixe109(state.walls);
+      return { achou: true, encaixou: log.length, igual: state.walls[4].length === L0 };
+    });
+    conferir(r.achou && r.encaixou === 0 && r.igual && !erros.length, 'folga de 2 cm marcada como intencional não é encaixada: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // nome do arquivo .json
   {
     const { p, erros } = await abrir();

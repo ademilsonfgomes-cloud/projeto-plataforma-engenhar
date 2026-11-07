@@ -5786,6 +5786,7 @@ setTimeout(syncUI,0);
       for (const ponta of [0, 1]) {
         // ponta recuada DE PROPÓSITO (amarração indireta / espessuras diferentes, V84/V86): não mexer
         if ((B.w.indirect84 || []).some(x => N(x.end) === ponta) || (B.w.extended86 || []).some(x => N(x.end) === ponta)) continue;
+        if ((B.w.noSnap116 || []).includes(ponta)) continue;                    // folga marcada como intencional no Verificar geometria (V116)
         let melhor = null;
         for (const A of L) {
           if (!A || A === B || N(A.w.page || 1) !== N(B.w.page || 1)) continue;
@@ -10009,7 +10010,11 @@ body.cad109 #flowR109 select,body.cad109 #flowR109 input,body.cad109 #flowR109 b
         if (Math.abs(ro.d) < Math.abs(r.d)) continue;                      // a ponta não está voltada para A
         if ((B.w.indirect84 || []).some(x => N(x.end) === ponta) || (B.w.extended86 || []).some(x => N(x.end) === ponta)) continue;
         if (Math.abs(r.d) <= tol) {
-          if (c <= 0.005) continue;                                         // encontro reto: o programa reconhece
+          if (c <= 0.005) {                                                 // encontro reto: o programa reconhece
+            const g = Math.abs(r.d) - A.wd / 2;                             // ponta além da face (até 3 cm): o Gerar encaixa sozinho
+            if (g > 0.05) add('aviso', 'Parede ' + (B.i + 1) + ' termina a ' + f1(g) + ' cm da face da Parede ' + (A.i + 1) + ' — será encaixada no eixo ao gerar', 'Folga tão pequena costuma ser erro de desenho, e o programa fecha sozinho. Se a folga é do projeto, marque "É intencional" e ela fica como está.', [A.i, B.i], [E], { dist: g, snap: { uid: B.w.uid, ponta } });
+            continue;
+          }
           const k2 = chave(A.i, B.i); if (par.has(k2)) continue; par.add(k2);
           const ang = Math.acos(Math.min(1, c)) * 180 / Math.PI;
           if (ang >= 80) add('aviso', 'Parede ' + (B.i + 1) + ' encontra a Parede ' + (A.i + 1) + ' a ' + f1(ang) + '° (quase reto)', 'O programa só amarra encontros a 90°. Acerte o ângulo (mova a ponta ' + f1(Math.abs(Math.tan((90 - ang) * Math.PI / 180)) * B.L) + ' cm aprox.) para o encontro ser amarrado; senão ele sai pendente.', [A.i, B.i], [E], { dist: 90 - ang });
@@ -10081,6 +10086,7 @@ body.cad109 #flowR109 select,body.cad109 #flowR109 input,body.cad109 #flowR109 b
   function chaveDe(it) { return it.titulo.replace(/\d+([.,]\d+)?/g, '#') + '|' + it.walls.map(i => state.walls[i]?.uid || '?').sort().join(',') + '|' + Math.round(N(it.dist) || 0); }
   function intencional(it, sim) {
     for (const i of it.walls) { const w = state.walls[i]; if (!w) continue; const l = (w.geoOk116 || []).filter(k => k !== it.key); if (sim) l.push(it.key); if (l.length) w.geoOk116 = l; else delete w.geoOk116; }
+    if (it.snap) { const w = state.walls.find(x => x.uid === it.snap.uid); if (w) { const l = (w.noSnap116 || []).filter(p => p !== it.snap.ponta); if (sim) l.push(it.snap.ponta); if (l.length) w.noSnap116 = l; else delete w.noSnap116; } }
     it.ok = !!sim; try { window.dispatchEvent(new Event('geo116')); } catch {}
   }
   const ativos = () => (lista || []).filter(x => !x.ok);
