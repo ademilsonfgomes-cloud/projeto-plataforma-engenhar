@@ -404,7 +404,7 @@ body.cad109 #top85{display:none!important}
 #flowR109{display:flex;align-items:center;gap:6px;flex:none}
 #flowR109 .lv85{display:flex;align-items:center;gap:4px;font-size:11.5px;color:#6b7f93;margin:0;white-space:nowrap}
 #flowR109 select,#flowR109 input,#flowR109 button{height:24px;margin:0;padding:0 6px;border:1px solid #c2ced9;border-radius:4px;background:#fff;color:#1b2b3a;font:12px "Segoe UI",Arial,sans-serif;box-shadow:none}
-#flowR109 select{max-width:200px}#flowR109 input#scale85{width:54px}#flowR109 #md94{border-color:#c2ced9;margin:0}#flowR109 #md94 button{background:#fff;color:#40566b;height:22px;border:0;border-radius:0}#flowR109 #md94 button.on,#flowR109 #md94 button[aria-pressed=true]{background:#d7e6f5;color:#102e4b}
+#flowR109 select{max-width:200px}#flowR109 input#scale85{width:54px}#flowR109 #md94{border-color:#c2ced9;margin:0}#flowR109 #md94 button{background:#fff;color:#40566b;height:22px;border:0;border-radius:0}#flowR109 #md94 button.on,#flowR109 #md94 button[aria-pressed=true]{background:#1d8a4c!important;color:#fff!important;font-weight:700}#md94 button.on::before{content:'✓ '}#md94 button:not(.on):hover{background:#e3f1e7}#md94.busy94 button.on::after{content:' · trocando…';font-weight:400;opacity:.9}#md94.busy94{cursor:progress}
 #flowR109 #vis87btn{width:28px;padding:0;display:grid;place-items:center}
 #flowR109 #diag85{border-radius:12px;background:#e3f4ea;border-color:#9fd4b4;color:#17703d;font-weight:600;padding:0 10px}
 #lb109{position:fixed;left:0;top:var(--t109);bottom:22px;width:38px;z-index:66;background:#f7f9fb;border-right:1px solid #cfd8e2}

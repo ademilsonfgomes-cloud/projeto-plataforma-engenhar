@@ -9,7 +9,7 @@ const curE=()=>{const id=window.lvl92.current();return (window.lvl92.entries()||
 const md=document.createElement('span');md.id='md94';md.innerHTML='<button type="button" data-m="laje" title="Laje deste nível sobre as paredes que chegam aqui (as de cima aparecem em fantasma)">Laje</button><button type="button" data-m="cima" title="Paredes que nascem neste nível (as de baixo aparecem em fantasma)">Paredes de cima</button>';
 $('lvlHost85')?.append(md);
 function syncMd(){const e=curE(),show=!!e&&e.id.startsWith('l|');md.style.display=show?'':'none';md.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===(window.mode94||'laje')));}
-md.onclick=async ev=>{const b=ev.target.closest('button');if(!b)return;const e=curE();if(!e)return;window.mode94=b.dataset.m;await window.lvl92.go(e.id,true);syncMd();
+md.onclick=async ev=>{const b=ev.target.closest('button');if(!b)return;const e=curE();if(!e)return;if(md.classList.contains('busy94'))return;if(b.dataset.m===(window.mode94||'laje')&&b.classList.contains('on'))return;window.mode94=b.dataset.m;syncMd();md.classList.add('busy94');await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));try{await window.lvl92.go(e.id,true);}finally{md.classList.remove('busy94');}syncMd();
  $('planStatus').textContent=window.mode94==='cima'?'Nível '+fmV(e.v)+' · paredes que nascem aqui (1ª fiada delas). As paredes de baixo aparecem em fantasma.':'Nível '+fmV(e.v)+' · laje sobre as paredes que chegam aqui. As paredes de cima aparecem em fantasma.';};
 const fmV=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2).replace('.',',')+' m';
 setInterval(()=>{try{syncMd();}catch{}},600);
