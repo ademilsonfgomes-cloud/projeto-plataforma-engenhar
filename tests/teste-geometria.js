@@ -149,6 +149,24 @@ const CASOS = [
     await p.close();
   }
 
+  // Pranchas: o quadro arrastado fica onde foi solto; os que estavam lá procuram o espaço livre mais perto
+  {
+    const { p, erros } = await abrir();
+    await p.evaluate(() => { window.__geo116off = true; document.getElementById('generate').click(); });
+    await require('./estresse.js').esperarFim(p);
+    await p.evaluate(() => document.querySelectorAll('dialog[open]').forEach(d => d.close()));
+    await p.click('#tabs85 [data-v="plot"]'); await p.waitForTimeout(300);
+    const r = await p.evaluate(() => {
+      buildPlot26(); const S = plotSheets26, si = S.findIndex(s => s.items.length >= 2); if (si < 0) return { erro: 'sem folha com 2 quadros' };
+      const alvo = S[si].items[1], x = alvo.x, y = alvo.y, mov = S[si].items[0], res = window.colocar121(si, 0, si, x, y);
+      const T = plotSheets26.find(s => s.items.includes(mov)), ov = [];
+      plotSheets26.forEach(s => s.items.forEach((q, j) => s.items.forEach((o, k) => { if (k > j && overlap25(q, o, 0)) ov.push(q.title + ' × ' + o.title); })));
+      return { noLugar: Math.abs(mov.x - x) < .01 && Math.abs(mov.y - y) < .01, mesmaFolha: plotSheets26.indexOf(T) === si, realocados: res?.rel.length || 0, sobrepostos: ov.length, ui: !!document.querySelector('#pr121rib [data-a="montar"]') && document.querySelectorAll('.th121').length === plotSheets26.length };
+    });
+    conferir(r.noLugar && r.mesmaFolha && r.realocados >= 1 && r.sobrepostos === 0 && r.ui && !erros.length, 'pranchas: quadro fica onde soltou e os outros saem: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();
