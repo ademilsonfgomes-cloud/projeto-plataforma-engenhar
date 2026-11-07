@@ -3,7 +3,7 @@
 //      ângulos quase retos e inclinados, encontros muito próximos, encontro dentro de porta/janela, vigas soltas.
 //      Cada problema aparece marcado no desenho, com a distância e a correção recomendada.
 //      Crítico (parede sumiria ou não pode ser modulada): bloqueia o Gerar até corrigir. Aviso: deixa gerar.
-//  13. Projeto salvo com o nome do cliente (campo "Nome do projeto": "Nome do cliente / projeto").
+//  13. Projeto salvo com o nome do cliente (campo Cliente do carimbo; se vazio, o Nome do projeto).
 //  02. Renumerar com ícone na barra (paredes, portas/janelas, vigas, reforços e aberturas da laje).
 (function () {
   'use strict';
@@ -235,7 +235,7 @@
   try {
     const dl = download;
     download = function (name, ...rest) {
-      if (/^Projeto_Modulacao_Alvenaria_V\d+\.json$/i.test(String(name))) { const n = nomeArquivo($id('project')?.value); if (n) name = n + '.json'; }
+      if (/^Projeto_Modulacao_Alvenaria_V\d+\.json$/i.test(String(name))) { let cli = $id('st106cli')?.value; try { cli = cli || window.st106?.()?.cliente; } catch {} const n = nomeArquivo(cli) || nomeArquivo($id('project')?.value); if (n) name = n + '.json'; }
       return dl.call(this, name, ...rest);
     };
     window.nomeArquivo116 = nomeArquivo;

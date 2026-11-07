@@ -84,9 +84,29 @@ const CASOS = [
     const nomes = await p.evaluate(() => {
       const got = [], o = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function () { got.push(this.download); };
       for (const v of ['João Silva', ' Maria / Casa: 2*? ', '']) { document.getElementById('project').value = v; document.getElementById('save').click(); }
+      const c = document.getElementById('st106cli'); if (c) { c.value = 'Cliente do Carimbo'; document.getElementById('project').value = 'Outro nome'; document.getElementById('save').click(); c.value = ''; }
       HTMLAnchorElement.prototype.click = o; return got;
     });
-    conferir(nomes[0] === 'João Silva.json' && nomes[1] === 'Maria Casa 2.json' && /^Projeto_Modulacao_Alvenaria_V\d+\.json$/.test(nomes[2]) && !erros.length, 'arquivo salvo com o nome do cliente: ' + nomes.join(' | '));
+    conferir(nomes[3] === 'Cliente do Carimbo.json' && nomes[0] === 'João Silva.json' && nomes[1] === 'Maria Casa 2.json' && /^Projeto_Modulacao_Alvenaria_V\d+\.json$/.test(nomes[2]) && !erros.length, 'arquivo salvo com o nome do cliente: ' + nomes.join(' | '));
+    await p.close();
+  }
+
+  // Paredes iguais: só nas pranchas; cada grupo pode ser desmarcado; a escolha não invalida a modulação
+  {
+    const { p, erros } = await abrir();
+    await paredes(p, [...ret, R(300, 0, 300, 600), R(660, 0, 660, 600)]);
+    await p.evaluate(() => { window.__geo116off = true; document.getElementById('generate').click(); });
+    await require('./estresse.js').esperarFim(p);
+    const r = await p.evaluate(() => {
+      const d1 = collectPlot26(), g = iguais117.ultimo().grupos.map(x => x.ns), n1 = d1.items.length;
+      if (!g.length) return { g };
+      const sig = sourceSignature(state.walls[g[0][0] - 1]);
+      for (const n of g[0]) state.walls[n - 1].separar117 = true;
+      const n2 = collectPlot26().items.length, sig2 = sourceSignature(state.walls[g[0][0] - 1]);
+      iguais117.set(false); const n3 = collectPlot26().items.length; iguais117.set(true);
+      return { g, n1, n2, n3, mesma: sig === sig2, titulo: d1.items.find(i => i.iguais117)?.title };
+    });
+    conferir(r.g.length >= 1 && r.n2 === r.n1 + r.g[0].length - 1 && r.n3 >= r.n2 && r.mesma && !erros.length, 'paredes iguais nas pranchas: ' + JSON.stringify(r));
     await p.close();
   }
 
