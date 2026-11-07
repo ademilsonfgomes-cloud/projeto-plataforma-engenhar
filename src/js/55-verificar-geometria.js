@@ -136,8 +136,20 @@
       }
     } catch (e) { console.error('V116 vigas', e); }
     out.sort((x, y) => (x.nivel === 'critico' ? 0 : 1) - (y.nivel === 'critico' ? 0 : 1));
+    // aviso marcado como intencional (fica gravado na parede; volta se a medida mudar)
+    for (const it of out) { it.key = chaveDe(it); it.ok = it.nivel !== 'critico' && it.walls.some(i => (state.walls[i]?.geoOk116 || []).includes(it.key)); }
     return out;
   }
+
+  // chave do aviso: tipo (texto sem os números) + paredes (pelo identificador, não pelo número) + medida arredondada
+  function chaveDe(it) { return it.titulo.replace(/\d+([.,]\d+)?/g, '#') + '|' + it.walls.map(i => state.walls[i]?.uid || '?').sort().join(',') + '|' + Math.round(N(it.dist) || 0); }
+  function intencional(it, sim) {
+    for (const i of it.walls) { const w = state.walls[i]; if (!w) continue; const l = (w.geoOk116 || []).filter(k => k !== it.key); if (sim) l.push(it.key); if (l.length) w.geoOk116 = l; else delete w.geoOk116; }
+    it.ok = !!sim; try { window.dispatchEvent(new Event('geo116')); } catch {}
+  }
+  const ativos = () => (lista || []).filter(x => !x.ok);
+  // a marcação não é mudança da parede: não pode invalidar a modulação já feita
+  try { const ss = sourceSignature; sourceSignature = function (w) { if (!w || !w.geoOk116) return ss(w); const { geoOk116, ...rest } = w; return ss(rest); }; } catch (e) { console.error('V116 assinatura', e); }
 
   // ---------------------------------------------------------------- painel e marcas no desenho
   let lista = null, ativo = -1;
@@ -153,6 +165,7 @@
     const O = cv.planOrigin25 || { x: 0, y: 0 }, sc = escala(), X = q => (q.x - O.x).toFixed(1), Y = q => (q.y - O.y).toFixed(1);
     let h = '';
     lista.forEach((it, n) => {
+      if (it.ok) return;
       const cor = it.nivel === 'critico' ? '#e0261b' : '#f29900', on = n === ativo, sw = (on ? 9 : 5) / sc;
       for (const i of it.walls) { const w = state.walls[i]; if (!w?.line || N(w.page || 1) !== pg()) continue; h += `<line x1="${X(w.line[0])}" y1="${Y(w.line[0])}" x2="${X(w.line[1])}" y2="${Y(w.line[1])}" stroke="${cor}" stroke-opacity="${on ? .55 : .3}" stroke-width="${sw}" stroke-linecap="round"/>`; }
       it.pts.forEach((p, z) => {
@@ -170,17 +183,20 @@
   }
   function botao() {
     const crit = lista?.some(x => x.nivel === 'critico');
-    document.querySelectorAll('.geo109').forEach(b => { b.classList.toggle('crit116', !!crit); b.classList.toggle('ok116', !!lista && !lista.length); });
+    document.querySelectorAll('.geo109').forEach(b => { b.classList.toggle('crit116', !!crit); b.classList.toggle('ok116', !!lista && !ativos().length); });
   }
   function mostrar() {
-    const crit = lista.filter(x => x.nivel === 'critico').length, av = lista.length - crit;
+    const crit = lista.filter(x => x.nivel === 'critico').length, ig = lista.filter(x => x.ok).length, av = lista.length - crit - ig;
+    const item = (x, n) => `<li class="${x.nivel}${n === ativo ? ' on' : ''}" data-n="${n}"><div class="t116"><i>${n + 1}</i>${x.nivel === 'critico' ? '⛔' : '⚠'} ${esc116(x.titulo)}</div><div class="c116">${esc116(x.correcao)}</div>${x.nivel === 'critico' || !x.walls.length ? '' : '<button type="button" class="ok116b" data-ok="' + n + '" title="O projeto é assim mesmo: não avisar mais (volta se a medida mudar)">✔ É intencional</button>'}</li>`;
     painel.innerHTML = `<div class="h116"><b>Verificar geometria</b><span>Pavimento / planta ${pg()}</span><button type="button" class="x116" title="Fechar">✕</button></div>
-      <div class="r116 ${crit ? 'c' : av ? 'a' : 'o'}">${crit ? '⛔ ' + crit + ' problema(s) crítico(s): a geração fica bloqueada até corrigir.' : ''}${crit && av ? '<br>' : ''}${av ? '⚠ ' + av + ' aviso(s): pode gerar, mas confira.' : ''}${!lista.length ? '✔ Nenhum problema de geometria encontrado.' : ''}</div>
-      <ol class="l116">${lista.map((x, n) => `<li class="${x.nivel}${n === ativo ? ' on' : ''}" data-n="${n}"><div class="t116"><i>${n + 1}</i>${x.nivel === 'critico' ? '⛔' : '⚠'} ${esc116(x.titulo)}</div><div class="c116">${esc116(x.correcao)}</div></li>`).join('')}</ol>
+      <div class="r116 ${crit ? 'c' : av ? 'a' : 'o'}">${crit ? '⛔ ' + crit + ' problema(s) crítico(s): a geração fica bloqueada até corrigir.' : ''}${crit && av ? '<br>' : ''}${av ? '⚠ ' + av + ' aviso(s): pode gerar, mas confira.' : ''}${!crit && !av ? '✔ Nenhum problema de geometria encontrado.' : ''}</div>
+      <ol class="l116">${lista.map((x, n) => x.ok ? '' : item(x, n)).join('')}${ig ? `<li class="ig116"><details><summary>✔ ${ig} aviso(s) marcado(s) como intencional</summary>${lista.map((x, n) => x.ok ? `<div class="i116"><span>${esc116(x.titulo)}</span><button type="button" data-des="${n}" title="Voltar a avisar">desfazer</button></div>` : '').join('')}</details></li>` : ''}</ol>
       <div class="b116"><button type="button" id="geoDe116" class="secondary">↻ Verificar de novo</button><button type="button" id="geoGo116" ${crit ? 'disabled title="Corrija os problemas críticos e verifique de novo"' : ''}>▶ Gerar modulação</button></div>`;
     painel.querySelector('.x116').onclick = fechar;
     painel.querySelector('#geoDe116').onclick = () => abrir();
     painel.querySelector('#geoGo116').onclick = () => { fechar(); $id('generate')?.click(); };
+    painel.querySelectorAll('[data-ok]').forEach(bt => bt.onclick = ev => { ev.stopPropagation(); intencional(lista[N(bt.dataset.ok)], true); ativo = -1; mostrar(); });
+    painel.querySelectorAll('[data-des]').forEach(bt => bt.onclick = ev => { ev.stopPropagation(); intencional(lista[N(bt.dataset.des)], false); mostrar(); });
     painel.querySelectorAll('li[data-n]').forEach(li => li.onclick = () => { ativo = N(li.dataset.n); painel.querySelectorAll('li').forEach(x => x.classList.toggle('on', x === li)); marcas(); centrar(lista[ativo].pts[0]); });
     painel.hidden = false; botao(); marcas();
   }
@@ -202,8 +218,8 @@
       e.stopImmediatePropagation(); e.preventDefault(); ativo = -1; mostrar();
       const n = r.filter(x => x.nivel === 'critico').length;
       setTimeout(() => { try { msg('⛔ Geração bloqueada: ' + n + ' problema(s) crítico(s) de geometria. Corrija e clique em "Verificar de novo".'); } catch {} }, 30);
-    } else if (r.length) {
-      setTimeout(() => { try { const s = $id('planStatus'); if (s && !/aviso\(s\) de geometria/.test(s.textContent)) s.textContent += ' · ⚠ ' + r.length + ' aviso(s) de geometria — veja em "Verificar geometria".'; } catch {} }, 400);
+    } else if (r.some(x => !x.ok)) {
+      setTimeout(() => { try { const s = $id('planStatus'); if (s && !/aviso\(s\) de geometria/.test(s.textContent)) s.textContent += ' · ⚠ ' + r.filter(x => !x.ok).length + ' aviso(s) de geometria — veja em "Verificar geometria".'; } catch {} }, 400);
     }
   }, true);
 
@@ -271,6 +287,8 @@
 #geo116 .t116{font-weight:600;line-height:1.3}#geo116 .t116 i{display:inline-block;min-width:18px;height:18px;border-radius:9px;margin-right:5px;text-align:center;font:700 11px/18px Arial;color:#fff;background:#f29900}
 #geo116 li.critico .t116 i{background:#e0261b}#geo116 .c116{color:#4a5d70;margin:3px 0 0 23px;line-height:1.35}
 #geo116 .b116{display:flex;gap:6px;justify-content:flex-end;padding:8px 10px;border-top:1px solid #e3e9ef}#geo116 .b116 button{margin:0}
+#geo116 .ok116b{margin:5px 0 0 23px;padding:2px 8px;height:auto;font-size:11.5px;background:#fff;color:#1d6b34;border:1px solid #9bcfa9;border-radius:4px;cursor:pointer;box-shadow:none}#geo116 .ok116b:hover{background:#e8f6ec}
+#geo116 .ig116{cursor:default;color:#4a5d70}#geo116 .ig116 summary{cursor:pointer;font-weight:600;color:#1d6b34}#geo116 .i116{display:flex;gap:6px;align-items:center;margin:4px 0 0 14px;font-size:11.5px}#geo116 .i116 span{flex:1}#geo116 .i116 button{padding:1px 7px;height:auto;font-size:11px;margin:0;background:#fff;color:#334;border:1px solid #c6d3df;box-shadow:none;cursor:pointer}
 #geo116 .b116 button[disabled]{opacity:.45;cursor:not-allowed}
 #geoSv116{position:absolute;pointer-events:none;z-index:6;overflow:visible}`;
   document.head.append(css);

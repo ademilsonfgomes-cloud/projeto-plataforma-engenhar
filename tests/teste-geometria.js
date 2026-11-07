@@ -47,6 +47,23 @@ const CASOS = [
     await p.close();
   }
 
+  // aviso intencional: some da lista, fica gravado na parede (vai no .json) e volta se a medida mudar
+  {
+    const { p, erros } = await abrir();
+    await paredes(p, [...ret, R(463, 12, 463, 250)]);
+    const r = await p.evaluate(() => {
+      const sig0 = sourceSignature(state.walls[4]);
+      geo116.abrir(); const antes = geo116.lista().filter(x => !x.ok).length;
+      document.querySelector('#geo116 [data-ok]').click();
+      const depois = geo116.verificar().filter(x => !x.ok).length, gravado = JSON.stringify(state.walls).includes('geoOk116'), sig1 = sourceSignature(state.walls[4]);
+      const w = state.walls[4]; w.line[0].y = 20; w.length = 230;
+      const mudou = geo116.verificar().filter(x => !x.ok).length;
+      return { antes, depois, gravado, mesmaAssinatura: sig0 === sig1, mudou };
+    });
+    conferir(r.antes === 1 && r.depois === 0 && r.gravado && r.mesmaAssinatura && r.mudou === 1 && !erros.length, 'aviso marcado como intencional: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // nome do arquivo .json
   {
     const { p, erros } = await abrir();
