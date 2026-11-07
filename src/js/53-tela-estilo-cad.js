@@ -94,12 +94,13 @@
     '3D': ['ver', '<path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6" stroke-width="1.2"/>'],
     'Importar IFC': ['ver', '<path d="M12 2.8 19 6.7v7.6L12 18.2 5 14.3V6.7z" stroke-width="1.3"/><path d="M5 6.7 12 10.6l7-3.9M12 10.6v7.6" stroke-width="1"/><path d="M17.5 18.5V23M15.5 21l2 2 2-2" stroke-width="1.3"/>'],
     'Limpar marcas': ['ver', '<path d="m14 4 6 6-9 9H6l-3-3z"/><path d="m9 9 6 6M3 20h18" stroke-width="1.2"/>'],
+    'Verificar geometria': ['des', '<rect x="2.5" y="13" width="12" height="5" rx=".5"/><path d="M2.5 13V6h5" stroke-width="1.2"/><circle cx="16" cy="9" r="4.6"/><path d="m19.4 12.4 3 3" stroke-width="2"/><path d="m13.9 9 1.5 1.5 2.8-3" stroke-width="1.4"/>'],
     'Separador': ['arq', '<path d="M12 3v18" stroke-width="2"/>'],
   };
   // nome da ferramenta no programa → ícone
   const ALIAS = {
     'Novo vão': 'Porta', 'Adicionar abertura': 'Janela', 'Unir': 'Unir canto', 'Apagar parede': 'Apagar', 'Desfazer exclusão': 'Desfazer',
-    'Procurar portas/janelas': 'Procurar portas e janelas', 'Numerar': 'Numerar paredes', 'Fundo': 'Grade', 'Arquitetura': 'Importar planta',
+    'Procurar portas/janelas': 'Procurar portas e janelas', 'Numerar': 'Numerar paredes', 'Renumerar': 'Numerar paredes', 'Fundo': 'Grade', 'Arquitetura': 'Importar planta',
     'Abrir PDF / DXF / IFC': 'Importar planta', 'Origem 0,0 do DXF': 'Ponto de origem', 'Conferir pontos': 'Conferir', 'Dados e níveis': 'Dados do projeto',
     'Gerar': 'Gerar modulação', 'Conferir antes': 'Conferir', 'Destravar todas': 'Destravar', 'Conferir projeto': 'Conferir', 'Diagnóstico (.txt)': 'Diagnóstico',
     'Ver elevações': 'Elevações', 'Editar armaduras': 'Armaduras', 'Resumo de aço': 'Quantitativos', 'Painel de laje': 'Laje', 'Beiral / balanço': 'Beiral',
@@ -122,6 +123,7 @@
     ['Exemplo didático', () => $('example')?.click()], ['Desfazer', () => window.undo58?.undo?.()], ['Refazer', () => window.undo58?.redo?.()],
     ['Resistências', () => window.res96?.open()], ['Vento e contraventamento', () => window.vento109?.open()], ['Vergas', () => window.vergas109?.open()],
     ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Visibilidade', () => $('vis87btn')?.click()],
+    ['Verificar geometria', () => window.geo116?.abrir()], ['Renumerar', () => window.renum116?.()],
   ];
   for (const [l, f] of EXTRA) REG.set('x:' + l, { key: 'x:' + l, t: { l, ic: '', t: () => { f(); } }, cat: 'extra' });
   REG.set('sep', { key: 'sep', t: { l: 'Separador' } });
@@ -130,10 +132,10 @@
   // ---------- barras (padrão e personalização)
   const PADRAO = {
     flow: ['x:Novo projeto', 'x:Abrir projeto', 'x:Salvar', 'sep', 'x:Desfazer', 'x:Refazer', 'sep',
-      'Arquitetura|#arq', 'Paredes|#paredes', 'Gerar|gen85', 'Elevações|#elev', 'Armaduras|#arm', 'Laje|#laje', 'Cargas|#cargas', 'sep',
+      'Arquitetura|#arq', 'Paredes|#paredes', 'Gerar|gen85', 'x:Verificar geometria', 'Elevações|#elev', 'Armaduras|#arm', 'Laje|#laje', 'Cargas|#cargas', 'sep',
       'x:Resistências', 'x:Vento e contraventamento', 'x:Vergas', 'sep', 'Pranchas|#pranchas', 'Quantitat.|#quant', 'x:Memorial de cálculo', 'Ajustes|#ajustes'],
     left: ['Selecionar|sel', 'Nova parede|fn', 'Novo vão|newvao54', 'sep', 'Mover|fn', 'Aparar|trim88', 'Estender|extend88', 'Unir|join56', 'Mover p/ eixo|axis56',
-      'Apagar parede|deleteWall', 'sep', 'Desníveis|dn87btn', 'Editar elevação|fn', 'spacer', 'x:Visibilidade', 'Ver tudo|fit88', 'Ver em 3D|v3d74btn'],
+      'Apagar parede|deleteWall', 'x:Renumerar', 'sep', 'Desníveis|dn87btn', 'Editar elevação|fn', 'spacer', 'x:Visibilidade', 'Ver tudo|fit88', 'Ver em 3D|v3d74btn'],
   };
   const PASSO = { 'Arquitetura|#arq': 1, 'Paredes|#paredes': 2, 'Gerar|gen85': 3, 'Elevações|#elev': 4, 'Armaduras|#arm': 5, 'Laje|#laje': 6, 'Cargas|#cargas': 7 };
   const NOME = { 'Arquitetura|#arq': 'Planta (abrir, calibrar, pavimentos)', 'Gerar|gen85': 'Gerar modulação', 'Quantitat.|#quant': 'Quantitativos' };
@@ -142,6 +144,12 @@
   const limpa = l => (Array.isArray(l) ? l : []).filter(k => REG.has(k));
   barras = barras && barras.v === 1 ? { flow: limpa(barras.flow), left: limpa(barras.left) } : JSON.parse(JSON.stringify(PADRAO));
   const salvar = () => LS('barras109', JSON.stringify({ v: 1, ...barras }));
+  // V116 — botões novos entram também em barras já personalizadas (uma vez só; se a pessoa tirar, não voltam)
+  if (LS('barras116') !== '1') {
+    const pos = (l, k, depois) => { if (l.includes(k)) return; const j = l.indexOf(depois); l.splice(j >= 0 ? j + 1 : l.length, 0, k); };
+    pos(barras.flow, 'x:Verificar geometria', 'Gerar|gen85'); pos(barras.left, 'x:Renumerar', 'Apagar parede|deleteWall');
+    LS('barras116', '1'); salvar();
+  }
 
   // ---------- estrutura
   const E = (tag, id, cls) => { const e = document.createElement(tag); if (id) e.id = id; if (cls) e.className = cls; return e; };
@@ -165,6 +173,7 @@
     if (k === 'spacer') return `<div class="spc109" data-key="spacer" data-i="${i}" title="Espaço (arraste para mover ou tirar)"></div>`;
     const R = REG.get(k); if (!R) return '';
     const nome = NOME[k] || R.t.l, n = PASSO[k];
+    if (k === 'x:Verificar geometria') return `<button type="button" class="b109 geo109" data-key="${esc(k)}" data-i="${i}" title="Verificar a geometria do pavimento antes de gerar (paredes sobrepostas, folgas, ângulos, encontros, vigas)">${svg('Verificar geometria', 18)}<span class="gl109">Verificar geometria</span></button>`;
     if (k === 'Gerar|gen85') return `<button type="button" class="b109 gen109" data-key="${esc(k)}" data-i="${i}" title="${esc(nome)}">${svg('Gerar modulação', 18)}<span class="gl109">Gerar modulação</span>${n ? `<i class="n109">${n}</i>` : ''}</button>`;
     return `<button type="button" class="b109" data-key="${esc(k)}" data-i="${i}" title="${esc(nome)}">${icone(R.t, 20)}${n ? `<i class="n109">${n}</i>` : ''}</button>`;
   }
@@ -402,6 +411,8 @@ body.cad109 #top85{display:none!important}
 .gen109{width:auto;display:flex;gap:6px;padding:0 10px 0 6px;height:26px;background:#1d8a4c;border-color:#1d8a4c;color:#fff;font:600 12px "Segoe UI",Arial,sans-serif;margin:0 3px;white-space:nowrap}
 .gen109 svg{stroke:#fff!important;color:#fff!important}.gen109:hover{background:#17703d;border-color:#17703d}.gen109.busy109{background:#a3361f;border-color:#a3361f}.gen109 .n109{color:#c8f0d6}
 #lb109 .gen109 .gl109{display:none}#lb109 .gen109{width:30px;padding:0;justify-content:center;margin:0}
+.geo109{width:auto;display:flex;gap:5px;padding:0 9px 0 5px;height:26px;background:#f2a516;border-color:#d58e0b;color:#1d1300;font:600 12px "Segoe UI",Arial,sans-serif;margin:0 3px;white-space:nowrap}.geo109 svg{stroke:#1d1300!important;color:#1d1300!important}.geo109:hover{background:#e09610!important;border-color:#b77908!important}.geo109.crit116{background:#c62828!important;border-color:#a01d1d!important;color:#fff}.geo109.crit116 svg{stroke:#fff!important}.geo109.ok116{background:#d7f0dd!important;border-color:#7cc08d!important}
+#lb109 .geo109 .gl109{display:none}#lb109 .geo109{width:30px;padding:0;justify-content:center;margin:0}
 .sp109{width:1px;height:20px;background:#cfd8e2;margin:0 4px;flex:none;touch-action:none;cursor:grab}#lb109 .sp109{width:22px;height:1px;margin:4px 0}
 .spc109{flex:1;min-height:8px;min-width:8px;touch-action:none}
 body.custom109 .bar109{outline:2px dashed #8fb1d3;outline-offset:-2px;background:#eef5fc}body.custom109 .spc109{background:repeating-linear-gradient(45deg,#d7e6f5 0 4px,transparent 4px 8px)}
