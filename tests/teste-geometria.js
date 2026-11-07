@@ -130,6 +130,25 @@ const CASOS = [
     await p.close();
   }
 
+  // Abertura poligonal na laje: desconta da área exatamente o polígono (L de 0,75 m²)
+  {
+    const { p, erros } = await abrir();
+    const r = await p.evaluate(async () => {
+      const e = (lvl92.entries() || []).find(x => !x.id.startsWith('p|')); await lvl92.go(e.id);
+      const L = window.loads77, S = L.S();
+      const area = () => { L.touch(); let a = 0; const walk = (o, d = 0) => { if (!o || d > 4) return; if (Array.isArray(o)) return o.forEach(x => walk(x, d + 1)); if (typeof o === 'object') for (const [k, v] of Object.entries(o)) { if (typeof v === 'number') { if (/^area$/i.test(k)) a += v; } else walk(v, d + 1); } }; walk(L.compute()); return a; };
+      const a0 = area(), w = state.walls.find(w => w.line), k = w.planScale, x0 = Math.min(...state.walls.flatMap(w => w.line.map(q => q.x))), y0 = Math.min(...state.walls.flatMap(w => w.line.map(q => q.y)));
+      const P = (x, y) => ({ x: x0 + x * k, y: y0 + y * k });
+      S.items.push({ id: 't1', kind: 'hole', forma: 'pol', page: e.pg, tgt: e.tgt, g: 0, q: 0, use: 'Escada', name: 'AX', pts: [P(150, 150), P(250, 150), P(250, 200), P(200, 200), P(200, 250), P(150, 250)] });
+      const a1 = area(); S.items.pop(); area();
+      window.el97.open(); document.querySelector('#el97 [data-k="hole"]')?.click();
+      const botoes = [...document.querySelectorAll('#el97 [data-f]')].map(b => b.dataset.f).join(',');
+      return { desconto: Math.round((a0 - a1) * 100) / 100, botoes };
+    });
+    conferir(r.desconto === 0.75 && r.botoes === 'ret,pol,circ' && !erros.length, 'abertura poligonal na laje: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();

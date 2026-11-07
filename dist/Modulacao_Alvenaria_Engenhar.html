@@ -7639,27 +7639,45 @@ let tool=null,pts=[],hover=null,typed='',raf=0,sel=null;
 function snapP(P){try{return L7().snapPt(P);}catch{return P;}}
 function ortho(P){if(!pts.length||P.snap)return P;const a=pts.at(-1),tol=14/(zoom||1);if(Math.abs(P.x-a.x)<tol)return {x:a.x,y:P.y};if(Math.abs(P.y-a.y)<tol)return {x:P.x,y:a.y};return P;}
 function rawPoint(e){const c=$('plan'),r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*c.width/r.width+(c.planOrigin25?.x||0),y:(e.clientY-r.top)*c.height/r.height+(c.planOrigin25?.y||0)};}
+// V120 — abertura na laje: retângulo (2 cantos), polígono livre (vértice a vértice) ou circular (centro + raio)
+const forma=()=>cfg().hole?.forma||'ret';
+function areaPx(P){let a=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length];a+=p.x*q.y-q.x*p.y;}return Math.abs(a)/2;}
+function cruza(P){const n=P.length,o=(p,q,r)=>Math.sign((q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x)),sg=(a,b,c,d)=>o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){if(j===i+1||(i===0&&j===n-1))continue;if(sg(P[i],P[(i+1)%n],P[j],P[(j+1)%n]))return true;}return false;}
+function circulo(c,r,n=32){return Array.from({length:n},(_,i)=>({x:c.x+r*Math.cos(2*Math.PI*i/n),y:c.y+r*Math.sin(2*Math.PI*i/n)}));}
+function centro(P){let A=0,x=0,y=0;for(let i=0;i<P.length;i++){const p=P[i],q=P[(i+1)%P.length],f=p.x*q.y-q.x*p.y;A+=f;x+=(p.x+q.x)*f;y+=(p.y+q.y)*f;}if(Math.abs(A)<1e-9)return {x:P.reduce((s,p)=>s+p.x,0)/P.length,y:P.reduce((s,p)=>s+p.y,0)/P.length};return {x:x/(3*A),y:y/(3*A)};}
+function validaPol(P){if(P.length<3)return 'marque pelo menos 3 pontos';if(cruza(P))return 'os lados se cruzam — refaça o contorno';const k=pxPerCm();if(areaPx(P)/(k*k)<100)return 'abertura muito pequena (menos de 100 cm²)';return '';}
+const perto=(P,Q)=>Math.hypot(P.x-Q.x,P.y-Q.y)<=10/(zoom||1);
+function fromPg(it,P){return N(it.page)===pg()?{x:P.x,y:P.y}:window.toPage74(N(it.page),window.world74(pg(),P));}
+function toPgP(it,P){return N(it.page)===pg()?P:window.toPage74(pg(),window.world74(N(it.page),P));}
+function msgHole(){const f=forma();msg97(f==='pol'?'Abertura (polígono): clique nos vértices (encaixa no DXF, paredes e vigas; Shift = ângulo livre). Feche clicando no 1º ponto, Enter ou dois cliques. Backspace desfaz o último ponto; Esc cancela.':f==='circ'?'Abertura circular: clique no centro e depois na borda (ou digite o diâmetro em cm e Enter). Esc solta a ferramenta.':'Abertura (retângulo): clique em dois cantos opostos (encaixa nos vértices). Esc solta a ferramenta.');}
+function fechaPol(){const err=validaPol(pts);if(err){msg97('⚠ Não dá para fechar: '+err+'. Backspace desfaz o último ponto; Esc cancela.');drawPlan();return;}finish(pts);}
 function start(kind){const e=ctxE();if(!e){alert('Escolha um nível de laje.');return;}if(e.ground){msg97('Este é o piso (sem laje). Vá para um nível de laje (▲) para lançar reforço, viga ou abertura.');return;}
  try{(window.stopAll108||window.cancelTool56)?.();}catch{}try{mode='';}catch{}cfg().kind=kind;tool=kind;pts=[];hover=null;typed='';document.body.classList.add('tool56','el97on');
- msg97(kind==='hole'?'Abertura na laje: clique em dois cantos opostos (encaixa nos vértices). Esc solta a ferramenta.':(kind==='ref'?'Reforço':'Viga')+': clique no início, depois no fim (ou digite o comprimento em cm e Enter). Encaixa nos vértices das paredes. Esc solta a ferramenta.');drawPlan();}
+ if(kind==='hole'){msgHole();drawPlan();return;}msg97((kind==='ref'?'Reforço':'Viga')+': clique no início, depois no fim (ou digite o comprimento em cm e Enter). Encaixa nos vértices das paredes. Esc solta a ferramenta.');drawPlan();}
 function stop(){tool=null;pts=[];hover=null;typed='';document.body.classList.remove('tool56','el97on');msg97('');try{drawPlan();}catch{}}
 function msg97(t){let p=$('el97bar');if(!p){p=document.createElement('div');p.id='el97bar';p.className='walltool56 noPrint';$('planStatus').after(p);}p.textContent=t||'';p.style.display=t?'flex':'none';}
 function finish(list){const e=ctxE(),c=cfg(),k=tool;const it={id:newId(),page:e.pg,tgt:e.tgt,g:0,q:0};if(e.key!==L7().keyOfPage(e.pg))it.slab92=e.key;if(L7().isOwn(e.key,e.tgt,e.rj))it.rep102=e.rj;
- if(k==='hole'){const[a,b]=list;it.kind='hole';it.pts=[{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}];it.use=c.hole.use;it.name=nextName('A');}
+ if(k==='hole'){const f=forma();it.kind='hole';it.forma=f;if(f==='pol'){it.pts=list.map(p=>({x:p.x,y:p.y}));}else if(f==='circ'){const[a,b]=list,r=Math.hypot(b.x-a.x,b.y-a.y);if(r/pxPerCm()<2.5){pts=[];drawPlan();return;}it.circ={c:{x:a.x,y:a.y},r};it.pts=circulo(a,r);}else{const[a,b]=list;if(Math.abs(b.x-a.x)<1e-6||Math.abs(b.y-a.y)<1e-6){pts=[];drawPlan();return;}it.pts=[{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}];}it.use=c.hole.use;it.name=nextName('A');}
  else{it.kind='beam';it.sub=k;it.pts=list.slice(0,2).map(p=>({x:p.x,y:p.y}));it.c=c.c;if(k==='ref'){it.ref={...c.ref};it.name=nextName('R');}else{it.viga={...c.viga};it.name=nextName('V');}}
  if(it.kind==='beam'&&lenOf(it)<5){pts=[];return;}
  S().items.push(it);renum();L7().touch();pts=[];typed='';try{window.undo58?.push?.();}catch{}drawPlan();
- msg97('✔ '+descr(it)+(it.kind==='beam'?' · L = '+f1(lenOf(it),0)+' cm':'')+'. Continue marcando o próximo (mesmas características) ou Esc para soltar.');if($('el97')&&!$('el97').hidden)render();}
+ msg97('✔ '+descr(it)+(it.kind==='beam'?' · L = '+f1(lenOf(it),0)+' cm':' · '+f1(areaPx(it.pts)/pxPerCm()**2/1e4,2)+' m²')+'. Continue marcando o próximo (mesmas características) ou Esc para soltar.');if($('el97')&&!$('el97').hidden)render();}
 document.addEventListener('click',e=>{const c=$('plan');if(e.target!==c)return;
- if(tool){e.stopImmediatePropagation();e.preventDefault();const P=ortho(snapP(rawPoint(e)));pts.push(P);if(pts.length>=2)finish(pts);else drawPlan();return;}
+ if(tool){e.stopImmediatePropagation();e.preventDefault();const P0=snapP(rawPoint(e)),P=e.shiftKey?P0:ortho(P0);
+  if(tool==='hole'&&forma()==='pol'){if(pts.length>=3&&perto(P0,pts[0])){fechaPol();return;}if(pts.length&&perto(P,pts.at(-1)))return;pts.push(P);drawPlan();return;}
+  if(tool==='hole'&&forma()==='circ'){pts.push(P0);if(pts.length>=2)finish(pts);else drawPlan();return;}
+  pts.push(P);if(pts.length>=2)finish(pts);else drawPlan();return;}
  if(document.body.classList.contains('tool56')||document.body.classList.contains('brush97')||(typeof mode!=='undefined'&&mode))return;
  if(!S().cfg.show)return;const it=hit(rawPoint(e));if(it){e.stopImmediatePropagation();e.preventDefault();sel=it.id;open(it);drawPlan();}},true);
-document.addEventListener('mousemove',e=>{if(!tool||e.target!==$('plan'))return;hover=ortho(snapP(rawPoint(e)));if(!raf)raf=requestAnimationFrame(()=>{raf=0;drawPlan();});});
+document.addEventListener('dblclick',e=>{if(tool==='hole'&&forma()==='pol'&&e.target===$('plan')&&pts.length>=3){e.preventDefault();e.stopImmediatePropagation();fechaPol();}},true);
+document.addEventListener('mousemove',e=>{if(!tool||e.target!==$('plan'))return;const H0=snapP(rawPoint(e));hover=e.shiftKey||(tool==='hole'&&forma()==='circ')?H0:ortho(H0);if(!raf)raf=requestAnimationFrame(()=>{raf=0;drawPlan();});});
 document.addEventListener('keydown',e=>{if(e.target?.closest?.('input,textarea,select'))return;
  if(!tool){if(e.key==='Escape'&&!box.hidden){box.hidden=true;editing=null;sel=null;drawPlan();e.preventDefault();return;}if((e.key==='Delete'||e.key==='Backspace')&&sel){const it=S().items.find(x=>x.id===sel);if(it){del(it);e.preventDefault();}}return;}
  if(e.key==='Escape'){stop();e.preventDefault();return;}
- if(pts.length&&tool!=='hole'&&/^[0-9]$|^[.,]$/.test(e.key)){typed+=e.key===','?'.':e.key;e.preventDefault();drawPlan();return;}
+ if(pts.length&&(tool!=='hole'||forma()==='circ')&&/^[0-9]$|^[.,]$/.test(e.key)){typed+=e.key===','?'.':e.key;e.preventDefault();drawPlan();return;}
  if(e.key==='Backspace'&&typed){typed=typed.slice(0,-1);e.preventDefault();drawPlan();return;}
+ if(tool==='hole'&&forma()==='pol'){if(e.key==='Backspace'&&pts.length){pts.pop();e.preventDefault();msgHole();drawPlan();return;}if(e.key==='Enter'){e.preventDefault();fechaPol();return;}}
+ if(tool==='hole'&&forma()==='circ'&&e.key==='Enter'&&pts.length){e.preventDefault();const a=pts[0],D=N(typed);if(D>0){const r=D/2*pxPerCm();typed='';finish([a,{x:a.x+r,y:a.y}]);}else if(hover){typed='';finish([a,hover]);}return;}
  if(e.key==='Enter'&&pts.length&&hover){const a=pts[0],dx=hover.x-a.x,dy=hover.y-a.y,d=Math.hypot(dx,dy)||1;let L=N(typed);if(L>0){const k=pxPerCm();pts.push({x:a.x+dx/d*L*k,y:a.y+dy/d*L*k});}else pts.push(hover);typed='';finish(pts);e.preventDefault();}});
 function pxPerCm(){const P=pg(),a=window.toPage74(P,{x:0,y:0}),b=window.toPage74(P,{x:100,y:0});return Math.hypot(b.x-a.x,b.y-a.y)/100||1;}
 function toPg(it){const p=pg();if(it.kind==='beam')return ends(it).map(E=>window.toPage74(p,E));return (it.pts||[]).map(Q=>N(it.page)===p?Q:window.toPage74(p,window.world74(N(it.page),Q)));}
@@ -7669,13 +7687,32 @@ function hit(P){const tol=9/(zoom||1),k=pxPerCm();let best=null,bd=Infinity;for(
   if(d<=tol&&d<bd){bd=d;best=it;}}return best;}
 function del(it){const i=S().items.indexOf(it);if(i<0)return;S().items.splice(i,1);renum();L7().touch();sel=null;try{window.undo58?.push?.();}catch{}$('el97')&&($('el97').hidden=true);drawPlan();msg97('');$('planStatus').textContent=(it.name||'Elemento')+' apagado (Ctrl+Z desfaz).';}
 
+// V120 — alças da abertura selecionada: vértices (retângulo mantém os ângulos retos); círculo: centro e borda
+const eixos=Q=>Q.length===4&&Q.every((q,i)=>{const r=Q[(i+1)%4];return Math.abs(q.x-r.x)<1e-6||Math.abs(q.y-r.y)<1e-6;});
+function alcas(it){if(it.forma==='circ'&&it.circ){const c=it.circ.c;return [toPgP(it,c),toPgP(it,{x:c.x+it.circ.r,y:c.y})];}return toPg(it);}
+let arr97=null;
+document.addEventListener('pointerdown',e=>{if(tool||e.button!==0||e.target!==$('plan')||!sel)return;const it=S().items.find(x=>x.id===sel);if(!it||it.kind!=='hole')return;
+ const P=rawPoint(e),i=alcas(it).findIndex(q=>perto(P,q));if(i<0)return;arr97={it,i,antes:JSON.stringify({pts:it.pts,circ:it.circ}),moveu:false};e.stopImmediatePropagation();e.preventDefault();},true);
+document.addEventListener('pointermove',e=>{if(!arr97)return;const {it,i}=arr97,P0=snapP(rawPoint(e)),P=fromPg(it,P0);arr97.moveu=true;
+ if(it.forma==='circ'&&it.circ){if(i===0)it.circ.c={x:P.x,y:P.y};else it.circ.r=Math.max(2.5*pxPerCm(),Math.hypot(P.x-it.circ.c.x,P.y-it.circ.c.y));it.pts=circulo(it.circ.c,it.circ.r);}
+ else if(it.forma==='ret'||(!it.forma&&eixos(it.pts))){const Q=it.pts.map(q=>({...q})),old=Q[i];for(const j of [(i+1)%4,(i+3)%4]){if(Math.abs(Q[j].y-old.y)<1e-6)Q[j]={x:Q[j].x,y:P.y};else Q[j]={x:P.x,y:Q[j].y};}Q[i]={x:P.x,y:P.y};it.pts=Q;}
+ else{const Q=it.pts.slice();Q[i]={x:P.x,y:P.y};it.pts=Q;}
+ e.stopImmediatePropagation();if(!raf)raf=requestAnimationFrame(()=>{raf=0;drawPlan();});},true);
+document.addEventListener('pointerup',e=>{if(!arr97)return;const a=arr97;arr97=null;e.stopImmediatePropagation();if(!a.moveu)return;const it=a.it;
+ const k=pxPerCm();if(it.forma!=='circ'&&(cruza(it.pts)||areaPx(it.pts)/k/k<100)){const o=JSON.parse(a.antes);it.pts=o.pts;if(o.circ)it.circ=o.circ;msg97('⚠ Assim os lados se cruzariam (ou a abertura sumiria): o vértice voltou.');drawPlan();return;}
+ L7().touch();try{window.undo58?.push?.();}catch{}drawPlan();msg97('✔ '+(it.name||'Abertura')+' ajustada · '+f1(areaPx(it.pts)/k/k/1e4,2)+' m². Ctrl+Z desfaz.');if($('el97')&&!$('el97').hidden)render();},true);
+
 // ---------- desenho na planta
 {const dp=drawPlan;drawPlan=function(...a){const r=dp.apply(this,a);try{if(image&&(S().cfg.show||tool))draw();}catch(e){console.error('V97 planta',e);}return r;};}
 function draw(){const c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,y:0},z=(window.zoom88?.fitZ?.()||zoom||1),k=pxPerCm();ctx.save();ctx.setTransform(1,0,0,1,-o.x,-o.y);const fz=15.12;ctx.font='bold '+fz+'px Arial';
  window.__txtFixed=true;try{
  for(const it of mine()){const Q=toPg(it),on=it.id===sel;
-  if(it.kind==='hole'){ctx.fillStyle='rgba(255,255,255,.75)';ctx.strokeStyle=on?'#d1462f':'#333';ctx.lineWidth=(on?3:2)/z;ctx.beginPath();Q.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(Q[0].x,Q[0].y);ctx.lineTo(Q[2].x,Q[2].y);ctx.moveTo(Q[1].x,Q[1].y);ctx.lineTo(Q[3].x,Q[3].y);ctx.lineWidth=1/z;ctx.stroke();
-   const cx=(Q[0].x+Q[2].x)/2,cy=(Q[0].y+Q[2].y)/2;ctx.fillStyle='#222';ctx.textAlign='center';ctx.fillText(it.name+' · '+(it.use||'Abertura'),cx,cy-4/z);ctx.textAlign='left';continue;}
+  if(it.kind==='hole'){const poly=()=>{ctx.beginPath();Q.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.closePath();};ctx.fillStyle='rgba(255,255,255,.75)';ctx.strokeStyle=on?'#d1462f':'#333';ctx.lineWidth=(on?3:2)/z;poly();ctx.fill();ctx.stroke();
+   // X da abertura recortado pelo contorno (vale para qualquer formato)
+   {const xs=Q.map(q=>q.x),ys=Q.map(q=>q.y),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);ctx.save();poly();ctx.clip();ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.moveTo(x1,y0);ctx.lineTo(x0,y1);ctx.lineWidth=1/z;ctx.stroke();ctx.restore();}
+   const C=centro(Q);ctx.fillStyle='#222';ctx.textAlign='center';ctx.fillText(it.name+' · '+(it.use||'Abertura'),C.x,C.y-4/z);ctx.textAlign='left';
+   if(on){const g=6/z;ctx.fillStyle='#fff';ctx.strokeStyle='#d1462f';ctx.lineWidth=1.6/z;for(const q of alcas(it))  {ctx.fillRect(q.x-g,q.y-g,2*g,2*g);ctx.strokeRect(q.x-g,q.y-g,2*g,2*g);}}
+   continue;}
   const[a,b]=Q,dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l,ref=it.sub==='ref',bw=(ref?it.ref.b:it.viga.b)*k/2,col=on?'#d1462f':ref?'#c2410c':'#1d4ed8';
   if(ref){ctx.strokeStyle=col;ctx.lineWidth=(on?4:2.6)/z;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}else{ctx.fillStyle='rgba(29,78,216,.12)';ctx.beginPath();ctx.moveTo(a.x+nx*bw,a.y+ny*bw);ctx.lineTo(b.x+nx*bw,b.y+ny*bw);ctx.lineTo(b.x-nx*bw,b.y-ny*bw);ctx.lineTo(a.x-nx*bw,a.y-ny*bw);ctx.closePath();ctx.fill();
   ctx.strokeStyle=col;ctx.lineWidth=(on?2.6:1.8)/z;ctx.setLineDash(ref?[]:[8/z,4/z]);for(const sg of [1,-1]){ctx.beginPath();ctx.moveTo(a.x+nx*bw*sg,a.y+ny*bw*sg);ctx.lineTo(b.x+nx*bw*sg,b.y+ny*bw*sg);ctx.stroke();}ctx.setLineDash([]);
@@ -7683,10 +7720,14 @@ function draw(){const c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,
   let ang=Math.atan2(dy,dx);if(ang>Math.PI/2)ang-=Math.PI;if(ang<-Math.PI/2)ang+=Math.PI;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,off=(ref?0:bw)+8/z;ctx.save();ctx.translate(mx-Math.sin(ang)*off,my+Math.cos(ang)*off*-1);ctx.rotate(ang);ctx.fillStyle=col;ctx.textAlign='center';
   ctx.fillText(ref?it.name+' · '+it.ref.n+' '+dTxt(it.ref.d):it.name+' '+f1(it.viga.b,0)+'×'+f1(it.viga.h,0)+' · '+it.viga.ni+dTxt(it.viga.di)+' inf · '+it.viga.ns+dTxt(it.viga.ds)+' sup · '+dTxt(it.viga.de)+' c/'+f1(it.viga.s,0),0,0);ctx.restore();ctx.textAlign='left';}
  if(tool){const P=[...pts,...(hover?[hover]:[])];ctx.strokeStyle=tool==='ref'?'#c2410c':tool==='viga'?'#1d4ed8':'#333';ctx.lineWidth=2/z;ctx.setLineDash([6/z,4/z]);
-  if(P.length>=2){ctx.beginPath();if(tool==='hole'){const[a,b]=P;ctx.rect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));}else{ctx.moveTo(P[0].x,P[0].y);ctx.lineTo(P[1].x,P[1].y);}ctx.stroke();}ctx.setLineDash([]);
+  if(P.length>=2){ctx.beginPath();if(tool==='hole'&&forma()==='pol'){P.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();if(P.length>=3){ctx.beginPath();ctx.moveTo(P.at(-1).x,P.at(-1).y);ctx.lineTo(P[0].x,P[0].y);ctx.globalAlpha=.45;ctx.stroke();ctx.globalAlpha=1;}ctx.beginPath();}else if(tool==='hole'&&forma()==='circ'){const[a,b]=P,r=typed&&N(typed)>0?N(typed)/2*pxPerCm():Math.hypot(b.x-a.x,b.y-a.y);ctx.arc(a.x,a.y,r,0,2*Math.PI);}else if(tool==='hole'){const[a,b]=P;ctx.rect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));}else{ctx.moveTo(P[0].x,P[0].y);ctx.lineTo(P[1].x,P[1].y);}ctx.stroke();}ctx.setLineDash([]);
+  if(tool==='hole'&&forma()==='pol'&&pts.length){const g=5/z;ctx.fillStyle='#333';for(const q of pts)ctx.fillRect(q.x-g/2,q.y-g/2,g,g);if(pts.length>=3){ctx.strokeStyle='#16a34a';ctx.lineWidth=2/z;ctx.strokeRect(pts[0].x-7/z,pts[0].y-7/z,14/z,14/z);}}
   if(hover){ctx.fillStyle=hover.snap?'#16a34a':'#555';const s=(hover.snap?9:5)/z;ctx.fillRect(hover.x-s/2,hover.y-s/2,s,s);
    if(pts.length&&tool!=='hole'){const a=pts[0],L=Math.hypot(hover.x-a.x,hover.y-a.y)/pxPerCm();ctx.fillStyle='#111';ctx.fillText(typed?typed+' cm ↵':f1(L,0)+' cm',hover.x+10/z,hover.y-10/z);}
-   if(pts.length&&tool==='hole'){const a=pts[0];ctx.fillStyle='#111';ctx.fillText(f1(Math.abs(hover.x-a.x)/pxPerCm(),0)+' × '+f1(Math.abs(hover.y-a.y)/pxPerCm(),0)+' cm',hover.x+10/z,hover.y-10/z);}}}
+   if(pts.length&&tool==='hole'){const a=pts[0],k=pxPerCm();ctx.fillStyle='#111';let t;const f=forma();
+    if(f==='pol'){const b=pts.at(-1),P2=[...pts,hover];t=f1(Math.hypot(hover.x-b.x,hover.y-b.y)/k,0)+' cm'+(P2.length>=3?' · área '+f1(areaPx(P2)/k/k/1e4,2)+' m²':'');}
+    else if(f==='circ'){t='Ø '+(typed?typed+' cm ↵':f1(2*Math.hypot(hover.x-a.x,hover.y-a.y)/k,0)+' cm');}
+    else t=f1(Math.abs(hover.x-a.x)/k,0)+' × '+f1(Math.abs(hover.y-a.y)/k,0)+' cm';ctx.fillText(t,hover.x+10/z,hover.y-10/z);}}}
  }finally{window.__txtFixed=false;}ctx.restore();}
 
 // ---------- janelinha
@@ -7704,7 +7745,7 @@ function render(){const c=cfg(),it=editing,k=it?(it.kind==='hole'?'hole':it.sub)
    '<div class="g97"><label>Embaixo<select data-v="ni">'+nOpts(V.ni)+'</select></label><label>Bitola<select data-v="di">'+opts([8,10,12.5,16],V.di,dTxt)+'</select></label><label>Em cima<select data-v="ns">'+nOpts(V.ns)+'</select></label><label>Bitola<select data-v="ds">'+opts([6.3,8,10,12.5],V.ds,dTxt)+'</select></label></div>'+
    '<div class="g97"><label>Estribo<select data-v="de">'+opts([5,6.3,8],V.de,dTxt)+'</select></label><label>Espaçamento (cm)<select data-v="s">'+opts([7.5,10,12.5,15,20],V.s,v=>'c/ '+f1(N(v),N(v)%1?1:0))+'</select></label></div>'+
    '<p class="'+(fi.ok?'ok97':'bad97')+'">Embaixo: '+esc(fi.t)+'</p><p class="'+(fs.ok?'ok97':'bad97')+'">Em cima: '+esc(fs.t)+'</p>';}
- else body='<div class="g97"><label>Uso<select data-h="use">'+['Escada','Alçapão','Shaft','Abertura'].map(u=>'<option'+(u===H.use?' selected':'')+'>'+u+'</option>').join('')+'</select></label></div><p class="n97">Clique em dois cantos opostos. A área da abertura sai da laje (sem peso próprio e sem carga).</p>';
+ else{const fm=it?(it.forma||(it.pts?.length===4?'ret':'pol')):forma(),nomeF={ret:'Retângulo',pol:'Polígono',circ:'Circular'};body=(it?'<p class="n97"><b>'+nomeF[fm]+'</b> · área '+f1(areaPx(it.pts||[])/pxPerCm()**2/1e4,2)+' m² · arraste os quadradinhos dos vértices para ajustar'+(fm==='circ'?' (centro move; o da borda muda o raio)':'')+'.</p>':'<div class="seg97 f97">'+[['ret','▭ Retângulo'],['pol','⬠ Polígono'],['circ','◯ Circular']].map(([v,t])=>'<button type="button" data-f="'+v+'" class="'+(fm===v?'on97':'')+'">'+t+'</button>').join('')+'</div>')+'<div class="g97"><label>Uso<select data-h="use">'+['Escada','Alçapão','Shaft','Abertura'].map(u=>'<option'+(u===H.use?' selected':'')+'>'+u+'</option>').join('')+'</select></label></div><p class="n97">'+(it?'':fm==='pol'?'Clique nos vértices e feche no 1º ponto (Enter ou dois cliques). ':fm==='circ'?'Clique no centro e na borda, ou digite o diâmetro. ':'Clique em dois cantos opostos. ')+'A área da abertura sai da laje (sem peso próprio e sem carga).</p>';}
  const L=it?lenOf(it):0;
  box.innerHTML='<div class="h97"><b>'+(it?esc(descr(it).split(' · ')[0])+' · editar':'Reforço · Viga · Abertura na laje')+'</b><span>arraste por aqui</span><button type="button" class="x97" title="Fechar (Esc)">✕</button></div><div class="b97">'+
   (it?'':'<div class="seg97">'+[['ref','Reforço'],['viga','Viga'],['hole','Abertura']].map(([v,t])=>'<button type="button" data-k="'+v+'" class="'+(k===v?'on97':'')+'">'+t+'</button>').join('')+'</div>')+body+
@@ -7716,6 +7757,7 @@ function render(){const c=cfg(),it=editing,k=it?(it.kind==='hole'?'hole':it.sub)
  box.querySelectorAll('[data-r]').forEach(i=>i.onchange=()=>{tgtR[i.dataset.r]=N(String(i.value).replace(',','.'))||tgtR[i.dataset.r];if(it)L7().touch();render();drawPlan();});
  box.querySelectorAll('[data-v]').forEach(i=>i.onchange=()=>{const f=i.dataset.v;if(f==='sec'){if(i.value!=='o'){const[b,h]=i.value.split('x').map(N);tgtV.b=b;tgtV.h=h;tgtV.custom=0;}else tgtV.custom=1;}else tgtV[f]=N(String(i.value).replace(',','.'))||tgtV[f];if(it)L7().touch();render();drawPlan();});
  box.querySelectorAll('[data-h]').forEach(i=>i.onchange=()=>{if(it)it.use=i.value;else c.hole.use=i.value;render();drawPlan();});
+ box.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{c.hole.forma=b.dataset.f;if(tool==='hole'){pts=[];typed='';msgHole();}render();drawPlan();});
  box.querySelector('[data-a=go]')?.addEventListener('click',()=>start(c.kind));
  box.querySelector('[data-a=ok]')?.addEventListener('click',()=>{if(it){c.kind=it.kind==='hole'?'hole':it.sub;if(it.ref)c.ref={...it.ref};if(it.viga)c.viga={...it.viga};}box.hidden=true;editing=null;sel=null;L7().touch();try{window.undo58?.push?.();}catch{}drawPlan();});
  box.querySelector('[data-a=del]')?.addEventListener('click',()=>{if(it)del(it);editing=null;});
@@ -7734,7 +7776,8 @@ function dimSVG(E,F,v,T,fs,r1){const e=T(E),f=T(F),dx=f[0]-e[0],dy=f[1]-e[1],l=M
  return `<path d="M${r1(e[0])} ${r1(e[1])}L${r1(f[0])} ${r1(f[1])}${sl(e)}${sl(f)}" stroke="#333" stroke-width="${r1(fs*.06)}" fill="none"/><text x="${r1(mx)}" y="${r1(my)}" transform="rotate(${r1(ang)} ${r1(mx)} ${r1(my)})" font-size="${r1(fs*.75)}" text-anchor="middle" fill="#333">${f1(v,0)}</text>`;}
 window.slabSvg97=function(its,T,fs,r1,labels,I){let s='';const taken=(labels||[]).slice();
  for(const it of its||[]){if(it.kind!=='beam'&&it.kind!=='hole')continue;const P=(it.kind==='beam'?ends(it,I):W(it)).map(T);
- if(it.kind==='hole'){s+=`<polygon points="${P.map(p=>p.map(r1).join(',')).join(' ')}" fill="#fff" stroke="#222" stroke-width="${r1(fs*.1)}"/><path d="M${r1(P[0][0])} ${r1(P[0][1])}L${r1(P[2][0])} ${r1(P[2][1])}M${r1(P[1][0])} ${r1(P[1][1])}L${r1(P[3][0])} ${r1(P[3][1])}" stroke="#222" stroke-width="${r1(fs*.06)}"/><text x="${r1((P[0][0]+P[2][0])/2)}" y="${r1((P[0][1]+P[2][1])/2-fs*.4)}" font-size="${r1(fs*.9)}" text-anchor="middle" font-weight="700" fill="#222">${esc(it.name+' · '+(it.use||''))}</text>`;continue;}
+ if(it.kind==='hole'){const pts=P.map(p=>p.map(r1).join(',')).join(' '),xs=P.map(p=>p[0]),ys=P.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),C=centro(P.map(p=>({x:p[0],y:p[1]}))),cid='hc'+String(it.id||it.name).replace(/[^\w-]/g,'');
+  s+=`<clipPath id="${cid}"><polygon points="${pts}"/></clipPath><polygon points="${pts}" fill="#fff" stroke="#222" stroke-width="${r1(fs*.1)}"/><path clip-path="url(#${cid})" d="M${r1(x0)} ${r1(y0)}L${r1(x1)} ${r1(y1)}M${r1(x1)} ${r1(y0)}L${r1(x0)} ${r1(y1)}" stroke="#222" stroke-width="${r1(fs*.06)}"/><text x="${r1(C.x)}" y="${r1(C.y-fs*.4)}" font-size="${r1(fs*.9)}" text-anchor="middle" font-weight="700" fill="#222">${esc(it.name+' · '+(it.use||''))}</text>`;continue;}
  const ref=it.sub==='ref',bw=(ref?it.ref.b:it.viga.b)/2,[a,b]=P,dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l,col=ref?'#c2410c':'#1d4ed8';
  const poly=[[a[0]+nx*bw,a[1]+ny*bw],[b[0]+nx*bw,b[1]+ny*bw],[b[0]-nx*bw,b[1]-ny*bw],[a[0]-nx*bw,a[1]-ny*bw]];
  s+=`<polygon points="${poly.map(p=>p.map(r1).join(',')).join(' ')}" fill="${ref?'#fde3d0':'#dbe6fb'}" stroke="${col}" stroke-width="${r1(fs*.09)}"${ref?'':` stroke-dasharray="${r1(fs*.5)} ${r1(fs*.25)}"`}/>`;
@@ -7765,7 +7808,7 @@ function detailHTML(g){const bs=g.its.filter(i=>i.kind==='beam'),hs=g.its.filter
  if(bs.length){h+='<div class="d97">'+bs.map(it=>'<div class="d97i"><b>'+(it.sub==='ref'?'Reforço '+esc(it.name):'Viga '+esc(it.name)+' '+f1(it.viga.b,0)+'x'+f1(it.viga.h,0))+'</b><br>'+secSVG(it,g.ctx?slabH(it,g.ctx):12)+'</div>').join('')+'</div>';
   const rows=[];let tot={};for(const it of bs){const B=bars(it);B.rows.forEach((r,i)=>{rows.push([i?'':it.name+(it.sub==='ref'?' (reforço)':' '+f1(it.viga.b,0)+'×'+f1(it.viga.h,0)),i?'':f1(B.L,0),r.pos+(r.s?' c/'+f1(r.s,0):''),r.n,dTxt(r.d),f1(r.C,0),f1(r.tot,2),f1(r.kg,1)]);tot[r.d]=(tot[r.d]||0)+r.kg;});}
   h+=plotTable26(['Elemento','L (cm)','Posição','Qtde.','Bitola','C unit. (cm)','Total (m)','Peso (kg)'],rows)+'<p>Aço CA-50 (CA-60 no Ø5,0). Comprimentos das barras = vão + ganchos de 10φ (mín. 10 cm) nas duas pontas; estribos fechados com ganchos. Peso total: '+Object.entries(tot).sort((a,b)=>a[0]-b[0]).map(([d,k])=>dTxt(N(d))+' '+f1(k,1)+' kg').join(' · ')+'. Detalhamento para conferência do projetista.</p>';}
- if(hs.length)h+='<h3>Aberturas na laje</h3>'+plotTable26(['Abertura','Uso','Dimensões (cm)'],hs.map(it=>{const P=W(it),dx=Math.abs(P[1].x-P[0].x)+Math.abs(P[2].x-P[1].x),dy=Math.abs(P[1].y-P[0].y)+Math.abs(P[2].y-P[1].y);return [it.name,it.use||'',f1(dx,0)+' × '+f1(dy,0)];}))+'<p>Bordas das aberturas com reforço conforme o detalhe da laje.</p>';
+ if(hs.length)h+='<h3>Aberturas na laje</h3>'+plotTable26(['Abertura','Uso','Dimensões (cm)'],hs.map(it=>{const P=W(it),xs=P.map(q=>q.x),ys=P.map(q=>q.y),dx=Math.max(...xs)-Math.min(...xs),dy=Math.max(...ys)-Math.min(...ys),fm=it.forma||(P.length===4?'ret':'pol');return [it.name,it.use||'',fm==='circ'?'Ø '+f1(dx,0):fm==='ret'?f1(dx,0)+' × '+f1(dy,0):'polígono de '+P.length+' lados · área '+f1(areaPx(P)/1e4,2)+' m² · total '+f1(dx,0)+' × '+f1(dy,0)];}))+'<p>Bordas das aberturas com reforço conforme o detalhe da laje.</p>';
  return h;}
 {const cp=collectPlot26;collectPlot26=function(...a){const d=cp.apply(this,a);try{for(const g of slabGroups()){const html=detailHTML(g),Wd=Math.min(d.availW,260),h=measureHTML26(html,Wd-4)+13;if(h<=d.availH)d.items.push({title:'Vigas, reforços e aberturas · '+g.name,w:Wd,h,html,lv77:g.lv,el97:true});}}catch(e){console.error('V97 prancha',e);}return d;};}
 window.el97={open:()=>{editing=null;render();box.hidden=false;},start,stop,bars,fit,list:mine,secSVG,detailHTML,slabGroups};
