@@ -78,7 +78,7 @@ function finish(list){const e=ctxE(),c=cfg(),k=tool;const it={id:newId(),page:e.
  if(k==='hole'){const f=forma();it.kind='hole';it.forma=f;if(f==='pol'){it.pts=list.map(p=>({x:p.x,y:p.y}));}else if(f==='circ'){const[a,b]=list,r=Math.hypot(b.x-a.x,b.y-a.y);if(r/pxPerCm()<2.5){pts=[];drawPlan();return;}it.circ={c:{x:a.x,y:a.y},r};it.pts=circulo(a,r);}else{const[a,b]=list;if(Math.abs(b.x-a.x)<1e-6||Math.abs(b.y-a.y)<1e-6){pts=[];drawPlan();return;}it.pts=[{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}];}it.use=c.hole.use;it.name=nextName('A');}
  else{it.kind='beam';it.sub=k;it.pts=list.slice(0,2).map(p=>({x:p.x,y:p.y}));it.c=c.c;if(k==='ref'){it.ref={...c.ref};it.name=nextName('R');}else{it.viga={...c.viga};it.name=nextName('V');}}
  if(it.kind==='beam'&&lenOf(it)<5){pts=[];return;}
- S().items.push(it);renum();L7().touch();pts=[];typed='';try{window.undo58?.push?.();}catch{}drawPlan();
+ S().items.push(it);if(it.kind==='beam')apoiar(it);renum();L7().touch();pts=[];typed='';try{window.undo58?.push?.();}catch{}drawPlan();
  msg97('✔ '+descr(it)+(it.kind==='beam'?' · L = '+f1(lenOf(it),0)+' cm':' · '+f1(areaPx(it.pts)/pxPerCm()**2/1e4,2)+' m²')+'. Continue marcando o próximo (mesmas características) ou Esc para soltar.');if($('el97')&&!$('el97').hidden)render();}
 document.addEventListener('click',e=>{const c=$('plan');if(e.target!==c)return;
  if(tool){e.stopImmediatePropagation();e.preventDefault();const P0=snapP(rawPoint(e)),P=e.shiftKey?P0:ortho(P0);
@@ -107,17 +107,22 @@ function del(it){const i=S().items.indexOf(it);if(i<0)return;S().items.splice(i,
 
 // V120 — alças da abertura selecionada: vértices (retângulo mantém os ângulos retos); círculo: centro e borda
 const eixos=Q=>Q.length===4&&Q.every((q,i)=>{const r=Q[(i+1)%4];return Math.abs(q.x-r.x)<1e-6||Math.abs(q.y-r.y)<1e-6;});
-function alcas(it){if(it.forma==='circ'&&it.circ){const c=it.circ.c;return [toPgP(it,c),toPgP(it,{x:c.x+it.circ.r,y:c.y})];}return toPg(it);}
+function alcas(it){if(it.kind==='beam'){const Q=toPg(it);return Q.length>=2?[Q[0],{x:(Q[0].x+Q[1].x)/2,y:(Q[0].y+Q[1].y)/2},Q[1]]:Q;}if(it.forma==='circ'&&it.circ){const c=it.circ.c;return [toPgP(it,c),toPgP(it,{x:c.x+it.circ.r,y:c.y})];}return toPg(it);}
+// V122 — apoio gravado: a ponta que chega na parede passa a atravessar até a face de fora (mesma regra do cálculo, V99)
+function apoiar(it){if(it.kind!=='beam')return false;try{const P=ends(it);if(P.length<2)return false;const novo=P.map(Q=>window.toPage74(N(it.page),Q)),mud=novo.some((q,i)=>Math.hypot(q.x-it.pts[i].x,q.y-it.pts[i].y)>.01);if(mud)it.pts=novo;return mud;}catch(e){console.error('V122 apoio',e);return false;}}
+window.apoiarViga122=apoiar;
 let arr97=null;
-document.addEventListener('pointerdown',e=>{if(tool||e.button!==0||e.target!==$('plan')||!sel)return;const it=S().items.find(x=>x.id===sel);if(!it||it.kind!=='hole')return;
- const P=rawPoint(e),i=alcas(it).findIndex(q=>perto(P,q));if(i<0)return;arr97={it,i,antes:JSON.stringify({pts:it.pts,circ:it.circ}),moveu:false};e.stopImmediatePropagation();e.preventDefault();},true);
+document.addEventListener('pointerdown',e=>{if(tool||e.button!==0||e.target!==$('plan')||!sel)return;const it=S().items.find(x=>x.id===sel);if(!it||(it.kind!=='hole'&&it.kind!=='beam'))return;
+ const P=rawPoint(e),i=alcas(it).findIndex(q=>perto(P,q));if(i<0)return;arr97={it,i,antes:JSON.stringify({pts:it.pts,circ:it.circ}),moveu:false,ult:P};e.stopImmediatePropagation();e.preventDefault();},true);
 document.addEventListener('pointermove',e=>{if(!arr97)return;const {it,i}=arr97,P0=snapP(rawPoint(e)),P=fromPg(it,P0);arr97.moveu=true;
- if(it.forma==='circ'&&it.circ){if(i===0)it.circ.c={x:P.x,y:P.y};else it.circ.r=Math.max(2.5*pxPerCm(),Math.hypot(P.x-it.circ.c.x,P.y-it.circ.c.y));it.pts=circulo(it.circ.c,it.circ.r);}
+ if(it.kind==='beam'){if(i===1){const U=fromPg(it,arr97.ult),dx=P.x-U.x,dy=P.y-U.y;it.pts=it.pts.map(q=>({x:q.x+dx,y:q.y+dy}));arr97.ult=P0;}else{const Q=it.pts.slice();Q[i===0?0:1]={x:P.x,y:P.y};it.pts=Q;}}
+ else if(it.forma==='circ'&&it.circ){if(i===0)it.circ.c={x:P.x,y:P.y};else it.circ.r=Math.max(2.5*pxPerCm(),Math.hypot(P.x-it.circ.c.x,P.y-it.circ.c.y));it.pts=circulo(it.circ.c,it.circ.r);}
  else if(it.forma==='ret'||(!it.forma&&eixos(it.pts))){const Q=it.pts.map(q=>({...q})),old=Q[i];for(const j of [(i+1)%4,(i+3)%4]){if(Math.abs(Q[j].y-old.y)<1e-6)Q[j]={x:Q[j].x,y:P.y};else Q[j]={x:P.x,y:Q[j].y};}Q[i]={x:P.x,y:P.y};it.pts=Q;}
  else{const Q=it.pts.slice();Q[i]={x:P.x,y:P.y};it.pts=Q;}
  e.stopImmediatePropagation();if(!raf)raf=requestAnimationFrame(()=>{raf=0;drawPlan();});},true);
 document.addEventListener('pointerup',e=>{if(!arr97)return;const a=arr97;arr97=null;e.stopImmediatePropagation();if(!a.moveu)return;const it=a.it;
- const k=pxPerCm();if(it.forma!=='circ'&&(cruza(it.pts)||areaPx(it.pts)/k/k<100)){const o=JSON.parse(a.antes);it.pts=o.pts;if(o.circ)it.circ=o.circ;msg97('⚠ Assim os lados se cruzariam (ou a abertura sumiria): o vértice voltou.');drawPlan();return;}
+ const k=pxPerCm();if(it.kind==='beam'){apoiar(it);if(lenOf(it)<5){const o=JSON.parse(a.antes);it.pts=o.pts;msg97('⚠ A viga ficaria curta demais: voltou como estava.');drawPlan();return;}L7().touch();try{window.undo58?.push?.();}catch{}drawPlan();msg97('✔ '+(it.name||'Viga')+' · L = '+f1(lenOf(it),0)+' cm. Ponta que chega na parede atravessa até a face de fora (apoio na espessura toda). Ctrl+Z desfaz.');if($('el97')&&!$('el97').hidden)render();return;}
+ if(it.forma!=='circ'&&(cruza(it.pts)||areaPx(it.pts)/k/k<100)){const o=JSON.parse(a.antes);it.pts=o.pts;if(o.circ)it.circ=o.circ;msg97('⚠ Assim os lados se cruzariam (ou a abertura sumiria): o vértice voltou.');drawPlan();return;}
  L7().touch();try{window.undo58?.push?.();}catch{}drawPlan();msg97('✔ '+(it.name||'Abertura')+' ajustada · '+f1(areaPx(it.pts)/k/k/1e4,2)+' m². Ctrl+Z desfaz.');if($('el97')&&!$('el97').hidden)render();},true);
 
 // ---------- desenho na planta
@@ -137,6 +142,7 @@ function draw(){const c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,
   }
   let ang=Math.atan2(dy,dx);if(ang>Math.PI/2)ang-=Math.PI;if(ang<-Math.PI/2)ang+=Math.PI;const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,off=(ref?0:bw)+8/z;ctx.save();ctx.translate(mx-Math.sin(ang)*off,my+Math.cos(ang)*off*-1);ctx.rotate(ang);ctx.fillStyle=col;ctx.textAlign='center';
   ctx.fillText(ref?it.name+' · '+it.ref.n+' '+dTxt(it.ref.d):it.name+' '+f1(it.viga.b,0)+'×'+f1(it.viga.h,0)+' · '+it.viga.ni+dTxt(it.viga.di)+' inf · '+it.viga.ns+dTxt(it.viga.ds)+' sup · '+dTxt(it.viga.de)+' c/'+f1(it.viga.s,0),0,0);ctx.restore();ctx.textAlign='left';}
+ {const sb=mine().find(x=>x.id===sel&&x.kind==='beam');if(sb&&!tool){const g=6/z;ctx.fillStyle='#fff';ctx.strokeStyle='#d1462f';ctx.lineWidth=1.6/z;alcas(sb).forEach((q,j)=>{if(j===1){ctx.beginPath();ctx.arc(q.x,q.y,g,0,2*Math.PI);ctx.fill();ctx.stroke();}else{ctx.fillRect(q.x-g,q.y-g,2*g,2*g);ctx.strokeRect(q.x-g,q.y-g,2*g,2*g);}});}}
  if(tool){const P=[...pts,...(hover?[hover]:[])];ctx.strokeStyle=tool==='ref'?'#c2410c':tool==='viga'?'#1d4ed8':'#333';ctx.lineWidth=2/z;ctx.setLineDash([6/z,4/z]);
   if(P.length>=2){ctx.beginPath();if(tool==='hole'&&forma()==='pol'){P.forEach((q,i)=>i?ctx.lineTo(q.x,q.y):ctx.moveTo(q.x,q.y));ctx.stroke();if(P.length>=3){ctx.beginPath();ctx.moveTo(P.at(-1).x,P.at(-1).y);ctx.lineTo(P[0].x,P[0].y);ctx.globalAlpha=.45;ctx.stroke();ctx.globalAlpha=1;}ctx.beginPath();}else if(tool==='hole'&&forma()==='circ'){const[a,b]=P,r=typed&&N(typed)>0?N(typed)/2*pxPerCm():Math.hypot(b.x-a.x,b.y-a.y);ctx.arc(a.x,a.y,r,0,2*Math.PI);}else if(tool==='hole'){const[a,b]=P;ctx.rect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));}else{ctx.moveTo(P[0].x,P[0].y);ctx.lineTo(P[1].x,P[1].y);}ctx.stroke();}ctx.setLineDash([]);
   if(tool==='hole'&&forma()==='pol'&&pts.length){const g=5/z;ctx.fillStyle='#333';for(const q of pts)ctx.fillRect(q.x-g/2,q.y-g/2,g,g);if(pts.length>=3){ctx.strokeStyle='#16a34a';ctx.lineWidth=2/z;ctx.strokeRect(pts[0].x-7/z,pts[0].y-7/z,14/z,14/z);}}

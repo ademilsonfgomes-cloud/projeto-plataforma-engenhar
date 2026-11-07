@@ -167,6 +167,22 @@ const CASOS = [
     await p.close();
   }
 
+  // Viga que chega a 8 cm da parede: apoio gravado até a face de fora; Verificar geometria não reclama
+  {
+    const { p, erros } = await abrir();
+    const r = await p.evaluate(async () => {
+      const e = (lvl92.entries() || []).find(x => !x.id.startsWith('p|')); await lvl92.go(e.id);
+      const ws = state.walls.filter(w => w.line && Math.abs(w.line[0].x - w.line[1].x) < 1).sort((a, b) => a.line[0].x - b.line[0].x), A = ws[0], k = A.planScale, y = (A.line[0].y + A.line[1].y) / 2;
+      const it = { id: 'vt', kind: 'beam', sub: 'viga', page: e.pg, tgt: e.tgt, g: 0, q: 0, c: 2.5, name: 'VT', viga: { b: 14, h: 30, ni: 2, di: 10, ns: 2, ds: 8, de: 5, s: 15 }, pts: [{ x: A.line[0].x + (A.width / 2 + 8) * k, y }, { x: A.line[0].x + 200 * k, y }] };
+      window.loads77.S().items.push(it); const mud = window.apoiarViga122(it);
+      const x0 = (it.pts[0].x - A.line[0].x) / k, av = geo116.verificar().filter(x => /^Viga VT/.test(x.titulo)).length;
+      window.loads77.S().items.pop();
+      return { mud, ponta: Math.round(x0 * 10) / 10, face: -A.width / 2, avisos: av };
+    });
+    conferir(r.mud && r.ponta === r.face && r.avisos === 0 && !erros.length, 'viga a 8 cm da parede apoia até a face de fora: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();

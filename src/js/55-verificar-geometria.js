@@ -122,7 +122,9 @@
     try {
       const k = G[0]?.k || (typeof pxCm !== 'undefined' && pxCm) || 1;
       const vigas = (window.loads77?.S?.().items || []).filter(it => it.kind === 'beam' && it.sub === 'viga' && N(it.page || 1) === page);
-      const pontas = vigas.flatMap(v => { const p = v.pts || []; return p.length >= 2 ? [{ v, E: p[0] }, { v, E: p[p.length - 1] }] : []; });
+      // pontas EFETIVAS (as do cálculo): a viga que chega na parede já apoia sozinha até a face de fora (V99)
+      const efetivas = v => { try { if (window.beamEnds97 && window.toPage74) return window.beamEnds97(v).map(Q => window.toPage74(page, Q)); } catch {} return v.pts || []; };
+      const pontas = vigas.flatMap(v => { const p = efetivas(v); return p.length >= 2 ? [{ v, E: p[0] }, { v, E: p[p.length - 1] }] : []; });
       for (const v of vigas) {
         const p = v.pts || [], len = p.length >= 2 ? p.slice(1).reduce((s, q, z) => s + Math.hypot(q.x - p[z].x, q.y - p[z].y), 0) / k : 0;
         if (len < 1) add('critico', 'Viga ' + (v.name || '') + ' sem comprimento', 'Apague a viga ou desenhe de novo.', [], p.slice(0, 1));
@@ -130,7 +132,7 @@
       for (const { v, E } of pontas) {
         for (const A of G) {
           const r = rel(A, E), g = Math.abs(r.d) - A.wd / 2;
-          if (r.t >= -A.wd && r.t <= A.L + A.wd && g > 0.5 && g <= 15) add('aviso', 'Viga ' + (v.name || '') + ' termina a ' + f1(g) + ' cm da face da Parede ' + (A.i + 1), 'Estique a viga até a parede (ou confira se a folga é intencional).', [A.i], [E], { dist: g });
+          if (r.t >= -A.wd && r.t <= A.L + A.wd && g > 0.5 && g <= 15) add('aviso', 'Viga ' + (v.name || '') + ' termina a ' + f1(g) + ' cm da face da Parede ' + (A.i + 1), 'Longe demais para apoiar sozinha: estique a ponta da viga até a parede (selecione a viga e arraste o quadradinho da ponta) ou confira se a folga é intencional.', [A.i], [E], { dist: g });
         }
         for (const o of pontas) {
           if (o.v === v || String(o.v.name) < String(v.name)) continue;
