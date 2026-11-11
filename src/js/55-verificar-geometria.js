@@ -253,10 +253,21 @@
       const placed = w => Array.isArray(w.line) && w.line.length === 2 && w.line.every(p => Number.isFinite(p.x) && Number.isFinite(p.y));
       const key = w => { const [a, b] = w.line, hz = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y), k = N(w.planScale) || 1; return { g: hz ? 0 : 1, p: hz ? (a.y + b.y) / 2 : (a.x + b.x) / 2, s: hz ? Math.min(a.x, b.x) : Math.min(a.y, b.y), tol: 3 * k }; };
       try {
-        return walls.map((w, i) => ({ w, i, k: placed(w) ? key(w) : null })).sort((A, B) => {
-          if (!A.k || !B.k) return A.k ? -1 : B.k ? 1 : A.i - B.i;
-          return (N(A.w.page) || 1) - (N(B.w.page) || 1) || A.k.g - B.k.g || (Math.abs(A.k.p - B.k.p) > Math.max(A.k.tol, B.k.tol) ? A.k.p - B.k.p : 0) || A.k.s - B.k.s || A.i - B.i;
-        }).map(x => x.w);
+        // V133 — faixas de 30 cm: paredes lado a lado com eixo alguns cm desencontrado ficam na mesma "linha" e seguem
+        // da esquerda para a direita (antes a tolerância era 3 cm e paredes de outra unidade entravam no meio).
+        const it = walls.map((w, i) => ({ w, i, k: placed(w) ? key(w) : null }));
+        const sem = it.filter(x => !x.k), com = it.filter(x => x.k), out = [];
+        const grupos = new Map();
+        for (const x of com) { const g = (N(x.w.page) || 1) + '|' + x.k.g; if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(x); }
+        const chaves = [...grupos.keys()].sort((A, B) => { const [pa, ga] = A.split('|').map(Number), [pb, gb] = B.split('|').map(Number); return pa - pb || ga - gb; });
+        for (const g of chaves) {
+          const l = grupos.get(g).sort((A, B) => A.k.p - B.k.p || A.k.s - B.k.s || A.i - B.i);
+          let faixa = [], ini = null;
+          const fecha = () => { faixa.sort((A, B) => A.k.s - B.k.s || A.k.p - B.k.p || A.i - B.i); out.push(...faixa); faixa = []; };
+          for (const x of l) { const tol = 30 * (N(x.w.planScale) || 1); if (ini !== null && x.k.p - ini > tol) fecha(); if (!faixa.length) ini = x.k.p; faixa.push(x); }
+          fecha();
+        }
+        return [...out, ...sem].map(x => x.w);
       } catch (e) { console.error('V116 ordem', e); return ordOrig.call(this, walls); }
     };
   } catch (e) { console.error('V116 ordem', e); }

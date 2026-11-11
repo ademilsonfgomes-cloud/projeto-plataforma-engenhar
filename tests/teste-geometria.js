@@ -241,6 +241,23 @@ const CASOS = [
     conferir(ordem === 'g3,g5,g4,g1,g0,g2' && !erros.length, 'Renumerar: horizontais de cima para baixo e da esquerda para a direita, depois verticais: ' + ordem);
     await p.close();
   }
+  // Paredes lado a lado com eixo alguns cm desencontrado ficam juntas na numeração, e parede nova é numerada sozinha
+  {
+    const { p, erros } = await abrir();
+    await paredes(p, [R(0, 100, 200, 100), R(600, 400, 800, 400), R(300, 106, 500, 106), R(900, 103, 1100, 103)]);
+    await p.evaluate(() => window.renum116()); await p.waitForTimeout(200);
+    await p.click('#rnGo101'); await p.waitForTimeout(400);
+    const ordem = await p.evaluate(() => state.walls.map(w => w.uid).join(','));
+    const nova = await p.evaluate(async () => {
+      const w = state.walls[0], k = Number(w.planScale) || 1, [a] = w.line;
+      document.body.classList.add('wall101');
+      state.walls.push({ ...JSON.parse(JSON.stringify(w)), uid: 'nova', seq58: undefined, line: [{ x: a.x + 1200 * k, y: a.y + 4 * k }, { x: a.x + 1350 * k, y: a.y + 4 * k }], length: 150 });
+      renderWalls(); document.body.classList.remove('wall101'); await new Promise(r => setTimeout(r, 1200));
+      return state.walls.map(w => w.uid).join(',');
+    });
+    conferir(ordem === 'g0,g2,g3,g1' && nova === 'g0,g2,g3,nova,g1' && !erros.length, 'Numeração: mesma linha com eixo desencontrado (' + ordem + ') e parede nova numerada sozinha (' + nova + ')');
+    await p.close();
+  }
   await b.close();
   console.log(falhas.length ? '\n' + falhas.length + ' falha(s).' : '\nTudo certo.');
   process.exit(falhas.length ? 1 : 0);
