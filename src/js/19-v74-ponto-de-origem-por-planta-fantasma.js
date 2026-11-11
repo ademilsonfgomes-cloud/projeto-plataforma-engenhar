@@ -13,7 +13,10 @@ state.origins74??={};
 
 // ---------- 1. Ponto de origem
 // escala (px por cm) de cada planta
-function scaleOf(pg){pg=N(pg);const s=N(state.pageScales23?.[pg]);if(s>0)return s;const w=allWalls().find(w=>N(w.page||1)===pg&&N(w.planScale)>0);if(w)return N(w.planScale);return pg===curPage()&&pxCm>0?pxCm:1;}
+function scaleOf(pg){pg=N(pg);const s=N(state.pageScales23?.[pg]);if(s>0)return s;const w=allWalls().find(w=>N(w.page||1)===pg&&N(w.planScale)>0);if(w)return N(w.planScale);if(pg===curPage()&&pxCm>0)return pxCm;
+ // V130 — DXF ainda não calibrado: usa a mesma unidade de desenho de outro DXF já calibrado do projeto (px/cm = escala do DXF × cm por unidade)
+ const m=sourceOf(pg)?.canvas?.map74;if(m&&N(m.scale)>0)for(const p of pagesList()){if(N(p.id)===pg)continue;const mo=p.source?.canvas?.map74,so=N(state.pageScales23?.[p.id])||N(allWalls().find(w=>N(w.page||1)===N(p.id)&&N(w.planScale)>0)?.planScale);if(mo&&N(mo.scale)>0&&so>0)return N(m.scale)*so/N(mo.scale);}
+ return 1;}
 function originOf(pg,seen=0){pg=N(pg);const o=state.origins74?.[pg];if(o)return o;const c=(state.pageCopies72||[]).find(c=>N(c.id)===pg);if(c&&seen<10)return originOf(c.of,seen+1);
  // origem reconhecida no DXF (layer ORIGEM) — fica gravada no projeto
  const src=sourceOf(pg),m=src?.canvas?.map74;if(m?.org){const p=dxfToCanvas(m,m.org.x,m.org.y),o2={x:p.x,y:p.y,how:'layer'};if(Number.isFinite(m.org.rot)&&m.org.rot){const a=m.org.rot*Math.PI/180,q=dxfToCanvas(m,m.org.x+100*Math.cos(a),m.org.y+100*Math.sin(a));o2.ax=q.x;o2.ay=q.y;}state.origins74[pg]=o2;return o2;}

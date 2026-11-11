@@ -3990,7 +3990,10 @@ state.origins74??={};
 
 // ---------- 1. Ponto de origem
 // escala (px por cm) de cada planta
-function scaleOf(pg){pg=N(pg);const s=N(state.pageScales23?.[pg]);if(s>0)return s;const w=allWalls().find(w=>N(w.page||1)===pg&&N(w.planScale)>0);if(w)return N(w.planScale);return pg===curPage()&&pxCm>0?pxCm:1;}
+function scaleOf(pg){pg=N(pg);const s=N(state.pageScales23?.[pg]);if(s>0)return s;const w=allWalls().find(w=>N(w.page||1)===pg&&N(w.planScale)>0);if(w)return N(w.planScale);if(pg===curPage()&&pxCm>0)return pxCm;
+ // V130 — DXF ainda não calibrado: usa a mesma unidade de desenho de outro DXF já calibrado do projeto (px/cm = escala do DXF × cm por unidade)
+ const m=sourceOf(pg)?.canvas?.map74;if(m&&N(m.scale)>0)for(const p of pagesList()){if(N(p.id)===pg)continue;const mo=p.source?.canvas?.map74,so=N(state.pageScales23?.[p.id])||N(allWalls().find(w=>N(w.page||1)===N(p.id)&&N(w.planScale)>0)?.planScale);if(mo&&N(mo.scale)>0&&so>0)return N(m.scale)*so/N(mo.scale);}
+ return 1;}
 function originOf(pg,seen=0){pg=N(pg);const o=state.origins74?.[pg];if(o)return o;const c=(state.pageCopies72||[]).find(c=>N(c.id)===pg);if(c&&seen<10)return originOf(c.of,seen+1);
  // origem reconhecida no DXF (layer ORIGEM) — fica gravada no projeto
  const src=sourceOf(pg),m=src?.canvas?.map74;if(m?.org){const p=dxfToCanvas(m,m.org.x,m.org.y),o2={x:p.x,y:p.y,how:'layer'};if(Number.isFinite(m.org.rot)&&m.org.rot){const a=m.org.rot*Math.PI/180,q=dxfToCanvas(m,m.org.x+100*Math.cos(a),m.org.y+100*Math.sin(a));o2.ax=q.x;o2.ay=q.y;}state.origins74[pg]=o2;return o2;}
@@ -7942,14 +7945,25 @@ const cache=new Map();
 {const rp=renderPage;renderPage=async function(...a){const r=await rp.apply(this,a);try{const pg=N($('page').value);if(typeof image!=='undefined'&&image)cache.set(pg,image);}catch{}return r;};}
 let ref=0;const refSel=document.createElement('select');refSel.id='mk100ref';refSel.title='Máscara de referência: mostra a máscara de outro pavimento por cima, só para consulta (não muda as paredes)';
 function fillRef(){const cur=N($('page').value);const html='<option value="0">Máscara: só a do nível</option>'+pgs().filter(p=>N(p.id)!==cur).map(p=>'<option value="'+p.id+'">Ver também: '+esc(p.name)+(p.local>1?' p.'+p.local:'')+' · '+esc(L68().nameOf(L68().keyOf(p.id)))+'</option>').join('');if(refSel.__h!==html){refSel.innerHTML=html;refSel.__h=html;}if(ref&&(ref===cur||!pgs().some(p=>N(p.id)===ref)))ref=0;refSel.value=String(ref);refSel.style.display=pgs().length>1?'':'none';}
-refSel.onchange=()=>{ref=N(refSel.value)||0;const p=pgs().find(p=>N(p.id)===ref);if(ref&&!(p?.source?.type==='dxf'&&p.source.canvas)&&!cache.has(ref))msg('Máscara de PDF ainda não carregada: abra o nível dela uma vez e volte — depois ela aparece aqui como referência.');try{drawPlan();}catch{}};
+refSel.onchange=()=>{ref=N(refSel.value)||0;if(!ref)syncSnap(0,null);const p=pgs().find(p=>N(p.id)===ref);if(ref&&!(p?.source?.type==='dxf'&&p.source.canvas)&&!cache.has(ref))msg('Máscara de PDF ainda não carregada: abra o nível dela uma vez e volte — depois ela aparece aqui como referência.');try{drawPlan();}catch{}};
 {const host=$('lvlHost85');if(host)host.append(refSel);}
 function refImg(pg){const p=pgs().find(p=>N(p.id)===pg);if(p?.source?.type==='dxf'&&p.source.canvas)return p.source.canvas;return cache.get(pg)||null;}
-{const dp=drawPlan;drawPlan=function(...a){const r=dp.apply(this,a);try{fillRef();if(ref&&typeof image!=='undefined'&&image)drawRef();}catch(e){console.error('V100 referência',e);}return r;};}
-function drawRef(){const img=refImg(ref);if(!img||!window.world74||!window.toPage74)return;const cur=N($('page').value),c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,y:0};
- const M=Q=>window.toPage74(cur,window.world74(ref,Q)),P0=M({x:0,y:0}),P1=M({x:1000,y:0}),P2=M({x:0,y:1000});if(![P0,P1,P2].every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)))return;
- ctx.save();ctx.setTransform((P1.x-P0.x)/1000,(P1.y-P0.y)/1000,(P2.x-P0.x)/1000,(P2.y-P0.y)/1000,P0.x-o.x,P0.y-o.y);ctx.globalAlpha=.3;ctx.drawImage(img,0,0);ctx.restore();
- (window.hud88||[]).push?.({t:'Máscara de referência: '+(pgs().find(p=>N(p.id)===ref)?.name||'')+' (só para ver)',c:'#7c3aed'});}
+{const dp=drawPlan;drawPlan=function(...a){const r=dp.apply(this,a);try{fillRef();if(typeof image!=='undefined'&&image)drawRef();}catch(e){console.error('V100 referência',e);}return r;};}
+// V130 — a máscara de referência é desenhada como LINHAS COLORIDAS sobre fundo transparente (antes era a folha branca do DXF a 30%,
+// que não aparecia no fundo escuro) e os pontos dela entram na captura (vigas, reforços, beirais e paredes encaixam na planta de cima).
+const tint=new WeakMap();
+function tinted(img,cor){let o=tint.get(img);if(o&&o.cor===cor)return o.c;const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d');x.drawImage(img,0,0);
+ const d=x.getImageData(0,0,c.width,c.height),a=d.data,R=parseInt(cor.slice(1,3),16),G=parseInt(cor.slice(3,5),16),B=parseInt(cor.slice(5,7),16);
+ for(let i=0;i<a.length;i+=4){const lum=(a[i]+a[i+1]+a[i+2])/3,ink=(1-lum/255)*(a[i+3]/255);a[i]=R;a[i+1]=G;a[i+2]=B;a[i+3]=ink<.08?0:Math.min(255,60+ink*255);}
+ x.putImageData(d,0,0);tint.set(img,{cor,c});return c;}
+function refMatrix(cur){const M=Q=>window.toPage74(cur,window.world74(ref,Q)),P0=M({x:0,y:0}),P1=M({x:1000,y:0}),P2=M({x:0,y:1000});if(![P0,P1,P2].every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)))return null;return {a:(P1.x-P0.x)/1000,b:(P1.y-P0.y)/1000,c:(P2.x-P0.x)/1000,d:(P2.y-P0.y)/1000,e:P0.x,f:P0.y};}
+const marca130=Symbol('ref130');
+function refPoints(cur,T){const p=pgs().find(p=>N(p.id)===ref),pts=p?.source?.points||[];return pts.map(q=>({x:T.a*q.x+T.c*q.y+T.e,y:T.b*q.x+T.d*q.y+T.f,[marca130]:1}));}
+function syncSnap(cur,T){try{if(typeof fixedPoints==='undefined'||!Array.isArray(fixedPoints))return;for(let i=fixedPoints.length-1;i>=0;i--)if(fixedPoints[i]&&fixedPoints[i][marca130])fixedPoints.splice(i,1);if(ref&&T)fixedPoints.push(...refPoints(cur,T));}catch{}}
+function drawRef(){const cur=N($('page').value),T=ref?refMatrix(cur):null;syncSnap(cur,T);const img=refImg(ref);if(!img||!T)return;const c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,y:0};
+ const claro=/claro|branco/.test(String(window.bg88?.get?.().theme||'')),cor=claro?'#c026d3':'#ff5ad8';
+ ctx.save();ctx.setTransform(T.a,T.b,T.c,T.d,T.e-o.x,T.f-o.y);ctx.globalAlpha=.95;ctx.drawImage(tinted(img,cor),0,0);ctx.restore();
+ (window.hud88||[]).push?.({t:'Máscara de referência: '+(pgs().find(p=>N(p.id)===ref)?.name||'')+' (só para ver · com captura)',c:'#7c3aed'});}
 
 // ---------- 3. alinhar com o de baixo (MOVE: ponto desta planta → mesmo ponto no fantasma de baixo)
 let A=null;
