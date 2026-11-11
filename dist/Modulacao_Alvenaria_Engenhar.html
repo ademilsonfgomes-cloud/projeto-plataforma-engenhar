@@ -7944,9 +7944,17 @@ function chooser(src){const pages=(src?.pages||[]).map(p=>N(p.id??p));if(!pages.
 const cache=new Map();
 {const rp=renderPage;renderPage=async function(...a){const r=await rp.apply(this,a);try{const pg=N($('page').value);if(typeof image!=='undefined'&&image)cache.set(pg,image);}catch{}return r;};}
 let ref=0;const refSel=document.createElement('select');refSel.id='mk100ref';refSel.title='Máscara de referência: mostra a máscara de outro pavimento por cima, só para consulta (não muda as paredes)';
-function fillRef(){const cur=N($('page').value);const html='<option value="0">Máscara: só a do nível</option>'+pgs().filter(p=>N(p.id)!==cur).map(p=>'<option value="'+p.id+'">Ver também: '+esc(p.name)+(p.local>1?' p.'+p.local:'')+' · '+esc(L68().nameOf(L68().keyOf(p.id)))+'</option>').join('');if(refSel.__h!==html){refSel.innerHTML=html;refSel.__h=html;}if(ref&&(ref===cur||!pgs().some(p=>N(p.id)===ref)))ref=0;refSel.value=String(ref);refSel.style.display=pgs().length>1?'':'none';}
-refSel.onchange=()=>{ref=N(refSel.value)||0;if(!ref)syncSnap(0,null);const p=pgs().find(p=>N(p.id)===ref);if(ref&&!(p?.source?.type==='dxf'&&p.source.canvas)&&!cache.has(ref))msg('Máscara de PDF ainda não carregada: abra o nível dela uma vez e volte — depois ela aparece aqui como referência.');try{drawPlan();}catch{}};
-{const host=$('lvlHost85');if(host)host.append(refSel);}
+function fillRef(){const cur=N($('page').value);const html='<option value="0">Máscara: só a do nível</option>'+pgs().filter(p=>N(p.id)!==cur).map(p=>'<option value="'+p.id+'">Ver também: '+esc(p.name)+(p.local>1?' p.'+p.local:'')+' · '+esc(L68().nameOf(L68().keyOf(p.id)))+'</option>').join('');if(refSel.__h!==html){refSel.innerHTML=html;refSel.__h=html;}if(ref&&(ref===cur||!pgs().some(p=>N(p.id)===ref)))ref=0;refSel.value=String(ref);refSel.style.display=pgs().length>1?'':'none';pot.style.display=ref?'inline-flex':'none';}
+refSel.onchange=()=>{ref=N(refSel.value)||0;pot.style.display=ref?'inline-flex':'none';if(!ref)syncSnap(0,null);const p=pgs().find(p=>N(p.id)===ref);if(ref&&!(p?.source?.type==='dxf'&&p.source.canvas)&&!cache.has(ref))msg('Máscara de PDF ainda não carregada: abra o nível dela uma vez e volte — depois ela aparece aqui como referência.');try{drawPlan();}catch{}};
+// V131 — potenciômetro da máscara de referência: de quase apagada (5%) a bem evidente (100%, linhas mais grossas)
+let forca=(()=>{try{const v=Number(localStorage.getItem('ref131'));return v>=5&&v<=100?v:70;}catch{return 70;}})();
+const pot=document.createElement('label');pot.id='ref131';pot.title='Intensidade da máscara de referência: arraste para deixar mais ou menos evidente';
+pot.innerHTML='<span class="i131">◐</span><input type="range" min="5" max="100" step="5"><b></b>';
+const rng=pot.querySelector('input'),val=pot.querySelector('b');rng.value=String(forca);val.textContent=forca+'%';
+rng.oninput=()=>{forca=N(rng.value);val.textContent=forca+'%';try{localStorage.setItem('ref131',String(forca));}catch{}try{drawPlan();}catch{}};
+pot.style.display='none';
+{const host=$('lvlHost85');if(host){host.append(refSel);host.append(pot);}}
+{const st=document.createElement('style');st.textContent='#ref131{display:inline-flex;align-items:center;gap:4px;margin:0 6px;font:600 12px "Segoe UI",Arial,sans-serif;color:#c026d3;white-space:nowrap}#ref131 input{width:96px;accent-color:#d946ef;cursor:pointer}#ref131 b{min-width:34px;text-align:right}#ref131 .i131{font-size:15px}';document.head.append(st);}
 function refImg(pg){const p=pgs().find(p=>N(p.id)===pg);if(p?.source?.type==='dxf'&&p.source.canvas)return p.source.canvas;return cache.get(pg)||null;}
 {const dp=drawPlan;drawPlan=function(...a){const r=dp.apply(this,a);try{fillRef();if(typeof image!=='undefined'&&image)drawRef();}catch(e){console.error('V100 referência',e);}return r;};}
 // V130 — a máscara de referência é desenhada como LINHAS COLORIDAS sobre fundo transparente (antes era a folha branca do DXF a 30%,
@@ -7962,7 +7970,8 @@ function refPoints(cur,T){const p=pgs().find(p=>N(p.id)===ref),pts=p?.source?.po
 function syncSnap(cur,T){try{if(typeof fixedPoints==='undefined'||!Array.isArray(fixedPoints))return;for(let i=fixedPoints.length-1;i>=0;i--)if(fixedPoints[i]&&fixedPoints[i][marca130])fixedPoints.splice(i,1);if(ref&&T)fixedPoints.push(...refPoints(cur,T));}catch{}}
 function drawRef(){const cur=N($('page').value),T=ref?refMatrix(cur):null;syncSnap(cur,T);const img=refImg(ref);if(!img||!T)return;const c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,y:0};
  const claro=/claro|branco/.test(String(window.bg88?.get?.().theme||'')),cor=claro?'#c026d3':'#ff5ad8';
- ctx.save();ctx.setTransform(T.a,T.b,T.c,T.d,T.e-o.x,T.f-o.y);ctx.globalAlpha=.95;ctx.drawImage(tinted(img,cor),0,0);ctx.restore();
+ ctx.save();ctx.setTransform(T.a,T.b,T.c,T.d,T.e-o.x,T.f-o.y);const tc=tinted(img,cor),k=Math.sqrt(Math.abs(T.a*T.d-T.b*T.c))||1,r=forca>=90?2:forca>70?1:0;ctx.globalAlpha=Math.min(1,.06+.94*Math.min(1,forca/75));
+ ctx.drawImage(tc,0,0);for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){if(!dx&&!dy)continue;ctx.drawImage(tc,dx/k,dy/k);}ctx.restore();
  (window.hud88||[]).push?.({t:'Máscara de referência: '+(pgs().find(p=>N(p.id)===ref)?.name||'')+' (só para ver · com captura)',c:'#7c3aed'});}
 
 // ---------- 3. alinhar com o de baixo (MOVE: ponto desta planta → mesmo ponto no fantasma de baixo)
