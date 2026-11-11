@@ -57,6 +57,9 @@
   const flut = document.createElement('div'); flut.id = 'pr121flut'; flut.className = 'noPrint'; flut.hidden = true;
   flut.innerHTML = `<button type="button" data-a="ant" title="Para a folha anterior">${ic(I.ant)}</button><button type="button" data-a="prox" title="Para a próxima folha">${ic(I.prox)}</button><button type="button" data-a="tirar" title="Tirar este quadro das pranchas (volta ao Montar do zero)">${ic(I.lixo)}</button>`;
   sec.prepend(rib); sec.append(th, mesa, pn, st);
+  // largura da área da folha acompanhada por observador (ler clientWidth logo depois de desenhar forçava o layout de todas as folhas)
+  let largMesa = 0; try { new ResizeObserver(en => { largMesa = en[0].contentRect.width + 48; }).observe(mesa); } catch {}
+  const larguraMesa = () => largMesa || mesa.clientWidth;
   const vazio = document.createElement('div'); vazio.id = 'pr121vazio'; vazio.className = 'noPrint'; vazio.hidden = true;
   mesa.append(flut, vazio); sec.append(zoom);
   vazio.addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (b) acao(b.dataset.a); });
@@ -119,7 +122,7 @@
   const zsel = () => $id('plotZoom26');
   function setZoom(z) { const s = zsel(); if (!s) return; z = Math.max(.1, Math.min(1.5, z)); let o = [...s.options].find(o => Math.abs(N(o.value) - z) < .001); if (!o) { o = new Option(Math.round(z * 100) + '%', String(Math.round(z * 1000) / 1000)); s.add(o); } s.value = o.value; previewPlot26(); }
   let zoomManual = false;
-  const ajustar = () => { const [W] = sheetSize26(); if (mesa.clientWidth > 200) setZoom(Math.floor((mesa.clientWidth - 60) / (W * 96 / 25.4) * 100) / 100); };
+  const ajustar = () => { const [W] = sheetSize26(); if (larguraMesa() > 200) setZoom(Math.floor((larguraMesa() - 60) / (W * 96 / 25.4) * 100) / 100); };
   zoom.onclick = e => {
     const b = e.target.closest('[data-z]'); if (!b) return; zoomManual = b.dataset.z !== 'fit'; const z = N(zsel()?.value) || .4, passos = [.15, .2, .25, .3, .4, .5, .6, .8, 1, 1.25, 1.5];
     if (b.dataset.z === '+') setZoom(passos.find(p => p > z + .001) || 1.5);
@@ -172,7 +175,7 @@
     const zv = $id('pr121zv'); if (zv) zv.textContent = Math.round((N(zsel()?.value) || .4) * 100) + '%';
   }
   let ajustando = false;
-  function depois() { cartaoVazio(); if (!zoomManual && !ajustando && plotSheets26?.length && document.body.dataset.v85 === 'plot') { const [W] = sheetSize26(), alvo = Math.floor((mesa.clientWidth - 60) / (W * 96 / 25.4) * 100) / 100; if (mesa.clientWidth > 200 && Math.abs((N(zsel()?.value) || 0) - alvo) > .011) { ajustando = true; try { setZoom(alvo); } finally { ajustando = false; } return; } } miniaturas(); selos(); posFlut(); barra(); }
+  function depois() { cartaoVazio(); if (!zoomManual && !ajustando && plotSheets26?.length && document.body.dataset.v85 === 'plot') { const [W] = sheetSize26(), alvo = Math.floor((larguraMesa() - 60) / (W * 96 / 25.4) * 100) / 100; if (larguraMesa() > 200 && Math.abs((N(zsel()?.value) || 0) - alvo) > .011) { ajustando = true; try { setZoom(alvo); } finally { ajustando = false; } return; } } miniaturas(); selos(); posFlut(); barra(); }
   try { const p0 = previewPlot26; previewPlot26 = function (...a) { const r = p0.apply(this, a); try { depois(); } catch (e) { console.error('V121', e); } return r; }; } catch {}
   try { const r0 = refreshPlotMove33; refreshPlotMove33 = function (...a) { const r = r0.apply(this, a); try { depois(); } catch {} return r; }; } catch {}
   new MutationObserver(() => { barra(); cartaoVazio(); }).observe($id('plotStatus26') || sec, { childList: true, characterData: true, subtree: true });

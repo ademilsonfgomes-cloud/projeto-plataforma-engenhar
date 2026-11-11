@@ -59,13 +59,18 @@ function procSVG(svg,itemTitle){const plan=/Modulação conjunta/.test(svg.getAt
 function markSubs(root){root.querySelectorAll('h3,h4').forEach(h=>{const tx=h.textContent||'';let n=h.nextElementSibling;for(let g=0;g<3&&n;g++,n=n.nextElementSibling){if(n.tagName==='svg'||n.querySelector?.('svg')){(n.tagName==='svg'?n:n.querySelector('svg')).closest('*').setAttribute('data-sub85',tx);break;}}});}
 
 // ---------- aplica em cada item das pranchas (antes de montar as folhas)
+const cache85=new Map();
 try{const cp=collectPlot26;collectPlot26=function(...a){applyCSS();const d=cp.apply(this,a);try{
  const host=document.createElement('div');host.style.cssText='position:absolute;left:-100000px;top:0;';document.body.append(host);
  const tOld=5,tNew=lh('titulo'),sOld=2.3*1.2+2,sNew=mm('escala')/CAP*1.2+2;let tot=0,hid=0;
  for(const it of d.items||[]){it.h=(N(it.h)||0)+Math.max(0,tNew-tOld)+(/^(Parede |Primeira fiada|Segunda fiada)/.test(it.title||'')?Math.max(0,sNew-sOld):0);
-  if(!it.html||!/<svg/i.test(it.html))continue;host.style.width=it.w+'mm';host.innerHTML='<div class="plotItem26" style="position:static;width:'+it.w+'mm">'+it.html+'</div>';markSubs(host);
-  for(const svg of host.querySelectorAll('svg')){const r=procSVG(svg,it.title);tot+=r.set;hid+=r.hid;}
-  host.querySelectorAll('[data-sub85]').forEach(n=>n.removeAttribute('data-sub85'));it.html=host.firstElementChild.innerHTML;}
+  if(!it.html||!/<svg/i.test(it.html))continue;
+  // V124 — mesmo quadro (desenho, largura, título) com os mesmos tamanhos de texto: reaproveita o resultado
+  const kk=window.medir124?(window.medir124.dig(it.html)+'|'+it.w+'|'+it.title+'|'+JSON.stringify(C)+'|'+window.medir124.versao()):null,hit=kk&&cache85.get(kk);
+  if(hit&&!window.__v124off){it.html=hit.html;tot+=hit.set;hid+=hit.hid;continue;}
+  host.style.width=it.w+'mm';host.innerHTML='<div class="plotItem26" style="position:static;width:'+it.w+'mm">'+it.html+'</div>';markSubs(host);let s1=0,h1=0;
+  for(const svg of host.querySelectorAll('svg')){const r=procSVG(svg,it.title);s1+=r.set;h1+=r.hid;}tot+=s1;hid+=h1;
+  host.querySelectorAll('[data-sub85]').forEach(n=>n.removeAttribute('data-sub85'));it.html=host.firstElementChild.innerHTML;if(kk){if(cache85.size>3000)cache85.clear();cache85.set(kk,{html:it.html,set:s1,hid:h1});}}
  host.remove();d.txt85={tot,hid};}catch(e){console.error('V85 textos',e);}return d;};}catch(e){console.error('V85 textos',e);}
 
 // ---------- DXF: layers por tipo de texto
