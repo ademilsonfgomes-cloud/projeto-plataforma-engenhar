@@ -125,6 +125,35 @@ document.addEventListener('pointerup',e=>{if(!arr97)return;const a=arr97;arr97=n
  if(it.forma!=='circ'&&(cruza(it.pts)||areaPx(it.pts)/k/k<100)){const o=JSON.parse(a.antes);it.pts=o.pts;if(o.circ)it.circ=o.circ;msg97('⚠ Assim os lados se cruzariam (ou a abertura sumiria): o vértice voltou.');drawPlan();return;}
  L7().touch();try{window.undo58?.push?.();}catch{}drawPlan();msg97('✔ '+(it.name||'Abertura')+' ajustada · '+f1(areaPx(it.pts)/k/k/1e4,2)+' m². Ctrl+Z desfaz.');if($('el97')&&!$('el97').hidden)render();},true);
 
+// V125 — UNIR VIGAS (com a ferramenta Unir das paredes): clique numa viga e depois na outra.
+//  • alinhadas (mesma direção e eixo): viram UMA viga, de ponta a ponta (mesma seção; folga até 50 cm)
+//  • em ângulo: as duas vão até o ponto de encontro dos eixos (até 1 m das pontas)
+let unir125=[];
+function unirVigas(A,B){const k=pxPerCm();if(A===B)return {ok:false,t:'Clique em duas vigas diferentes.'};if(A.sub!==B.sub)return {ok:false,t:'Não dá para unir '+(A.sub==='ref'?'reforço':'viga')+' com '+(B.sub==='ref'?'reforço':'viga')+'.'};
+ const P=toPg(A),Q=toPg(B),uA=(()=>{const l=Math.hypot(P[1].x-P[0].x,P[1].y-P[0].y)||1;return {x:(P[1].x-P[0].x)/l,y:(P[1].y-P[0].y)/l};})(),uB=(()=>{const l=Math.hypot(Q[1].x-Q[0].x,Q[1].y-Q[0].y)||1;return {x:(Q[1].x-Q[0].x)/l,y:(Q[1].y-Q[0].y)/l};})(),cr=Math.abs(uA.x*uB.y-uA.y*uB.x);
+ const sec=it=>it.sub==='ref'?[it.ref.b]:[it.viga.b,it.viga.h],bw=it=>(it.sub==='ref'?it.ref.b:it.viga.b);
+ if(cr<0.02){// paralelas
+  const off=Math.max(...Q.map(q=>Math.abs((q.x-P[0].x)*-uA.y+(q.y-P[0].y)*uA.x)))/k;if(off>Math.max(bw(A),bw(B))/2)return {ok:false,t:'As vigas são paralelas, mas não estão no mesmo eixo ('+f1(off,1)+' cm de distância). Não dá para unir.'};
+  if(JSON.stringify(sec(A))!==JSON.stringify(sec(B)))return {ok:false,t:'Seções diferentes ('+sec(A).join('×')+' e '+sec(B).join('×')+'): ajuste uma delas antes de unir.'};
+  const t=q=>(q.x-P[0].x)*uA.x+(q.y-P[0].y)*uA.y,tA=[t(P[0]),t(P[1])],tB=Q.map(t),gap=Math.max(0,Math.min(...tB)-Math.max(...tA),Math.min(...tA)-Math.max(...tB))/k;if(gap>50)return {ok:false,t:'As vigas estão a '+f1(gap,0)+' cm uma da outra (máx. 50 cm para unir). Estique uma delas ou lance uma viga nova.'};
+  const lo=Math.min(...tA,...tB),hi=Math.max(...tA,...tB),E0={x:P[0].x+uA.x*lo,y:P[0].y+uA.y*lo},E1={x:P[0].x+uA.x*hi,y:P[0].y+uA.y*hi};
+  A.pts=[fromPg(A,E0),fromPg(A,E1)];const i=S().items.indexOf(B);if(i>=0)S().items.splice(i,1);apoiar(A);
+  return {ok:true,t:'✔ '+(A.name||'Viga')+' e '+(B.name||'viga')+' viraram uma viga só · L = '+f1(lenOf(A),0)+' cm.'};}
+ // em ângulo: encontro dos eixos
+ const den=uA.x*uB.y-uA.y*uB.x,s=((Q[0].x-P[0].x)*uB.y-(Q[0].y-P[0].y)*uB.x)/den,X={x:P[0].x+uA.x*s,y:P[0].y+uA.y*s};
+ const mais=(R)=>Math.hypot(R[0].x-X.x,R[0].y-X.y)<=Math.hypot(R[1].x-X.x,R[1].y-X.y)?0:1,ea=mais(P),eb=mais(Q),da=Math.hypot(P[ea].x-X.x,P[ea].y-X.y)/k,db=Math.hypot(Q[eb].x-X.x,Q[eb].y-X.y)/k;
+ if(da>100||db>100)return {ok:false,t:'O encontro dos eixos fica longe das pontas ('+f1(Math.max(da,db),0)+' cm; máx. 100 cm). Não dá para unir.'};
+ const pa=A.pts.slice(),pb=B.pts.slice();pa[ea]=fromPg(A,X);pb[eb]=fromPg(B,X);A.pts=pa;B.pts=pb;
+ if(lenOf(A)<5||lenOf(B)<5)return {ok:false,t:'Uma das vigas ficaria curta demais.'};
+ return {ok:true,t:'✔ '+(A.name||'Viga')+' e '+(B.name||'viga')+' unidas no encontro dos eixos (L = '+f1(lenOf(A),0)+' e '+f1(lenOf(B),0)+' cm).'};}
+document.addEventListener('click',e=>{if(window.ferr56!=='join'||e.target!==$('plan')||tool)return;let it=null;try{if(!S().cfg.show)return;it=hit(rawPoint(e));}catch{return;}if(!it||it.kind!=='beam'){if(unir125.length){unir125=[];sel=null;drawPlan();}return;}
+ e.stopImmediatePropagation();e.preventDefault();unir125.push(it);sel=it.id;drawPlan();
+ if(unir125.length<2){$('planStatus').textContent='Unir: '+(it.name||'viga')+' marcada. Agora clique na outra viga.';return;}
+ const [A,B]=unir125;unir125=[];const antes=JSON.stringify(S().items);const r=unirVigas(A,B);
+ if(!r.ok){S().items.splice(0,S().items.length,...JSON.parse(antes));$('planStatus').textContent='⚠ '+r.t;sel=null;drawPlan();return;}
+ renum();L7().touch();try{window.undo58?.push?.();}catch{}sel=A.id;drawPlan();$('planStatus').textContent=r.t+' Ctrl+Z desfaz.';},true);
+window.unirVigas125=unirVigas;
+
 // ---------- desenho na planta
 {const dp=drawPlan;drawPlan=function(...a){const r=dp.apply(this,a);try{if(image&&(S().cfg.show||tool))draw();}catch(e){console.error('V97 planta',e);}return r;};}
 function draw(){const c=$('plan'),ctx=c.getContext('2d'),o=c.planOrigin25||{x:0,y:0},z=(window.zoom88?.fitZ?.()||zoom||1),k=pxPerCm();ctx.save();ctx.setTransform(1,0,0,1,-o.x,-o.y);const fz=15.12;ctx.font='bold '+fz+'px Arial';

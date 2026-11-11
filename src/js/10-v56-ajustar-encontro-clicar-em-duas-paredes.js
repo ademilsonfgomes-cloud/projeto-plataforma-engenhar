@@ -81,9 +81,9 @@ function showTool(msg,actions=[]){let p=$('walltool56');if(!p){p=document.create
  p.innerHTML='';const t=document.createElement('span');t.textContent=msg||'';p.append(t);for(const[label,fn]of actions){const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent=label;b.onclick=fn;p.append(b);}
  if(undo56&&!actions.length){const u=document.createElement('button');u.type='button';u.className='secondary';u.textContent='Desfazer ajuste';u.onclick=()=>{restoreSnap(undo56);undo56=null;refresh('Ajuste desfeito.');};p.append(u);}
  p.style.display=msg?'flex':'none';}
-function start(kind){if(!image){alert('Carregue a planta primeiro.');return;}try{window.stopAll108?.();}catch{}mode='';points=[];tool56={kind,picks:[],cut:[]};document.body.classList.add('tool56');
+function start(kind){if(!image){alert('Carregue a planta primeiro.');return;}try{window.stopAll108?.();}catch{}mode='';points=[];tool56={kind,picks:[],cut:[]};window.ferr56=kind;document.body.classList.add('tool56');
  showTool(kind==='cut'?'Apagar pedaço de parede: clique onde o pedaço começa (ou dentro de um vão do desenho para tirar a parede de todo o vão).':kind==='join'?'Unir paredes: clique na primeira parede.':kind==='extend'?'Estender parede: clique perto da ponta que vai crescer.':'Mover para o eixo: clique na parede que foi marcada pela face.',[['Cancelar',cancel]]);drawPlan();}
-function cancel(){tool56=null;document.body.classList.remove('tool56');showTool('');drawPlan();}
+function cancel(){tool56=null;window.ferr56=null;document.body.classList.remove('tool56');showTool('');drawPlan();}
 window.cancelTool56=cancel;
 function rawPoint(e){const c=$('plan'),r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*c.width/r.width+(c.planOrigin25?.x||0),y:(e.clientY-r.top)*c.height/r.height+(c.planOrigin25?.y||0)};}
 function near56(P){let i=wallNear(P);if(i>=0)return i;let bd=1e9;state.walls.forEach((w,j)=>{if(!w.line||Number(w.page||1)!==num($('page').value))return;const[a,b]=w.line,dx=b.x-a.x,dy=b.y-a.y,den=dx*dx+dy*dy;if(!den)return;const t=Math.max(0,Math.min(1,((P.x-a.x)*dx+(P.y-a.y)*dy)/den)),d=Math.hypot(P.x-a.x-t*dx,P.y-a.y-t*dy),lim=Number(w.width)*kOf(w)/2+8/zoom;if(d<=lim&&d<bd){bd=d;i=j;}});return i;}

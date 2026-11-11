@@ -183,6 +183,24 @@ const CASOS = [
     await p.close();
   }
 
+  // Unir vigas: alinhadas viram uma; seções diferentes não unem
+  {
+    const { p, erros } = await abrir();
+    const r = await p.evaluate(async () => {
+      const e = (lvl92.entries() || []).find(x => !x.id.startsWith('p|')); await lvl92.go(e.id);
+      const S = window.loads77.S(), k = state.walls.find(w => w.line).planScale, x0 = Math.min(...state.walls.flatMap(w => w.line.map(q => q.x))), y0 = Math.min(...state.walls.flatMap(w => w.line.map(q => q.y)));
+      const P = (x, y) => ({ x: x0 + x * k, y: y0 + y * k }), viga = (n, a, b, h = 40) => ({ id: n, kind: 'beam', sub: 'viga', page: e.pg, tgt: e.tgt, g: 0, q: 0, c: 2.5, name: n, viga: { b: 15, h, ni: 3, di: 10, ns: 2, ds: 8, de: 5, s: 15 }, pts: [a, b] });
+      const A = viga('VA', P(100, 150), P(230, 150)), B = viga('VB', P(250, 150), P(380, 150)); S.items.push(A, B);
+      const r1 = window.unirVigas125(A, B), sobrou = S.items.filter(i => i.id === 'VA' || i.id === 'VB').length, L = Math.round((A.pts[1].x - A.pts[0].x) / k);
+      const C = viga('VC', P(100, 150), P(230, 150)), D = viga('VD', P(250, 150), P(380, 150), 30); S.items.push(C, D);
+      const r2 = window.unirVigas125(C, D);
+      S.items = S.items.filter(i => !['VA', 'VB', 'VC', 'VD'].includes(i.id));
+      return { alinhadas: r1.ok && sobrou === 1 && L === 280, secoes: !r2.ok };
+    });
+    conferir(r.alinhadas && r.secoes && !erros.length, 'unir vigas: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();
