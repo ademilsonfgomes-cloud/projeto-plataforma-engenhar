@@ -94,6 +94,7 @@
     '3D': ['ver', '<path d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2z"/><path d="M4 7.2 12 11.6l8-4.4M12 11.6v9.6" stroke-width="1.2"/>'],
     'Importar IFC': ['ver', '<path d="M12 2.8 19 6.7v7.6L12 18.2 5 14.3V6.7z" stroke-width="1.3"/><path d="M5 6.7 12 10.6l7-3.9M12 10.6v7.6" stroke-width="1"/><path d="M17.5 18.5V23M15.5 21l2 2 2-2" stroke-width="1.3"/>'],
     'Limpar marcas': ['ver', '<path d="m14 4 6 6-9 9H6l-3-3z"/><path d="m9 9 6 6M3 20h18" stroke-width="1.2"/>'],
+    'Lápis': ['des', '<path d="M4 20l1.2-4.8L16.5 3.9a1.9 1.9 0 0 1 2.7 0l.9.9a1.9 1.9 0 0 1 0 2.7L8.8 18.8z"/><path d="M14.5 6l3.5 3.5"/><path d="M3 21.5h7" stroke-dasharray="2 1.6" stroke-width="1.2"/>'],
     'Trena': ['des', '<rect x="2.5" y="8" width="13" height="10" rx="5"/><circle cx="9" cy="13" r="2.2"/><path d="M15.5 15.5h6v2.5h-6" stroke-width="1.4"/><path d="M17.5 15.5v1.3M19.5 15.5v1.3" stroke-width="1"/>'],
     'Verificar geometria': ['des', '<rect x="2.5" y="13" width="12" height="5" rx=".5"/><path d="M2.5 13V6h5" stroke-width="1.2"/><circle cx="16" cy="9" r="4.6"/><path d="m19.4 12.4 3 3" stroke-width="2"/><path d="m13.9 9 1.5 1.5 2.8-3" stroke-width="1.4"/>'],
     'Separador': ['arq', '<path d="M12 3v18" stroke-width="2"/>'],
@@ -124,7 +125,7 @@
     ['Exemplo didático', () => $('example')?.click()], ['Desfazer', () => window.undo58?.undo?.()], ['Refazer', () => window.undo58?.redo?.()],
     ['Resistências', () => window.res96?.open()], ['Vento e contraventamento', () => window.vento109?.open()], ['Vergas', () => window.vergas109?.open()],
     ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Visibilidade', () => $('vis87btn')?.click()],
-    ['Verificar geometria', () => window.geo116?.abrir()], ['Trena', () => window.trena118?.ligar()], ['Renumerar', () => window.renum116?.()],
+    ['Verificar geometria', () => window.geo116?.abrir()], ['Trena', () => window.trena118?.ligar()], ['Lápis', () => window.ref126?.ligar()], ['Renumerar', () => window.renum116?.()],
   ];
   for (const [l, f] of EXTRA) REG.set('x:' + l, { key: 'x:' + l, t: { l, ic: '', t: () => { f(); } }, cat: 'extra' });
   REG.set('sep', { key: 'sep', t: { l: 'Separador' } });
@@ -135,7 +136,7 @@
     flow: ['x:Novo projeto', 'x:Abrir projeto', 'x:Salvar', 'sep', 'x:Desfazer', 'x:Refazer', 'sep',
       'Arquitetura|#arq', 'Paredes|#paredes', 'Gerar|gen85', 'x:Verificar geometria', 'Elevações|#elev', 'Armaduras|#arm', 'Laje|#laje', 'Cargas|#cargas', 'sep',
       'x:Resistências', 'x:Vento e contraventamento', 'x:Vergas', 'sep', 'Pranchas|#pranchas', 'Quantitat.|#quant', 'x:Memorial de cálculo', 'Ajustes|#ajustes'],
-    left: ['Selecionar|sel', 'Nova parede|fn', 'Novo vão|newvao54', 'sep', 'Mover|fn', 'Aparar|trim88', 'Estender|extend88', 'Unir|join56', 'Mover p/ eixo|axis56', 'x:Trena',
+    left: ['Selecionar|sel', 'Nova parede|fn', 'Novo vão|newvao54', 'sep', 'Mover|fn', 'Aparar|trim88', 'Estender|extend88', 'Unir|join56', 'Mover p/ eixo|axis56', 'x:Trena', 'x:Lápis',
       'Apagar parede|deleteWall', 'x:Renumerar', 'sep', 'Desníveis|dn87btn', 'Editar elevação|fn', 'spacer', 'x:Visibilidade', 'Ver tudo|fit88', 'Ver em 3D|v3d74btn'],
   };
   const PASSO = { 'Arquitetura|#arq': 1, 'Paredes|#paredes': 2, 'Gerar|gen85': 3, 'Elevações|#elev': 4, 'Armaduras|#arm': 5, 'Laje|#laje': 6, 'Cargas|#cargas': 7 };
@@ -154,6 +155,10 @@
   if (LS('barras118') !== '1') {
     if (!barras.left.includes('x:Trena')) { const j = barras.left.indexOf('Mover p/ eixo|axis56'); barras.left.splice(j >= 0 ? j + 1 : barras.left.length, 0, 'x:Trena'); }
     LS('barras118', '1'); salvar();
+  }
+  if (LS('barras126') !== '1') {
+    if (!barras.left.includes('x:Lápis')) { const j = barras.left.indexOf('x:Trena'); barras.left.splice(j >= 0 ? j + 1 : barras.left.length, 0, 'x:Lápis'); }
+    LS('barras126', '1'); salvar();
   }
 
   // ---------- estrutura

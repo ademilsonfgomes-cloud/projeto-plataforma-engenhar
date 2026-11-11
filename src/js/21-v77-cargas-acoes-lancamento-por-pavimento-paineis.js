@@ -269,6 +269,7 @@ function snap(P){const tol=12/(zoom||1),pg=curPage();let best=null,bd=tol;const 
  for(const w of state.walls){if(!w.line||N(w.page||1)!==pg)continue;w.line.forEach(test);}
  try{const e=editCtx();if(e.below)for(const w of e.below.walls){if(!w.line)continue;const wp=N(w.page||1);for(const Q of w.line)test(window.toPage74(pg,window.world74(wp,Q)));}}catch{}
  for(const it of S().items)if(N(it.page)===pg)(it.pts||[]).forEach(test);
+ try{(window.ref126?.pontos?.(pg)||[]).forEach(test);}catch{}
  pts.forEach(test);
  if(best)return {...best,snap:true};
  if(!best&&pts.length&&tool==='edge'&&!shift97){const a=pts.at(-1);return Math.abs(P.x-a.x)>=Math.abs(P.y-a.y)?{x:P.x,y:a.y}:{x:a.x,y:P.y};}

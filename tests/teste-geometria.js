@@ -201,6 +201,20 @@ const CASOS = [
     await p.close();
   }
 
+  // Lápis de referência: captura na Trena e fora das pranchas
+  {
+    const { p, erros } = await abrir();
+    const r = await p.evaluate(() => {
+      const L = window.ref126.lista(), w = state.walls.find(w => w.line), k = w.planScale, x0 = Math.min(...state.walls.flatMap(w => w.line.map(q => q.x))), y0 = Math.min(...state.walls.flatMap(w => w.line.map(q => q.y)));
+      const pg = Number(document.getElementById('page').value) || 1, A = { x: x0 + 500 * k, y: y0 + 200 * k };
+      L.push({ id: 'rt', page: pg, t: 'p', a: A }, { id: 'rl', page: pg, t: 'l', tr: true, a: { x: x0 + 120 * k, y: y0 + 300 * k }, b: { x: x0 + 420 * k, y: y0 + 300 * k } });
+      const cap = window.trena118.capturar({ x: A.x + 1, y: A.y + 1 }, false).t;
+      return { cap, pontos: window.ref126.pontos(pg).length };
+    });
+    conferir(r.cap === 'ref' && r.pontos === 4 && !erros.length, 'lápis de referência: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();
