@@ -4893,22 +4893,52 @@ let vizCache={k:'',ctx:null};
 function getViz(){const k=dirty+'|'+curPage()+'|'+S().cfg.tgt+'|'+(GEO()?.opt3?.close)+'|'+(window.lvl92ctx?window.lvl92ctx.id:'')+'|'+JSON.stringify(S().own102||{});if(vizCache.k!==k){try{vizCache={k,ctx:vizCtx()};}catch(e){console.error('V77 viz',e);vizCache={k,ctx:null};}}return vizCache.ctx;}
 const PAL=['#2f80ed','#e8503a','#27ae60','#f2994a','#9b51e0','#00a3a3','#d4a017','#eb5ca5','#56ccf2','#6fcf97','#bb6bd9','#f2c94c','#8d6e63','#4f6d7a'];
 function rawPoint(e){const c=$('plan'),r=c.getBoundingClientRect();return {x:(e.clientX-r.left)*c.width/r.width+(c.planOrigin25?.x||0),y:(e.clientY-r.top)*c.height/r.height+(c.planOrigin25?.y||0)};}
+function paredes128(){const pg=curPage(),out=[],vis=new Set();const add=(A,B,wd,k)=>{const L=Math.hypot(B.x-A.x,B.y-A.y);if(!(L>0))return;const key=[A.x,A.y,B.x,B.y].map(v=>Math.round(v)).join(',');if(vis.has(key))return;vis.add(key);const u={x:(B.x-A.x)/L,y:(B.y-A.y)/L},n={x:-u.y,y:u.x},h=(N(wd)||14)*k/2,F=(s)=>[{x:A.x+n.x*h*s,y:A.y+n.y*h*s},{x:B.x+n.x*h*s,y:B.y+n.y*h*s}],X=(s)=>[{x:A.x-u.x*h+n.x*h*s,y:A.y-u.y*h+n.y*h*s},{x:B.x+u.x*h+n.x*h*s,y:B.y+u.y*h+n.y*h*s}];out.push({A,B,u,n,h,k,wd:N(wd)||14,faces:[X(1),X(-1)],cantos:[...X(1),...X(-1),...F(1),...F(-1)]});};
+ for(const w of state.walls){if(!w.line||N(w.page||1)!==pg)continue;const [a,b]=w.line,L=Math.hypot(b.x-a.x,b.y-a.y);add(a,b,w.width,N(w.planScale)||L/N(w.length)||1);}
+ try{const e=editCtx();if(e.below)for(const w of e.below.walls){if(!w.line)continue;const wp=N(w.page||1),A=window.toPage74(pg,window.world74(wp,w.line[0])),B=window.toPage74(pg,window.world74(wp,w.line[1])),L=Math.hypot(B.x-A.x,B.y-A.y);add(A,B,w.width,L/N(w.length)||1);}}catch{}
+ return out;}
 function snap(P){const tol=12/(zoom||1),pg=curPage();let best=null,bd=tol;const test=q=>{const d=Math.hypot(q.x-P.x,q.y-P.y);if(d<bd){bd=d;best=q;}};
  for(const w of state.walls){if(!w.line||N(w.page||1)!==pg)continue;w.line.forEach(test);}
  try{const e=editCtx();if(e.below)for(const w of e.below.walls){if(!w.line)continue;const wp=N(w.page||1);for(const Q of w.line)test(window.toPage74(pg,window.world74(wp,Q)));}}catch{}
  for(const it of S().items)if(N(it.page)===pg)(it.pts||[]).forEach(test);
  try{(window.ref126?.pontos?.(pg)||[]).forEach(test);}catch{}
  pts.forEach(test);
+ // V128 — cantos das faces das paredes (onde o beiral encosta) e pontos do DXF
+ const PW=paredes128();for(const W of PW)for(const q of W.cantos)test(q);
+ try{for(const q of (typeof fixedPoints!=='undefined'&&fixedPoints)||[])test(q);}catch{}
  if(best)return {...best,snap:true};
+ // V128 — sem vértice perto: a face da parede (para fechar o beiral em qualquer ponto da face)
+ {let f=null,fd=tol*.8;for(const W of PW)for(const [a,b] of W.faces){const dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((P.x-a.x)*dx+(P.y-a.y)*dy)/l)),X={x:a.x+t*dx,y:a.y+t*dy},d=Math.hypot(X.x-P.x,X.y-P.y);if(d<fd){fd=d;f=X;}}if(f)return {...f,snap:true,face:true};}
  if(!best&&pts.length&&tool==='edge'&&!shift97){const a=pts.at(-1);return Math.abs(P.x-a.x)>=Math.abs(P.y-a.y)?{x:P.x,y:a.y}:{x:a.x,y:P.y};}
  if(!best&&pts.length&&(tool==='poly'||tool==='edge'||tool==='line'||tool==='div')){const a=pts.at(-1),dx=Math.abs(P.x-a.x),dy=Math.abs(P.y-a.y);if(dx<tol*1.5)return {x:a.x,y:P.y};if(dy<tol*1.5)return {x:P.x,y:a.y};}
  return best?{...best}:P;}
 function bar77(msg,actions=[]){let p=$('ld77bar');if(!p){p=document.createElement('div');p.id='ld77bar';p.className='walltool56 noPrint';$('planStatus').after(p);}p.innerHTML='';const t=document.createElement('span');t.textContent=msg||'';p.append(t);for(const[l,fn]of actions){const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent=l;b.onclick=fn;p.append(b);}p.style.display=msg?'flex':'none';}
 const HELP={edge:'Beiral / balanço (como o LINE do AutoCAD): clique no início (quadradinho verde = vértice), leve o mouse na direção — a linha trava na horizontal/vertical (Shift solta) — e digite o comprimento + Enter, ou clique. Cada Enter fixa um ponto e segue. Esc termina o beiral (fecha pela parede) e você começa outro onde quiser; outro Esc solta a ferramenta. ✂ Aparar corta o pedaço que passou.',rect:'Retângulo de ação: clique em dois cantos opostos.',poly:'Polígono de ação: clique ponto a ponto; clique no 1º ponto ou Enter para fechar.',panel:'Painel de laje: clique dentro do painel (área entre paredes) para definir tipo, altura, direção das vigotas e ações.',div:'Linha divisória: clique os pontos da linha que separa a laje em painéis; Enter ou duplo clique termina.',line:'Carga linear: clique início e fim (Enter termina uma polilinha).',point:'Carga concentrada: clique no ponto.',edit:'Editar: clique numa ação ou painel desenhado para editar ou excluir.'};
 function startTool(k){if(!image){alert('Carregue a planta primeiro.');return;}const e=editCtx();if(e.ground&&!e.self&&k!=='edit'){alert('Esta planta ainda não tem paredes posicionadas.');return;}
- try{(window.stopAll108||window.cancelTool56)?.();}catch{}try{mode='';}catch{}tool=k;pts=[];hover=null;document.body.classList.add('tool56','ld77on');bar77(HELP[k]+' Esc cancela.',[['Cancelar',cancelTool]]);refreshSide();drawPlan();}
+ try{(window.stopAll108||window.cancelTool56)?.();}catch{}try{mode='';}catch{}tool=k;pts=[];hover=null;rapido128=0;document.body.classList.add('tool56','ld77on');if(k==='edge')barraBeiral128();else bar77(HELP[k]+' Esc cancela.',[['Cancelar',cancelTool]]);refreshSide();drawPlan();}
 window.cancelTool77=()=>{if(tool)cancelTool();};function cancelTool(){tool=null;pts=[];hover=null;document.body.classList.remove('tool56','ld77on');bar77('');refreshSide();drawPlan();}
 const newId=()=>'ld-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+// V128 — BEIRAL RÁPIDO: com a largura definida, cada clique numa parede externa cria o beiral ao longo dela, para fora
+let rapido128=0;
+function larguraRapido128(){let v=0;try{v=N(localStorage.getItem('beiral128'))||0;}catch{}const r=prompt('Largura do beiral (cm), medida da face externa da parede:',String(v||60));if(r===null)return 0;const n=N(String(r).replace(',','.'));if(!(n>0)){alert('Digite uma largura em cm.');return 0;}try{localStorage.setItem('beiral128',String(n));}catch{}return n;}
+function barraBeiral128(){const acoes=[['Cancelar',cancelTool]];acoes.unshift(rapido128?['✎ Linha de bordo (contornar)',()=>{rapido128=0;barraBeiral128();}]:['⚡ Beiral rápido: clique nas paredes',()=>{const n=larguraRapido128();if(n){rapido128=n;pts=[];barraBeiral128();}}]);if(rapido128)acoes.unshift(['Largura '+fx(rapido128,0)+' cm — alterar',()=>{const n=larguraRapido128();if(n){rapido128=n;barraBeiral128();}}]);
+ bar77(rapido128?'⚡ Beiral rápido: clique em cada parede externa — o beiral de '+fx(rapido128,0)+' cm sai ao longo da parede inteira, para fora; os cantos fecham sozinhos. Esc termina.':HELP.edge+' Esc cancela.',acoes);}
+function beiralParede128(P){const k0=(typeof pxCm==='number'&&pxCm>0)?pxCm:null,PW=paredes128();let W=null,bd=Infinity;
+ for(const w of PW){const dx=w.B.x-w.A.x,dy=w.B.y-w.A.y,l=dx*dx+dy*dy||1,t=((P.x-w.A.x)*dx+(P.y-w.A.y)*dy)/l;if(t<0||t>1)continue;const d=Math.abs((P.x-w.A.x)*w.n.x+(P.y-w.A.y)*w.n.y);if(d<=w.h+10/(zoom||1)&&d<bd){bd=d;W=w;}}
+ if(!W){bar77('⚡ Clique em cima de uma parede externa.',[['Cancelar',cancelTool]]);return;}
+ const k=k0||W.k,larg=rapido128*k,M={x:(W.A.x+W.B.x)/2,y:(W.A.y+W.B.y)/2};
+ // lado de fora: o raio que sai da face não cruza nenhuma outra parede
+ const cruza=(O,d)=>PW.some(o=>{if(o===W)return false;const ex=o.B.x-o.A.x,ey=o.B.y-o.A.y,den=d.x*ey-d.y*ex;if(Math.abs(den)<1e-9)return false;const t=((o.A.x-O.x)*ey-(o.A.y-O.y)*ex)/den,s=((o.A.x-O.x)*d.y-(o.A.y-O.y)*d.x)/den;return t>0&&s>=-.02&&s<=1.02;});
+ let lado=0;for(const sg of [1,-1]){const O={x:M.x+W.n.x*sg*(W.h+1),y:M.y+W.n.y*sg*(W.h+1)};if(!cruza(O,{x:W.n.x*sg,y:W.n.y*sg})){lado=sg;break;}}
+ if(!lado){bar77('⚡ Essa parede é interna (dos dois lados há outras paredes). Clique numa parede externa.',[['Cancelar',cancelTool]]);return;}
+ // pontas: em canto (outra parede chega na ponta) o beiral avança até cobrir o canto
+ const n={x:W.n.x*lado,y:W.n.y*lado},edges=S().items.filter(i=>i.kind==='edge'&&N(i.page)===curPage()).map(i=>i.pts);
+ const vizinhaComBeiral=(E,sai)=>{const R={x:E.x+sai.x*(W.h+larg/2)+n.x*W.h*.5,y:E.y+sai.y*(W.h+larg/2)+n.y*W.h*.5};return edges.some(pl=>inPoly(R,pl));};
+ const e0=W.h+(vizinhaComBeiral(W.A,{x:-W.u.x,y:-W.u.y})?larg:0),e1=W.h+(vizinhaComBeiral(W.B,W.u)?larg:0),a={x:W.A.x-W.u.x*e0,y:W.A.y-W.u.y*e0},b={x:W.B.x+W.u.x*e1,y:W.B.y+W.u.y*e1};
+ const poly=[{x:a.x+n.x*W.h,y:a.y+n.y*W.h},{x:b.x+n.x*W.h,y:b.y+n.y*W.h},{x:b.x+n.x*(W.h+larg),y:b.y+n.y*(W.h+larg)},{x:a.x+n.x*(W.h+larg),y:a.y+n.y*(W.h+larg)}];
+ const e=editCtx(),it={id:newId(),kind:'edge',page:e.pg,tgt:e.tgt,pts:poly,name:'Beiral '+fx(rapido128,0)+' cm',g:null,q:null,mode:'sub',rapido128:rapido128};if(e.key!==keyOfPage(e.pg))it.slab92=e.key;if(isOwn(e.key,e.tgt,e.rj))it.rep102=e.rj;
+ S().items.push(it);touch();try{window.undo58?.push?.();}catch{}drawPlan();barraBeiral128();
+ bar77('✔ Beiral de '+fx(rapido128,0)+' cm lançado ('+fx(Math.hypot(b.x-a.x,b.y-a.y)/k/100,2)+' m). Clique na próxima parede externa; Esc termina; Ctrl+Z desfaz.',[['Largura '+fx(rapido128,0)+' cm — alterar',()=>{const n=larguraRapido128();if(n){rapido128=n;barraBeiral128();}}],['✎ Linha de bordo (contornar)',()=>{rapido128=0;barraBeiral128();}],['Cancelar',cancelTool]]);}
 function finish(kind,list){const e=editCtx();const it={id:newId(),kind,page:e.pg,tgt:e.tgt,pts:list.map(p=>({x:p.x,y:p.y})),name:'',g:null,q:null,mode:'sub'};if(e.key!==keyOfPage(e.pg))it.slab92=e.key;if(isOwn(e.key,e.tgt,e.rj))it.rep102=e.rj;
  if(kind==='rect'||kind==='poly'){const d0=lvDef(e.tgt==='tipo'?e.key+'#tipo':e.key);it.g=d0.g;it.q=d0.q;}
  if(kind==='line'){it.g=0;it.q=0;it.mode='add';}if(kind==='point'){it.g=0;it.q=0;it.mode='add';}
@@ -4925,6 +4955,7 @@ $('plan')?.addEventListener('click',e=>{if(!tool)return;e.stopImmediatePropagati
  if(tool==='edit'){const it=hitItem(P);if(it)openPop(it,false);return;}
  if(tool==='point'||tool==='panel'){finish(tool,[P]);return;}
  if(tool==='rect'){pts.push(P);if(pts.length===2){if(Math.abs(pts[0].x-pts[1].x)<2||Math.abs(pts[0].y-pts[1].y)<2){pts=[];return;}finish('rect',pts);}drawPlan();return;}
+ if(tool==='edge'&&rapido128&&!pts.length){beiralParede128(P);return;}
  if(tool==='poly'||tool==='edge'){if(pts.length>=3&&Math.hypot(P.x-pts[0].x,P.y-pts[0].y)<12/(zoom||1)){finish(tool,pts);return;}pts.push(P);drawPlan();return;}
  if(tool==='line'||tool==='div'){pts.push(P);if(e.detail>=2&&pts.length>=2){finish(tool,pts);return;}drawPlan();}},true);
 $('plan')?.addEventListener('dblclick',e=>{if(tool==='line'||tool==='div'||tool==='poly'||tool==='edge'){e.stopImmediatePropagation();e.preventDefault();}},true);

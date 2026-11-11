@@ -215,6 +215,22 @@ const CASOS = [
     await p.close();
   }
 
+  // Beiral: captura no canto externo verdadeiro e área em balanço reconhecida
+  {
+    const { p, erros } = await abrir();
+    const r = await p.evaluate(async () => {
+      const e = (lvl92.entries() || []).find(x => !x.id.startsWith('p|')); await lvl92.go(e.id);
+      const ws = state.walls.filter(w => w.line), k = ws[0].planScale, h = ws[0].width / 2, x0 = Math.min(...ws.flatMap(w => w.line.map(q => q.x))), y0 = Math.min(...ws.flatMap(w => w.line.map(q => q.y)));
+      const S = window.loads77.S();
+      S.items.push({ id: 'bt', kind: 'edge', page: e.pg, tgt: e.tgt, pts: [{ x: x0 - h * k, y: y0 - h * k }, { x: x0 - h * k, y: y0 - 207 * k }, { x: x0 + 300 * k, y: y0 - 207 * k }, { x: x0 + 300 * k, y: y0 - h * k }], name: 'Beiral teste', g: null, q: null, mode: 'sub' });
+      window.loads77.touch(); let cant = 0; const walk = (o, d = 0) => { if (!o || d > 5) return; if (Array.isArray(o)) return o.forEach(x => walk(x, d + 1)); if (typeof o === 'object') for (const [kk, v] of Object.entries(o)) { if (typeof v === 'number') { if (kk === 'cant') cant += v; } else walk(v, d + 1); } }; walk(window.loads77.compute());
+      S.items = S.items.filter(i => i.id !== 'bt'); window.loads77.touch();
+      return { cant: Math.round(cant * 10) / 10 };
+    });
+    conferir(r.cant >= 5.6 && r.cant <= 6.4 && !erros.length, 'beiral de 2 m reconhecido em balanço: ' + JSON.stringify(r));
+    await p.close();
+  }
+
   // Renumerar: a nova ordem precisa ficar (antes voltava para a ordem antiga ao atualizar o nível)
   {
     const { p, erros } = await abrir();
