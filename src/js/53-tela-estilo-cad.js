@@ -97,6 +97,7 @@
     'Lápis': ['des', '<path d="M4 20l1.2-4.8L16.5 3.9a1.9 1.9 0 0 1 2.7 0l.9.9a1.9 1.9 0 0 1 0 2.7L8.8 18.8z"/><path d="M14.5 6l3.5 3.5"/><path d="M3 21.5h7" stroke-dasharray="2 1.6" stroke-width="1.2"/>'],
     'Trena': ['des', '<rect x="2.5" y="8" width="13" height="10" rx="5"/><circle cx="9" cy="13" r="2.2"/><path d="M15.5 15.5h6v2.5h-6" stroke-width="1.4"/><path d="M17.5 15.5v1.3M19.5 15.5v1.3" stroke-width="1"/>'],
     'Verificar geometria': ['des', '<rect x="2.5" y="13" width="12" height="5" rx=".5"/><path d="M2.5 13V6h5" stroke-width="1.2"/><circle cx="16" cy="9" r="4.6"/><path d="m19.4 12.4 3 3" stroke-width="2"/><path d="m13.9 9 1.5 1.5 2.8-3" stroke-width="1.4"/>'],
+    'Gerar todos os níveis': ['mod', '<rect x="3" y="3" width="18" height="5" rx=".8"/><rect x="3" y="10" width="18" height="5" rx=".8"/><rect x="3" y="17" width="18" height="4" rx=".8"/><path d="m8 4.5 3 1-3 1zm0 7 3 1-3 1z" fill="currentColor" stroke-width=".8"/>'],
     'Separador': ['arq', '<path d="M12 3v18" stroke-width="2"/>'],
   };
   // nome da ferramenta no programa → ícone
@@ -125,7 +126,7 @@
     ['Exemplo didático', () => $('example')?.click()], ['Desfazer', () => window.undo58?.undo?.()], ['Refazer', () => window.undo58?.redo?.()],
     ['Resistências', () => window.res96?.open()], ['Vento e contraventamento', () => window.vento109?.open()], ['Vergas', () => window.vergas109?.open()],
     ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Visibilidade', () => $('vis87btn')?.click()],
-    ['Verificar geometria', () => window.geo116?.abrir()], ['Trena', () => window.trena118?.ligar()], ['Lápis', () => window.ref126?.ligar()], ['Renumerar', () => window.renum116?.()],
+    ['Verificar geometria', () => window.geo116?.abrir()], ['Gerar todos os níveis', () => document.getElementById('genAll103')?.click()], ['Trena', () => window.trena118?.ligar()], ['Lápis', () => window.ref126?.ligar()], ['Renumerar', () => window.renum116?.()],
   ];
   for (const [l, f] of EXTRA) REG.set('x:' + l, { key: 'x:' + l, t: { l, ic: '', t: () => { f(); } }, cat: 'extra' });
   REG.set('sep', { key: 'sep', t: { l: 'Separador' } });
@@ -134,7 +135,7 @@
   // ---------- barras (padrão e personalização)
   const PADRAO = {
     flow: ['x:Novo projeto', 'x:Abrir projeto', 'x:Salvar', 'sep', 'x:Desfazer', 'x:Refazer', 'sep',
-      'Arquitetura|#arq', 'Paredes|#paredes', 'Gerar|gen85', 'x:Verificar geometria', 'Elevações|#elev', 'Armaduras|#arm', 'Laje|#laje', 'Cargas|#cargas', 'sep',
+      'Arquitetura|#arq', 'Paredes|#paredes', 'Gerar|gen85', 'x:Gerar todos os níveis', 'x:Verificar geometria', 'Elevações|#elev', 'Armaduras|#arm', 'Laje|#laje', 'Cargas|#cargas', 'sep',
       'x:Resistências', 'x:Vento e contraventamento', 'x:Vergas', 'sep', 'Pranchas|#pranchas', 'Quantitat.|#quant', 'x:Memorial de cálculo', 'Ajustes|#ajustes'],
     left: ['Selecionar|sel', 'Nova parede|fn', 'Novo vão|newvao54', 'sep', 'Mover|fn', 'Aparar|trim88', 'Estender|extend88', 'Unir|join56', 'Mover p/ eixo|axis56', 'x:Trena', 'x:Lápis',
       'Apagar parede|deleteWall', 'x:Renumerar', 'sep', 'Desníveis|dn87btn', 'Editar elevação|fn', 'spacer', 'x:Visibilidade', 'Ver tudo|fit88', 'Ver em 3D|v3d74btn'],
@@ -151,6 +152,10 @@
     const pos = (l, k, depois) => { if (l.includes(k)) return; const j = l.indexOf(depois); l.splice(j >= 0 ? j + 1 : l.length, 0, k); };
     pos(barras.flow, 'x:Verificar geometria', 'Gerar|gen85'); pos(barras.left, 'x:Renumerar', 'Apagar parede|deleteWall');
     LS('barras116', '1'); salvar();
+  }
+  if (LS('barras130') !== '1') {
+    const j = barras.flow.indexOf('Gerar|gen85'); if (!barras.flow.includes('x:Gerar todos os níveis')) barras.flow.splice(j >= 0 ? j + 1 : barras.flow.length, 0, 'x:Gerar todos os níveis');
+    LS('barras130', '1'); salvar();
   }
   if (LS('barras118') !== '1') {
     if (!barras.left.includes('x:Trena')) { const j = barras.left.indexOf('Mover p/ eixo|axis56'); barras.left.splice(j >= 0 ? j + 1 : barras.left.length, 0, 'x:Trena'); }
@@ -183,6 +188,7 @@
     if (k === 'spacer') return `<div class="spc109" data-key="spacer" data-i="${i}" title="Espaço (arraste para mover ou tirar)"></div>`;
     const R = REG.get(k); if (!R) return '';
     const nome = NOME[k] || R.t.l, n = PASSO[k];
+    if (k === 'x:Gerar todos os níveis') return `<button type="button" class="b109 all109" data-key="${esc(k)}" data-i="${i}" title="▶▶ Gerar a modulação de TODOS os pavimentos, um depois do outro">${svg('Gerar todos os níveis', 18)}<span class="gl109">▶▶ Todos os níveis</span></button>`;
     if (k === 'x:Verificar geometria') return `<button type="button" class="b109 geo109" data-key="${esc(k)}" data-i="${i}" title="Verificar a geometria do pavimento antes de gerar (paredes sobrepostas, folgas, ângulos, encontros, vigas)">${svg('Verificar geometria', 18)}<span class="gl109">Verificar geometria</span></button>`;
     if (k === 'Gerar|gen85') return `<button type="button" class="b109 gen109" data-key="${esc(k)}" data-i="${i}" title="${esc(nome)}">${svg('Gerar modulação', 18)}<span class="gl109">Gerar modulação</span>${n ? `<i class="n109">${n}</i>` : ''}</button>`;
     return `<button type="button" class="b109" data-key="${esc(k)}" data-i="${i}" title="${esc(nome)}">${icone(R.t, 20)}${n ? `<i class="n109">${n}</i>` : ''}</button>`;
@@ -421,6 +427,7 @@ body.cad109 #top85{display:none!important}
 .gen109{width:auto;display:flex;gap:6px;padding:0 10px 0 6px;height:26px;background:#1d8a4c;border-color:#1d8a4c;color:#fff;font:600 12px "Segoe UI",Arial,sans-serif;margin:0 3px;white-space:nowrap}
 .gen109 svg{stroke:#fff!important;color:#fff!important}.gen109:hover{background:#17703d;border-color:#17703d}.gen109.busy109{background:#a3361f;border-color:#a3361f}.gen109 .n109{color:#c8f0d6}
 #lb109 .gen109 .gl109{display:none}#lb109 .gen109{width:30px;padding:0;justify-content:center;margin:0}
+.all109{width:auto;display:flex;gap:5px;padding:0 9px 0 5px;height:26px;background:#1f7a3a;border-color:#155c2a;color:#fff;font:600 12px "Segoe UI",Arial,sans-serif;margin:0 3px;white-space:nowrap}.all109 svg{stroke:#fff!important;color:#fff!important}.all109:hover{background:#17652f!important}#lb109 .all109 .gl109{display:none}#lb109 .all109{width:30px;padding:0;justify-content:center;margin:0}
 .geo109{width:auto;display:flex;gap:5px;padding:0 9px 0 5px;height:26px;background:#f2a516;border-color:#d58e0b;color:#1d1300;font:600 12px "Segoe UI",Arial,sans-serif;margin:0 3px;white-space:nowrap}.geo109 svg{stroke:#1d1300!important;color:#1d1300!important}.geo109:hover{background:#e09610!important;border-color:#b77908!important}.geo109.crit116{background:#c62828!important;border-color:#a01d1d!important;color:#fff}.geo109.crit116 svg{stroke:#fff!important}.geo109.ok116{background:#d7f0dd!important;border-color:#7cc08d!important}
 #lb109 .geo109 .gl109{display:none}#lb109 .geo109{width:30px;padding:0;justify-content:center;margin:0}
 .sp109{width:1px;height:20px;background:#cfd8e2;margin:0 4px;flex:none;touch-action:none;cursor:grab}#lb109 .sp109{width:22px;height:1px;margin:4px 0}
