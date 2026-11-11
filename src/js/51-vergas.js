@@ -77,7 +77,7 @@
     const falhas = A ? A.niveis.flatMap(n => n.vergas).filter(v => !v.ok) : [];
     box.innerHTML = `<div class="h109"><b>Vergas</b><span>arraste por aqui</span>
       <label class="on109"><input type="checkbox" class="cb109"${s.on ? ' checked' : ''}> incluir no memorial</label>
-      <button type="button" class="x109" title="Fechar">✕</button></div><div class="b109">
+      <button type="button" class="x109" title="Fechar">✕</button></div><div class="corpo109">
       <p class="n109">Vão efetivo l = vão + d (até o centro dos apoios). Efeito arco quando a parede acima passa do triângulo de 60° (0,87·l): a verga leva só o peso do triângulo; senão leva a parede acima e a carga que chega no topo da parede (laje e pavimentos de cima). Flexão com fd = fk/γm (bloco 0,8x, x ≤ 0,5d), A<sub>s</sub> ≥ 0,10 %·b·d; cisalhamento f<sub>vk</sub> = 0,35 + 17,5ρ ≤ 0,7 MPa. O efeito arco pede parede ao lado da abertura capaz de absorver o empuxo.</p>
       <details${A ? '' : ' open'}><summary>Parâmetros</summary><div class="p109">${inp('hv', 'altura da verga (cm)', s.hv)}${inp('cob', 'centro da barra ao fundo (cm)', s.cob)}${inp('apoio', 'apoio de cada lado (cm)', s.apoio)}
         ${inp('gAlv', 'peso da alvenaria (kN/m³)', s.gAlv)}${inp('fkV', 'f<sub>k</sub> da verga grauteada (MPa; 0 = f<sub>k</sub> do pavimento)', s.fkV)}${inp('gm', 'γ<sub>m</sub>', s.gm)}${inp('gf', 'γ<sub>f</sub>', s.gf)}${inp('fyk', 'f<sub>yk</sub> (MPa)', s.fyk)}${inp('gs', 'γ<sub>s</sub>', s.gs)}</div></details>
@@ -106,7 +106,7 @@
   css.textContent = '#vergas109{position:fixed;top:120px;right:30px;width:min(1080px,calc(100vw - 32px));max-height:calc(100vh - 150px);overflow:auto;z-index:65;background:#fff;border:1px solid #b9c6d3;border-radius:9px;box-shadow:0 10px 28px rgba(16,46,75,.22);font-size:12.5px}#vergas109[hidden]{display:none}' +
     '#vergas109 .h109{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#eef3f8;border-bottom:1px solid #d5dee7;cursor:move;user-select:none;position:sticky;top:0;z-index:1}#vergas109 .h109 span{color:#8a9aaa;font-size:11px;flex:1}' +
     '#vergas109 .on109{display:flex;align-items:center;gap:4px;font-size:11.5px;color:#174a78;cursor:pointer}#vergas109 .on109 input{width:auto;margin:0}#vergas109 .x109{border:0;background:none;font-size:15px;cursor:pointer;margin:0;padding:0 4px;color:#40566b}' +
-    '#vergas109 .b109{padding:8px 12px}#vergas109 h4{font-size:12.5px;margin:10px 0 3px}#vergas109 summary{cursor:pointer;font-weight:600;color:#174a78}';
+    '#vergas109 .corpo109{padding:8px 12px}#vergas109 h4{font-size:12.5px;margin:10px 0 3px}#vergas109 summary{cursor:pointer;font-weight:600;color:#174a78}';
   document.head.append(css);
 
   window.vergas109 = { analisar, open, S, tabela };

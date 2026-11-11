@@ -159,7 +159,7 @@
     const resumo = A ? `<p class="n109">Altura ${f(A.H)} m · planta ${f(A.Lx)} × ${f(A.Ly)} m · classe ${A.cls} · θ<sub>a</sub> = 1/${f(1 / A.theta, 0)}${A.ang.limite ? ` (limite ${A.ang.limite}; fórmula daria 1/${f(1 / A.ang.formula, 0)})` : ''} · pesos dos pavimentos: ${A.peso.map(p => f(p, 0)).join(' · ')} kN</p>${A.avisos.map(w => `<p class="no109">⚠ ${esc(w)}</p>`).join('')}` : '<p class="no109">Lance as paredes na planta para calcular.</p>';
     box.innerHTML = `<div class="h109"><b>Vento e contraventamento</b><span>arraste por aqui</span>
       <label class="on109"><input type="checkbox" class="cb109"${s.on ? ' checked' : ''}> incluir no memorial</label>
-      <button type="button" class="x109" title="Fechar">✕</button></div><div class="b109">
+      <button type="button" class="x109" title="Fechar">✕</button></div><div class="corpo109">
       <p class="n109">Confira V<sub>0</sub> no mapa de isopletas e C<sub>a</sub> no ábaco da NBR 6123 para a sua edificação. Hipóteses: laje como diafragma rígido sem torção; paredes como trechos isolados entre aberturas, em balanço, sem abas.</p>
       <details${A ? '' : ' open'}><summary>Parâmetros</summary>${params}</details>${resumo}${A ? A.dirs.map(d => tabelaDirecao(d, A)).join('') : ''}</div>`;
     box.querySelector('.x109').onclick = () => { box.hidden = true; };
@@ -187,7 +187,7 @@
   css.textContent = '#vento109{position:fixed;top:110px;right:24px;width:min(1040px,calc(100vw - 32px));max-height:calc(100vh - 150px);overflow:auto;z-index:64;background:#fff;border:1px solid #b9c6d3;border-radius:9px;box-shadow:0 10px 28px rgba(16,46,75,.22);font-size:12.5px}#vento109[hidden]{display:none}' +
     '#vento109 .h109{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#eef3f8;border-bottom:1px solid #d5dee7;cursor:move;user-select:none;position:sticky;top:0;z-index:1}#vento109 .h109 span{color:#8a9aaa;font-size:11px;flex:1}' +
     '#vento109 .on109{display:flex;align-items:center;gap:4px;font-size:11.5px;color:#174a78;cursor:pointer}#vento109 .on109 input{width:auto;margin:0}#vento109 .x109{border:0;background:none;font-size:15px;cursor:pointer;margin:0;padding:0 4px;color:#40566b}' +
-    '#vento109 .b109{padding:8px 12px}#vento109 h3{font-size:14px;color:#174a78;margin:14px 0 4px}#vento109 h4{font-size:12.5px;margin:10px 0 3px}' +
+    '#vento109 .corpo109{padding:8px 12px}#vento109 h3{font-size:14px;color:#174a78;margin:14px 0 4px}#vento109 h4{font-size:12.5px;margin:10px 0 3px}' +
     '.t109{border-collapse:collapse;width:100%;margin:4px 0}.t109 th,.t109 td{border:1px solid #c9d4df;padding:3px 5px;text-align:right}.t109 th{background:#eef3f8;font-weight:600}.t109 td:first-child,.t109 th:first-child{text-align:left}.t109 tr.bad109 td{background:#fdecec}' +
     '.n109{font-size:11px;color:#40566b;margin:5px 0}.ok109{color:#1d7a3a}.no109{color:#a33a00}#vento109 summary{cursor:pointer;font-weight:600;color:#174a78}' +
     '.p109{display:flex;flex-wrap:wrap;gap:6px 12px;margin:6px 0}.p109 label{display:flex;flex-direction:column;font-size:11px;color:#40566b}.p109 input,.p109 select{width:120px;margin:0;padding:4px}';
