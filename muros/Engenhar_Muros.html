@@ -68,7 +68,7 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 <footer>ENGENHAR · Novo módulo gráfico isolado dos tubulões · Estribo circular com pontas voltadas para dentro e transpasse esquemático; conferir emenda, pino de dobra, ancoragem e fabricação · Prévia técnica, sem dimensionamento estrutural ou exportação executiva validada.</footer>
 
 <input id="file" type="file" accept=".json,application/json" hidden>
-<dialog id="technicalNotesDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #7fa3bd;border-radius:10px;padding:16px;width:min(850px,95vw);max-height:85vh"><h3>Biblioteca de notas executivas · Engenhar</h3><p style="font-size:12px">Marque as notas que deseja imprimir no quadro da prancha. O desenho de impermeabilização é vetorial, composto de linhas e textos editáveis no CAD/DXF.</p><label style="display:block;margin:10px 0"><input type="checkbox" id="notesDiagram"> Inserir detalhe vetorial de impermeabilização e drenagem</label><div id="technicalNotesList" style="max-height:48vh;overflow:auto;display:grid;gap:5px"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button id="notesClear" type="button">Desmarcar todas</button><button id="notesCancel" type="button">Cancelar</button><button id="notesApply" type="button">Aplicar na prancha</button></div></dialog><dialog id="sheetManager" style="background:#eaf3fa;color:#173a55;border:1px solid #7fa3bd;border-radius:11px;padding:18px;width:min(740px,94vw);max-height:85vh">
+<dialog id="technicalNotesDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #7fa3bd;border-radius:10px;padding:16px;width:min(850px,95vw);max-height:85vh"><h3>Biblioteca de notas executivas · Engenhar</h3><p style="font-size:12px">Marque as notas que deseja imprimir no quadro da prancha. O desenho de impermeabilização é vetorial, composto de linhas e textos editáveis no CAD/DXF.</p><label style="display:block;margin:10px 0"><input type="checkbox" id="notesDiagram"> Inserir detalhe vetorial de impermeabilização e drenagem</label><label style="display:block;margin:10px 0"><input type="checkbox" id="notesBendTable"> Inserir tabela de dobramento e transpasse (pranchas com armadura)</label><div id="technicalNotesList" style="max-height:48vh;overflow:auto;display:grid;gap:5px"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button id="notesClear" type="button">Desmarcar todas</button><button id="notesCancel" type="button">Cancelar</button><button id="notesApply" type="button">Aplicar na prancha</button></div></dialog><dialog id="sheetManager" style="background:#eaf3fa;color:#173a55;border:1px solid #7fa3bd;border-radius:11px;padding:18px;width:min(740px,94vw);max-height:85vh">
 <h3 style="margin:0 0 6px">Editor de pranchas · Engenhar</h3><p id="sheetManagerCount" style="font-size:12px;margin:0 0 12px"></p>
 <div id="sheetManagerList" style="display:grid;gap:9px;max-height:48vh;overflow:auto"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:15px"><button id="managerNotes" type="button">Notas e detalhe técnico</button><button id="managerAdd" type="button">＋ Adicionar prancha</button><label style="font-size:12px">Saída PDF <select id="pdfMode"><option value="mono" selected>Preto e branco (impressão)</option><option value="color">Cores da tela (fundo escuro)</option></select></label><button id="managerPrintAll" type="button">Imprimir / PDF · todas</button><button id="managerDxfAll" type="button">DXF · todas</button><span style="flex:1"></span><button id="managerClose" type="button">Fechar</button></div>
@@ -1757,6 +1757,26 @@ function drawSteelTable(g,x,y,w,rows,u,title,maxH){
  if(rows.length>shown.length)sheetText(g,x+4*u,y+h-3*u,`+${rows.length-shown.length} POSIÇÕES NÃO EXIBIDAS — USE FOLHA MAIOR OU DIVIDA OS DETALHES`,u,2.5,{fill:'#ff8a8a'});
  return h;
 }
+// V235 — Tabela de dobramento e transpasse (NBR 6118: 9.3.2 pinos de dobramento,
+// 9.4.6 ganchos de estribos). Bitolas da relação de aço da folha; valores em cm.
+function bendRows(rows){const dias=[...new Set(rows.map(r=>Number(r.dia)))].sort((a,b)=>a-b);const lap=Number(pillarArms.N3.lapFactor)||60;
+ return dias.map(d=>{const steel=d<=5?'CA60':'CA50',f=d/10;const pinB=steel==='CA60'?6*f:(d<20?5*f:8*f),pinE=d<=10?3*f:d<20?5*f:8*f;return {d,steel,pinB,pinE,hook90:8*f,hookE:Math.max(5*f,5),lap:lap*f}})}
+function bendTableHeight(rows,u){return (13+9+Math.max(1,bendRows(rows).length)*7+15)*u}
+function drawBendTable(g,x,y,w,rows,u){
+ const br=bendRows(rows),lap=Number(pillarArms.N3.lapFactor)||60,h=bendTableHeight(rows,u);
+ sheetBox(g,x,y,w,h,'DOBRAMENTO E TRANSPASSE',u);
+ const top=y+13*u,headH=9*u,rowH=7*u,cols=[0,11,22,36,50,64,78,92].map(v=>x+v/92*w);
+ for(const xx of cols.slice(1,-1))el('line',{x1:xx,y1:top,x2:xx,y2:top+headH+br.length*rowH,stroke:'#8198a8','stroke-width':.6,'pointer-events':'none'},g);
+ el('line',{x1:x,x2:x+w,y1:top,y2:top,stroke:'#8198a8','stroke-width':.6,'pointer-events':'none'},g);
+ ['Ø (mm)','AÇO','PINO BARRA','PINO ESTR.','GANCHO 90°','GANCHO EST.',`TRANSP. ${lap}Ø`].forEach((v,j)=>sheetText(g,(cols[j]+cols[j+1])/2,top+6.2*u,v,u,2.5,{'text-anchor':'middle',fill:'#7ce3fa'}));
+ const n=v=>steelNumber(v,1);
+ br.forEach((r,i)=>{const yy=top+headH+i*rowH;el('line',{x1:x,x2:x+w,y1:yy,y2:yy,stroke:'#8198a8','stroke-width':.5,'pointer-events':'none'},g);
+  [steelNumber(r.d,1),r.steel,n(r.pinB),n(r.pinE),n(r.hook90),n(r.hookE),n(r.lap)].forEach((v,j)=>sheetText(g,(cols[j]+cols[j+1])/2,yy+5.1*u,v,u,2.5,{'text-anchor':'middle','font-weight':j===0?'bold':'normal'}))});
+ const fy=top+headH+br.length*rowH+5.5*u;
+ sheetText(g,x+3*u,fy,'VALORES EM cm. PINOS: DIÂMETRO INTERNO DE DOBRAMENTO (NBR 6118, 9.3.2).',u,2.5,{fill:'#a9c7da'});
+ sheetText(g,x+3*u,fy+5*u,`GANCHO 90°: PONTA RETA 8Ø · ESTRIBO: MÁX(5Ø; 5 cm) · TRANSPASSE ADOTADO ${lap}Ø — VERIFICAR.`,u,2.5,{fill:'#a9c7da'});
+ return h;
+}
 function steelSummaryRows(rows){const summary=new Map();for(const r of rows){const steel=r.dia<=5?'CA60':'CA50',key=steel+'|'+r.dia;const e=summary.get(key)||{steel,dia:r.dia,meters:0};e.meters+=r.qty*r.len/100;summary.set(key,e)}return [...summary.values()].sort((a,b)=>a.steel.localeCompare(b.steel)||a.dia-b.dia)}
 function steelSummaryHeight(rows,u){return (27+Math.max(1,steelSummaryRows(rows).length)*7+10)*u}
 function drawSteelSummary(g,x,y,w,rows,u,title){
@@ -1832,6 +1852,8 @@ function sheetDraw(sceneG){
     // FAIXA TÉCNICA (alinhada ao carimbo): notas executivas, detalhe genérico, resumo de aço e carimbo.
     let bottom=stampY-4*unit;const top=margin;
     if(rows.length){const rh=steelSummaryHeight(rows,unit);bottom-=rh;drawSteelSummary(g,stripX,bottom,stripW,rows,unit,steelRegistryFallback?'RESUMO DE AÇO · CONFERIR':'RESUMO DE AÇO');bottom-=4*unit}
+    // Tabela de dobramento e transpasse das bitolas desta folha, acima do resumo de aço.
+    if(rows.length&&bendTableOn){const bh=bendTableHeight(rows,unit);if(bottom-top-bh>120*unit){bottom-=bh;drawBendTable(g,stripX,bottom,stripW,rows,unit);bottom-=4*unit}}
     // Detalhe genérico repetido na faixa técnica de todas as pranchas.
     const wantDetail=technicalDiagram,dh=wantDetail?Math.min(158*unit,(bottom-top)*.55):0;
     let used=0;if(bottom-top-dh>30*unit)used=drawTechnicalNotes(g,stripX,top,stripW,bottom-top-(dh?dh+4*unit:0),unit);
@@ -2111,7 +2133,7 @@ const TECHNICAL_NOTES=[
 ['Controle','Realizar controle tecnológico do concreto e registrar eventuais não conformidades.'],
 ['Controle','Inspecionar impermeabilização, drenagem e proteção antes do fechamento do reaterro.']
 ];
-let technicalNoteSelection=[0,1,2,5,7,9,12,15,16,18,20,21,23,26],technicalDiagram=true;
+let technicalNoteSelection=[0,1,2,5,7,9,12,15,16,18,20,21,23,26],technicalDiagram=true,bendTableOn=true;
 function notesDialogOpen(){
  const list=$('technicalNotesList');list.replaceChildren();
  TECHNICAL_NOTES.forEach(([group,msg],i)=>{
@@ -2120,7 +2142,7 @@ function notesDialogOpen(){
  const span=document.createElement('span');span.textContent=`${String(i+1).padStart(2,'0')} · ${group} — ${msg}`;
  lab.append(input,span);list.append(lab);
  });
- $('notesDiagram').checked=technicalDiagram;
+ $('notesDiagram').checked=technicalDiagram;$('notesBendTable').checked=bendTableOn;
  $('technicalNotesDialog').showModal();
 }
 function notesWrap(msg,max){const words=msg.split(/\s+/),rows=[];let line='';for(const word of words){if((line+' '+word).length>max&&line){rows.push(line);line=word}else line+=(line?' ':'')+word}if(line)rows.push(line);return rows;}
@@ -2187,6 +2209,6 @@ function drawWaterproofSection(g,x,y,w,h,u){
 $('managerNotes').onclick=()=>{$('sheetManager').close();notesDialogOpen()};
 $('notesCancel').onclick=()=>$('technicalNotesDialog').close();
 $('notesClear').onclick=()=>$('technicalNotesList').querySelectorAll('input').forEach(c=>c.checked=false);
-$('notesApply').onclick=()=>{technicalNoteSelection=[...$('technicalNotesList').querySelectorAll('input:checked')].map(c=>Number(c.value));technicalDiagram=$('notesDiagram').checked;$('technicalNotesDialog').close();draw()};
+$('notesApply').onclick=()=>{bendTableOn=$('notesBendTable').checked;technicalNoteSelection=[...$('technicalNotesList').querySelectorAll('input:checked')].map(c=>Number(c.value));technicalDiagram=$('notesDiagram').checked;$('technicalNotesDialog').close();draw()};
 
 </script></body></html>
