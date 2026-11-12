@@ -108,6 +108,8 @@ main{min-width:0;display:grid;gap:12px}
 .selcard{position:absolute;left:10px;top:10px;max-width:min(340px,calc(100% - 20px));background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--sel);border-radius:6px;padding:8px 11px;font-size:13px;display:grid;gap:2px}
 .selcard b{font:600 15px var(--f-disp);letter-spacing:.03em}
 .selcard dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
+.selcard .ed{display:grid;gap:6px;margin-top:6px;padding-top:8px;border-top:1px solid var(--line)}.selcard .ed label{font-size:12.5px;color:var(--muted)}
+.selcard .row{display:flex;gap:6px}.selcard .row input,.selcard .row select{flex:1;min-width:0}.selcard>button,.selcard .ed>button{justify-self:start;margin-top:4px}
 .selcard dt{color:var(--muted)}.selcard dd{margin:0;font-family:var(--f-mono);font-size:12.5px}
 .loading{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--sheet) 80%,transparent);font:600 15px var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
 .msg{border-radius:6px;padding:7px 11px;font-size:13px}
@@ -186,7 +188,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
     </section>
     <section class="card" data-pane="aco">
       <h2>Estrutura metálica</h2>
-      <p class="note">Lançamento automático sobre o concreto lido. Ajuste e clique em Gerar.</p>
+      <p class="note">Lançamento automático sobre o concreto lido. Ajuste e clique em Gerar. Para mover ou remover uma tesoura, ou trocar o perfil de uma linha de terças, clique na peça no 3D.</p>
       <fieldset><legend>Cobertura com tesouras</legend>
         <label class="chk"><input type="checkbox" id="g_tOn" checked> Gerar tesouras e terças</label>
         <div class="f"><label for="g_zs">Cota de apoio (m), vazio = automática</label><input id="g_zs" type="number" step="0.01" placeholder="auto"></div>
@@ -630,7 +632,19 @@ function selectSteel(m){
   if(selSteel&&selSteel.mesh)selSteel.mesh.material=matFor('aco',{cat:'aco'});selSteel=null;select(null);if(!m)return;selSteel=m;
   m.mesh.material=selMat();const card=$('#sel'),g=STEEL.groups.find(x=>x.mark===m.mark);
   const rows=[['Peça',TDESC[m.type]],['Perfil',m.prof.label],['Comprimento',`${m2(m.len)} m`],['Peso',`${nf1.format(m.len/1000*m.prof.kgm)} kg`],['Iguais a esta',`${g?g.qty:1} peças`],['Cotas',`z = ${m2(Math.min(m.a[2],m.b[2]))} a ${m2(Math.max(m.a[2],m.b[2]))} m`]];
-  card.innerHTML=`<b>${esc(m.mark)} · aço</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;card.hidden=false;}
+  let ed='';const T=m.truss!=null&&m.mq==null?STEEL.trusses[m.truss]:null;
+  if(T){const o=OVR.t[T.pj]||{};ed=`<div class="ed"><b>Editar tesoura ${T.j+1}</b><label for="edDv">Mover ao longo da obra (mm, + ou −)</label>
+    <div class="row"><input id="edDv" type="number" step="50" value="${+o.dv||0}"><button type="button" id="edMv" class="primary">Mover</button></div>
+    <button type="button" id="edRm">Remover esta tesoura</button></div>`;}
+  else if(m.type==='TC'&&m.line!=null){const cur=OVR.tc[m.line]||$('#g_pTerca').value,ops=Object.keys(STP).filter(k=>/^Ue?\d/.test(k)).sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);
+    ed=`<div class="ed"><b>Editar terças da linha ${m.line+1}</b><label for="edTc">Perfil desta linha (todas as tesouras)</label>
+    <div class="row"><select id="edTc">${ops.map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(STP[k].label)}</option>`).join('')}</select><button type="button" id="edTcOk" class="primary">Aplicar</button></div></div>`;}
+  if(nOVR())ed+=`<button type="button" id="edUndo">Desfazer ${nOVR()===1?'a edição manual':`as ${nOVR()} edições manuais`}</button>`;
+  card.innerHTML=`<b>${esc(m.mark)} · aço</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${ed}`;card.hidden=false;
+  if(T){$('#edMv').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),dv:Math.round(parseFloat(String($('#edDv').value).replace(',','.'))||0)};});
+    $('#edRm').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),off:true};});}
+  if($('#edTcOk'))$('#edTcOk').onclick=()=>editSteel(()=>{const v=$('#edTc').value;if(v===$('#g_pTerca').value)delete OVR.tc[m.line];else OVR.tc[m.line]=v;});
+  if($('#edUndo'))$('#edUndo').onclick=()=>editSteel(()=>{OVR={t:{},tc:{}};});}
 function select(el){
   if(sel.el&&sel.el.mesh){const k=sel.el.mesh.userData.k;sel.el.mesh.material=matFor(k,sel.el);}
   sel.el=el;const card=$('#sel');
@@ -699,7 +713,7 @@ const wThin=(t,L)=>L<=0?0:(L/t<25?(1-.01*L/t):.75)*t*L*FU_CF*10/1.65/1000;
 const nf1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 
 function genSteel(G){
-  const M=MODELS.est,out={mem:[],plates:[],nodes:[],warns:[],notes:[],pre:[],trusses:[]};if(!M)return out;
+  const M=MODELS.est,out={mem:[],plates:[],nodes:[],warns:[],notes:[],pre:[],trusses:[],edits:[]};if(!M)return out;
   const els=M.els,cols=els.filter(e=>e.cat==='Pilar'),beams=els.filter(e=>e.cat==='Viga'&&e.ex[0]);
   const ctr=e=>[(e.bb.x0+e.bb.x1)/2,(e.bb.y0+e.bb.y1)/2];
   // ---- cota de apoio
@@ -732,15 +746,18 @@ function genSteel(G){
     const used=new Set(),pairs=[];
     sideA.forEach(a=>{let best=null;sideB.forEach(b=>{if(used.has(b))return;const dv=Math.abs(Vv(ctr(a))-Vv(ctr(b)));if(dv<1500&&(!best||dv<best.dv))best={b,dv};});if(best){used.add(best.b);pairs.push([a,best.b]);}});
     if(pairs.length<2)out.warns.push('Encontrei menos de duas linhas de apoio para as tesouras.');
-    pairs.forEach(([a,b],j)=>{
-      let ua=U(ctr(a)),va=Vv(ctr(a)),ub=U(ctr(b)),vb=Vv(ctr(b));const clash=[above(ua,va),above(ub,vb)].filter(Boolean);
+    const OV=G.ovr||{t:{},tc:{}};
+    pairs.forEach(([a,b],pj)=>{const ov=OV.t[pj]||{};
+      if(ov.off){out.edits.push(`tesoura do par de pilares ${a.name.split(' ')[0]}–${b.name.split(' ')[0]} removida`);return;}
+      const j=out.trusses.length,dv=+ov.dv||0;if(dv)out.edits.push(`tesoura ${j+1} deslocada ${dv>0?'+':''}${nf0.format(dv)} mm ao longo da obra`);
+      let ua=U(ctr(a)),va=Vv(ctr(a))+dv,ub=U(ctr(b)),vb=Vv(ctr(b))+dv;const clash=[above(ua,va),above(ub,vb)].filter(Boolean);
       if(clash.length){const half=Math.max(...clash.map(c=>(Vhi(c)-Vlo(c))/2)),sh=half+150+50,dir=Math.sign(vMid-va)||1;va+=dir*sh;vb+=dir*sh;
         out.notes.push(`Tesoura ${j+1}: o pilar ${clash.map(c=>c.name.split(' ')[0]).join(' e ')} continua acima da cota de apoio (platibanda). Apoio deslocado ${nf0.format(sh/10)} cm para a viga, ao lado do pilar.`);}
       const sA=below(ua,va),sB=below(ub,vb);
       if(!sA||!sB)out.warns.push(`Tesoura ${j+1}: não há concreto embaixo de ${!sA?'um dos apoios':'um dos apoios'} na cota ${m2(zs)} m.`);
       const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],nh=Math.max(2,Math.ceil(L/2/(G.pT*1000)-1e-6)),n=2*nh;
       const at=(s,z)=>P3(ua+e[0]*s,va+e[1]*s,z),zt=s=>zb+(h0-Bz.h)+i*Math.min(s,L-s),sk=k=>k*L/n;
-      const T={j,L,n,nh,at,zt,sk,zb,Bz,Al,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
+      const T={j,pj,L,n,nh,at,zt,sk,zb,Bz,Al,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
       add('BI',Bz,at(0,zb),at(L/2,zb),{truss:j});add('BI',Bz,at(L/2,zb),at(L,zb),{truss:j});
       add('BS',Bz,at(0,zt(0)),at(L/2,zt(L/2)),{truss:j});add('BS',Bz,at(L/2,zt(L/2)),at(L,zt(L)),{truss:j});
       for(let k=0;k<=n;k++)add('MO',Al,at(sk(k),zb),at(sk(k),zt(sk(k))),{truss:j});
@@ -752,8 +769,9 @@ function genSteel(G){
         out.nodes.push({kind:'AT',mode,el:se,wc,hc,Wp,Lp,t:tpl,d:16,chord:Bz,pos:P3(u,v,zs)});});
     });
     // terças: entre tesouras vizinhas, no nó de cada painel do banzo superior
-    const tr=out.trusses;
-    for(let j=0;j<tr.length-1;j++){const a=tr[j],b=tr[j+1],n=Math.min(a.n,b.n);for(let k=0;k<=n;k++)add('TC',Te,a.top(Math.round(k*a.n/n)),b.top(Math.round(k*b.n/n)));}
+    const tr=out.trusses,TeK=k=>STP[OV.tc[k]]||Te,up=(p,k)=>[p[0],p[1],p[2]+(TeK(k).h-Te.h)/2];
+    Object.entries(OV.tc).forEach(([k,v])=>{if(STP[v]&&v!==G.pTerca)out.edits.push(`terça da linha ${+k+1} em ${STP[v].label}`);});
+    for(let j=0;j<tr.length-1;j++){const a=tr[j],b=tr[j+1],n=Math.min(a.n,b.n);for(let k=0;k<=n;k++)add('TC',TeK(k),up(a.top(Math.round(k*a.n/n)),k),up(b.top(Math.round(k*b.n/n)),k),{line:k});}
     // prolongamento das terças até as vigas de concreto da frente e do fundo, com montantes de apoio
     const roofBeams=beams.filter(b=>Math.abs(b.bb.z1-zs)<40);
     const ray=(o,d)=>{let best=null;for(const bm of roofBeams){const s=bm.ex[0].start,t=bm.ex[0].end,p=[U(s),Vv(s)],q=[U(t),Vv(t)],r=[q[0]-p[0],q[1]-p[1]];
@@ -761,10 +779,10 @@ function genSteel(G){
       if(ss>=-.02&&ss<=1.02&&tt>300&&tt<9000&&(!best||tt<best.t))best={t:tt,bm};}return best;};
     const TQ=STP.TQ100x3;
     [[tr[0],-1],[tr[tr.length-1],1]].forEach(([T,sg])=>{if(!T)return;
-      for(let k=0;k<=T.n;k++){const p=T.top(k),o=[U(p),Vv(p)],h=ray(o,[0,sg]);if(!h)continue;
-        const hp=[o[0],o[1]+sg*h.t],zp=p[2],zBot=zp-Te.h/2;
-        add('TC',Te,p,P3(hp[0],hp[1],zp));
-        if(zBot-zs>150){add('PT',TQ,P3(hp[0],hp[1],zs+12.5),P3(hp[0],hp[1],zBot));
+      for(let k=0;k<=T.n;k++){const p=up(T.top(k),k),o=[U(p),Vv(p)],h=ray(o,[0,sg]);if(!h)continue;
+        const hp=[o[0],o[1]+sg*h.t],zp=p[2],zBot=zp-TeK(k).h/2;
+        add('TC',TeK(k),p,P3(hp[0],hp[1],zp),{line:k});
+        if(zBot-zs>150){add('PT',TQ,P3(hp[0],hp[1],zs+12.5),P3(hp[0],hp[1],zBot),{th:TeK(k).h});
           const bw=(h.bm.sec.split('×')[0]||'20').trim(),wc=+bw.replace(/\D/g,'')*10||200;const ax=h.bm.ex[0],dir=V.norm(V.sub(ax.end,ax.start));
           out.plates.push({c:P3(hp[0],hp[1],zs+6),X:dir,Y:[-dir[1],dir[0],0],dims:[260,Math.min(160,wc-20),12.5]});
           out.nodes.push({kind:'AP',el:h.bm,wc,hc:h.bm.bb.z1-h.bm.bb.z0,Wp:Math.min(160,wc-20),Lp:260,t:12.5,d:12.5,pos:P3(hp[0],hp[1],zs)});}}});
@@ -779,6 +797,13 @@ function genSteel(G){
       out.trussN=N;out.trussWd=wd;
       out.pre.push({item:'Banzo inferior (tração)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nt)} kN`,u:N/Nt,obs:`${Bz.label}, ${isUe?'aço ZAR 250 (fy 250 MPa)':'ASTM A36'}`});
       out.pre.push({item:'Banzo superior (compressão)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nc)} kN`,u:N/Nc,obs:`travado pelas terças a cada ${m2(Lb*10)} m${isUe?(BB0.c>0?'; NBR 14762 com área efetiva da alma, sem flambagem distorcional':'; NBR 14762 com área efetiva da alma e das abas livres (U simples)'):''}`});
+      // terças: viga biapoiada no maior vão de cada perfil (carga do telhado na faixa de influência)
+      const sp=Lmax/tr[0].n/Math.cos(Math.atan(i))/1000,byP=new Map();
+      out.mem.filter(m=>m.type==='TC').forEach(m=>{const k=m.prof.label;if(!byP.has(k)||m.len>byP.get(k).len)byP.set(k,m);});
+      byP.forEach(m=>{const P=m.prof,pp=P.t?ueProps(P.base||P):null;if(!pp)return;const Ix=pp.A*pp.rx*pp.rx,W=Ix/(P.h/20),L=m.len/1000;
+        const qd=(1.25*.20+1.5*.25)*sp,qs=(.20+.25)*sp,Md=qd*L*L/8,MR=W*25/1.1/100,f=5*qs*Math.pow(m.len,4)/(384*200000*Ix*1e4),fl=m.len/180;
+        out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flexão`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`faixa de ${m2(sp*1000)} m; biapoiada, sem vento e sem flambagem lateral (telha travando)`});
+        out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flecha`,sol:`${nf1.format(f)} mm`,res:`${nf1.format(fl)} mm`,u:f/fl,obs:'L/180, carga de serviço'});});
       out.preHyp=`Tesouras: vão ${m2(Lmax)} m, espaçamento ${m2(amax)} m, carga permanente 0,20 kN/m² (telha e estrutura) e sobrecarga 0,25 kN/m², γg = 1,25 e γq = 1,5.`;}
   }
 
@@ -906,7 +931,14 @@ function renderSteelTables(){
 }
 function readG(){const g={};for(const k of Object.keys(GP)){const el=document.getElementById('g_'+k);if(!el){g[k]=GP[k];continue;}
   g[k]=el.type==='checkbox'?el.checked:(typeof GP[k]==='number'?(parseFloat(String(el.value).replace(',','.'))||GP[k]):el.value);}return g;}
-function runSteel(){const G=readG();STEEL=genSteel(G);detailSteel(STEEL,G);if(STEEL.det){STEEL.pre.push(...STEEL.det.pre);if(STEEL.det.notesUe)STEEL.notes.push(STEEL.det.notesUe);if(STEEL.det.fit)STEEL.notes.push(STEEL.det.fit);}renderSteel();renderSteelTables();renderSheet();}
+// edições manuais (por modelo): tesouras deslocadas ou removidas, perfil de terça por linha
+let OVR={t:{},tc:{}};
+const ovrKey=()=>'eng-int-ovr:'+((MODELS.est&&MODELS.est.name)||'');
+function loadOVR(){OVR={t:{},tc:{}};try{const o=JSON.parse(localStorage.getItem(ovrKey())||'null');if(o&&o.t&&o.tc)OVR=o;}catch(e){}}
+function saveOVR(){try{localStorage.setItem(ovrKey(),JSON.stringify(OVR));}catch(e){}}
+const nOVR=()=>Object.keys(OVR.t).length+Object.keys(OVR.tc).length;
+function editSteel(fn){fn();Object.keys(OVR.t).forEach(k=>{const o=OVR.t[k];if(!o.off&&!+o.dv)delete OVR.t[k];});saveOVR();selectSteel(null);runSteel();}
+function runSteel(){const G=readG();G.ovr=OVR;STEEL=genSteel(G);if(STEEL.edits.length)STEEL.notes.unshift('Edições manuais: '+STEEL.edits.join('; ')+'.');detailSteel(STEEL,G);if(STEEL.det){STEEL.pre.push(...STEEL.det.pre);if(STEEL.det.notesUe)STEEL.notes.push(STEEL.det.notesUe);if(STEEL.det.fit)STEEL.notes.push(STEEL.det.fit);}renderSteel();renderSteelTables();renderSheet();}
 
 /* ================= Desenhos 2D (mm, y para cima): SVG na tela e DXF ================= */
 const nint=v=>String(Math.round(v));
@@ -1224,9 +1256,9 @@ function detailSteel(S,G){
   // ---- ligações das terças: conta quantas pontas de terça chegam em cada suporte
   const ends=new Map(),key=p=>`${Math.round(p[0]/20)}|${Math.round(p[1]/20)}|${Math.round(p[2]/20)}`;
   S.mem.filter(m=>/TC|TM|VB/.test(m.type)).forEach(m=>[m.a,m.b].forEach(p=>{const k2=key(p);if(!ends.has(k2))ends.set(k2,{p,n:0,type:m.type,prof:m.prof});ends.get(k2).n++;}));
-  const posts=S.mem.filter(m=>m.type==='PT').map(m=>key([m.b[0],m.b[1],m.b[2]+STP[G.pTerca].h/2]));
+  const posts=S.mem.filter(m=>m.type==='PT').map(m=>key([m.b[0],m.b[1],m.b[2]+(m.th||STP[G.pTerca].h)/2]));
   const cg=new Map();ends.forEach((e,k2)=>{const onPost=posts.includes(k2),kind=e.type==='TC'?(onPost?'LTP':'LTT'):'LTM',sides=Math.min(2,e.n);
-    const ck=`${kind}|${sides}`;if(!cg.has(ck))cg.set(ck,{kind,sides,prof:e.prof,count:0});cg.get(ck).count++;});
+    const ck=`${kind}|${sides}|${e.prof.label}`;if(!cg.has(ck))cg.set(ck,{kind,sides,prof:e.prof,count:0});cg.get(ck).count++;});
   const TTL={LTT:'Terça no banzo superior da tesoura',LTP:'Terça no topo do montante de apoio',LTM:'Terça na treliça da marquise'};
   D.cleats=[...cg.values()].sort((a,b)=>a.kind.localeCompare(b.kind)||b.sides-a.sides);const kc={};
   D.cleats.forEach(c=>{kc[c.kind]=(kc[c.kind]||0)+1;c.mark=c.kind+kc[c.kind];c.cl=cleatT(c.prof);c.title=`${TTL[c.kind]} (${c.sides===2?'duas terças':'uma terça'})`;
@@ -1608,7 +1640,7 @@ function loadText(k,text,name,isExample){
     try{const ifc=new IFC(text);if(!ifc.ents.size)throw new Error('vazio');
       if(k==='est'&&!isExample&&MODELS.est&&MODELS.est.example){ORIGIN=null;if(MODELS.arq&&MODELS.arq.example){scene.remove(MODELS.arq.group);MODELS.arq=null;}}
       if(k==='est'&&isExample)ORIGIN=null;
-      buildModel(k,ifc,name,isExample);renderAll();if(k==='est'){selectSteel(null);runSteel();}else if(STEEL)renderSteel();fit(false);}
+      buildModel(k,ifc,name,isExample);renderAll();if(k==='est'){loadOVR();selectSteel(null);runSteel();}else if(STEEL)renderSteel();fit(false);}
     catch(err){$('#msgs').innerHTML=`<div class="msg al">Não consegui ler “${esc(name)}”. Confira se é um arquivo IFC (texto STEP, extensão .ifc). Detalhe: ${esc(err.message)}</div>`;}
     finally{$('#loading').hidden=true;}},30);
 }
@@ -1751,7 +1783,7 @@ const hdr=document.querySelector('header.top');new ResizeObserver(()=>document.d
 {const p=PANE;PANE=null;if(p)setPane(p);else{$('#app').classList.add('nopanel');document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=true);}}
 setView(VIEW);
 initScene();bindSheets();renderAll();loadExample();
-window.__eng={MODELS,IFC,sampleEst,sampleArq,select,get STEEL(){return STEEL;},runSteel};
+window.__eng={MODELS,IFC,sampleEst,sampleArq,select,selectSteel,get STEEL(){return STEEL;},runSteel};
 })();
 </script>
 </body>
