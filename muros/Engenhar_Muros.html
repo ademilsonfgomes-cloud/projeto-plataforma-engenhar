@@ -539,7 +539,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
    // Eixo do pilar até o círculo de identificação, no lado das cotas.
    const axSign=-(soilSign||1);let bub=hw+mm(33),bx=nx*axSign,by=ny*axSign;
    // Pilar de canto: círculo na bissetriz externa do encontro, fora das duas vigas e das cotas.
-   const nxt=pts[idx+2];if(j===n-1&&nxt){const l2=Math.hypot(nxt.x-b.x,nxt.y-b.y)||1,u2x=(nxt.x-b.x)/l2,u2y=(nxt.y-b.y)/l2,vx=ux-u2x,vy=uy-u2y,lv=Math.hypot(vx,vy);if(lv>.2){bx=vx/lv;by=vy/lv;bub=Math.max(hw,colB/2)+mm(30)}}
+   const nxt=pts[idx+2];if(j===n-1&&nxt){const l2=Math.hypot(nxt.x-b.x,nxt.y-b.y)||1,u2x=(nxt.x-b.x)/l2,u2y=(nxt.y-b.y)/l2,vx=ux-u2x,vy=uy-u2y,lv=Math.hypot(vx,vy);if(lv>.2){bx=vx/lv;by=vy/lv;bub=Math.max(hw,colB/2)+mm(20)}}
    line(pcx,pcy,pcx+bx*(bub-mm(4.5)),pcy+by*(bub-mm(4.5)),'#36cfc9',.55,wg,{'stroke-dasharray':'8 3 2 3'});
    circle(pcx+bx*bub,pcy+by*bub,mm(4.5),'#36cfc9','none',.8,wg,{'data-layer':'eixos'});
    ptext(pcx+bx*bub,pcy+by*bub+mm(1.25),id,'#e5edf5',2.5,{'text-anchor':'middle','font-weight':'bold','data-anchor':'1'});
@@ -550,10 +550,11 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   const rtext=(x,y,str,color,cap,attrs={})=>{const t=ptext(x+upx*mm(1.1),y+upy*mm(1.1),str,color,cap,{'text-anchor':'middle',...attrs});t.setAttribute('transform',`rotate(${ang} ${x+upx*mm(1.1)} ${y+upy*mm(1.1)})`);return t};
   if(side!=='none'){
    // Solo contido: linha de terreno com hachura a 45° voltada para o aterro.
-   const d=hw+mm(1.5),x0=a.x+nx*d*sgn,y0=a.y+ny*d*sgn;
-   line(x0,y0,b.x+nx*d*sgn,b.y+ny*d*sgn,'#eaa85d',1,wg);
-   for(let s=mm(1.5);s<len-mm(1.5);s+=mm(3)){const x=x0+ux*s,y=y0+uy*s;line(x,y,x+(nx*sgn+ux)*mm(1.8),y+(ny*sgn+uy)*mm(1.8),'#eaa85d',.6,wg)}
-   const tm=.5/(n-1);rtext(a.x+dx*tm+nx*sgn*(hw+mm(6.5)),a.y+dy*tm+ny*sgn*(hw+mm(6.5)),'ATERRO','#eaa85d',2.5);
+   // Hachura do solo contido: faixa de 4 mm com traços a 45° a cada 2,5 mm.
+   const d=hw+mm(1.2),x0=a.x+nx*d*sgn,y0=a.y+ny*d*sgn;
+   line(x0,y0,b.x+nx*d*sgn,b.y+ny*d*sgn,'#eaa85d',1.4,wg);
+   for(let s=mm(1);s<len-mm(1);s+=mm(2.5)){const x=x0+ux*s,y=y0+uy*s;line(x,y,x+(nx*sgn+ux)*mm(2.9),y+(ny*sgn+uy)*mm(2.9),'#eaa85d',.75,wg)}
+   const tm=.5/(n-1);rtext(a.x+dx*tm+nx*sgn*(hw+mm(8.5)),a.y+dy*tm+ny*sgn*(hw+mm(8.5)),'ATERRO','#eaa85d',2.5);
   }
   // Cotas em cm, ao longo do muro: cadeia eixo a eixo e total, no lado oposto ao solo.
   const dimSide=side==='left'?-1:1;
@@ -807,7 +808,7 @@ function drawWallElevations(parent){
  const left=Math.max(maxSheetRight+260,rightOfDrawings)+25;
  let stackY=sheets.length?Math.min(...sheets.map(sh=>sh.y))+85:bottom+300;
  const ink='#d7e8f3',gold='#f5c845',cyan='#64d1f3',steel='#f0a65a',earth='#eaa85d';
- const notesSheet=sheets.findIndex(sh=>sh.kind==='notas')+1;
+ const notesSheet=sheets.indexOf(detailSheet())+1;
  for(let i=0;i<wallSegments.length;i++){
   const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||{};
   if(!a||!b)continue;
@@ -910,7 +911,7 @@ function drawWallElevations(parent){
   t(x+W+24*U,yFront+4.6*U,`NT FACE EXTERNA ${levelFmt(front)}`,earth,8,{'text-anchor':'start'});
   // Dreno no tardoz, representado em linha oculta logo acima da VB.
   const yDrain=baseY-6*sc;ln(x+4,yDrain,x+W-4,yDrain,'#74d8a4',.9,{'stroke-dasharray':'2 3'});
-  t(x,lowest+9*U,`– – –  DRENO NO TARDOZ (LINHA OCULTA)${notesSheet?' — VER DETALHE NA FOLHA '+String(notesSheet).padStart(2,'0'):''}`,'#74d8a4',8);
+  t(x,lowest+9*U,`– – –  DRENO NO TARDOZ (LINHA OCULTA)${notesSheet?' — VER DETALHE NA FAIXA TÉCNICA DA FOLHA '+String(notesSheet).padStart(2,'0'):''}`,'#74d8a4',8);
   t(x,lowest+15*U,'COMPRIMENTOS GEOMÉTRICOS PRELIMINARES — CONFERIR ANCORAGENS E EMENDAS',gold,8);
   stackY+=Math.max(380,lowest+30*U);
  }
@@ -1307,7 +1308,7 @@ let detailScale={};
 const unitFor=s=>sheetModelUnit*s/10;
 const SHEET_KIND_TITLES={planta:'PLANTA DE LOCAÇÃO DOS ARRIMOS',fundacoes:'FUNDAÇÕES — TUBULÕES E BLOCOS',pilares:'PILARES',vigas:'VIGAS BALDRAME E CINTAS DE TOPO',elevacoes:'ELEVAÇÕES DOS ARRIMOS',notas:'NOTAS GERAIS · DRENAGEM E IMPERMEABILIZAÇÃO'};
 const SHEET_PLAN=[
- {kind:'planta',scales:[25,50,75,100],newSheet:true,match:c=>c==='PLANTA'},
+ {kind:'planta',scales:[50,75,100],newSheet:true,match:c=>c==='PLANTA'},
  {kind:'fundacoes',scales:[25,50,75],newSheet:true,match:c=>/^[TB]\d+$/.test(c)},
  {kind:'pilares',scales:[25,50,75],newSheet:false,match:c=>/^P\d+$/.test(c)},
  {kind:'vigas',scales:[50,75,100],newSheet:true,match:c=>/^V[BT]\d+$/.test(c)},
@@ -1392,12 +1393,13 @@ function declutterText(root){
   const crosses=B=>{const R={l:B.l+.5,r:B.r-.5,t:B.t+.5,b:B.b-.5};if(R.r<=R.l||R.b<=R.t)return false;return segs.some(sg=>segHitsRect(sg,R))};
   if(!pointer){
    for(const o of items){
-    if(o.p>=6)continue;
+    // Cotas só deslizam ao longo da própria linha de cota; títulos e identificações não se movem.
+    const dimOnly=o.p===6;if(o.p>6)continue;
     if(!segs)segs=groupSegments(g);
     const B=box(o);if(!crosses(B))continue;
     const step=1.2*u*k;let best=null;
     // Primeiro na direção perpendicular à leitura; depois ao longo dela.
-    for(const along of [false,true])for(let m=1;m<=12&&!best;m++)for(const sg of [1,-1]){const perp=B.vert!==along;const c={...o,dx:o.dx+(perp?sg*m*step:0),dy:o.dy+(perp?0:sg*m*step)};const CB=box(c);if(crosses(CB)||items.some(q=>q!==o&&overlap(box(q),CB)))continue;best=c;break}
+    for(const along of dimOnly?[true]:[false,true])for(let m=1;m<=12&&!best;m++)for(const sg of [1,-1]){const perp=B.vert!==along;const c={...o,dx:o.dx+(perp?sg*m*step:0),dy:o.dy+(perp?0:sg*m*step)};const CB=box(c);if(crosses(CB)||items.some(q=>q!==o&&overlap(box(q),CB)))continue;best=c;break}
     if(best){o.dx=best.dx;o.dy=best.dy}else lines++;
    }
   }
@@ -1434,6 +1436,14 @@ function findGroup(code,root){return detailGroups(root).find(g=>groupCode(g)===c
 function sceneBox(g){if(!g)return null;let bb;try{bb=g.getBBox()}catch(e){return null}if(!bb||!(bb.width>0)||!(bb.height>0))return null;const t=steelXY(g);return {x:t.x+bb.x,y:t.y+bb.y,w:bb.width,h:bb.height,cx:t.x+bb.x+bb.width/2,cy:t.y+bb.y+bb.height/2}}
 function groupOwner(g){const b=sceneBox(g);return b?steelOwner(b.cx,b.cy):null}
 function sheetIndexOf(code){const g=findGroup(code);const sh=g?groupOwner(g):null;return sh?sheets.indexOf(sh)+1:0}
+const TABLE_COL_W=150;
+// Altura (mm) da coluna de tabelas de uma folha, estimada a partir das chamadas de armadura
+// dos desenhos que ela contém (limite superior das posições da relação de aço).
+function steelRowsEstimate(codes){const set=new Set();for(const c of codes){const g=findGroup(c);if(!g)continue;for(const t of g.querySelectorAll('text')){const p=steelParseLabel(t.textContent||'');if(p)set.add(p.dia+'|'+p.len)}}return set.size}
+function kindTableHeight(kinds,codes){
+ if(kinds.includes('planta')){const types=Object.keys(foundationCounts('pile')).length+($('blockEnabled').checked?Object.keys(foundationCounts('block')).length:0);return (17+7*6.6+5)+4+(24+Math.max(1,types)*6.6+5)+4+(27+6*7+10)}
+ const rows=steelRowsEstimate(codes);return rows?13+9+rows*7+4:0;
+}
 function layoutArea(format='A1',orientation='landscape'){let [w,h]=sheetSizes[format];if(orientation==='portrait')[w,h]=[h,w];const stripW=Math.min(180,w*.42),x0=28,y0=16,x1=w-10-stripW-10,y1=h-14;return {x0,y0,x1,y1,w:x1-x0,h:y1-y0}}
 function shiftGroup(code,g,dx,dy){
  if(g.hasAttribute('data-wall-group')){wallOffset={x:wallOffset.x+dx,y:wallOffset.y+dy};return}
@@ -1445,11 +1455,21 @@ function organizeSheets(quiet=false){
  if(!wallFinished||wallPoints.length<2){if(!quiet)status('Conclua o lançamento do muro antes de organizar as pranchas.');return false}
  const format='A1',orientation='landscape',area=layoutArea(format,orientation),gap=16;
  const specs=[];let cur=null;
- const newSpec=(kind,scale)=>{cur={kinds:[kind],scale,items:[],cx:0,cy:0,rowH:0};specs.push(cur);return cur};
+ // Coluna de tabelas à esquerda da faixa técnica, no alto (relação de aço; na planta:
+ // índice, quadro de fundações e resumo geral). Os desenhos não podem invadi-la.
+ const TW=TABLE_COL_W,hits=(sp,x,y,w,h)=>y<sp.resH+6&&x+w>area.w-TW-6;
+ const newSpec=(kind,scale)=>{cur={kinds:[kind],scale,items:[],cx:0,cy:0,rowH:0,resH:0};specs.push(cur);return cur};
  const place=(sp,it)=>{
-  if(sp.cx>0&&sp.cx+it.w>area.w){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}
-  if(sp.items.length&&sp.cy+it.h>area.h)return false;
-  sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+sp.cy});
+  const resH=kindTableHeight(sp.kinds,[...sp.items.map(i=>i.code),it.code]);
+  if(sp.items.some(i=>hits({resH},i.x-area.x0,i.y-area.y0,i.w,i.h)))return false;
+  const save={cx:sp.cx,cy:sp.cy,rowH:sp.rowH};sp.resH=resH;
+  for(let guard=0;guard<60;guard++){
+   if(sp.cx>0&&sp.cx+it.w>area.w){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0;continue}
+   if(hits(sp,sp.cx,sp.cy,it.w,it.h)){if(sp.cx>0){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}else{sp.cy=Math.max(sp.cy,sp.resH+6+gap)}continue}
+   break;
+  }
+  if(sp.items.length&&sp.cy+it.h>area.h){Object.assign(sp,save);sp.resH=kindTableHeight(sp.kinds,sp.items.map(i=>i.code));return false}
+  sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+sp.cy,w:it.w,h:it.h});
   sp.cx+=it.w+gap;sp.rowH=Math.max(sp.rowH,it.h);return true;
  };
  for(const cat of SHEET_PLAN){
@@ -1469,7 +1489,6 @@ function organizeSheets(quiet=false){
   else newSpec(cat.kind,chosen.scale);
   for(const it of chosen.sized){if(!place(cur,it)){newSpec(cat.kind,chosen.scale);place(cur,it)}}
  }
- specs.push({kinds:['notas'],scale:50,items:[]});
  let x=0;lastValidSteelBySheet=new Map();
  sheets=specs.map((sp,i)=>{const sh={id:i+1,format,orientation,scale:sp.scale,x,y:0,done:false,kind:sp.kinds[0],kinds:[...sp.kinds],title:sp.kinds.map(k=>SHEET_KIND_TITLES[k]).join(' · ')};x+=sheetDims(sh).w+300;return sh});
  sheetSeq=sheets.length+1;sheetCurrent=1;sheetSync();
@@ -1762,11 +1781,13 @@ function noteText(msg){
 }
 function notesPending(){return technicalNoteSelection.some(i=>TECHNICAL_NOTES[i]&&/\[VALOR\]/.test(noteText(TECHNICAL_NOTES[i][1])))}
 function drawWaterproofDetail(g,x,y,w,h,u){
- sheetBox(g,x,y,w,h,'DETALHE — IMPERMEABILIZAÇÃO E DRENAGEM DO TARDOZ',u);
- drawWaterproofSection(g,x+4*u,y+14*u,w-8*u,h-18*u,u);
+ sheetBox(g,x,y,w,h,'DETALHE — IMPERMEABILIZAÇÃO E DRENAGEM',u);
+ drawWaterproofSection(g,x+3*u,y+12*u,w-6*u,h-14*u,u);
 }
+// Folha que recebe o detalhe genérico de impermeabilização e drenagem (na faixa técnica).
+function detailSheet(){return sheets.find(s=>s.kind==='elevacoes')||sheets[sheets.length-1]||null}
 function sheetDraw(sceneG){
-  const hasNotesSheet=sheets.some(s=>s.kind==='notas');
+  const dSheet=detailSheet();
   sheets.forEach(sh=>{
     const d=sheetDims(sh),g=el('g',{'data-sheet-id':sh.id,transform:`translate(${sh.x} ${sh.y})`},sceneG);
     // Folha sem preenchimento para não cobrir desenhos ou bloquear seus arrastes.
@@ -1776,31 +1797,28 @@ function sheetDraw(sceneG){
     el('rect',{x:0,y:-25,width:d.w,height:23,fill:sh.done?'#3b7767':'#335d78',stroke:'#8fb6c9','stroke-width':.7,'data-sheet-frame':sh.id,'data-sheet-header':sh.id,style:'cursor:pointer'},g);
     const t=el('text',{x:8,y:-9,fill:'#fff','font-size':12,'font-weight':'bold','pointer-events':'none','data-sheet-header':sh.id},g);
     t.textContent=`PRANCHA ${String(sheets.indexOf(sh)+1).padStart(2,'0')} · ${sh.format} · ${d.wmm}×${d.hmm} mm · 1:${d.ratio}${sh.title?' · '+sh.title:''}${sh.done?' · CONCLUÍDA':''}`;
-    // Faixa técnica à direita, em milímetros de papel: tabelas empilhadas acima do carimbo.
     const unit=d.unit,margin=10*unit,right=10*unit;
     const stripW=Math.min(180*unit,d.w*.42),stripX=d.w-right-stripW;
     const stampH=Math.min(70*unit,d.h*.23),stampY=d.h-margin-stampH;
-    let cursor=stampY-4*unit;const top=margin;
     const rows=sheetSteelRows(sh);
-    const stack=(h,fn)=>{const hh=Math.min(h,cursor-top);if(hh<=12*unit)return;cursor-=hh;fn(cursor,hh);cursor-=4*unit};
-    if(sh.kind==='notas'){
-      const all=[...steelBySheet.values()].flat();
-      stack(steelSummaryHeight(all,unit),yy=>drawSteelSummary(g,stripX,yy,stripW,all,unit,steelRegistryFallback?'RESUMO GERAL DE AÇO · CONFERIR':'RESUMO GERAL DE AÇO'));
-      stack((17+sheets.length*6.6+5)*unit,yy=>drawSheetIndex(g,stripX,yy,stripW,unit));
-      drawNotesSheet(g,d,unit,stripX);
-    }else if(sh.kind==='planta'){
-      const ft=(24+Math.max(1,Object.keys(foundationCounts('pile')).length+($('blockEnabled').checked?Object.keys(foundationCounts('block')).length:0))*6.6+5)*unit;
-      stack(ft,yy=>drawFoundationTable(g,stripX,yy,stripW,unit));
-      stack((17+sheets.length*6.6+5)*unit,yy=>drawSheetIndex(g,stripX,yy,stripW,unit));
-      if(rows.length)stack(steelSummaryHeight(rows,unit),yy=>drawSteelSummary(g,stripX,yy,stripW,rows,unit,'RESUMO DE AÇO'));
-    }else{
-      stack(steelSummaryHeight(rows,unit),yy=>drawSteelSummary(g,stripX,yy,stripW,rows,unit,steelRegistryFallback?'RESUMO DE AÇO · CONFERIR':'RESUMO DE AÇO'));
-      const want=(13+9+Math.max(1,rows.length)*7+4)*unit;
-      const avail=hasNotesSheet?cursor-top:Math.min(cursor-top,Math.max(want,(cursor-top)*.45));
-      if(rows.length){const relH=Math.min(want,avail);cursor-=relH;drawSteelTable(g,stripX,cursor,stripW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',relH);cursor-=4*unit}
-      if(!hasNotesSheet&&cursor-top>40*unit){sheetBox(g,stripX,top,stripW,cursor-top,'NOTAS EXECUTIVAS',unit);drawTechnicalNotes(g,stripX,top,stripW,cursor-top,unit)}
-    }
+    // FAIXA TÉCNICA (alinhada ao carimbo): notas executivas, detalhe genérico, resumo de aço e carimbo.
+    let bottom=stampY-4*unit;const top=margin;
+    if(rows.length){const rh=steelSummaryHeight(rows,unit);bottom-=rh;drawSteelSummary(g,stripX,bottom,stripW,rows,unit,steelRegistryFallback?'RESUMO DE AÇO · CONFERIR':'RESUMO DE AÇO');bottom-=4*unit}
+    const wantDetail=technicalDiagram&&dSheet&&sh.id===dSheet.id,dh=wantDetail?Math.min(158*unit,(bottom-top)*.55):0;
+    let used=0;if(bottom-top-dh>30*unit)used=drawTechnicalNotes(g,stripX,top,stripW,bottom-top-(dh?dh+4*unit:0),unit);
+    // Detalhe genérico logo abaixo das notas; o espaço restante da faixa fica livre para outros detalhes.
+    if(wantDetail)drawWaterproofDetail(g,stripX,top+used+4*unit,stripW,dh,unit);
     drawEngenharStamp(g,sh,d,stripX,stampY,stripW,stampH,unit);
+    // COLUNA DE TABELAS: à esquerda da faixa, no alto; altura só a necessária.
+    const TW=TABLE_COL_W*unit,colX=stripX-10*unit-TW;let cy=16*unit;
+    if(sh.kind==='planta'){
+      cy+=drawSheetIndex(g,colX,cy,TW,unit)+4*unit;
+      cy+=drawFoundationTable(g,colX,cy,TW,unit)+4*unit;
+      const all=[...steelBySheet.values()].flat();
+      if(all.length)drawSteelSummary(g,colX,cy,TW,all,unit,steelRegistryFallback?'RESUMO GERAL DE AÇO · CONFERIR':'RESUMO GERAL DE AÇO');
+    }else if(rows.length){
+      drawSteelTable(g,colX,cy,TW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',d.h-cy-14*unit);
+    }
   });
   // Molduras abaixo dos detalhamentos para não interceptar clique nas armaduras.
   sheets.forEach(sh=>{const n=sceneG.querySelector(`[data-sheet-id="${sh.id}"]`);if(n)sceneG.insertBefore(n,sceneG.firstChild)});
@@ -2078,94 +2096,64 @@ function notesDialogOpen(){
 }
 function notesWrap(msg,max){const words=msg.split(/\s+/),rows=[];let line='';for(const word of words){if((line+' '+word).length>max&&line){rows.push(line);line=word}else line+=(line?' ':'')+word}if(line)rows.push(line);return rows;}
 function drawTechnicalNotes(g,x,y,w,h,u){
- // Faixas independentes: título, notas, ilustração. Nenhum texto invade a imagem.
- const inset=5*u,top=y+16*u,font=2.5/CAP*u,lineH=5.8*u;
- const imageH=technicalDiagram?Math.min(102*u,Math.max(0,h*.55)):0;
- const imageY=y+h-imageH-3*u;
- const available=Math.max(0,(technicalDiagram?imageY-3*u:y+h-4*u)-top);
- const maxLines=Math.max(0,Math.floor(available/lineH));
+ // Notas executivas na faixa técnica, com letra de 2,5 mm; se não couberem, avisa.
+ const inset=4*u,top=y+16*u,lineH=5.6*u;
  const selected=technicalNoteSelection.map(i=>TECHNICAL_NOTES[i]?.[1]).filter(Boolean).map(noteText);
- const maxChars=Math.max(12,Math.floor((w-2*inset)/(font*.56)));
+ const maxChars=Math.max(12,Math.floor((w-2*inset)/(2.5/CAP*u*.55)));
  const lines=[];
- selected.forEach((msg,i)=>notesWrap(`${String(i+1).padStart(2,'0')}. ${msg}`,maxChars).forEach(t=>lines.push(t)));
+ selected.forEach((msg,i)=>notesWrap(`${String(i+1).padStart(2,'0')}. ${msg}`,maxChars).forEach((t,j)=>lines.push(j?'     '+t:t)));
+ // Caixa do tamanho do conteúdo (limitada à altura disponível).
+ h=Math.min(h,16*u+Math.max(1,lines.length)*lineH-lineH+5*u);
+ sheetBox(g,x,y,w,h,'NOTAS EXECUTIVAS',u);
+ const maxLines=Math.max(0,Math.floor((y+h-3*u-top)/lineH)+1);
  const reserve=lines.length>maxLines?1:0;
- lines.slice(0,Math.max(0,maxLines-reserve)).forEach((t,i)=>{
-  const node=el('text',{x:x+inset,y:top+i*lineH,fill:/\[VALOR\]/.test(t)?'#ff8a8a':'#dbe7ef','font-size':font,'pointer-events':'none','data-pt':'1'},g);
-  node.textContent=t;
- });
- if(reserve&&maxLines>0){
-  const t=el('text',{x:x+inset,y:top+(maxLines-1)*lineH,fill:'#f5cb69','font-size':font,'pointer-events':'none'},g);
-  t.textContent='NOTAS EXCEDENTES: REDUZA A SELEÇÃO';
- }
- if(technicalDiagram&&imageH>0){
-  const ix=x+4*u,iy=imageY,iw=w-8*u,ih=imageH;
-  el('rect',{x:ix,y:iy,width:iw,height:ih,fill:'none',stroke:'#8fb6c9','stroke-width':.9,'pointer-events':'none'},g);
-  drawWaterproofSection(g,ix+2*u,iy+2*u,iw-4*u,ih-4*u,u);
- }
+ lines.slice(0,Math.max(0,maxLines-reserve)).forEach((t,i)=>sheetText(g,x+inset,top+i*lineH,t,u,2.5,{fill:/\[VALOR\]/.test(t)?'#ff8a8a':'#dbe7ef','xml:space':'preserve'}));
+ if(reserve&&maxLines>0)sheetText(g,x+inset,top+(maxLines-1)*lineH,`+${lines.length-maxLines+1} LINHA(S) DE NOTAS NÃO EXIBIDAS — REDUZA A SELEÇÃO`,u,2.5,{fill:'#f5cb69'});
+ return h;
 }
-// V231 — Detalhe típico vetorial: impermeabilização e drenagem do tardoz.
-// Desenhado em "mm de projeto" (espaço 270 × 330) e ajustado ao quadro; sai no PDF e no DXF.
+// V233 — Detalhe típico vetorial compacto (faixa técnica): impermeabilização e drenagem do tardoz.
+// Espaço de projeto 200 × 185; à esquerda o corte, à direita as chamadas numeradas.
 function drawWaterproofSection(g,x,y,w,h,u){
- const DW=270,DH=330,k=Math.min(w/DW,h/DH),ox=x+(w-DW*k)/2,oy=y;
+ const DW=200,DH=185,k=Math.min(w/DW,h/DH),ox=x+(w-DW*k)/2,oy=y;
  const X=v=>ox+v*k,Y=v=>oy+v*k,K=v=>v*k;
  const A=(tag,attrs,layer)=>el(tag,{...attrs,'pointer-events':'none','data-layer':layer},g);
  const L=(x1,y1,x2,y2,layer='formas',sw=1)=>A('line',{x1:X(x1),y1:Y(y1),x2:X(x2),y2:Y(y2),stroke:'#e6edf4','stroke-width':sw},layer);
- const R=(x0,y0,ww,hh,layer='formas',fill='none')=>A('rect',{x:X(x0),y:Y(y0),width:K(ww),height:K(hh),stroke:'#e6edf4',fill,'stroke-width':1},layer);
- const PL=(pts,layer='formas',close=false)=>A(close?'polygon':'polyline',{points:pts.map(([a,b])=>X(a)+','+Y(b)).join(' '),fill:'none',stroke:'#e6edf4','stroke-width':1},layer);
- const C=(cx,cy,r,layer='secundarias')=>A('circle',{cx:X(cx),cy:Y(cy),r:K(r),fill:'none',stroke:'#e6edf4','stroke-width':.8},layer);
+ const R=(x0,y0,ww,hh,layer='formas')=>A('rect',{x:X(x0),y:Y(y0),width:K(ww),height:K(hh),stroke:'#e6edf4',fill:'none','stroke-width':1},layer);
+ const C=(cx,cy,r,layer='secundarias',sw=.7)=>A('circle',{cx:X(cx),cy:Y(cy),r:K(r),fill:'none',stroke:'#e6edf4','stroke-width':sw},layer);
  const T=(xx,yy,str,cap=2.5,attrs={})=>{const t=el('text',{x:X(xx),y:Y(yy),fill:'#f4d35e','font-size':cap/CAP*u,'pointer-events':'none','data-pt':'1',...attrs},g);t.textContent=str;return t};
- // Geometria (mm de projeto). Parede à direita do solo contido.
- const wL=150,wR=172,top=18,vbT=212,vbB=236,fdB=272,front=200,soilTop=26;
- // Aterro compactado em camadas, com hachura de solo.
- PL([[8,soilTop],[118,soilTop]],'secundarias');
- for(let yy=soilTop+20;yy<vbB+30;yy+=20)L(8,yy,118,yy,'secundarias',.4);
- for(let yy=soilTop+6;yy<vbB+30;yy+=10)for(let xx=12+((yy/10)%2)*6;xx<114;xx+=14)L(xx,yy,xx+4,yy+3,'secundarias',.5);
- // Envelope drenante (brita) envolto em geotêxtil, com selo argiloso no topo.
- const gL=120,gR=144;
- PL([[gL,soilTop+16],[gL,vbB+4],[gR+2,vbB+4]],'eixos');
- for(let yy=soilTop+22;yy<vbB;yy+=7)for(let xx=gL+4+((yy/7)%2)*3;xx<gR-2;xx+=7)C(xx,yy,2.5);
- R(gL,soilTop,gR-gL,16,'secundarias');for(let xx=gL+2;xx<gR;xx+=4)L(xx,soilTop+16,xx+4,soilTop+2,'secundarias',.5);
- // Tubo dreno perfurado na base do envelope.
- C(gL+12,vbB-8,7,'cotas');C(gL+12,vbB-8,5,'cotas');for(let i=0;i<6;i++){const a=Math.PI*(1.1+i*.16);L(gL+12+7*Math.cos(a),vbB-8+7*Math.sin(a),gL+12+8.6*Math.cos(a),vbB-8+8.6*Math.sin(a),'cotas',.6)}
- // Camadas junto à parede: proteção mecânica, membrana e regularização.
- R(gR,top+8,3,vbB-top-8,'secundarias');
- A('line',{x1:X(wL-1.6),y1:Y(top+4),x2:X(wL-1.6),y2:Y(vbB+2),stroke:'#ff5555','stroke-width':2.2},'armaduras');
- L(wL-.5,top+4,wL-.5,vbB,'secundarias',.6);
- // Parede de blocos grauteados com juntas e graute em linha tracejada.
- R(wL,top,wR-wL,vbT-top);
- let row=0;for(let yy=top+19;yy<vbT;yy+=19){L(wL,yy,wR,yy,'alvenaria',.6);row++}
- A('line',{x1:X((wL+wR)/2),y1:Y(top+2),x2:X((wL+wR)/2),y2:Y(vbB-3),stroke:'#ff5555','stroke-width':1.2,'stroke-dasharray':`${K(4)} ${K(3)}`},'armaduras');
- // VB, bloco de fundação e início do tubulão.
- R(wL-4,vbT,wR-wL+8,vbB-vbT);R(wL-14,vbB,wR-wL+28,fdB-vbB);
- PL([[(wL+wR)/2-12,fdB],[(wL+wR)/2-12,fdB+40]]);PL([[(wL+wR)/2+12,fdB],[(wL+wR)/2+12,fdB+40]]);
- L((wL+wR)/2-16,fdB+40,(wL+wR)/2+16,fdB+40,'eixos',.6);
- // Terreno na face externa com hachura.
- L(wR,front,262,front,'formas',1.2);for(let xx=wR+4;xx<262;xx+=6)L(xx,front,xx-5,front+5,'secundarias',.6);
- // Níveis.
- T(186,front-3,'NT FACE EXTERNA',2.5);T(10,soilTop-3,'NT ATERRO (TARDOZ)',2.5);
- T(14,soilTop+48,'ATERRO COMPACTADO',2.5);T(14,soilTop+54,'EM CAMADAS ≤ 20 cm',2.5);
- // Chamadas numeradas, à direita.
- const tags=[
-  ['1','SELO DE SOLO ARGILOSO COMPACTADO',gL+12,soilTop+8],
-  ['2','MATERIAL DRENANTE (BRITA)',gL+6,soilTop+60],
-  ['3','GEOTÊXTIL FILTRANTE ENVOLVENDO O DRENO',gL,soilTop+110],
-  ['4','PROTEÇÃO MECÂNICA',gR+1.5,top+70],
-  ['5','IMPERMEABILIZAÇÃO (MEMBRANA)',wL-1.6,top+95],
-  ['6','REGULARIZAÇÃO DO TARDOZ',wL-.5,top+120],
-  ['7','ALVENARIA DE BLOCOS GRAUTEADOS',wR-3,top+40],
-  ['8','TUBO DRENO PERFURADO — SAÍDA CONFORME PROJETO',gL+19,vbB-8],
-  ['9','VIGA BALDRAME (VB) E BLOCO DE FUNDAÇÃO',wR+2,vbT+12]
- ];
- tags.forEach(([n,txt,px,py],i)=>{const ty=top+8+i*16,tx=200;
-  A('polyline',{points:`${X(px)},${Y(py)} ${X(tx-6)},${Y(ty-1)} ${X(tx-2)},${Y(ty-1)}`,fill:'none',stroke:'#e6edf4','stroke-width':.5},'cotas');
-  A('circle',{cx:X(px),cy:Y(py),r:K(.9),fill:'#e6edf4',stroke:'#e6edf4','stroke-width':.4},'cotas');
-  T(tx,ty,n,2.5,{'font-weight':'bold'});notesWrap(txt,24).forEach((ln,j)=>T(tx+5,ty+j*4.6*u/k,ln,2.5))});
- // Sequência executiva.
- const seq=['1. REGULARIZAR E LIMPAR O TARDOZ','2. APLICAR A IMPERMEABILIZAÇÃO ESPECIFICADA','3. PROTEGER MECANICAMENTE A MEMBRANA','4. INSTALAR GEOTÊXTIL, TUBO DRENO E BRITA','5. REATERRAR EM CAMADAS COMPACTADAS','6. EXECUTAR O SELO ARGILOSO NO TOPO'];
- T(10,fdB+20,'SEQUÊNCIA DE EXECUÇÃO',3.5,{'font-weight':'bold'});
- seq.forEach((t,i)=>T(10,fdB+29+i*7.5,t,2.5));
- T(186,fdB+20,'DETALHE ESQUEMÁTICO — SEM ESCALA',2.5,{'font-weight':'bold'});
- T(186,fdB+28,'MATERIAIS, ESPESSURAS E SAÍDA',2.5);T(186,fdB+35,'DO DRENO CONFORME PROJETO ESPECÍFICO',2.5);
+ // Geometria (unidades de projeto).
+ const soilTop=14,gL=46,gR=60,wL=64,wR=76,top=8,vbT=124,vbB=138,fdB=158,front=114;
+ // Aterro em camadas com hachura de solo.
+ L(2,soilTop,gL,soilTop,'secundarias',.9);
+ for(let yy=soilTop+18;yy<vbB+16;yy+=18)L(2,yy,gL,yy,'secundarias',.35);
+ for(let yy=soilTop+5;yy<vbB+16;yy+=9)for(let xx=5+((yy/9)%2)*5;xx<gL-3;xx+=11)L(xx,yy,xx+3.5,yy+2.5,'secundarias',.45);
+ // Envelope drenante (brita) com geotêxtil e selo argiloso no topo.
+ A('polyline',{points:[[gL,soilTop+12],[gL,vbB+3],[wL-2,vbB+3]].map(([a,b])=>X(a)+','+Y(b)).join(' '),fill:'none',stroke:'#e6edf4','stroke-width':.9,'stroke-dasharray':`${K(3)} ${K(1.5)}`},'eixos');
+ for(let yy=soilTop+17;yy<vbB-12;yy+=5.5)for(let xx=gL+3+((yy/5.5)%2)*2.5;xx<gR-1.5;xx+=5.5)C(xx,yy,1.6,'secundarias',.5);
+ R(gL,soilTop,gR-gL,12,'secundarias');for(let xx=gL+2;xx<gR;xx+=3.5)L(xx,soilTop+12,xx+3.5,soilTop+1,'secundarias',.45);
+ // Tubo dreno perfurado.
+ const tx=gL+7,ty=vbB-6;C(tx,ty,5,'cotas',1);C(tx,ty,3.6,'cotas',.6);
+ // Proteção mecânica, membrana e regularização.
+ R(gR,top+6,2.5,vbB-top-6,'secundarias');
+ A('line',{x1:X(wL-1.2),y1:Y(top+3),x2:X(wL-1.2),y2:Y(vbB+1),stroke:'#ff5555','stroke-width':2},'armaduras');
+ L(wL-.4,top+3,wL-.4,vbB,'secundarias',.5);
+ // Parede de blocos grauteados, VB, bloco e tubulão.
+ R(wL,top,wR-wL,vbT-top);for(let yy=top+16;yy<vbT;yy+=16)L(wL,yy,wR,yy,'alvenaria',.55);
+ A('line',{x1:X((wL+wR)/2),y1:Y(top+2),x2:X((wL+wR)/2),y2:Y(vbB-2),stroke:'#ff5555','stroke-width':1,'stroke-dasharray':`${K(3)} ${K(2)}`},'armaduras');
+ R(wL-3,vbT,wR-wL+6,vbB-vbT);R(wL-10,vbB,wR-wL+20,fdB-vbB);
+ L((wL+wR)/2-9,fdB,(wL+wR)/2-9,fdB+20);L((wL+wR)/2+9,fdB,(wL+wR)/2+9,fdB+20);
+ // Terreno da face externa.
+ L(wR,front,104,front,'formas',1.1);for(let xx=wR+3;xx<104;xx+=4.5)L(xx,front,xx-3.5,front+3.5,'secundarias',.5);
+ T(4,soilTop+40,'ATERRO EM',2.5);T(4,soilTop+46,'CAMADAS ≤ 20 cm',2.5);
+ // Chamadas numeradas à direita.
+ const tags=[['1','SELO ARGILOSO COMPACTADO',gL+7,soilTop+6],['2','BRITA DRENANTE',gL+5,soilTop+45],['3','GEOTÊXTIL FILTRANTE',gL,soilTop+80],['4','PROTEÇÃO MECÂNICA',gR+1.2,top+46],['5','IMPERMEABILIZAÇÃO (MEMBRANA)',wL-1.2,top+64],['6','REGULARIZAÇÃO DO TARDOZ',wL-.4,top+82],['7','ALVENARIA GRAUTEADA',wR-2,top+28],['8','TUBO DRENO PERFURADO',tx+5,ty],['9','VB E BLOCO DE FUNDAÇÃO',wR+2,vbB+8]];
+ const lx=112;
+ tags.forEach(([n,txt,px,py],i)=>{const ty2=top+6+i*13;
+  A('polyline',{points:`${X(px)},${Y(py)} ${X(lx-5)},${Y(ty2-1.2)} ${X(lx-1.5)},${Y(ty2-1.2)}`,fill:'none',stroke:'#e6edf4','stroke-width':.45},'cotas');
+  A('circle',{cx:X(px),cy:Y(py),r:K(.8),fill:'#e6edf4',stroke:'#e6edf4','stroke-width':.3},'cotas');
+  T(lx,ty2,n,2.5,{'font-weight':'bold'});T(lx+5,ty2,txt,2.5)});
+ T(lx,top+6+9*13+4,'SEM ESCALA — MATERIAIS E SAÍDA',2.5,{'font-weight':'bold'});
+ T(lx,top+6+9*13+10,'DO DRENO CONFORME PROJETO',2.5,{'font-weight':'bold'});
 }
 $('managerNotes').onclick=()=>{$('sheetManager').close();notesDialogOpen()};
 $('notesCancel').onclick=()=>$('technicalNotesDialog').close();
