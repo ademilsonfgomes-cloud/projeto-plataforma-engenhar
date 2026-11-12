@@ -425,6 +425,9 @@ text(cx,cy-r-12,'CORTE A','#f5cc50',11,g,{'font-weight':'bold','text-anchor':'mi
 circle(cx,cy,r,'#f5c845','none',.95,g);
 hookedRing(cx,cy,ringRadius,stDia,g,true);
 for(let i=0;i<qty;i++){let a=2*Math.PI*i/qty,rr=barCenterRadius;circle(cx+rr*Math.cos(a),cy+rr*Math.sin(a),2,'#f06b76','#f06b76',.7,g)}
+// Linhas de chamada do corte: N1 (barra longitudinal) e N2 (estribo circular).
+path(`M${cx+barCenterRadius} ${cy} L${cx+r+14} ${cy-r+4} H${cx+r+26}`,'#d6e8f4','none',.6,g,{'data-layer':'cotas'});text(cx+r+29,cy-r+7,`${qty} N1`,'#f06b76',10,g,{'font-weight':'bold'});
+path(`M${cx-ringRadius*.71} ${cy+ringRadius*.71} L${cx-r-14} ${cy+r-2} H${cx-r-26}`,'#d6e8f4','none',.6,g,{'data-layer':'cotas'});text(cx-r-29,cy+r+1,'N2','#60d1f3',10,g,{'font-weight':'bold','text-anchor':'end'});
 // A seção do fuste mantém as bolinhas; a edição N1 é feita pela legenda lateral.
 let bcx=x,bcy=bottom+125,brad=baseW/2;
 line(bl,bottom,bl,bcy,'#7995a6',.8,g,{'stroke-dasharray':'5 5'});
@@ -971,9 +974,14 @@ function drawBeamDetails(parent,kind="VB"){
   for(let j=0;j<n;j++){const sx=x+inset+j*(L-2*inset)/(n-1);ln(sx,y+inset,sx,y+H-inset,blue,.9,{'data-beam-arm':'N1',style:'cursor:pointer'})}
   ln(x,y-18,x+L,y-18,ink,.8);ln(x,y-24,x,y-10,ink,.8);ln(x+L,y-24,x+L,y-10,ink,.8);
   txt(x+L/2,y-24,`${lengthCm} cm`,10,ink,{'text-anchor':'middle'});
-  for(const axis of [...new Set([...upper,...lower].filter(p=>!p.last).map(p=>p.axis))]){
-   const px=x+axis*sc;ln(px,y-9,px,y+H+8,gold,.8,{'stroke-dasharray':'4 4'});
-   txt(px,y+H+20,`EIXO PILAR · EMENDA`,8,gold,{'text-anchor':'middle'});
+  // Pilares que apoiam a viga (numeração global) e eixos de emenda.
+  const spliceAxes=new Set([...upper,...lower].filter(p=>!p.last).map(p=>Math.round(p.axis*100)/100));
+  const pids=pillarIds()[i]||[],colA=Math.max(10,Number(d.wallColX)||20)*sc;
+  for(let j=0;j<nPillars;j++){const axisCm=lengthCm*j/(nPillars-1),px=x+axisCm*sc;
+   el('rect',{x:px-colA/2,y:y-7,width:colA,height:H+14,fill:'#62b4d6','fill-opacity':.12,stroke:blue,'stroke-width':.8,'stroke-dasharray':'4 3'},g);
+   ln(px,y-12,px,y+H+12,'#36cfc9',.6,{'stroke-dasharray':'8 3 2 3'});
+   const splice=spliceAxes.has(Math.round(axisCm*100)/100);
+   txt(px,y+H+22,`P${pids[j]??j+1}${splice?' · EMENDA':''}`,8,splice?gold:blue,{'text-anchor':'middle','font-weight':'bold'});
   }
   txt(sectionX,119,'CORTE A–A',11,blue,{'font-weight':'bold'});
   const sw=width*sc,sh=height*sc,sy=y+(H-sh)/2;
@@ -981,8 +989,15 @@ function drawBeamDetails(parent,kind="VB"){
   const cx=sectionX+Math.min(sw/3,cover*sc),cy=sy+Math.min(sh/3,cover*sc),iw=Math.max(4,sw-2*(cx-sectionX)),ih=Math.max(5,sh-2*(cy-sy));
   el('rect',{x:cx,y:cy,width:iw,height:ih,rx:1,fill:'none',stroke:blue,'stroke-width':1.4,'data-beam-arm':'N1',style:'cursor:pointer'},g);
   for(const [p,yy] of [['N2',cy+3],['N3',cy+ih-3]]){const qty=Math.max(1,arms[p].qty);for(let j=0;j<qty;j++){const xx=cx+Math.min(4,iw*.2)+(iw-2*Math.min(4,iw*.2))*(qty===1?.5:j/(qty-1));el('circle',{cx:xx,cy:yy,r:2.5,fill:orange,'data-beam-arm':p,style:'cursor:pointer'},g)}}
-  txt(sectionX+sw/2,sy+sh+18,`${width} × ${height} cm`,10,ink,{'text-anchor':'middle'});
-  const esX=sectionX+sw+60,esY=y+5,ew=Math.max(12,(width-2*cover)*sc),eh=Math.max(16,(height-2*cover)*sc);
+  txt(sectionX+sw/2,sy+sh+34,`${width} × ${height} cm`,10,ink,{'text-anchor':'middle'});
+  // Linhas de chamada da seção: armadura superior, inferior e estribo.
+  const lx=sectionX+sw+8;
+  // Mesma ordem de numeração das peças desenhadas abaixo (barras iguais compartilham posição).
+  for(const pc of upper)getCode(arms.N2,pc);for(const pc of lower)getCode(arms.N3,pc);
+  const topCode=getCode(arms.N2,upper[0]),botCode=getCode(arms.N3,lower[0]);
+  path(`M${cx+iw-Math.min(4,iw*.2)} ${cy+3} L${lx} ${sy-8} H${lx+10}`,ink,'none',.6,g,{'data-layer':'cotas'});txt(lx+12,sy-5,`${arms.N2.qty} ${topCode}`,9,orange,{'font-weight':'bold','data-beam-arm':'N2',style:'cursor:pointer'});
+  path(`M${cx+iw-Math.min(4,iw*.2)} ${cy+ih-3} L${lx} ${sy+sh+10} H${lx+10}`,ink,'none',.6,g,{'data-layer':'cotas'});txt(lx+12,sy+sh+13,`${arms.N3.qty} ${botCode}`,9,orange,{'font-weight':'bold','data-beam-arm':'N3',style:'cursor:pointer'});
+  const esX=sectionX+sw+75,esY=y+5,ew=Math.max(12,(width-2*cover)*sc),eh=Math.max(16,(height-2*cover)*sc);
   txt(esX,119,'ESTRIBO N1',10,blue,{'font-weight':'bold','data-beam-arm':'N1',style:'cursor:pointer'});
   el('path',{d:`M${esX} ${esY} H${esX+ew} V${esY+eh} H${esX} Z M${esX+ew} ${esY} l${-Math.min(9,ew*.35)} ${Math.min(9,eh*.3)} M${esX+ew} ${esY} l${-Math.min(5,ew*.2)} ${Math.min(12,eh*.4)}`,fill:'none',stroke:blue,'stroke-width':1.6,'data-beam-arm':'N1',style:'cursor:pointer'},g);
   txt(esX+ew/2,esY+eh+17,`${width-2*cover}`,9,ink,{'text-anchor':'middle'});txt(esX-6,esY+eh/2,`${height-2*cover}`,9,ink,{'text-anchor':'end'});
