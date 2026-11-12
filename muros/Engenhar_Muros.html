@@ -316,7 +316,7 @@ function line(x1,y1,x2,y2,stroke='#dce9f5',width=1,parent=svg,attrs={}){return e
 function text(x,y,value,color='#dce9f5',size=10,parent=svg,attrs={}){let t=el('text',{x,y,fill:color,'font-size':size,'font-family':'Arial',...attrs},parent);t.textContent=value;return t}
 function path(d,stroke,fill='none',width=1.5,parent=svg,attrs={}){return el('path',{d,stroke,fill,'stroke-width':width,...attrs},parent)}
 function circle(x,y,r,stroke,fill='none',width=1.3,parent=svg,attrs={}){return el('circle',{cx:x,cy:y,r,stroke,fill,'stroke-width':width,...attrs},parent)}
-function label(x,y,s,parent=svg){text(x,y,s,'#f5cc50',11,parent,{'font-weight':'bold'})}
+function label(x,y,s,parent=svg,attrs={}){return text(x,y,s,'#f5cc50',11,parent,{'font-weight':'bold',...attrs})}
 function dimH(x1,x2,y,refY,caption,parent){const before=parent.childNodes.length;const c='#d6e8f4';line(x1,refY,x1,y+(y>refY?7:-7),c,.65,parent,{'stroke-dasharray':'3 3'});line(x2,refY,x2,y+(y>refY?7:-7),c,.65,parent,{'stroke-dasharray':'3 3'});line(x1,y,x2,y,c,.85,parent);for(const x of [x1,x2])line(x-3,y+4,x+3,y-4,c,.95,parent);text((x1+x2)/2,y-7,caption,c,10,parent,{'text-anchor':'middle'});Array.from(parent.childNodes).slice(before).forEach(e=>e.setAttribute('data-layer','cotas'))}
 function dimV(y1,y2,x,refX,caption,parent){const before=parent.childNodes.length;const c='#d6e8f4';line(refX,y1,x+(x>refX?7:-7),y1,c,.65,parent,{'stroke-dasharray':'3 3'});line(refX,y2,x+(x>refX?7:-7),y2,c,.65,parent,{'stroke-dasharray':'3 3'});line(x,y1,x,y2,c,.85,parent);for(const y of [y1,y2])line(x-4,y+3,x+4,y-3,c,.95,parent);let t=text(x-8,(y1+y2)/2,caption,c,10,parent,{'text-anchor':'middle'});t.setAttribute('transform',`rotate(-90 ${x-8} ${(y1+y2)/2})`);Array.from(parent.childNodes).slice(before).forEach(e=>e.setAttribute('data-layer','cotas'))}
 function hookedRing(cx,cy,r,dia,parent,interactive){
@@ -388,8 +388,8 @@ let sceneG=el('g',{transform:`translate(${view.x} ${view.y}) scale(${view.k})`,'
 let shaft=clamp(numeric('shaft')||60,20,300),base=Math.max(shaft,numeric('base')||120),depth=clamp(numeric('depth')||330,50,2000),bh=clamp(numeric('baseHeight')||50,10,depth*.8),sk=clamp(numeric('skirt')||35,0,bh),cover=clamp(numeric('cover')||5,2,shaft/3),barLen=clamp(numeric('barLen')||260,10,depth),qty=clamp(Math.round(numeric('bars')||8),2,32),spacing=Math.max(1,numeric('spacing')||15),dia=Math.max(4,numeric('barDia')||16),stDia=Math.max(4,numeric('stDia')||8);
 let scale=0.78,top=94,x=145,shaftW=shaft*scale,baseW=base*scale,bodyH=depth*scale,shoulder=top+bodyH-bh*scale,skirtEnd=shoulder+sk*scale,bottom=top+bodyH;
 scene={w:$('blockEnabled').checked?1050:555,h:Math.max(490,bottom+207)};
-label(30,23,`T1 — DETALHAMENTO DO TUBULÃO · ${foundationCounts('pile').T1||0} UN.`,g);
-text(30,37,'CORTE LONGITUDINAL • SEÇÕES • ARMADURAS (cm)','white',8,g);text(30,49,`ESCALA DE PRANCHA 1:${$('printScale').value} • COTAS EM cm`,'#a9c7da',8,g);
+label(30,23,`T1 — DETALHAMENTO DO TUBULÃO · ${foundationCounts('pile').T1||0} UN.`,g,{'data-role':'title'});
+text(30,37,'CORTE LONGITUDINAL • SEÇÕES • ARMADURAS','white',8,g);text(30,49,'ESC. 1:{s} • COTAS EM cm','#a9c7da',8,g,{'data-scale-label':'ESC. 1:{s} • COTAS EM cm'});
 let left=x-shaftW/2,right=x+shaftW/2,bl=x-baseW/2,br=x+baseW/2;
 path(`M${left} ${top} H${right} V${shoulder} L${br} ${skirtEnd} V${bottom} H${bl} V${skirtEnd} L${left} ${shoulder} Z`,'#f5c845','none',.95,g);
 for(let yy=top+9;yy<bottom-4;yy+=10){let lx=yy<=shoulder?left:yy<=skirtEnd?left-(shaftW-baseW)*.5*(yy-shoulder)/Math.max(1,skirtEnd-shoulder):bl;let rx=2*x-lx;line(lx+2,yy,rx-2,yy,'#23495d',.4,g)}
@@ -457,7 +457,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
  // Área de captura independente para arrastar pelo título, mesmo sem muro lançado.
  // O retângulo invisível fica atrás do texto e não acompanha os demais desenhos.
  el('rect',{x:titleX-265,y:titleY-24,width:530,height:35,fill:'transparent','pointer-events':'all','data-wall-drag-handle':'1',style:'cursor:grab'},wg);
- text(titleX,titleY,'PLANTA DOS ARRIMOS — VIGAS DE BASE E PILARES',yellow,17,wg,{'font-weight':'bold','text-anchor':'middle','data-wall-drag-handle':'1',style:'cursor:grab'});
+ text(titleX,titleY,'PLANTA DOS ARRIMOS — VIGAS DE BASE E PILARES',yellow,17,wg,{'font-weight':'bold','text-anchor':'middle','data-wall-drag-handle':'1',style:'cursor:grab','data-role':'title'});text(titleX,titleY+22,'ESC. 1:{s} · COTAS EM cm',yellow,9,wg,{'text-anchor':'middle','data-scale-label':'ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m'});
  }
  const junctionIds=new Map();const renderedFoundations=new Set();let nextP=1;
  function pId(point){const key=`${Math.round(point.x*100)/100}:${Math.round(point.y*100)/100}`;if(!junctionIds.has(key))junctionIds.set(key,'P'+nextP++);return junctionIds.get(key)}
@@ -555,15 +555,15 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  y:clamp(numeric('blockY')||80,40,500),h:clamp(numeric('blockH')||80,30,500),
  pile:clamp(numeric('blockPile')||50,20,400),cover:clamp(numeric('blockCover')||5,2,30)};
  
- const bx=590,by=85,bs=.82,ww=B.x*bs,hh=B.y*bs,cutH=B.h*bs;
+ const bx=590,by=85,bs=.78,ww=B.x*bs,hh=B.y*bs,cutH=B.h*bs;
  el('rect',{x:bx-12,y:12,width:445,height:Math.max(470,by+hh+cutH+260),fill:'transparent','pointer-events':'all','data-block-hit':'1'},blockG);
  const yellow='#f5c845',red='#f06b76',cyan='#60d1f3';
  const bp=blockPositions();
  const positionColors={N3:cyan,N4:'#f5a85b',N5:'#b89aff'};
  const colorX=positionColors[bp.x],colorY=positionColors[bp.y],colorC=positionColors[bp.cost];
- label(bx,23,`B1 — BLOCO DE COROAMENTO · ${foundationCounts('block').B1||0} UN.`,blockG);
+ label(bx,23,`B1 — BLOCO DE COROAMENTO · ${foundationCounts('block').B1||0} UN.`,blockG,{'data-role':'title'});
  text(bx,37,'PLANTA • CORTES A–A / B–B • FORMAS DAS ARMADURAS','white',8,blockG);
- text(bx,49,`ESCALA DE PRANCHA 1:${$('printScale').value} • COTAS EM cm`,'#a9c7da',8,blockG);
+ text(bx,49,'ESC. 1:{s} • COTAS EM cm','#a9c7da',8,blockG,{'data-scale-label':'ESC. 1:{s} • COTAS EM cm · FORMATOS SEM ESCALA'});
  // Planta
  const px=bx+55,py=by+25;
  text(px+ww/2,py-20,'PLANTA',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
@@ -595,8 +595,8 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  line(px-8,py+hh/2,px+ww+8,py+hh/2,'#93a9b8',.5,blockG,{'stroke-dasharray':'4 3'});
  text(px-12,py+hh/2-4,'A',yellow,9,blockG);text(px+ww+7,py+hh/2-4,'A',yellow,9,blockG);
  text(px+ww/2+5,py-5,'B',yellow,9,blockG);text(px+ww/2+5,py+hh+12,'B',yellow,9,blockG);
- dimH(px,px+ww,py+hh+26,py+hh,`${B.x} cm`,blockG);
- dimV(py,py+hh,px-20,px,`${B.y} cm`,blockG);
+ dimH(px,px+ww,py+hh+36,py+hh,`${B.x} cm`,blockG);
+ dimV(py,py+hh,px-24,px,`${B.y} cm`,blockG);
  // Cortes alinhados horizontalmente, abaixo da planta.
  const sy=py+hh+90,sh=cutH,sw=ww;
  function section(sx,title,wcm){
@@ -741,7 +741,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
    for(const wrapper of variants)mainSceneG.appendChild(wrapper);
   }
  }
-if(!renderingVariant){drawPillarDetails(sceneG);drawBeamDetails(sceneG);if(elevationEnabled&&elevationSettings.top)drawBeamDetails(sceneG,"VT");drawWallElevations(sceneG);buildSteelRegistry(sceneG);sheetDraw(sceneG);}
+if(!renderingVariant){drawPillarDetails(sceneG);drawBeamDetails(sceneG);if(elevationEnabled&&elevationSettings.top)drawBeamDetails(sceneG,"VT");drawWallElevations(sceneG);normalizeDetailText(sceneG);buildSteelRegistry(sceneG);sheetDraw(sceneG);}
 if(restoreBaseFields)for(const [id,val] of Object.entries(restoreBaseFields))$(id).value=val;
 }
 // V207 — elevações de arrimos independentes e editáveis pelo diálogo.
@@ -754,108 +754,122 @@ function focusFirstElevation(){
 }
 function drawWallElevations(parent){
  if(!elevationEnabled||!wallFinished||wallPoints.length<2)return;
- const S=elevationSettings,sc=.78;
+ const S=elevationSettings,sc=.78,ids=pillarIds();
  const pts=wallPoints.map(p=>({x:wallStart.x+wallOffset.x+p.x*sc,y:wallStart.y+wallOffset.y+p.y*sc}));
- // Elevações novas ficam FORA das pranchas, em área exclusiva à direita.
- // O usuário pode arrastá-las depois para a folha desejada.
+ // Posição inicial fora das folhas; a organização automática as leva à prancha de elevações.
  const bottom=Math.max(...pts.map(p=>p.y));
  const maxSheetRight=sheets.length?Math.max(...sheets.map(sh=>sh.x+sheetDims(sh).w)):0;
  const rightOfDrawings=Math.max(...pts.map(p=>p.x))+250;
  const left=Math.max(maxSheetRight+260,rightOfDrawings)+25;
  let stackY=sheets.length?Math.min(...sheets.map(sh=>sh.y))+85:bottom+300;
- const ink='#d7e8f3',gold='#f5c845',cyan='#64d1f3',steel='#f0a65a';
+ const ink='#d7e8f3',gold='#f5c845',cyan='#64d1f3',steel='#f0a65a',earth='#eaa85d';
+ const notesSheet=sheets.findIndex(sh=>sh.kind==='notas')+1;
  for(let i=0;i<wallSegments.length;i++){
   const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||{};
   if(!a||!b)continue;
   const L=Math.hypot(b.x-a.x,b.y-a.y),h=Math.max(30,Number(d.wallHeight)||250);
-  const bw=Math.max(10,Number(d.wallBeamWidth)||20),bh=Math.max(10,Number(d.wallBeamHeight)||40);
+  const bh=Math.max(10,Number(d.wallBeamHeight)||40);
   const n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));
   const code=`EL${i+1}`,origin={x:left-25,y:stackY};const pos=extraDetailOffsets[code]||origin;
   const g=el('g',{transform:`translate(${pos.x} ${pos.y})`,'data-extra-code':code,'data-elevation-segment':String(i),style:'cursor:move'},parent);
   const t=(x,y,label,color=ink,size=10,attrs={})=>text(x,y,String(label),color,size,g,attrs);
   const ln=(x1,y1,x2,y2,color=ink,w=1,attrs={})=>line(x1,y1,x2,y2,color,w,g,attrs);
-  const x=32,y=95,W=L*sc,H=h*sc,baseH=bh*sc,topH=S.top?bh*sc:0;
-  const top=y,bottomY=y+H,baseY=bottomY;
-  t(x,25,`ELEVAÇÃO DO ARRIMO ${i+1}`,gold,15,{'font-weight':'bold'});
-  t(x,45,`ALVENARIA DE BLOCOS GRAUTEADOS · FIADAS DE ${S.course} cm`,cyan,10);
+  const x=170,y=200,W=L*sc,H=h*sc,baseH=bh*sc,topH=S.top?bh*sc:0;
+  const top=y,bottomY=y+H,baseY=bottomY,zeroY=baseY+baseH;
+  t(x,25,`ELEVAÇÃO DO ARRIMO ${i+1} — VISTA PELA FACE EXTERNA`,gold,15,{'font-weight':'bold','data-role':'title'});
+  t(x,47,'',cyan,10,{'data-scale-label':`ALVENARIA DE BLOCOS GRAUTEADOS · FIADAS DE ${S.course} cm · ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m`});
   // Vista frontal em escala: juntas alternadas, pilares e vigas.
   el('rect',{x,y,width:W,height:H,stroke:ink,'stroke-width':1,fill:'#91b0c1','fill-opacity':.07},g);
   const intermediate=Math.min(5,Math.max(0,Math.round(S.mid)||0));
   const usable=Math.max(0,h-(S.top?bh:0)-intermediate*bh);
   const panel=usable/(intermediate+1);
   const beamZones=[];
-  for(let j=1;j<=intermediate;j++){
-   const yStart=top+(panel*j+bh*(j-1))*sc;
-   beamZones.push([yStart,yStart+bh*sc]);
-  }
+  for(let j=1;j<=intermediate;j++){const yStart=top+(panel*j+bh*(j-1))*sc;beamZones.push([yStart,yStart+bh*sc])}
   if(S.top)beamZones.push([top,top+topH]);
   const inBeam=yy=>beamZones.some(([a,b])=>yy>a+.1&&yy<b-.1);
-  // Face aparente de blocos: módulos individuais e amarração alternada por fiada.
   const courseStep=Math.max(10,Number(S.course)||20)*sc;
   const blockW=40*sc, joint=1.3;
-  let course=0,horizontalRows=0;
+  let course=0,horizontalRows=0,firstRowY=null;
   for(let yBot=bottomY;yBot>top+1;yBot-=courseStep){
    const yTop=Math.max(top,yBot-courseStep),cy=(yTop+yBot)/2;
    if(inBeam(cy))continue;
    const shift=(course%2)*blockW/2;
    const row=el('g',{},g);
-   // Desenha as unidades com limites e juntas de argamassa, recortadas nas extremidades.
    for(let xx=x-shift;xx<x+W;xx+=blockW){
     const bx=Math.max(x,xx),ex=Math.min(x+W,xx+blockW);
     if(ex-bx<1)continue;
     el('rect',{x:bx+joint/2,y:yTop+joint/2,width:Math.max(0,ex-bx-joint),height:Math.max(0,yBot-yTop-joint),fill:course%2?'#a8c2ce':'#91aebb','fill-opacity':.20,stroke:'#a8cadb','stroke-width':.85},row);
-    // Marcação discreta do miolo grauteado, sem confundir com as barras.
     if(ex-bx>blockW*.6)ln((bx+ex)/2,yTop+3,(bx+ex)/2,yBot-3,'#537b91',.35,{'stroke-dasharray':'2 3'});
    }
    horizontalRows++;course++;
   }
-  // Aço interno da parede em traço fino: chamadas grossas ficam fora da alvenaria.
-  for(let yy=bottomY-courseStep;yy>top+2;yy-=courseStep){if(!inBeam(yy-1)&&!inBeam(yy+1))ln(x+2,yy,x+W-2,yy,steel,.8,{'stroke-dasharray':'5 5'})}
+  for(let yy=bottomY-courseStep;yy>top+2;yy-=courseStep){if(!inBeam(yy-1)&&!inBeam(yy+1)){ln(x+2,yy,x+W-2,yy,steel,.8,{'stroke-dasharray':'5 5'});if(firstRowY===null)firstRowY=yy}}
   const step=Math.max(5,Number(S.vSpace)||20)*sc;
   const vCount=Math.max(1,Math.floor(L/Math.max(5,Number(S.vSpace)||20))+1);
-  // Vigas intermediárias e superior; a VB permanece imediatamente abaixo do painel.
   for(let j=0;j<beamZones.length;j++){
    const [by0,by1]=beamZones[j];el('rect',{x,y:by0,width:W,height:by1-by0,stroke:cyan,'stroke-width':1.5,fill:'#70c8ef','fill-opacity':.19},g);
-   t(x+W+9,(beamZones[j][0]+beamZones[j][1])/2+3,j===beamZones.length-1&&S.top?`VT${i+1}`:`VI${j+1}`,cyan,9);
+   t(x+W+10,(by0+by1)/2+3,j===beamZones.length-1&&S.top?`VT${i+1}`:`VI${j+1}`,cyan,10,{'font-weight':'bold'});
   }
   el('rect',{x,y:baseY,width:W,height:baseH,stroke:gold,'stroke-width':1.4,fill:'#f5c845','fill-opacity':.14},g);
-  t(x+W+9,baseY+baseH/2+3,`VB${i+1}`,gold,10);
-  // Armaduras verticais tracejadas continuam dentro da viga de base, quase até sua face inferior.
-  for(let xx=x+step/2;xx<x+W-1;xx+=step)ln(xx,top+topH+2,xx,baseY+baseH-3,steel,.55,{'stroke-dasharray':'3 5'});
-  // Pilares e blocos/tubulões por eixo; representação de fundações abaixo do nível da VB.
+  t(x+W+10,baseY+baseH/2+3,`VB${i+1}`,gold,10,{'font-weight':'bold'});
+  let firstVX=null;
+  for(let xx=x+step/2;xx<x+W-1;xx+=step){ln(xx,top+topH+2,xx,baseY+baseH-3,steel,.55,{'stroke-dasharray':'3 5'});if(firstVX===null)firstVX=xx}
+  // Pilares (numeração global), eixos com identificação e fundações por eixo.
+  let lowest=zeroY;const axisX=[];
   for(let j=0;j<n;j++){
-   const px=x+W*j/(n-1),col=Math.max(10,Number(d.wallColX)||20)*sc;
+   const px=x+W*j/(n-1),col=Math.max(10,Number(d.wallColX)||20)*sc;axisX.push(px);
    el('rect',{x:px-col/2,y:top,width:col,height:H+baseH,stroke:cyan,'stroke-width':1.15,fill:'#62b4d6','fill-opacity':.24},g);
-   t(px,top-9,`P${j+1}`,cyan,9,{'text-anchor':'middle'});
+   const pid=`P${ids[i]?.[j]??j+1}`;
+   ln(px,top-50,px,top-4,'#36cfc9',.6,{'stroke-dasharray':'8 3 2 3'});
+   circle(px,top-60,10,'#36cfc9','none',.9,g,{'data-layer':'eixos'});
+   t(px,top-57,pid,ink,8,{'text-anchor':'middle','font-weight':'bold'});
    if(S.found){
     const key=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*j/(n-1))*sc,y:wallStart.y+(a.y+(b.y-a.y)*j/(n-1))*sc});
     const blockCode=foundationEnsure('block',key),pileCode=foundationEnsure('pile',key);
     const block=foundationValues('block',blockCode),pile=foundationValues('pile',pileCode);
     const blockX=Math.max(40,Number(block.blockX)||80)*sc,blockH=Math.max(20,Number(block.blockH)||80)*sc;
-    const shaft=Math.max(20,Number(pile.shaft)||60)*sc,depth=Math.max(50,Number(pile.depth)||330)*sc;
-    el('rect',{x:px-blockX/2,y:baseY+baseH,width:blockX,height:blockH,stroke:gold,'stroke-width':1,fill:'#d8b77c','fill-opacity':.16},g);
-    el('rect',{x:px-shaft/2,y:baseY+baseH+blockH,width:shaft,height:depth,stroke:gold,'stroke-width':1,fill:'#c9aa7d','fill-opacity':.1},g);
-    t(px,baseY+baseH+blockH/2,blockCode,gold,8,{'text-anchor':'middle'});
-    t(px,baseY+baseH+blockH+18,pileCode,gold,8,{'text-anchor':'middle'});
+    const shaft=Math.max(20,Number(pile.shaft)||60)*sc,base=Math.max(shaft/sc,Number(pile.base)||120)*sc,depth=Math.max(50,Number(pile.depth)||330)*sc;
+    const ph=Math.min(depth*.8,Math.max(10,Number(pile.baseHeight)||50)*sc),sk=Math.min(ph,Math.max(0,Number(pile.skirt)||0)*sc);
+    const y0=zeroY+blockH,y1=y0+depth,shoulder=y1-ph,skirtEnd=shoulder+sk;
+    el('rect',{x:px-blockX/2,y:zeroY,width:blockX,height:blockH,stroke:gold,'stroke-width':1,fill:'#d8b77c','fill-opacity':.16},g);
+    path(`M${px-shaft/2} ${y0} V${shoulder} L${px-base/2} ${skirtEnd} V${y1} H${px+base/2} V${skirtEnd} L${px+shaft/2} ${shoulder} V${y0}`,gold,'#c9aa7d',1,g,{'fill-opacity':.1});
+    t(px,zeroY+blockH/2+3,blockCode,gold,8,{'text-anchor':'middle'});
+    t(px,y0+(shoulder-y0)/2,pileCode,gold,8,{'text-anchor':'middle'});
+    lowest=Math.max(lowest,y1);
    }
   }
-  // Chamadas esquemáticas de armaduras, externas à face dos blocos.
-  // Comprimentos indicados são geométricos; ancoragens e emendas ainda dependem do projeto.
-  const fmt=v=>Number(v).toFixed(1).replace('.',',');
+  // Cotas horizontais: eixo a eixo e total (cm).
+  const cm=v=>String(Math.round(v*10)/10).replace('.',',');
+  const hdim=(x1,x2,yy,label)=>{ln(x1,yy,x2,yy,ink,.7,{'data-layer':'cotas'});for(const xx of [x1,x2]){ln(xx-3,yy+4,xx+3,yy-4,ink,.9,{'data-layer':'cotas'});ln(xx,yy-6,xx,yy+6,ink,.5,{'data-layer':'cotas'})}t((x1+x2)/2,yy-4,label,ink,9,{'text-anchor':'middle','data-layer':'cotas'})};
+  for(let j=0;j<n-1;j++)hdim(axisX[j],axisX[j+1],top-22,cm(L/(n-1)));
+  hdim(x,x+W,top-38,cm(L));
+  // Chamada da armadura horizontal acima da elevação, com linha de chamada até a 1ª fiada armada.
+  const hY=top-90,fmt=v=>Number(v).toFixed(1).replace('.',',');
   const hLen=Math.max(0,L-6),vLen=Math.max(0,h+bh-6);
-  const hY=top-56,callX=x+W+33;
   ln(x+8,hY,x+W-8,hY,steel,3.3);
   t(x+W/2,hY-9,`N1 - ${horizontalRows} Ø${S.hDia} C=${fmt(hLen)} cm · 1 A CADA FIADA`,steel,10,{'text-anchor':'middle','font-weight':'bold'});
-  const vy0=top+topH+4,vy1=bottomY+baseH-4;
+  if(firstRowY!==null){const lx=x+W*.22;ln(lx,hY,lx,firstRowY,steel,.6,{'data-layer':'cotas'});circle(lx,firstRowY,2,steel,steel,.6,g)}
+  const callX=x+W+48,vy0=top+topH+4,vy1=bottomY+baseH-4;
   ln(callX,vy0,callX,vy1,steel,3.3);
-  t(callX+12,(vy0+vy1)/2,`N2 - ${vCount} Ø${S.vDia} C=${fmt(vLen)} cm · C/${S.vSpace} cm`,steel,10,{'font-weight':'bold',transform:`rotate(-90 ${callX+12} ${(vy0+vy1)/2})`,'text-anchor':'middle'});
-  t(x,bottomY+baseH+31,'COMPRIMENTOS GEOMÉTRICOS PRELIMINARES — CONFERIR ANCORAGENS E EMENDAS',gold,8);
-  ln(x,top-28,x+W,top-28,ink,.7);ln(x,top-34,x,top-22,ink);ln(x+W,top-34,x+W,top-22,ink);
-  t(x+W/2,top-34,`${(L/100).toFixed(2).replace('.',',')} m`,ink,10,{'text-anchor':'middle'});
-  ln(x-19,top,x-19,bottomY,ink,.7);t(x-24,top+H/2,`${(h/100).toFixed(2).replace('.',',')} m`,ink,10,{'text-anchor':'middle',transform:`rotate(-90 ${x-24} ${top+H/2})`});
-  t(x,bottomY+baseH+16,'NÍVEL BASE · +0,00 (REFERÊNCIA)',gold,9);
-  const depthMax=S.found?Math.max(50,Number($('depth')?.value)||330)*sc:0;
-  stackY+=Math.max(380,H+baseH+depthMax+150);
+  t(callX+14,(vy0+vy1)/2,`N2 - ${vCount} Ø${S.vDia} C=${fmt(vLen)} cm · C/${S.vSpace} cm`,steel,10,{'font-weight':'bold',transform:`rotate(-90 ${callX+14} ${(vy0+vy1)/2})`,'text-anchor':'middle'});
+  if(firstVX!==null){const ly=top+topH+(bottomY-top-topH)*.35,lastVX=x+step/2+(vCount-1)*step;ln(Math.min(lastVX,x+W-2),ly,callX,ly,steel,.6,{'data-layer':'cotas'});circle(Math.min(lastVX,x+W-2),ly,2,steel,steel,.6,g)}
+  // Cotas verticais (cm) e níveis (m): +0,00 no topo dos blocos (fundo da VB).
+  const vdim=(y1,y2,xx,label)=>{ln(xx,y1,xx,y2,ink,.7,{'data-layer':'cotas'});for(const yy of [y1,y2]){ln(xx-4,yy+3,xx+4,yy-3,ink,.9,{'data-layer':'cotas'});ln(xx-6,yy,xx+6,yy,ink,.5,{'data-layer':'cotas'})}const tt=t(xx-5,(y1+y2)/2,label,ink,9,{'text-anchor':'middle','data-layer':'cotas'});tt.setAttribute('transform',`rotate(-90 ${xx-5} ${(y1+y2)/2})`)};
+  vdim(top,bottomY,x-20,cm(h));vdim(bottomY,zeroY,x-20,cm(bh));vdim(top,zeroY,x-42,cm(h+bh));
+  const level=(yy,cmv,desc)=>{const lx=x-60;ln(lx-90,yy,lx,yy,gold,.7);path(`M${lx-12} ${yy} l-5 -8 h10 z`,gold,gold,.6,g);t(lx-24,yy-4,levelFmt(cmv),gold,9,{'text-anchor':'end','font-weight':'bold'});t(lx-90,yy+12,desc,gold,8)};
+  level(top,h+bh,'TOPO DO MURO');level(baseY,bh,'TOPO DA VB');level(zeroY,0,'TOPO DOS BLOCOS');
+  // Terreno: aterro no tardoz (oculto, tracejado) e terreno na face externa.
+  const soilCm=Number(d.wallSoilLevel),frontCm=Number(d.wallFrontLevel);
+  const soil=Number.isFinite(soilCm)&&d.wallSoilLevel!==''&&d.wallSoilLevel!=null?soilCm:h+bh,front=Number.isFinite(frontCm)&&d.wallFrontLevel!==''&&d.wallFrontLevel!=null?frontCm:bh;
+  const ySoil=zeroY-soil*sc,yFront=zeroY-front*sc;
+  ln(x-8,ySoil,x+W+8,ySoil,earth,1.1,{'stroke-dasharray':'10 4'});t(x+W+78,ySoil-4,`NT ATERRO (TARDOZ) ${levelFmt(soil)}`,earth,8,{'text-anchor':'start'});
+  ln(x-30,yFront,x+W+30,yFront,earth,1.4);for(let xx=x-26;xx<x+W+26;xx+=14)ln(xx,yFront,xx-7,yFront+7,earth,.6);
+  t(x+W+78,yFront+14,`NT FACE EXTERNA ${levelFmt(front)}`,earth,8,{'text-anchor':'start'});
+  // Dreno no tardoz, representado em linha oculta logo acima da VB.
+  const yDrain=baseY-6*sc;ln(x+4,yDrain,x+W-4,yDrain,'#74d8a4',.9,{'stroke-dasharray':'2 3'});
+  t(x,lowest+26,`– – –  DRENO NO TARDOZ (LINHA OCULTA)${notesSheet?' — VER DETALHE NA FOLHA '+String(notesSheet).padStart(2,'0'):''}`,'#74d8a4',8);
+  t(x,lowest+42,'COMPRIMENTOS GEOMÉTRICOS PRELIMINARES — CONFERIR ANCORAGENS E EMENDAS',gold,8);
+  stackY+=Math.max(380,lowest+80);
  }
 }
 // Armaduras do detalhamento de pilares: N1 estribo, N2 longitudinal, N3 espera.
@@ -927,7 +941,7 @@ function drawBeamDetails(parent,kind="VB"){
    if(!signatures.has(signature))signatures.set(signature,`N${nextCode++}`);
    return signatures.get(signature);
   }
-  txt(12,25,`${code} — ${kind==="VT"?"DETALHAMENTO DA VIGA DE TOPO":"DETALHAMENTO DA VIGA DE BASE"} · 1 UN.`,16,gold,{'font-weight':'bold'});
+  txt(12,25,`${code} — ${kind==="VT"?"DETALHAMENTO DA VIGA DE TOPO":"DETALHAMENTO DA VIGA DE BASE"} · 1 UN.`,16,gold,{'font-weight':'bold','data-role':'title'});txt(12,45,'ESC. 1:{s} · COTAS EM cm',10,'#a9c7da',{'data-scale-label':'VISTA E CORTE ESC. 1:{s} · COTAS EM cm'});
   txt(25,119,`VISTA LONGITUDINAL · ${width}×${height} cm`,10,blue);
   el('rect',{x,y,width:L,height:H,fill:'#9ab5c4','fill-opacity':.12,stroke:ink,'stroke-width':1.2},g);
   for(const [position,barY,sign,pieces] of [['N2',topY,1,upper],['N3',bottomY,-1,lower]]){
@@ -985,10 +999,12 @@ function drawBeamDetails(parent,kind="VB"){
 }
 function drawPillarDetails(parent){
  if(!wallFinished||wallPoints.length<2)return;
- const types=new Map();
+ const types=new Map(),ids=pillarIds();
  for(let i=0;i<wallSegments.length;i++){
   const d=wallSegments[i].parameters||{};
-  const a=Math.max(12,Number(d.wallColX)||20),b=Math.max(12,Number(d.wallColY)||40),height=Math.max(30,Number(d.wallHeight)||250);
+  const a=Math.max(12,Number(d.wallColX)||20),b=Math.max(12,Number(d.wallColY)||40),wallH=Math.max(30,Number(d.wallHeight)||250),beamH=Math.max(10,Number(d.wallBeamHeight)||40);
+  // Altura do pilar: do topo do bloco (+0,00) ao topo do muro, incluindo a VB (igual à elevação).
+  const height=wallH+beamH;
   const p0=wallPoints[i],p1=wallPoints[i+1];if(!p0||!p1)continue;
   const n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));
   for(let j=0;j<n;j++){
@@ -996,114 +1012,94 @@ function drawPillarDetails(parent){
    const bCode=foundationEnsure('block',foundationKey(pt));
    const blockHeight=Math.max(30,Number(foundationValues('block',bCode).blockH)||80);
    const key=[a,b,height,blockHeight].join(':');
-   if(!types.has(key))types.set(key,{a,b,height,blockHeight,count:0});
-   // Evitar contar duas vezes o pilar compartilhado na junção de arrimos.
-   if(i===0||j>0)types.get(key).count++;
+   if(!types.has(key))types.set(key,{a,b,height,blockHeight,ids:new Set()});
+   types.get(key).ids.add(ids[i][j]);
   }
  }
  let index=0;
  for(const v of types.values()){
+  v.count=v.ids.size;
   const code='P'+(++index), origin={x:blockOffset.x+1110+(index-1)*625,y:blockOffset.y};
   const pos=extraDetailOffsets[code]||origin;
   const g=el('g',{transform:`translate(${pos.x} ${pos.y})`,'data-extra-code':code,style:'cursor:move'},parent);
   const ink='#e5edf5',blue='#55aaff',cyan='#71d3e6',gold='#f5cb69';
   const txt=(x,y,str,size=11,color=ink,attrs={})=>text(x,y,str,color,size,g,attrs);
-  const ln=(x1,y1,x2,y2,c=ink,w=1)=>line(x1,y1,x2,y2,c,w,g);
+  const ln=(x1,y1,x2,y2,c=ink,w=1,attrs={})=>line(x1,y1,x2,y2,c,w,g,attrs);
   const rect=(x,y,w,h,fill,stroke=ink)=>el('rect',{x,y,width:w,height:h,fill,stroke,'stroke-width':1},g);
-  txt(12,25,`${code} — DETALHAMENTO DO PILAR · ${v.count} UN.`,17,gold,{'font-weight':'bold'});
-  ln(12,35,600,35,'#54748e',1);
-  txt(28,65,'SEÇÃO TRANSVERSAL',13,cyan,{'font-weight':'bold'});
-  txt(28,81,'ESC. 1:20',10);
-  const factor=1.8,sw=v.a*factor,sh=v.b*factor,sx=48,sy=119;
+  const cover=pillarArms.N1.cover;
+  txt(12,25,`PILARES ${idRange([...v.ids])} — DETALHAMENTO · ${v.count} UN.`,17,gold,{'font-weight':'bold','data-role':'title'});
+  txt(12,47,'',10,'#a9c7da',{'data-scale-label':'SEÇÃO E ESTRIBO ESC. 1:{s2} · VISTAS ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m'});
+  // Seção transversal ampliada 2,5× em relação às vistas (ex.: vistas 1:25 → seção 1:10).
+  const factor=1.95,sw=v.a*factor,sh=v.b*factor,sx=40,sy=110;
+  txt(sx-12,74,'SEÇÃO TRANSVERSAL',12,cyan,{'font-weight':'bold'});
   rect(sx,sy,sw,sh,'#334657');
-  rect(sx+5,sy+5,Math.max(4,sw-10),Math.max(4,sh-10),'none',blue);
-  const corners=[[sx+8,sy+8],[sx+sw-8,sy+8],[sx+8,sy+sh-8],[sx+sw-8,sy+sh-8]];
-  for(const [cx,cy] of corners)circle(cx,cy,2.7,blue,blue,1,g);
-  if(v.b>v.a*1.3){circle(sx+8,sy+sh/2,2.7,blue,blue,1,g);circle(sx+sw-8,sy+sh/2,2.7,blue,blue,1,g)}
+  const ci=cover*factor;
+  rect(sx+ci,sy+ci,Math.max(4,sw-2*ci),Math.max(4,sh-2*ci),'none',blue);
+  // Barras N2: quatro cantos e as demais distribuídas nas faces maiores.
+  const qty=Math.max(4,Math.round(pillarArms.N2.qty)||4),bi=ci+pillarArms.N1.dia/10*factor+pillarArms.N2.dia/20*factor;
+  const longVertical=v.b>=v.a,extra=qty-4,perSide=[Math.ceil(extra/2),Math.floor(extra/2)];
+  const bars=[[sx+bi,sy+bi],[sx+sw-bi,sy+bi],[sx+bi,sy+sh-bi],[sx+sw-bi,sy+sh-bi]];
+  perSide.forEach((k,side)=>{for(let m=1;m<=k;m++){const f=m/(k+1);bars.push(longVertical?[side?sx+sw-bi:sx+bi,sy+bi+(sh-2*bi)*f]:[sx+bi+(sw-2*bi)*f,side?sy+sh-bi:sy+bi])}});
+  const barR=Math.max(1.6,pillarArms.N2.dia/20*factor);
+  for(const [cx,cy] of bars)circle(cx,cy,barR,blue,blue,1,g);
   dimH(sx,sx+sw,sy-16,sy,String(v.a),g);dimV(sy,sy+sh,sx-19,sx,String(v.b),g);
-  txt(25,sy+sh+45,'ESTRIBO N1',13,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
-  // Cobrimento preliminar exclusivo do pilar, até existir editor próprio.
-  const pillarCover=pillarArms.N1.cover;
-  const ex=55,ey=sy+sh+72,ew=Math.max(20,(v.a-2*pillarCover)*factor),eh=Math.max(28,(v.b-2*pillarCover)*factor);
-  // Estribo fechado com duas pontas internas próximas, sem duplicar
-  // arestas externas. Gancho ilustrativo: conferir pino e ancoragem.
-  const hook=Math.min(Math.max(5,pillarArms.N1.hook*factor),Math.min(ew,eh)*.35);
-  const hx=ex+ew,hy=ey;
-  // Contorno retangular único, com fechamento superior no canto direito.
+  // Linhas de chamada da seção.
+  const [bx0,by0]=bars[1];path(`M${bx0} ${by0} L${sx+sw+22} ${by0-14} H${sx+sw+34}`,ink,'none',.6,g,{'data-layer':'cotas'});
+  txt(sx+sw+37,by0-11,`${qty} N2`,10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
+  path(`M${sx+sw-ci} ${sy+sh*.7} L${sx+sw+22} ${sy+sh*.7+12} H${sx+sw+34}`,ink,'none',.6,g,{'data-layer':'cotas'});
+  txt(sx+sw+37,sy+sh*.7+15,'N1',10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
+  // Estribo N1 em verdadeira grandeza (mesma escala da seção).
+  const ey=sy+sh+62,ex=sx;
+  txt(sx-12,ey-22,'ESTRIBO N1',12,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
+  const ew=Math.max(20,(v.a-2*cover)*factor),eh=Math.max(28,(v.b-2*cover)*factor);
+  const hook=Math.min(Math.max(5,pillarArms.N1.hook*factor*.5),Math.min(ew,eh)*.35),hx=ex+ew,hy=ey;
   path(`M ${ex} ${hy} L ${hx} ${hy} L ${hx} ${hy+eh} L ${ex} ${hy+eh} Z`,blue,'none',1.7,g);
-  // Duas pontas dobradas para o interior: paralelas, discretas e próximas.
   path(`M ${hx} ${hy+1} L ${hx-hook*.70} ${hy+hook*.85}`,blue,'none',1.7,g);
   path(`M ${hx-3.5} ${hy} L ${hx-hook*.70-3.5} ${hy+hook*.85}`,blue,'none',1.7,g);
-  txt(ex-14,ey+eh/2+3,String(Math.max(0,v.b-2*pillarCover)),11,ink,{'text-anchor':'end'});
-  txt(ex+ew/2,ey+eh+16,String(Math.max(0,v.a-2*pillarCover)),11,ink,{'text-anchor':'middle'});
-  // Quantidade de estribos e comprimento de corte preliminares, a conferir em projeto.
+  txt(ex-8,ey+eh/2+3,String(Math.max(0,v.b-2*cover)),10,ink,{'text-anchor':'end'});
+  txt(ex+ew/2,ey+eh+14,String(Math.max(0,v.a-2*cover)),10,ink,{'text-anchor':'middle'});
   const stirrupSpacing=pillarArms.N1.spacing,stirrupDiameter=pillarArms.N1.dia;
   const stirrupQty=Math.ceil(v.height/stirrupSpacing)+1;
-  const stirrupCut=Math.round(2*((v.a-2*pillarCover)+(v.b-2*pillarCover))+2*(10*stirrupDiameter/10));
-  txt(25,ey+eh+43,`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${stirrupSpacing} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
-  txt(25,ey+eh+59,`Cobrimento: ${pillarCover} cm · corte e quantidade preliminares`,9,gold);
-  txt(245,65,'VISTA H',13,cyan,{'font-weight':'bold'});txt(245,81,'ESC. 1:25',10);
-  txt(387,65,'VISTA B',13,cyan,{'font-weight':'bold'});txt(387,81,'ESC. 1:25',10);
-  const top=112,drawH=Math.min(370,Math.max(145,v.height*.85)),bottom=top+drawH;
-  const vwH=Math.max(28,v.b*.9),vwB=Math.max(24,v.a*.9);
+  const stirrupCut=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*(10*stirrupDiameter/10));
+  let ty=ey+eh+38;
+  txt(sx-12,ty,`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${stirrupSpacing} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
+  txt(sx-12,ty,`Cobrimento: ${cover} cm · corte e quantidade preliminares`,8,gold);
+  // Vistas em escala real do desenho (0,78 unidade por cm), com nível +0,00 no topo do bloco.
+  const sc=.78,colX=Math.max(sx+sw+120,sx+ew+120),top=110,drawH=v.height*sc,bottom=top+drawH;
+  const wH=v.b*sc,wB=v.a*sc,xH=colX,n2X=xH+wH+30,xB=n2X+56,waitX=xB+wB+44;
+  txt(xH,74,'VISTA H',12,cyan,{'font-weight':'bold'});txt(xB,74,'VISTA B',12,cyan,{'font-weight':'bold'});
   function elevation(x,w){
    rect(x,top,w,drawH,'#334657');
-   ln(x+7,top+6,x+7,bottom-5,blue,1.6);ln(x+w-7,top+6,x+w-7,bottom-5,blue,1.6);
-   const steps=Math.max(3,Math.ceil(v.height/15));
-   for(let j=1;j<steps;j++){const y=top+j*drawH/steps;ln(x+4,y,x+w-4,y,blue,.85)}
-   path(`M ${x-8} ${top-9} L ${x+6} ${top-9} L ${x+13} ${top-21} L ${x+20} ${top-9} L ${x+w+7} ${top-9}`,ink,'none',1,g);
+   ln(x+cover*sc,top+3,x+cover*sc,bottom-3,blue,1.6);ln(x+w-cover*sc,top+3,x+w-cover*sc,bottom-3,blue,1.6);
+   const steps=Math.max(3,Math.ceil(v.height/stirrupSpacing));
+   for(let j=1;j<steps;j++){const y=top+j*drawH/steps;ln(x+2,y,x+w-2,y,blue,.85)}
   }
-  elevation(260,vwH);elevation(402,vwB);
-  dimV(top,bottom,236,260,String(v.height),g);
-  ln(218,bottom,530,bottom,'#7e9bb3',1);
-  ln(218,top,530,top,'#7e9bb3',.8);
-  txt(531,bottom+4,'NÍVEL +0,00',11,gold);
-  txt(531,top+4,`NÍVEL +${(v.height/100).toFixed(2).replace('.',',')} m`,11,gold);
-  // Dados posicionados abaixo do detalhamento, fora da região das esperas.
-  txt(22,Math.max(ey+eh+25,bottom+v.blockHeight*.85+105),`${v.a} × ${v.b} cm · Altura: ${v.height} cm`,11);
-  // Comprimento geométrico preliminar entre cobrimentos; ancoragens serão definidas no editor.
-  const barLength=Math.max(0,v.height-pillarArms.N2.topCover-pillarArms.N2.bottomCover);
-  // Representação gráfica independente da barra longitudinal N2, entre as duas vistas.
-  // A linha representa uma barra reta única; o texto indica a quantidade total no pilar.
-  const barX=340,barTop=top+6,barBottom=bottom-6;
-  ln(barX,barTop,barX,barBottom,blue,2.7);
-  el('rect',{x:barX-9,y:barTop,width:18,height:barBottom-barTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N2',style:'cursor:pointer'},g);
-  txt(366,top+drawH/2,`${pillarArms.N2.qty} N2 Ø${pillarArms.N2.dia.toFixed(1).replace('.',',')} C=${barLength} cm`,11,blue,{'text-anchor':'middle','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 366 ${top+drawH/2})`});
-  // A espera N3 ocupa a região imediatamente abaixo do nível zero.
-  // ESPERA N3: integrada ao mesmo conjunto do pilar, atravessando o nível +0,00.
-  // Altura embutida vinculada ao bloco; transpasse configurado em 60Ø.
-  // Valores são geométricos preliminares, não dimensionamento executivo.
+  elevation(xH,wH);elevation(xB,wB);
+  dimV(top,bottom,xH-22,xH,String(v.height),g);
   const waitDiameter=pillarArms.N3.dia,lapCm=pillarArms.N3.lapFactor*waitDiameter/10;
-  const waitScale=.85,waitBlockPx=v.blockHeight*waitScale,waitLapPx=lapCm*waitScale;
-  const waitZeroY=bottom,waitTop=waitZeroY-waitLapPx,waitBaseY=waitZeroY+waitBlockPx;
-  const waitX=354,waitBend=pillarArms.N3.bend*waitScale;
-  const waitBendCm=pillarArms.N3.bend;
+  const waitTop=bottom-lapCm*sc,waitBaseY=bottom+v.blockHeight*sc,waitBend=pillarArms.N3.bend*sc,waitBendCm=pillarArms.N3.bend;
   const waitCutCm=Math.round(v.blockHeight+lapCm+waitBendCm);
-  // Bloco esquemático imediatamente abaixo da linha de nível zero.
-  // A hachura/concreto inferior aparece apenas nas faixas das seções dos pilares, não no bloco inteiro.
-  // Espera sem preenchimento abaixo do nível zero: somente barras e cotas.
-  ln(218,waitZeroY,532,waitZeroY,gold,1.5);
-  ln(218,waitBaseY,532,waitBaseY,'#7e9bb3',1);
-  txt(531,waitBaseY+4,`BASE DO BLOCO −${(v.blockHeight/100).toFixed(2).replace('.',',')} m`,10,gold);
-  // Peça N3 única: trecho vertical, curva inferior e aba horizontal.
+  const lineEnd=waitX+waitBend+30;
+  ln(xH-30,top,lineEnd,top,'#7e9bb3',.8);ln(xH-30,bottom,lineEnd,bottom,gold,1.5);ln(xH-30,waitBaseY,lineEnd,waitBaseY,'#7e9bb3',1);
+  txt(lineEnd+4,top+4,`NÍVEL ${levelFmt(v.height)} · TOPO DO MURO`,9,gold);
+  txt(lineEnd+4,bottom+4,'NÍVEL +0,00 · TOPO DO BLOCO',9,gold);
+  txt(lineEnd+4,waitBaseY+4,`NÍVEL ${levelFmt(-v.blockHeight)} · FUNDO DO BLOCO`,9,gold);
+  // Barra N2 isolada entre as vistas.
+  const barLength=Math.max(0,v.height-pillarArms.N2.topCover-pillarArms.N2.bottomCover);
+  ln(n2X,top+pillarArms.N2.topCover*sc,n2X,bottom-pillarArms.N2.bottomCover*sc,blue,2.7);
+  el('rect',{x:n2X-9,y:top,width:18,height:drawH,fill:'transparent','pointer-events':'all','data-pillar-arm':'N2',style:'cursor:pointer'},g);
+  txt(n2X+14,top+drawH/2,`${qty} N2 Ø${pillarArms.N2.dia.toFixed(1).replace('.',',')} C=${barLength} cm`,10,blue,{'text-anchor':'middle','font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 ${n2X+14} ${top+drawH/2})`});
+  // Espera N3: trecho de transpasse acima de +0,00, trecho no bloco e dobra inferior.
   path(`M ${waitX} ${waitTop} L ${waitX} ${waitBaseY-9} Q ${waitX} ${waitBaseY-5} ${waitX+5} ${waitBaseY-5} L ${waitX+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
   el('rect',{x:waitX-8,y:waitTop,width:16,height:waitBaseY-waitTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N3',style:'cursor:pointer'},g);
-  // Cotas do transpasse, trecho embutido e trecho reto da barra.
-  // A dimensão do trecho reto vai até o início da dobra inferior.
-  dimV(waitTop,waitZeroY,waitX-49,waitX,String(lapCm),g);
-  dimV(waitZeroY,waitBaseY,waitX-49,waitX,`${v.blockHeight}`,g);
-  const waitStraightCm=Math.max(0,Math.round((waitBaseY-9-waitTop)/waitScale));
-  // Identificação do comprimento reto: junto à barra, abaixo do nível zero.
-  txt(waitX-13,waitZeroY+waitBlockPx*.65,`RETO ${waitStraightCm}`,9,ink,{'text-anchor':'middle',transform:`rotate(-90 ${waitX-13} ${waitZeroY+waitBlockPx*.65})`});
-  txt(waitX+waitBend/2,waitBaseY+16,`${waitBendCm}`,10,ink,{'text-anchor':'middle'});
-  // A identificação N3 permanece vertical, ao lado da própria barra.
-  const waitLabel=`${pillarArms.N3.qty} N3 Ø${waitDiameter.toFixed(1).replace('.',',')} C≈${waitCutCm} cm`;
-  const waitLabelX=waitX+25,waitLabelY=waitZeroY+waitBlockPx*.55;
-  txt(waitLabelX,waitLabelY,waitLabel,10,cyan,{'font-weight':'bold','text-anchor':'middle','data-pillar-arm':'N3',style:'cursor:pointer',transform:`rotate(-90 ${waitLabelX} ${waitLabelY})`});
-  txt(22,Math.max(waitBaseY+38,ey+eh+90),`ESPERA N3 — ${pillarArms.N3.qty} BARRAS`,11,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'});
-  txt(22,Math.max(waitBaseY+54,ey+eh+106),`Altura no bloco: ${v.blockHeight} cm · dobra: ${waitBendCm} cm`,10,ink);
-  txt(22,Math.max(waitBaseY+70,ey+eh+122),'Verificar cobrimento, ancoragem, emendas e comprimento de corte antes da execução.',9,gold);
-  txt(12,Math.max(ey+eh+140,waitBaseY+110),'Pilar N1/N2 e espera N3: representação preliminar, sujeita à verificação estrutural.',10,'#9fb8ca');
+  dimV(waitTop,bottom,waitX-16,waitX,String(lapCm),g);
+  dimV(bottom,waitBaseY,waitX-16,waitX,`${v.blockHeight}`,g);
+  txt(waitX+waitBend/2,waitBaseY+14,`${waitBendCm}`,9,ink,{'text-anchor':'middle'});
+  const waitLabelX=waitX+16,waitLabelY=waitTop+(bottom-waitTop)/2;
+  txt(waitLabelX,waitLabelY,`${pillarArms.N3.qty} N3 Ø${waitDiameter.toFixed(1).replace('.',',')} C≈${waitCutCm} cm`,10,cyan,{'font-weight':'bold','text-anchor':'middle','data-pillar-arm':'N3',style:'cursor:pointer',transform:`rotate(-90 ${waitLabelX} ${waitLabelY})`});
+  // Notas do pilar: um único bloco de texto, abaixo de todo o desenho.
+  ty=Math.max(ty+30,waitBaseY+48);
+  for(const [str,size,color,attrs] of [[`ESPERA N3 — ${pillarArms.N3.qty} BARRAS · ${v.blockHeight} cm NO BLOCO + TRANSPASSE ${lapCm} cm (${pillarArms.N3.lapFactor}Ø) + DOBRA ${waitBendCm} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.height} cm (VB + ALVENARIA)`,10,ink,{}],['Pilar N1/N2 e espera N3: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
  }
 }
 function fit(){let w=cad.clientWidth,h=cad.clientHeight;if(!wallPoints.length && sheets.length){const sh=sheets[0],d=sheetDims(sh);view.k=clamp(Math.min((w-90)/d.w,(h-85)/d.h),.035,2);view.x=(w-d.w*view.k)/2-sh.x*view.k;view.y=(h-d.h*view.k)/2-sh.y*view.k;}else{view.k=clamp(Math.min((w-90)/scene.w,(h-70)/scene.h),.15,2);view.x=(w-scene.w*view.k)/2;view.y=(h-scene.h*view.k)/2;}draw()}
@@ -1258,6 +1254,28 @@ const SHEET_PLAN=[
  {kind:'elevacoes',scales:[50,75,100],newSheet:true,match:c=>/^EL\d+$/.test(c)}
 ];
 function sceneRoot(){return svg.querySelector('[data-scene]')}
+// V231 — Padrão de textos em milímetros de papel: o tamanho real impresso
+// independe da escala do desenho (título 5 mm, subtítulo 3 mm, texto 2,5 mm,
+// cotas e notas 2 mm). Rótulos com data-scale-label recebem a escala efetiva.
+const TEXT_MM={title:5,sub:3,text:2.5,small:2};
+function detailScaleOf(g){const code=groupCode(g);if(detailScale[code])return detailScale[code];const sh=groupOwner(g);return sh?sheetDims(sh).ratio:(Number($('printScale').value)||50)}
+function normalizeDetailText(root){
+ for(const g of detailGroups(root)){
+  const s=detailScaleOf(g),u=unitFor(s);
+  for(const t of g.querySelectorAll('text')){
+   const tpl=t.getAttribute('data-scale-label');if(tpl)t.textContent=tpl.replace(/\{s\}/g,s).replace(/\{s2\}/g,+(s/2.5).toFixed(1));
+   if(t.hasAttribute('data-pt'))continue;
+   let fs=Number(t.getAttribute('data-fs0'));if(!fs){fs=parseFloat(t.getAttribute('font-size'))||10;t.setAttribute('data-fs0',fs)}
+   const role=t.getAttribute('data-role');
+   const mm=role==='title'?TEXT_MM.title:fs>=11.5?TEXT_MM.sub:fs>=9.5?TEXT_MM.text:TEXT_MM.small;
+   t.setAttribute('font-size',(mm*u).toFixed(2));
+  }
+ }
+}
+// Numeração global dos pilares: a mesma em planta, elevações e detalhes.
+function pillarIds(){const map=new Map();let next=1;const out=[];for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));const row=[];for(let j=0;j<n;j++){const t=j/(n-1);const k=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78});if(!map.has(k))map.set(k,next++);row.push(map.get(k))}out.push(row)}return out}
+function idRange(list){const v=[...new Set(list)].sort((a,b)=>a-b);const parts=[];for(let i=0;i<v.length;){let j=i;while(j+1<v.length&&v[j+1]===v[j]+1)j++;parts.push(j-i>=2?`P${v[i]} A P${v[j]}`:j>i?`P${v[i]}, P${v[j]}`:`P${v[i]}`);i=j+1}return parts.join(', ')}
+const levelFmt=cm=>(cm>=0?'+':'−')+(Math.abs(cm)/100).toFixed(2).replace('.',',');
 function groupCode(g){if(!g||!g.getAttribute)return null;if(g.hasAttribute('data-wall-group'))return 'PLANTA';if(g.hasAttribute('data-tubulo-group'))return 'T1';if(g.hasAttribute('data-block-group'))return 'B1';return g.getAttribute('data-extra-code')}
 function groupVisible(g){return g.style.display!=='none'&&g.getAttribute('display')!=='none'}
 function detailGroups(root=sceneRoot()){if(!root)return [];return [...root.children].filter(g=>groupCode(g)&&groupVisible(g))}
