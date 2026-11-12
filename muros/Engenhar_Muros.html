@@ -36,9 +36,9 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 <label>Qtd. X <input id="blockQtyX" type="number" value="4" min="1" style="width:40px"></label>
 <label>Qtd. Y <input id="blockQtyY" type="number" value="4" min="1" style="width:40px"></label>
 <label>Qtd. costela <input id="blockQtyC" type="number" value="3" min="1" style="width:40px"></label>
-<label>Esp. X (cm) <input id="blockSpX" type="number" value="15" min="0" style="width:43px"></label>
-<label>Esp. Y (cm) <input id="blockSpY" type="number" value="15" min="0" style="width:43px"></label>
-<label>Esp. costela (cm) <input id="blockSpC" type="number" value="15" min="0" style="width:43px"></label>
+<label hidden>Esp. X (cm) <input id="blockSpX" type="number" value="15" min="0" style="width:43px"></label>
+<label hidden>Esp. Y (cm) <input id="blockSpY" type="number" value="15" min="0" style="width:43px"></label>
+<label hidden>Esp. costela (cm) <input id="blockSpC" type="number" value="15" min="0" style="width:43px"></label>
 <span style="color:#4c6271">N1/N2 tubulão · posições seguintes bloco</span>
 </div>
 <div id="wallRibbon" style="display:none;align-items:center;gap:9px;padding:7px 12px;background:#dcebf7;color:#173a55;flex-wrap:wrap;font-size:11px">
@@ -384,7 +384,7 @@ function editBlock(which){
  $('editTitle').textContent='Editar '+a.pos+' — Bloco '+($('blockId').value||'B1')+' ('+which.toUpperCase()+')';
  $('editDia').value=a.dia;$('editQty').value=a.qty;$('editSpacing').value=a.spacing;
  $('editLen').value=Math.round(2*(numeric(which==='x'?'blockX':which==='y'?'blockY':'blockX')+numeric('blockH')-4*numeric('blockCover')));
- $('editNote').textContent='Comprimento aproximado do contorno, sem ganchos/dobras; não utilizar para corte. X e Y só compartilham posição quando seus parâmetros coincidem.';
+ $('editNote').textContent='O espaçamento é calculado pela quantidade; o comprimento de corte inclui o fechamento de 10Ø. X e Y só compartilham posição quando seus parâmetros coincidem.';
  $('deleteEdit').disabled=true;
 }
 function blockClickLabel(e,which){
@@ -595,133 +595,135 @@ if(freePoints.length){let d=freePoints.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).joi
 // Bloco independente B1, ao lado direito, compartilhando as mesmas funções
 // gráficas de cotas, cores e espessuras do detalhamento de tubulão.
 if($('blockEnabled').checked && wallPoints.length>=2){
+ // V236 — Bloco de coroamento sobre tubulão: planta com pilar, esperas e lado do solo;
+ // cortes A–A / B–B com pilar, esperas, tubulão embutido, lastro e níveis; formatos em
+ // verdadeira grandeza com fechamento de 10Ø. Espaçamentos calculados pela quantidade.
  const blockG=el('g',{transform:`translate(${blockOffset.x} ${blockOffset.y})`,'data-block-group':'1'},sceneG);
  const B={id:$('blockId').value||'B1',x:clamp(numeric('blockX')||80,40,500),
  y:clamp(numeric('blockY')||80,40,500),h:clamp(numeric('blockH')||80,30,500),
  pile:clamp(numeric('blockPile')||50,20,400),cover:clamp(numeric('blockCover')||5,2,30)};
- 
- const bx=590,by=85,bs=.78,ww=B.x*bs,hh=B.y*bs,cutH=B.h*bs;
- el('rect',{x:bx-12,y:12,width:445,height:Math.max(470,by+hh+cutH+260),fill:'transparent','pointer-events':'all','data-block-hit':'1'},blockG);
- const yellow='#f5c845',red='#f06b76',cyan='#60d1f3';
- const bp=blockPositions();
- const positionColors={N3:cyan,N4:'#f5a85b',N5:'#b89aff'};
- const colorX=positionColors[bp.x],colorY=positionColors[bp.y],colorC=positionColors[bp.cost];
+ const EMB=10,LASTRO=5,CLOSE=10; // embutimento do tubulão, lastro (cm) e fechamento (×Ø)
+ const bx=590,sc=.78,U=unitFor(detailScale.B1||25),yellow='#f5c845',ink='#dce9f5',earth='#eaa85d',grey='#7e9eb1';
+ const bp=blockPositions(),positionColors={N3:'#60d1f3',N4:'#f5a85b',N5:'#b89aff'};
+ const arm={x:blockArmature('x'),y:blockArmature('y'),c:blockArmature('c')};
+ const col={x:positionColors[bp.x],y:positionColors[bp.y],c:positionColors[bp.cost]};
+ const q=k=>Math.max(2,Math.min(24,Math.round(arm[k].qty)||2));
+ // Pilar apoiado (dimensões do primeiro arrimo) e esperas na mesma posição do detalhe do pilar.
+ const wp=wallSegments[0]?.parameters||wallDefaults(),pa=Math.max(10,Number(wp.wallColX)||20),pb=Math.max(10,Number(wp.wallColY)||40);
+ const pCover=pillarArms.N1.cover,stD=pillarArms.N1.dia/10,A2=pillarN2(),waitDia=Math.max(...pillarBarGroups().map(g=>g.dia),10)/10;
+ const waitIn=pCover+stD+A2.cornerDia/20,waitBend=pillarArms.N3.bend;
+ // Geometria das armaduras (cm).
+ const c=B.cover,dX=arm.x.dia/10,dY=arm.y.dia/10,dC=arm.c.dia/10;
+ const shp={x:{w:B.x-2*c,h:B.h-2*c},y:{w:B.y-2*c,h:B.h-2*c-2*dX},c:{w:B.x-2*c-2*dX,h:B.y-2*c-2*dY}};
+ for(const k of ['x','y','c']){shp[k].w=Math.round(shp[k].w);shp[k].h=Math.round(shp[k].h)}
+ const cut=k=>Math.round(2*(shp[k].w+shp[k].h)+2*CLOSE*arm[k].dia/10);
+ const spacing=(k,span)=>Math.floor(span/(q(k)-1)*2)/2;
+ const sp={x:spacing('x',B.y-2*c-2*dY),y:spacing('y',B.x-2*c-2*dX),c:spacing('c',B.h-2*c-2*dX)};
+ const fmt=v=>String(v).replace('.',',');
  label(bx,23,`B1 — BLOCO DE COROAMENTO · ${foundationCounts('block').B1||0} UN.`,blockG,{'data-role':'title'});
- text(bx,37,'PLANTA • CORTES A–A / B–B • FORMAS DAS ARMADURAS','white',8,blockG);
- text(bx,49,'ESC. 1:{s} • COTAS EM cm','#a9c7da',8,blockG,{'data-scale-label':'ESC. 1:{s} • COTAS EM cm · FORMATOS SEM ESCALA'});
- // Planta
- const px=bx+55,py=by+25;
- text(px+ww/2,py-20,'PLANTA',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
- el('rect',{x:px,y:py,width:ww,height:hh,stroke:yellow,'stroke-width':.95,fill:'none'},blockG);
- const c=Math.min(14,B.cover*bs);
- // Costela N4/N5 entre a forma de concreto e as barras internas.
- // Representação em planta como contorno fechado, com cobrimento próprio.
- const costInset=Math.max(2,c*.55);
- el('rect',{x:px+costInset,y:py+costInset,
-   width:Math.max(1,ww-2*costInset),height:Math.max(1,hh-2*costInset),
-   stroke:colorC,'stroke-width':1.1,fill:'none'},blockG);
- const nx=Math.max(2,Math.min(12,Math.round(numeric('blockQtyX')||4)));
- const ny=Math.max(2,Math.min(12,Math.round(numeric('blockQtyY')||4)));
- // Na planta, os pontos têm a mesma cor das barras às quais pertencem.
- for(let i=0;i<nx;i++){
-   const xx=px+c+(ww-2*c)*(i+.5)/nx;
-   line(xx,py+c,xx,py+hh-c,colorX,.9,blockG);
-   circle(xx,py+c,1.9,colorX,colorX,.7,blockG);
-   circle(xx,py+hh-c,1.9,colorX,colorX,.7,blockG);
+ text(bx,37,'PLANTA • CORTES A–A / B–B • FORMATOS DAS ARMADURAS','white',8,blockG);
+ text(bx,49,'ESC. 1:{s} • COTAS EM cm','#a9c7da',8,blockG,{'data-scale-label':'ESC. 1:{s} • COTAS EM cm · NÍVEIS EM m'});
+ const ww=B.x*sc,hh=B.y*sc,H=B.h*sc;
+ // ---------- PLANTA ----------
+ const px=bx+24*U,py=49+30*U;
+ text(px+ww/2,py-17*U,'PLANTA',yellow,11,blockG,{'font-weight':'bold','text-anchor':'middle'});
+ el('rect',{x:px,y:py,width:ww,height:hh,stroke:yellow,'stroke-width':1,fill:'none'},blockG);
+ // Lado do solo (tardoz) na face superior, como na seção do pilar.
+ for(let xx=px+2;xx<px+ww-2;xx+=2.5*U)line(xx,py-1,xx+2*U,py-3*U,earth,.6,blockG);
+ text(px+ww+2*U,py-1.5*U,'SOLO (TARDOZ)',earth,8,blockG);
+ // Eixos, tubulão (tracejado) e pilar com esperas.
+ const cxp=px+ww/2,cyp=py+hh/2;
+ line(cxp,py-9*U,cxp,py+hh+3*U,'#36cfc9',.5,blockG,{'stroke-dasharray':'8 3 2 3'});line(cxp,py+hh+21*U,cxp,py+hh+24*U,'#36cfc9',.5,blockG);line(px-5*U,cyp,px+ww+5*U,cyp,'#36cfc9',.5,blockG,{'stroke-dasharray':'8 3 2 3'});
+ circle(cxp,cyp,B.pile*sc/2,grey,'none',.8,blockG,{'stroke-dasharray':'4 3'});
+ el('rect',{x:cxp-pa*sc/2,y:cyp-pb*sc/2,width:pa*sc,height:pb*sc,stroke:'#f06b76','stroke-width':1.1,fill:'#f06b76','fill-opacity':.12},blockG);
+ for(const sx of [-1,1])for(const sy of [-1,1])circle(cxp+sx*(pa/2-waitIn)*sc,cyp+sy*(pb/2-waitIn)*sc,Math.max(1.2,waitDia/2*sc),'#f06b76','#f06b76',.5,blockG);
+ // Armaduras em planta: N_X (paralelas a X), N_Y (paralelas a Y) e costela (contorno).
+ const ci=c*sc;
+ el('rect',{x:px+ci+dX*sc,y:py+ci+dY*sc,width:shp.c.w*sc,height:shp.c.h*sc,stroke:col.c,'stroke-width':1,fill:'none'},blockG);
+ for(let i=0;i<q('x');i++){const yy=py+ci+(hh-2*ci)*i/(q('x')-1);line(px+ci,yy,px+ww-ci,yy,col.x,.9,blockG)}
+ for(let i=0;i<q('y');i++){const xx=px+ci+(ww-2*ci)*i/(q('y')-1);line(xx,py+ci,xx,py+hh-ci,col.y,.9,blockG)}
+ // Marcas de corte.
+ text(px-7*U,cyp-1*U,'A',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});text(px+ww+7*U,cyp-1*U,'A',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
+ text(cxp,py+hh+28*U,'B',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});text(cxp,py-11*U,'B',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
+ // Cotas de posição do pilar e totais.
+ const ex=(B.x-pa)/2,ey=(B.y-pb)/2;
+ dimH(px,cxp-pa*sc/2,py+hh+11*U,py+hh,String(ex),blockG);dimH(cxp-pa*sc/2,cxp+pa*sc/2,py+hh+11*U,py+hh,String(pa),blockG);dimH(cxp+pa*sc/2,px+ww,py+hh+11*U,py+hh,String(ex),blockG);
+ dimH(px,px+ww,py+hh+19*U,py+hh,String(B.x),blockG);
+ dimV(py,cyp-pb*sc/2,px-11*U,px,String(ey),blockG);dimV(cyp-pb*sc/2,cyp+pb*sc/2,px-11*U,px,String(pb),blockG);dimV(cyp+pb*sc/2,py+hh,px-11*U,px,String(ey),blockG);
+ dimV(py,py+hh,px-19*U,px,String(B.y),blockG);
+ // Legenda das posições em planta.
+ const lgx=px+ww+10*U;let lgy=py+6*U;
+ for(const [k,txt] of [['x',`${arm.x.pos} — ${q('x')} ESTR. VERTICAIS ∥ X · c/${fmt(sp.x)}`],['y',`${arm.y.pos} — ${q('y')} ESTR. VERTICAIS ∥ Y · c/${fmt(sp.y)}`],['c',`${arm.c.pos} — ${q('c')} ESTR. HORIZONTAIS · c/${fmt(sp.c)}`],['p','PILAR E ESPERAS (VER PILAR)']]){
+  line(lgx,lgy-1.2*U,lgx+5*U,lgy-1.2*U,k==='p'?'#f06b76':col[k],1.4,blockG);text(lgx+7*U,lgy,txt,ink,8,blockG);lgy+=6*U}
+ text(lgx,lgy,`TUBULÃO Ø${B.pile} (TRACEJADO)`,grey,8,blockG);
+ // ---------- CORTES ----------
+ const stub=24*sc,cutTop=py+hh+33*U,blockTop=cutTop+9*U+stub,blockBot=blockTop+H,lastroBot=blockBot+LASTRO*sc,pileBot=lastroBot+18*U;
+ function section(sx0,title,widthCm,dirKey,crossKey,pillarW){
+  const W=widthCm*sc,cx=sx0+W/2;
+  text(sx0,cutTop,title,yellow,11,blockG,{'font-weight':'bold'});
+  // Pilar (trecho) com linha de interrupção.
+  const pw=pillarW*sc;
+  path(`M${cx-pw/2} ${blockTop} V${blockTop-stub} L${cx-pw/4} ${blockTop-stub-2*U} L${cx+pw/4} ${blockTop-stub+2*U} L${cx+pw/2} ${blockTop-stub} V${blockTop}`,'#f06b76','none',1,blockG);
+  // Lastro de concreto magro.
+  el('rect',{x:sx0-LASTRO*sc,y:blockBot,width:W+2*LASTRO*sc,height:LASTRO*sc,stroke:grey,'stroke-width':.8,fill:grey,'fill-opacity':.15},blockG);
+  for(let xx=sx0-LASTRO*sc+1.5*U;xx<sx0+W+LASTRO*sc;xx+=2.5*U)circle(xx,blockBot+LASTRO*sc/2,.35*U,grey,grey,.3,blockG);
+  // Bloco.
+  el('rect',{x:sx0,y:blockTop,width:W,height:H,stroke:yellow,'stroke-width':1.1,fill:'none'},blockG);
+  // Tubulão: entra EMB cm no bloco (tracejado dentro do bloco).
+  const pr=Math.min(B.pile*sc,W*.9)/2,embY=blockBot-EMB*sc;
+  for(const sgn of [-1,1]){line(cx+sgn*pr,lastroBot,cx+sgn*pr,pileBot,grey,.9,blockG);line(cx+sgn*pr,embY,cx+sgn*pr,lastroBot,grey,.7,blockG,{'stroke-dasharray':'3 2'})}
+  line(cx-pr,embY,cx+pr,embY,grey,.7,blockG,{'stroke-dasharray':'3 2'});
+  path(`M${cx-pr} ${pileBot} l${pr*.5} ${-2*U} l${pr} ${4*U} l${pr*.5} ${-2*U}`,grey,'none',.7,blockG);
+  // Armaduras: estribo vertical no plano do corte, barras cortadas e costela.
+  const sh=shp[dirKey],ox=sx0+c*sc+(dirKey==='y'?0:0),oy=blockTop+(B.h-sh.h)/2*sc;
+  const lx0=cx-sh.w*sc/2,ly0=oy,lw=sh.w*sc,lh=sh.h*sc;
+  el('path',{d:`M${lx0} ${ly0} H${lx0+lw} V${ly0+lh} H${lx0} Z`,fill:'none',stroke:col[dirKey],'stroke-width':1.2},blockG);
+  const nC=q(crossKey);for(let i=0;i<nC;i++){const xx=lx0+3+(lw-6)*i/(nC-1);circle(xx,ly0+2.2,1.5,col[crossKey],col[crossKey],.5,blockG);circle(xx,ly0+lh-2.2,1.5,col[crossKey],col[crossKey],.5,blockG)}
+  const nCost=q('c');for(let i=0;i<nCost;i++){const yy=ly0+6+(lh-12)*i/Math.max(1,nCost-1);circle(lx0+2.4,yy,1.4,col.c,col.c,.5,blockG);circle(lx0+lw-2.4,yy,1.4,col.c,col.c,.5,blockG)}
+  // Esperas do pilar: descem até o fundo das armaduras com dobra para fora.
+  const wx=(pillarW/2-waitIn)*sc,wBot=ly0+lh-4;
+  for(const sgn of [-1,1])path(`M${cx+sgn*wx} ${blockTop-stub+3*U} V${wBot} H${cx+sgn*(wx+waitBend*sc)}`,'#f06b76','none',1.6,blockG);
+  // Chamadas.
+  const L=(x0,y0,x1,y1,t,colr)=>{path(`M${x0} ${y0} L${x1} ${y1} H${x1+3*U}`,ink,'none',.55,blockG,{'data-layer':'cotas'});text(x1+3.5*U,y1+1.25*U,t,colr,10,blockG,{'font-weight':'bold'})};
+  const rx=sx0+W+LASTRO*sc+4*U;
+  L(lx0+lw,ly0+lh*.35,rx,ly0+lh*.2,`${q(dirKey)} ${arm[dirKey].pos}`,col[dirKey]);
+  L(lx0+lw-2.4,ly0+6+(lh-12)*.6,rx,ly0+lh*.55,`${q('c')} ${arm.c.pos}`,col.c);
+  L(lx0+lw*.75,ly0+lh-2.2,rx,ly0+lh*.9,`${q(crossKey)} ${arm[crossKey].pos}`,col[crossKey]);
+  if(dirKey==='y')L(cx+wx,blockTop-stub*.5,rx,blockTop-stub*.6,'ESPERAS (VER PILAR)','#f06b76');
+  // Cotas.
+  dimH(sx0,sx0+W,pileBot+8*U,blockBot,String(widthCm),blockG);
+  dimV(blockTop,blockBot,sx0-8*U,sx0,String(B.h),blockG);
+  dimV(embY,blockBot,cx-pr-6*U,cx-pr,String(EMB),blockG);
+  dimV(blockBot,lastroBot,sx0-8*U,sx0-LASTRO*sc,String(LASTRO),blockG);
+  return sx0+W;
  }
- for(let i=0;i<ny;i++){
-   const yy=py+c+(hh-2*c)*(i+.5)/ny;
-   line(px+c,yy,px+ww-c,yy,colorY,.9,blockG);
-   circle(px+c,yy,1.9,colorY,colorY,.7,blockG);
-   circle(px+ww-c,yy,1.9,colorY,colorY,.7,blockG);
+ const aX=bx+24*U,aEnd=section(aX,'CORTE A–A',B.x,'x','y',pa);
+ const bX=aEnd+32*U,bEnd=section(bX,'CORTE B–B',B.y,'y','x',pb);
+ // Níveis à direita do corte B–B.
+ const lvX=bEnd+50*U;
+ for(const [yy,txt] of [[blockTop,'+0,00 TOPO'],[blockBot,`${levelFmt(-B.h)} FUNDO`],[lastroBot,`${levelFmt(-(B.h+LASTRO))} LASTRO`]]){line(bEnd+2*U,yy,lvX+22*U,yy,yellow,.6,blockG,{'stroke-dasharray':yy===blockTop?'':'6 3'});text(lvX,yy-1.2*U,txt,yellow,8,blockG)}
+ // ---------- FORMATOS (verdadeira grandeza, fechamento 10Ø) ----------
+ const fy=pileBot+20*U;
+ text(bx,fy,'FORMATOS DAS ARMADURAS · VERDADEIRA GRANDEZA · FECHAMENTO 10Ø',yellow,11,blockG,{'font-weight':'bold'});
+ const kinds=bp.same?[['x','(4 EM X + 4 EM Y)'.replace(/4/g,'#')],['c','(COSTELA)']]:[['x','(X)'],['y','(Y)'],['c','(COSTELA)']];
+ let fx=bx+12*U;const fTop=fy+9*U,maxH=Math.max(...kinds.map(([k])=>shp[k].h))*sc;
+ for(const [k,tag] of kinds){
+  const w=shp[k].w*sc,h=shp[k].h*sc,hook=CLOSE*arm[k].dia/10*sc,color=col[k];
+  // Contorno fechado com as duas pontas dobradas para dentro (10Ø) no canto superior direito.
+  path(`M${fx+w-hook} ${fTop} H${fx} V${fTop+h} H${fx+w} V${fTop}`,color,'none',1.4,blockG);
+  path(`M${fx+w} ${fTop} L${fx+w-hook*.7} ${fTop+hook*.7}`,color,'none',1.4,blockG);
+  path(`M${fx+w-hook} ${fTop} L${fx+w-hook-hook*.7*0} ${fTop+hook}`,color,'none',1.4,blockG);
+  dimH(fx,fx+w,fTop+h+8*U,fTop+h,String(shp[k].w),blockG);
+  dimV(fTop,fTop+h,fx-7*U,fx,String(shp[k].h),blockG);
+  text(fx+w+2*U,fTop+hook+2.5*U,`10Ø=${Math.round(CLOSE*arm[k].dia/10)}`,ink,8,blockG);
+  // Quando X e Y compartilham a posição, a quantidade por bloco é a soma dos dois conjuntos.
+  const qn=bp.same&&k==='x'?q('x')+q('y'):q(k);
+  const t=text(fx,fTop+maxH+18*U,`${arm[k].pos} · ${qn}Ø${fmt(arm[k].dia)} · c/${fmt(sp[k])} · C=${cut(k)} cm`,color,10,blockG,{'font-weight':'bold'});blockClickLabel(t,k);
+  text(fx,fTop+maxH+23.5*U,bp.same&&k==='x'?`(${q('x')} EM X + ${q('y')} EM Y)`:tag,ink,8,blockG);
+  const labW=String(t.textContent).length*(3.5/CAP)*U*.6;fx+=Math.max(w+20*U,labW)+12*U;
  }
- circle(px+ww/2,py+hh/2,Math.min(B.pile*bs/2,ww/2-2,hh/2-2),'#7e9eb1','none',.75,blockG,{'stroke-dasharray':'4 3'});
- line(px+ww/2,py-8,px+ww/2,py+hh+8,'#93a9b8',.5,blockG,{'stroke-dasharray':'4 3'});
- line(px-8,py+hh/2,px+ww+8,py+hh/2,'#93a9b8',.5,blockG,{'stroke-dasharray':'4 3'});
- text(px-12,py+hh/2-4,'A',yellow,9,blockG);text(px+ww+7,py+hh/2-4,'A',yellow,9,blockG);
- text(px+ww/2+5,py-5,'B',yellow,9,blockG);text(px+ww/2+5,py+hh+12,'B',yellow,9,blockG);
- dimH(px,px+ww,py+hh+36,py+hh,`${B.x} cm`,blockG);
- dimV(py,py+hh,px-24,px,`${B.y} cm`,blockG);
- // Cortes alinhados horizontalmente, abaixo da planta.
- const sy=py+hh+90,sh=cutH,sw=ww;
- function section(sx,title,wcm){
-   const width=wcm*bs;
-   text(sx+width/2,sy-17,title,yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
-   el('rect',{x:sx,y:sy,width,height:sh,stroke:yellow,'stroke-width':.95,fill:'none'},blockG);
-   const inset=Math.min(c,width/5,sh/5);
-   path(`M${sx+inset} ${sy+sh-inset} V${sy+inset} H${sx+width-inset} V${sy+sh-inset}` ,colorC,'none',1.1,blockG);
-   line(sx+inset,sy+sh-inset,sx+width-inset,sy+sh-inset,colorC,.95,blockG);
-   // Em ambos os cortes: barras verticais N3 (armadura principal)
-   // e barras horizontais N4/N5 (costela).
-   // X e Y podem ter quantidades diferentes, mas compartilham N3
-   // quando a geometria/bitola são iguais.
-   const isA=title.includes('A–A');
-   const nVert=Math.max(1,Math.min(24,Math.round(numeric(isA?'blockQtyY':'blockQtyX')||1)));
-   const nHoriz=Math.max(1,Math.min(24,Math.round(numeric('blockQtyC')||1)));
-   const vertColor=isA?colorY:colorX;
-   const horizColor=colorC;
-   const insetX=sx+inset,insetR=sx+width-inset;
-   const topBar=sy+inset+4,bottomBar=sy+sh-inset-4;
-   for(let j=0;j<nHoriz;j++){
-     const yy=topBar+(bottomBar-topBar)*(j+.5)/nHoriz;
-     line(insetX+2,yy,insetR-2,yy,horizColor,.85,blockG);
-     circle(insetX+2,yy,1.65,horizColor,horizColor,.6,blockG);
-     circle(insetR-2,yy,1.65,horizColor,horizColor,.6,blockG);
-   }
-   for(let j=0;j<nVert;j++){
-     const xx=insetX+5+(insetR-insetX-10)*(j+.5)/nVert;
-     line(xx,topBar+1,xx,bottomBar-1,vertColor,.85,blockG);
-     circle(xx,topBar+1,1.7,vertColor,vertColor,.6,blockG);
-     circle(xx,bottomBar-1,1.7,vertColor,vertColor,.6,blockG);
-   }
-   const pileW=Math.min(B.pile*bs,width*.8);
-   line(sx+width/2-pileW/2,sy+sh,sx+width/2-pileW/2,sy+sh+27,'#7e9eb1',.85,blockG);
-   line(sx+width/2+pileW/2,sy+sh,sx+width/2+pileW/2,sy+sh+27,'#7e9eb1',.85,blockG);
-   dimH(sx,sx+width,sy+sh+44,sy+sh,`${wcm} cm`,blockG);
-   dimV(sy,sy+sh,sx+width+20,sx+width,`${B.h} cm`,blockG);
- }
- section(bx+30,'CORTE A–A',B.x);
- section(bx+190,'CORTE B–B',B.y);
- // Estribos fechados: contorno retangular contínuo e pontas de fechamento a 90°.
- const fy=sy+sh+91;
- text(bx+14,fy-15,'FORMATOS DAS ARMADURAS',yellow,10,blockG,{'font-weight':'bold'});
- // Cor vinculada à posição, em todas as vistas.
- // Formatos individuais N3(X), N3(Y) e N4/N5(costela).
- const types=[
- [`${bp.x} · X`,positionColors[bp.x],0,B.x,'x'],
- [`${bp.y} · Y`,positionColors[bp.y],1,B.y,'y'],
- [`${bp.cost} · COSTELA`,positionColors[bp.cost],2,B.x,'c']
- ];
- types.forEach(([name,color,i,dimension,which])=>{
-   // N3(X) fica alinhado sob A-A; N3(Y), sob B-B.
-   // A costela fica em uma terceira coluna, sem confundir as projeções.
-   const sx=bx+[30,190,335][i],syy=fy+12;
-   const arm=blockArmature(which);
-   const spanX=Math.max(1,dimension-2*B.cover),spanY=Math.max(1,B.h-2*B.cover);
-   // Escala geométrica única nos dois eixos: 0,65 unidades SVG por centímetro.
-   const barScale=.65,wd=spanX*barScale,ht=spanY*barScale;
-   const cut=2*(spanX+spanY); // Apenas perímetro geométrico, sem ganchos ou dobras.
-   const caption=`${arm.pos} · ${arm.qty}Ø${arm.dia}${arm.spacing>0?' · c/'+arm.spacing:''} · C≈${cut.toFixed(0)} cm`;
-   // Identificação abaixo do estribo, mantendo o mesmo padrão de N do tubulão.
-   const labelY=syy+12+ht+34;
-   const t=text(sx,labelY,caption,color,8,blockG,{'font-weight':'bold'});blockClickLabel(t,which);
-   // Contorno fechado, com pontas internas ilustrativas, sem cotas auxiliares.
-   const x0=sx+7,y0=syy+12;
-   path(`M${x0} ${y0} H${x0+wd} V${y0+ht} H${x0} Z`,color,'none',1.05,blockG);
-   // Referência aprovada: pequeno fechamento ortogonal no canto superior direito.
-   // Uma ponta desce verticalmente da borda superior; a outra avança
-   // horizontalmente da borda direita, cruzando ligeiramente a primeira.
-   // Sem diagonais e sem laços adicionais.
-   const hook=Math.min(10,wd*.20,ht*.20),corner=x0+wd;
-   const hookX=corner-hook*.58,hookY=y0+hook*.55;
-   line(hookX,y0,hookX,y0+hook*.88,color,1.1,blockG);
-   line(corner-hook*.88,hookY,corner,hookY,color,1.1,blockG);
-   text(x0+wd/2,y0+ht+12,`${spanX} cm`,'#dce9f5',9,blockG,{'text-anchor':'middle'});
-   const tx=x0+wd+13,ty=y0+ht/2;
-   const side=text(tx,ty,`${spanY} cm`,'#dce9f5',9,blockG,{'text-anchor':'middle'});
-   side.setAttribute('transform',`rotate(-90 ${tx} ${ty})`);
- });
- text(bx+14,fy+138,'A–A: X HORIZONTAL / Y VERTICAL   •   B–B: Y HORIZONTAL / X VERTICAL', '#a9c7da',8,blockG);
+ text(bx,fTop+maxH+31*U,`COBRIMENTO ${B.cover} cm · LASTRO ${LASTRO} cm · TUBULÃO EMBUTIDO ${EMB} cm`,'#a9c7da',8,blockG);
+ el('rect',{x:bx-12,y:12,width:Math.max(fx-bx,lvX+24*U-bx),height:fTop+maxH+34*U-12,fill:'transparent','pointer-events':'all','data-block-hit':'1'},blockG);
 }
 
  // O pincel pode converter TODAS as instâncias B1 em B2 (ou T1 em T2).
@@ -1493,7 +1495,11 @@ function organizeSheets(quiet=false){
   const save={cx:sp.cx,cy:sp.cy,rowH:sp.rowH};sp.resH=resH;
   for(let guard=0;guard<60;guard++){
    if(sp.cx>0&&sp.cx+it.w>area.w){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0;continue}
-   if(hits(sp,sp.cx,sp.cy,it.w,it.h)){if(sp.cx>0){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}else{sp.cy=Math.max(sp.cy,sp.resH+6+gap)}continue}
+   if(hits(sp,sp.cx,sp.cy,it.w,it.h)){
+    // Desce só o necessário na mesma fileira (abaixo da coluna de tabelas) se couber na folha.
+    const dy=sp.resH+6+gap;
+    if(sp.cx>0&&sp.cx+it.w<=area.w&&dy+it.h<=area.h){sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+dy,w:it.w,h:it.h});sp.cx+=it.w+gap;sp.rowH=Math.max(sp.rowH,dy-sp.cy+it.h);return true}
+    if(sp.cx>0){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}else{sp.cy=Math.max(sp.cy,dy)}continue}
    break;
   }
   if(sp.items.length&&sp.cy+it.h>area.h){Object.assign(sp,save);sp.resH=kindTableHeight(sp.kinds,sp.items.map(i=>i.code));return false}
@@ -1518,6 +1524,8 @@ function organizeSheets(quiet=false){
   for(const it of chosen.sized){if(!place(cur,it)){newSpec(cat.kind,chosen.scale);place(cur,it)}}
  }
  let x=0;lastValidSteelBySheet=new Map();
+ // Título e categorias da folha a partir dos desenhos que ela realmente contém.
+ for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks}
  sheets=specs.map((sp,i)=>{const sh={id:i+1,format,orientation,scale:sp.scale,x,y:0,done:false,kind:sp.kinds[0],kinds:[...sp.kinds],title:sp.kinds.map(k=>SHEET_KIND_TITLES[k]).join(' · ')};x+=sheetDims(sh).w+300;return sh});
  sheetSeq=sheets.length+1;sheetCurrent=1;sheetSync();
  draw();
