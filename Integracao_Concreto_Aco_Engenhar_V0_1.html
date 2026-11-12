@@ -194,11 +194,13 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f"><label for="g_zs">Cota de apoio (m), vazio = automática</label><input id="g_zs" type="number" step="0.01" placeholder="auto"></div>
         <div class="f"><label for="g_incl">Inclinação (%)</label><input id="g_incl" type="number" step="1" value="10"></div>
         <div class="f"><label for="g_h0">Altura da tesoura no apoio (m)</label><input id="g_h0" type="number" step="0.05" value="0.5"></div>
-        <div class="f"><label for="g_pT">Espaçamento das terças (m)</label><input id="g_pT" type="number" step="0.1" value="1.5"></div>
+        <div class="f"><label for="g_pT">Espaçamento máximo das terças (m)</label><input id="g_pT" type="number" step="0.1" value="1.5"></div>
+        <div class="f"><label for="g_nP">Painéis por tesoura (0 = pelo espaçamento das terças)</label><input id="g_nP" type="number" step="2" min="0" value="0"></div>
         <div class="f"><label for="g_tTipo">Perfis das treliças</label><select id="g_tTipo"><option value="enc">U simples encaixado</option><option value="ue">Ue (almas sobrepostas)</option><option value="L">Cantoneira + gusset</option></select></div>
         <div class="f" data-tEnc><label for="g_fEnc">Folga do encaixe, por lado (mm)</label><input id="g_fEnc" type="number" step="0.5" min="0" value="1"></div>
         <div class="f w"><label for="g_pBanzo">Banzos</label><select id="g_pBanzo"></select></div>
-        <div class="f w"><label for="g_pAlma">Montantes e diagonais</label><select id="g_pAlma"></select></div>
+        <div class="f w"><label for="g_pAlma">Montantes</label><select id="g_pAlma"></select></div>
+        <div class="f w"><label for="g_pDg">Diagonais</label><select id="g_pDg"></select></div>
         <div class="f w"><label for="g_pTerca">Terças</label><select id="g_pTerca"></select></div>
         <div class="f" data-tL><label for="g_tg">Chapa gusset dos nós (mm)</label><select id="g_tg"><option value="6.3">6,3</option><option value="8">8,0</option><option value="9.5">9,5</option></select></div>
       </fieldset>
@@ -694,7 +696,7 @@ const STP={
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 const TDESC={MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
 const TORD=['BI','BS','MO','DG','TC','PT','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pTerca:'Ue200x2.65',
+const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
   tg:6.3,mOn:true,side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
@@ -741,7 +743,7 @@ function genSteel(G){
 
   // ================= TESOURAS =================
   if(G.tOn){
-    let Bz=STP[G.pBanzo],Al=STP[G.pAlma];if(G.tTipo==='enc'&&Bz.t){Al=encWeb(Bz,Al,+G.fEnc||1);Bz=encChord(Bz);}
+    let Bz=STP[G.pBanzo],Al=STP[G.pAlma],Dg=STP[G.pDg]||Al;if(G.tTipo==='enc'&&Bz.t){Al=encWeb(Bz,Al,+G.fEnc||1);Dg=encWeb(Bz,Dg,+G.fEnc||1);Bz=encChord(Bz);}
     const Te=STP[G.pTerca],i=G.incl/100,h0=G.h0*1000,tpl=16,zb=zs+tpl+Bz.h/2;
     const used=new Set(),pairs=[];
     sideA.forEach(a=>{let best=null;sideB.forEach(b=>{if(used.has(b))return;const dv=Math.abs(Vv(ctr(a))-Vv(ctr(b)));if(dv<1500&&(!best||dv<best.dv))best={b,dv};});if(best){used.add(best.b);pairs.push([a,best.b]);}});
@@ -755,13 +757,13 @@ function genSteel(G){
         out.notes.push(`Tesoura ${j+1}: o pilar ${clash.map(c=>c.name.split(' ')[0]).join(' e ')} continua acima da cota de apoio (platibanda). Apoio deslocado ${nf0.format(sh/10)} cm para a viga, ao lado do pilar.`);}
       const sA=below(ua,va),sB=below(ub,vb);
       if(!sA||!sB)out.warns.push(`Tesoura ${j+1}: não há concreto embaixo de ${!sA?'um dos apoios':'um dos apoios'} na cota ${m2(zs)} m.`);
-      const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],nh=Math.max(2,Math.ceil(L/2/(G.pT*1000)-1e-6)),n=2*nh;
+      const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],nh=+G.nP>=2?Math.max(1,Math.round(+G.nP/2)):Math.max(2,Math.ceil(L/2/(G.pT*1000)-1e-6)),n=2*nh;
       const at=(s,z)=>P3(ua+e[0]*s,va+e[1]*s,z),zt=s=>zb+(h0-Bz.h)+i*Math.min(s,L-s),sk=k=>k*L/n;
-      const T={j,pj,L,n,nh,at,zt,sk,zb,Bz,Al,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
+      const T={j,pj,L,n,nh,at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
       add('BI',Bz,at(0,zb),at(L/2,zb),{truss:j});add('BI',Bz,at(L/2,zb),at(L,zb),{truss:j});
       add('BS',Bz,at(0,zt(0)),at(L/2,zt(L/2)),{truss:j});add('BS',Bz,at(L/2,zt(L/2)),at(L,zt(L)),{truss:j});
       for(let k=0;k<=n;k++)add('MO',Al,at(sk(k),zb),at(sk(k),zt(sk(k))),{truss:j});
-      for(let k=0;k<n;k++){const s1=sk(k),s2=sk(k+1);if(k<nh)add('DG',Al,at(s1,zt(s1)),at(s2,zb),{truss:j});else add('DG',Al,at(s1,zb),at(s2,zt(s2)),{truss:j});}
+      for(let k=0;k<n;k++){const s1=sk(k),s2=sk(k+1);if(k<nh)add('DG',Dg,at(s1,zt(s1)),at(s2,zb),{truss:j});else add('DG',Dg,at(s1,zb),at(s2,zt(s2)),{truss:j});}
       [[sA,ua,va,'fixo'],[sB,ub,vb,'deslizante']].forEach(([se,u,v,mode])=>{
         const wc=se?(spanX?(se.bb.x1-se.bb.x0):(se.bb.y1-se.bb.y0)):200,hc=se?se.bb.z1-se.bb.z0:400;
         const Wp=Math.min(180,wc-20),Lp=300;
@@ -804,6 +806,9 @@ function genSteel(G){
         const qd=(1.25*.20+1.5*.25)*sp,qs=(.20+.25)*sp,Md=qd*L*L/8,MR=W*25/1.1/100,f=5*qs*Math.pow(m.len,4)/(384*200000*Ix*1e4),fl=m.len/180;
         out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flexão`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`faixa de ${m2(sp*1000)} m; biapoiada, sem vento e sem flambagem lateral (telha travando)`});
         out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flecha`,sol:`${nf1.format(f)} mm`,res:`${nf1.format(fl)} mm`,u:f/fl,obs:'L/180, carga de serviço'});});
+      {const T0=tr[0],pp=T0.L/T0.n/Math.cos(Math.atan(i));out.notes.push(`Tesouras com ${T0.n} painéis (${T0.n+1} montantes, ${T0.n} diagonais); terças a cada ${m2(pp)} m na rampa${+G.nP>=2?' (número de painéis informado)':''}.`);
+        if(+G.nP>=2&&pp>G.pT*1000*1.25)out.warns.push(`Com ${T0.n} painéis as terças ficam a ${m2(pp)} m, acima do espaçamento máximo de ${m2(G.pT*1000)} m: confira a telha.`);
+        if(+G.nP>=2&&G.nP%2)out.notes.push(`O número de painéis precisa ser par (montante na cumeeira): usado ${T0.n}.`);}
       out.preHyp=`Tesouras: vão ${m2(Lmax)} m, espaçamento ${m2(amax)} m, carga permanente 0,20 kN/m² (telha e estrutura) e sobrecarga 0,25 kN/m², γg = 1,25 e γq = 1,5.`;}
   }
 
@@ -1013,7 +1018,7 @@ function drawTesoura(S){
    cutMark(d,[T.L/2+70,zb],[1,0],'D',cL,-1);}
   const spans=S.trusses.map((t,j)=>`TS${j+1} = ${nint(t.L)}`).join(' · ');
   d.notes(0,-ts*9,[`Vãos entre apoios: ${spans} mm. Geometria igual; conferir o vão de cada uma.`,
-    Bz.enc?`Banzos ${Bz.label} com a alma por fora e as abas para dentro; montantes e diagonais ${T.Al.label}, encaixados entre as abas. Cortes A a D na folha de cortes; nós na folha de nós.`:Bz.t?`Banzos ${Bz.label}; montantes e diagonais ${T.Al.label} (perfis formados a frio, almas sobrepostas, sem chapa gusset). Cortes A a D na folha de cortes; nós na folha de nós.`:`Banzos ${Bz.label} (cantoneiras laminadas costas com costas); montantes e diagonais ${T.Al.label}. Cortes A a D na folha de cortes; nós com chapa gusset na folha de nós.`,
+    Bz.enc?`Banzos ${Bz.label} com a alma por fora e as abas para dentro; montantes ${T.Al.label}${T.Dg&&T.Dg.label!==T.Al.label?` e diagonais ${T.Dg.label}`:' e diagonais iguais'}, encaixados entre as abas. Cortes A a D na folha de cortes; nós na folha de nós.`:Bz.t?`Banzos ${Bz.label}; montantes e diagonais ${T.Al.label} (perfis formados a frio, almas sobrepostas, sem chapa gusset). Cortes A a D na folha de cortes; nós na folha de nós.`:`Banzos ${Bz.label} (cantoneiras laminadas costas com costas); montantes e diagonais ${T.Al.label}. Cortes A a D na folha de cortes; nós com chapa gusset na folha de nós.`,
     `Apoio AT1 fixo e AT2 deslizante (furo oblongo). Cotas de altura a partir do topo da viga de concreto (z = ${m2(S.zs)} m).`],
     `TESOURA TS1 · ${S.trusses.length} UNIDADES`,sub());
   return d;}
@@ -1239,7 +1244,7 @@ function detailSteel(S,G){
     let web=null;sets.forEach(s=>s.rep.webs.forEach(w=>{if(!web||(ue?w.u2>web.u2:w.F>web.F))web=w;}));
     if(web&&enc){const ex=Math.max(0,...sets.flatMap(s=>s.rep.webs.map(w=>Math.abs(w.sh||0))));if(ex>0)D.notesUe=`Maior excentricidade de nó: ${ex} mm (peças lado a lado dentro do banzo); considerar no cálculo do banzo.`;
       D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`solda completa: 2 x ${web.Lc} mm na borda das abas + ${web.Lt} mm da ponta da peça na alma do banzo, chapa fina (NBR 14762)`});
-      const Al=T.Al;D.fit=`Montantes e diagonais dobrados sob medida: ${Al.label}, para o vão interno de ${nf1.format(T.Bz.base.h-2*T.Bz.t)} mm do banzo (folga de ${nf1.format(+G.fEnc||1)} mm por lado).`;}
+      const Al=T.Al;D.fit=`Montantes e diagonais dobrados sob medida: ${Al.label}${T.Dg&&T.Dg.label!==Al.label?` (montantes) e ${T.Dg.label} (diagonais)`:''}, para o vão interno de ${nf1.format(T.Bz.base.h-2*T.Bz.t)} mm do banzo (folga de ${nf1.format(+G.fEnc||1)} mm por lado).`;}
     else if(web&&ue){const ex=Math.max(0,...sets.flatMap(s=>s.rep.webs.map(w=>Math.abs(w.sh||0))));if(ex>0)D.notesUe=`Maior excentricidade de nó: ${ex} mm (peças lado a lado na alma do banzo); considerar no cálculo do banzo.`;
       D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`${web.L1} + ${web.L2} mm de solda nas quinas, chapa fina (NBR 14762)`});}
     else if(web){const R=2*web.Lw*filRd(web.fa);D.pre.push({item:`Solda da peça mais solicitada (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(R)} kN`,u:web.F/R,obs:`filete ${nf1.format(web.fa)} mm, 2 x ${web.Lw} mm (comprimento calculado)`});}
@@ -1442,7 +1447,7 @@ function drawCortesEnc(S){
   [-1,1].forEach(sg=>{const x=ox+sg*(B.h/2-B.t);d.P([[x,0],[x-sg*3,0],[x,3]].map(([a,b])=>[a,b]),'CHAPA');});
   d.D(ox-A.h/2,yw+A.b,ox+A.h/2,yw+A.b,ts*1.6,nf1.format(A.h));lab(ox+B.h/2+ts*.8,ts*.2,'solda completa: borda das abas nos dois lados');lab(ox+B.h/2+ts*.8,-B.b+B.t+ts*.2,'e ponta da peça na alma do banzo');
   lab(ox+B.h/2+ts*.8,-ts*1.2,`folga de ${nf1.format((B.h-2*B.t-A.h)/2)} mm por lado`);
-  panel(ox-B.h/2,'CORTE C-C · MONTANTE OU DIAGONAL ENCAIXADO',`${T.Al.label}: entra justo entre as abas do banzo`,yb);
+  panel(ox-B.h/2,'CORTE C-C · MONTANTE OU DIAGONAL ENCAIXADO',`${T.Al.label}${T.Dg&&T.Dg.label!==T.Al.label?' e '+T.Dg.label:''}: entra justo entre as abas do banzo`,yb);
   // D-D emenda: talas externas nas duas abas, parafuso atravessando
   ox+=B.h+gap;secUeH(d,ox,-B.b,B,false,'ACO');[-1,1].forEach(sg=>d.R(ox+sg*B.h/2+(sg>0?0:-4.75),-B.b+5,4.75,B.b-10,'CHAPA'));
   const yb2=-B.b/2;d.L(ox-B.h/2-4.75-14,yb2,ox+B.h/2+4.75+18,yb2,'CHAPA');d.R(ox-B.h/2-4.75-12,yb2-12,12,24,'CHAPA');d.R(ox+B.h/2+4.75,yb2-12,14,24,'CHAPA');
@@ -1621,9 +1626,9 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
   ue:{B:['Ue150x2.65','Ue150x3.00','Ue200x2.65','Ue200x3.00','Ue127x2.65'],A:['Ue75x2.00','Ue100x2.00','Ue100x2.65'],MB:['Ue100x2.00','Ue100x2.65','Ue127x2.65','Ue150x2.65'],MA:['Ue75x2.00','Ue100x2.00'],
    d:{B:'Ue150x3.00',A:'Ue100x2.65',MB:'Ue100x2.00',MA:'Ue75x2.00'}},
   L:{B:['2L51x4.8','2L64x4.8'],A:['L38x3.2','L51x3.2','L51x4.8'],MB:['2L51x4.8','L51x4.8','2L64x4.8'],MA:['L38x3.2','L51x3.2','L51x4.8'],d:{B:'2L51x4.8',A:'L51x4.8',MB:'2L51x4.8',MA:'L38x3.2'}}};
- const fillT=t=>{const L=LISTS[t];opt('g_pBanzo',L.B,L.d.B);opt('g_pAlma',L.A,L.d.A);opt('g_pMB',L.MB,L.d.MB);opt('g_pMA',L.MA,L.d.MA);
+ const fillT=t=>{const L=LISTS[t];opt('g_pBanzo',L.B,L.d.B);opt('g_pAlma',L.A,L.d.A);opt('g_pDg',L.A,L.d.A);opt('g_pMB',L.MB,L.d.MB);opt('g_pMA',L.MA,L.d.MA);
    document.querySelectorAll('[data-tL]').forEach(x=>x.hidden=t!=='L');document.querySelectorAll('[data-tEnc]').forEach(x=>x.hidden=t!=='enc');
-   $('label[for=g_pAlma]').textContent=t==='enc'?'Montantes e diagonais (aba e espessura; largura sob medida)':'Montantes e diagonais';
+   $('label[for=g_pAlma]').textContent=t==='enc'?'Montantes (aba e espessura; largura sob medida)':'Montantes';$('label[for=g_pDg]').textContent=t==='enc'?'Diagonais (aba e espessura; largura sob medida)':'Diagonais';
    $('label[for=g_pMA]').textContent=t==='enc'?'Montantes e diagonais da treliça (aba e espessura; largura sob medida)':'Montantes e diagonais da treliça';};
  $('#g_tTipo').value=GP.tTipo;fillT(GP.tTipo);$('#g_tTipo').addEventListener('change',e=>{fillT(e.target.value);selectSteel(null);runSteel();});$('#g_fEnc').addEventListener('change',()=>{selectSteel(null);runSteel();});opt('g_pTerca',['Ue200x2.65','Ue150x2.65','Ue150x2.00'],GP.pTerca);
  opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);
