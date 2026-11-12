@@ -603,7 +603,10 @@ function dxfView(m,id){const v=VIEWS.find(x=>x.id===id&&x.fn);if(!v)return null;
 /* ---------------- Arquivos e avisos ---------------- */
 function fileBase(){return (P.obra||'projeto').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'').slice(0,50)||'projeto';}
 let toastT;function toast(s){const t=$('#toast');t.textContent=s;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3800);}
+let DL=null;try{if(window.claude&&window.claude.use)window.claude.use('downloads').then(d=>{DL=d;},()=>{});}catch(e){}
 function download(name,text,type){
+  if(DL){let fn=name,note='';if(/\.dxf$/i.test(fn)){fn+='.txt';note=' Renomeie tirando o ".txt" do final para abrir no CAD.';}
+    DL.save({filename:fn,data:text}).then(()=>toast('Arquivo salvo.'+note),e=>{if(e&&e.code==='declined')return;toast('Não foi possível salvar aqui. Use os botões de copiar.');});return;}
   try{const blob=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
     setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);toast(`${name} gerado. Se o download não começar, use os botões de copiar.`);}
   catch(e){toast('O download foi bloqueado aqui. Use os botões de copiar.');}}
