@@ -45,7 +45,13 @@ function sync(){const keys=levelKeys();for(const id of ['lvlSel68','lvlSel68b'])
  try{state.walls=all;state.results=null;window.props54raw?.set(allProps);return old.apply(this,a);}finally{state.walls=keepWalls;state.results=keepRes;window.props54raw?.set(keepProps);allProps=allProps.filter(p=>!keepWalls.includes(p.wall));}};}
 // abrir projeto, novo projeto e exemplo: volta para "todos"
 const reset=()=>{current='all';stash=[];allProps=[];for(const k in resByUid)delete resByUid[k];hidePages();sync();};
-{const r=$('restore');if(r){const old=r.onchange;r.onchange=async function(...a){reset();const res=await old?.apply(this,a);reset();ensureSeq(state.walls);return res;};}}
+// V134 — ao abrir um projeto com planta DXF/PDF, o carregamento termina depois que o programa já entrou num nível; o reset do fim
+// apagava as paredes guardadas dos outros níveis (o 2º pavimento sumia). Agora elas voltam para a lista antes do reset.
+const resetFim=()=>{if(current!=='all'||stash.length){leave();const all=allWalls();ensureSeq(all);const res=all.map(w=>resByUid[w.uid]);
+ state.walls=all.slice().sort((a,b)=>valOf(wKey(a))-valOf(wKey(b))||a.seq58-b.seq58);stash=[];current='all';
+ const r2=state.walls.map(w=>resByUid[w.uid]);state.results=r2.every(Boolean)?r2:null;hidePages();sync();return;}
+ reset();};
+{const r=$('restore');if(r){const old=r.onchange;r.onchange=async function(...a){reset();const res=await old?.apply(this,a);resetFim();ensureSeq(state.walls);return res;};}}
 for(const id of ['newProject','example']){const b=$(id);if(!b)continue;const old=b.onclick;b.onclick=function(...a){reset();const r=old?.apply(this,a);setTimeout(()=>{reset();ensureSeq(state.walls);},0);return r;};}
 ensureSeq(state.walls);sync();
 const css=document.createElement('style');css.textContent=`.lvlSel68{width:100%;font-size:13.5px;padding:6px 8px;font-weight:600;color:#102e4b;background:#fff4dc;border:1px solid #f0d49a;border-radius:6px}
