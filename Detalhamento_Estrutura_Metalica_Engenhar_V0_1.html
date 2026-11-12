@@ -63,6 +63,8 @@ aside summary{padding:11px 14px;font:600 15px var(--f-disp);text-transform:upper
 .fields{display:grid;gap:9px;padding:0 14px 14px}
 .f{display:grid;grid-template-columns:minmax(0,1fr) 128px;align-items:center;gap:8px}
 .f.wide{grid-template-columns:minmax(0,1fr);gap:4px}
+.f.ck{grid-template-columns:minmax(0,1fr) auto}
+.f.ck input{width:18px;height:18px;accent-color:var(--accent);margin:0}
 .f label{font-size:13px;color:var(--muted)}
 .in{display:flex;align-items:center;gap:5px;min-width:0}
 input,select{width:100%;min-width:0;font:13px var(--f-mono);padding:6px 7px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
@@ -183,15 +185,20 @@ const W_DATA=[
 const UE_DATA=[[100,50,17,2.00],[100,50,17,2.65],[127,50,17,2.25],[127,50,17,2.65],[150,60,20,2.00],[150,60,20,2.65],[150,60,20,3.00],
  [200,75,25,2.00],[200,75,25,2.65],[200,75,25,3.00],[200,75,25,3.35],[250,85,25,2.65],[250,85,25,3.00],[250,85,25,3.35],[300,85,25,3.00],[300,85,25,3.35]];
 const BAR_DATA=[10,12.5,16,20,22.2,25];
+// Cantoneiras de abas iguais: [chave, nome comercial, aba (mm), espessura (mm), kg/m]
+const ANG_DATA=[['L38x3.2','L 1½" x ⅛"',38,3.2,1.83],['L38x4.8','L 1½" x 3/16"',38,4.8,2.68],['L51x3.2','L 2" x ⅛"',51,3.2,2.46],
+ ['L51x4.8','L 2" x 3/16"',51,4.8,3.63],['L64x4.8','L 2½" x 3/16"',64,4.8,4.57]];
 const CAT={};
 W_DATA.forEach(([n,d,bf,tw,tf,kgm])=>CAT[n]={key:n,kind:'W',label:n.replace('.',','),d,bf,tw,tf,kgm});
 UE_DATA.forEach(([h,b,c,t])=>{const key=`Ue${h}x${b}x${c}x${t.toFixed(2)}`;const A=t*(h+2*b+2*c-4*t);
   CAT[key]={key,kind:'Ue',label:`Ue ${h}x${b}x${c}x${t.toFixed(2).replace('.',',')}`,d:h,bf:b,c,t,tw:t,tf:t,kgm:A*0.00785};});
 BAR_DATA.forEach(dia=>{const key='R'+dia;CAT[key]={key,kind:'R',label:'Barra ø'+numBR(dia),d:dia,bf:dia,kgm:Math.PI*dia*dia/4*0.00785};});
+ANG_DATA.forEach(([key,com,b,t,kgm])=>CAT[key]={key,kind:'L',label:`${com} (${b}x${numBR(t)})`,d:b,bf:b,t,tw:t,tf:t,kgm});
 const byKind=k=>Object.values(CAT).filter(c=>c.kind===k);
 const OPT_FRAME=()=>[['Laminados W',byKind('W')],['Dobrados Ue',byKind('Ue')]];
 const OPT_LIGHT=()=>[['Dobrados Ue',byKind('Ue')],['Laminados W',byKind('W')]];
 const OPT_BAR=()=>[['Barras redondas',byKind('R')]];
+const OPT_ANG=()=>[['Cantoneiras',byKind('L')]];
 
 /* ---------------- Parâmetros ---------------- */
 const GROUPS=[
@@ -212,6 +219,15 @@ const GROUPS=[
   {id:'espT',label:'Espaçamento máx. das terças (na rampa)',unit:'m',def:1.8,kind:'num',min:.6,max:3,step:.1},
   {id:'mureta',label:'Altura da alvenaria (mureta)',unit:'m',def:1.2,kind:'num',min:0,max:6,step:.1},
   {id:'espTr',label:'Espaçamento máx. das travessas',unit:'m',def:1.8,kind:'num',min:.6,max:3,step:.1}]},
+ {t:'Oitões (frente e fundo)',f:[
+  {id:'oitao',label:'Fechar os oitões com pilaretes',kind:'chk',def:true},
+  {id:'espPil',label:'Distância máx. entre pilaretes',unit:'m',def:5,kind:'num',min:2,max:10,step:.5},
+  {id:'pPil',label:'Pilaretes',kind:'prof',def:'W150x13.0',opts:OPT_FRAME}]},
+ {t:'Mão-francesa',f:[
+  {id:'mfViga',label:'Nas vigas (apoiada nas terças)',kind:'chk',def:true},
+  {id:'mfPil',label:'Nos pilares (apoiada nas travessas)',kind:'chk',def:false},
+  {id:'mfN',label:'Colocar a cada',unit:'peças',def:2,kind:'opt',opts:[1,2,3]},
+  {id:'pMF',label:'Perfil da mão-francesa',kind:'prof',def:'L38x3.2',opts:OPT_ANG}]},
  {t:'Ligações',f:[
   {id:'tBase',label:'Placa de base (espessura)',unit:'mm',def:19,kind:'opt',opts:[12.5,16,19,22.4,25,31.5]},
   {id:'dCh',label:'Chumbadores (diâmetro)',unit:'mm',def:19,kind:'opt',opts:[16,19,22,25,32]},
@@ -227,18 +243,18 @@ const GROUPS=[
   {id:'resp',label:'Responsável técnico',kind:'txt',def:''}]}];
 const FIELDS=GROUPS.flatMap(g=>g.f);
 const DEFAULTS=Object.fromEntries(FIELDS.map(f=>[f.id,f.def]));
-const STORE='engenhar-metalica-v2';
+const STORE='engenhar-metalica-v3';
 let P=loadState();
 function loadState(){try{const s=JSON.parse(localStorage.getItem(STORE)||'null');if(s&&s.p)return sanitize(s.p);}catch(e){}return {...DEFAULTS};}
 function sanitize(o){const p={...DEFAULTS};for(const f of FIELDS){const v=o[f.id];if(v==null)continue;
   if(f.kind==='num'||f.kind==='opt'){const n=parseFloat(String(v).replace(',','.'));if(isFinite(n))p[f.id]=f.kind==='num'?Math.min(f.max,Math.max(f.min,n)):n;}
-  else if(f.kind==='prof'){if(CAT[v])p[f.id]=v;}else p[f.id]=String(v).slice(0,120);}return p;}
+  else if(f.kind==='prof'){if(CAT[v])p[f.id]=v;}else if(f.kind==='chk')p[f.id]=v===true||v==='true';else p[f.id]=String(v).slice(0,120);}return p;}
 function saveState(){try{localStorage.setItem(STORE,JSON.stringify({p:P,tab:TAB}));}catch(e){}}
 
 /* ---------------- Modelo ---------------- */
-const TYPE_ORDER=['pilar','viga','terca','travessa','cb','cl'];
-const PRE={pilar:'P',viga:'V',terca:'T',travessa:'TL',cb:'CB',cl:'CL'};
-const DESC={pilar:'Pilar',viga:'Viga de cobertura',terca:'Terça',travessa:'Travessa lateral',cb:'Contraventamento da cobertura',cl:'Contraventamento lateral'};
+const TYPE_ORDER=['pilar','viga','pilarete','terca','travessa','mf','cb','cl'];
+const PRE={pilar:'P',viga:'V',pilarete:'PL',terca:'T',travessa:'TL',mf:'MF',cb:'CB',cl:'CL'};
+const DESC={pilar:'Pilar',viga:'Viga de cobertura',pilarete:'Pilarete de oitão',terca:'Terça',travessa:'Travessa',mf:'Mão-francesa',cb:'Contraventamento da cobertura',cl:'Contraventamento lateral'};
 
 /* ---------------- Regras de detalhamento de ligações ---------------- */
 // Bordas mínimas (centro do furo à borda) conforme NBR 8800:2008, Tabela 14: [borda cortada, borda laminada]
@@ -302,7 +318,23 @@ function build(p){
   // travessas: do topo da alvenaria até 300 mm abaixo do pé-direito
   const mur=p.mureta*1000,gTop=H-300;let girtZ=[];
   if(gTop>mur+50){const nG=Math.max(2,Math.ceil((gTop-mur)/(p.espTr*1000)-1e-6)+1);girtZ=Array.from({length:nG},(_,k)=>mur+k*(gTop-mur)/(nG-1));}
-  const mem=[];const add=(type,prof,a,b,cut)=>mem.push({type,prof,a,b,cut:Math.round(cut)});
+  const mem=[];const add=(type,prof,a,b,cut,x)=>mem.push({type,prof,a,b,cut:Math.round(cut),...(x||{})});
+  // oitões: pilaretes sob a viga do pórtico de extremidade
+  const PLp=CAT[p.pPil],MFp=CAT[p.pMF];
+  const zBotAt=x=>H+Math.min(x,B-x)*i-hv;            // face inferior da viga na posição x
+  let pilX=[];
+  if(p.oitao){const n=Math.max(1,Math.ceil(B/(p.espPil*1000)-1e-6));pilX=Array.from({length:n-1},(_,k)=>(k+1)*B/n);}
+  const dpt=p.dPar,ePt=edgeOf(dpt)[0],ybPt=Math.max(ePt,40),slotPt=R5up(holeOf(dpt)+25),gapPt=50,sPt=R5up(Math.max(3*dpt,40));
+  const CP={mark:'CP1',desc:'Chapa do topo do pilarete (furos oblongos)',t:9.5,W:R5up(sPt+2*ePt),L:R5up(gapPt+ybPt+slotPt/2+ePt),qty:2*pilX.length,
+    s:sPt,slot:slotPt,gap:gapPt,yb:ybPt,e:ePt,d:dpt,hole:holeOf(dpt)};
+  const pilTop=x=>Math.round(zBotAt(x)-gapPt);
+  // mão-francesa: liga a terça (ou travessa) à mesa inferior da viga (ou interna do pilar), a 45°
+  const cMF=40,yMF=35,eMF=edgeOf(p.dParT)[0];
+  const mfG=Sd=>{const dz=cMF+Sd+40,a=yMF+dz,L0=Math.hypot(dz,a-yMF);return {dz,a,L0,cut:Math.round(L0+2*eMF)};};
+  const mfV=mfG(Vp.d),mfP=mfG(Pp.d);
+  const pick=(arr)=>arr.filter((_,k)=>k>0&&k<arr.length-1&&k%p.mfN===0);
+  const mfS=p.mfViga?pick(purS):[],mfZ=p.mfPil?pick(girtZ):[];
+  const CM={mark:'CM1',desc:'Chapa da mão-francesa',t:6.3,W:R5up(2*(yMF+eMF)),L:R5up(40+eMF),qty:0};
   const dist=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);
   ys.forEach(y=>{
     add('pilar',Pp,[0,y,0],[0,y,colCut],colCut);add('pilar',Pp,[B,y,0],[B,y,colCut],colCut);
@@ -310,6 +342,21 @@ function build(p){
   for(let j=0;j<nV;j++){const y0=ys[j],y1=ys[j+1];
     purS.forEach(s=>{const x=s*cs,z=H+s*sn+hv;add('terca',Tp,[x,y0,z],[x,y1,z],e-10);add('terca',Tp,[B-x,y0,z],[B-x,y1,z],e-10);});
     girtZ.forEach(z=>{add('travessa',TRp,[0,y0,z],[0,y1,z],e-10);add('travessa',TRp,[B,y0,z],[B,y1,z],e-10);});}
+  const mfPts=[];
+  ys.forEach((y,k)=>{const sg=k===0?[1]:k===nV?[-1]:[1,-1];
+    mfS.forEach(s=>[0,1].forEach(side=>{
+      const rp=(n,yy)=>side?[B-s*cs+sn*n,yy,H+s*sn+cs*n]:[s*cs-sn*n,yy,H+s*sn+cs*n];
+      sg.forEach(g=>add('mf',MFp,rp(-(Vp.d/2+40),y+g*yMF),rp(Vp.d/2+cMF,y+g*mfV.a),mfV.cut));mfPts.push({kind:'LMF',sides:sg.length});}));
+    mfZ.forEach(z=>[0,B].forEach(x=>{const o=x===0?-1:1,cp=(n,yy)=>[x+o*n,yy,z];
+      sg.forEach(g=>add('mf',MFp,cp(-(Pp.d/2+40),y+g*yMF),cp(Pp.d/2+cMF,y+g*mfP.a),mfP.cut));mfPts.push({kind:'LMP',sides:sg.length});}));});
+  CM.qty=mfPts.length;
+  const endYs=pilX.length?[0,L]:[],girtEnds=new Map();
+  endYs.forEach(y=>{
+    pilX.forEach(x=>add('pilarete',PLp,[x,y,0],[x,y,pilTop(x)],pilTop(x)));
+    const sup=[0,...pilX,B];
+    for(let j=0;j<sup.length-1;j++){const xa=sup[j],xb=sup[j+1],zl=Math.min(pilTop(xa),pilTop(xb),zBotAt(xa),zBotAt(xb))-TRp.d/2-150;
+      girtZ.filter(z=>z<=zl).forEach(z=>{add('travessa',TRp,[xa,y,z],[xb,y,z],xb-xa-10,{oit:true});
+        [xa,xb].forEach(x=>{const k=`${y}|${x}|${Math.round(z)}`;girtEnds.set(k,(girtEnds.get(k)||0)+1);});});}});
   const braced=nV===1?[0]:[0,nV-1];
   braced.forEach(j=>{const y0=ys[j],y1=ys[j+1];
     [[0,B/2],[B,B/2]].forEach(([xe,xr])=>{const a=[xe,y0,H],b=[xr,y1,Zr],c=[xr,y0,Zr],d=[xe,y1,H];add('cb',CBp,a,b,dist(a,b)+200);add('cb',CBp,c,d,dist(c,d)+200);});
@@ -321,15 +368,17 @@ function build(p){
   const cnt={};groups.forEach(g=>{cnt[g.type]=(cnt[g.type]||0)+1;g.mark=PRE[g.type]+cnt[g.type];g.kgUn=g.cut/1000*g.prof.kgm;g.kgTot=g.kgUn*g.qty;});
   mem.forEach(m=>m.mark=gmap.get(m.gk).mark);
   // chapas
-  const dCh=p.dCh,eCh=edgeOf(dCh)[0],aF=Math.max(R5(2*dCh),clrOf(dCh)),ed=R5up(Math.max(eCh,1.75*dCh)),g=Math.max(Pp.bf,R5(3*dCh));
-  const PB={mark:'PB1',desc:'Placa de base',t:p.tBase,W:g+2*ed,L:Pp.d+2*(aF+ed),qty:2*nF,hole:dCh+6,a:aF,ed,g,
-    holes:[[-g/2,-(Pp.d/2+aF)],[g/2,-(Pp.d/2+aF)],[-g/2,Pp.d/2+aF],[g/2,Pp.d/2+aF]]};
+  const dCh=p.dCh,eCh=edgeOf(dCh)[0],aF=Math.max(R5(2*dCh),clrOf(dCh)),ed=R5up(Math.max(eCh,1.75*dCh));
+  const basePlate=(pr,mark,desc,qty)=>{const g=Math.max(pr.bf,R5(3*dCh));return {mark,desc,prof:pr,t:p.tBase,W:g+2*ed,L:pr.d+2*(aF+ed),qty,hole:dCh+6,a:aF,ed,g,
+    holes:[[-g/2,-(pr.d/2+aF)],[g/2,-(pr.d/2+aF)],[-g/2,pr.d/2+aF],[g/2,pr.d/2+aF]]};};
+  const PB=basePlate(Pp,'PB1','Placa de base do pilar',2*nF),PB2=basePlate(PLp,'PB2','Placa de base do pilarete',2*pilX.length),g=PB.g;
   const CT={mark:'CT1',desc:'Chapa de topo viga-pilar',t:p.tTopo,W:Lvp.W,L:Lvp.H,qty:2*nF};
   const CC={mark:'CC1',desc:'Chapa de emenda da cumeeira',t:p.tTopo,W:Lc.W,L:Lc.H,qty:2*nF};
   const clT=cleat(Tp,p.dParT,10),clG=cleat(TRp,p.dParT,10);
   const ST={mark:'ST1',desc:'Suporte de terça',t:clT.t,W:clT.W,L:clT.H,qty:2*nT*nF};
-  const STL={mark:'ST2',desc:'Suporte de travessa',t:clG.t,W:clG.W,L:clG.H,qty:2*girtZ.length*nF};
-  const plates=[PB,CT,CC,ST,STL].filter(x=>x.qty>0);
+  const nGo=[...girtEnds.values()].reduce((a,b)=>a+b,0);
+  const STL={mark:'ST2',desc:'Suporte de travessa',t:clG.t,W:clG.W,L:clG.H,qty:2*girtZ.length*nF+[...girtEnds.keys()].length};
+  const plates=[PB,PB2,CT,CC,CP,ST,STL,CM].filter(x=>x.qty>0);
   plates.forEach(x=>{x.kgUn=x.t*x.W*x.L*7.85e-6;x.kgTot=x.kgUn*x.qty;});
 
   // reconhecimento: cada nó do modelo é classificado pelas peças que se encontram nele;
@@ -342,6 +391,10 @@ function build(p){
       purS.forEach(()=>nodes.push({kind:'LT',sides,key:`LT|${Tp.key}|${Vp.key}|${sides}`}));
       girtZ.forEach(()=>nodes.push({kind:'LTR',sides,key:`LTR|${TRp.key}|${Pp.key}|${sides}`}));}
     nodes.push({kind:'LC',key:`LC|${Vp.key}|${p.incl}|${p.nbC}|${p.dPar}|${p.tTopo}`});});
+  endYs.forEach(()=>pilX.forEach(()=>{nodes.push({kind:'LB',rank:1,key:`LB|${PLp.key}|${p.tBase}|${dCh}`});nodes.push({kind:'LPT',key:`LPT|${PLp.key}|${Vp.key}|${dpt}`});}));
+  girtEnds.forEach((n,k)=>{const x=+k.split('|')[1],corner=x===0||x===B;
+    nodes.push({kind:'LTR',rank:corner?2:1,sides:corner?1:n,key:`LTR|${TRp.key}|${corner?'canto':PLp.key}|${corner?1:n}`});});
+  mfPts.forEach(q=>nodes.push({...q,key:`${q.kind}|${MFp.key}|${q.sides}|${q.kind==='LMF'?Vp.key+Tp.key:Pp.key+TRp.key}`}));
   mem.filter(q=>q.type==='cb'||q.type==='cl').forEach(q=>{
     const v=[q.b[0]-q.a[0],q.b[1]-q.a[1],q.b[2]-q.a[2]],n=Math.hypot(...v);let c;
     if(q.type==='cb'){const u=[q.b[0]-q.a[0],0,q.b[2]-q.a[2]],un=Math.hypot(...u);c=Math.abs(v[0]*u[0]+v[2]*u[2])/(n*un);}
@@ -349,15 +402,25 @@ function build(p){
     const ang=Math.round(Math.acos(c)*1800/Math.PI)/10,kind=q.type==='cb'?'LCB':'LCL';
     for(let s=0;s<2;s++)nodes.push({kind,dia:q.prof.d,ang,key:`${kind}|${q.prof.key}|${ang}`});});
   const cmap=new Map();nodes.forEach(nd=>{if(!cmap.has(nd.key))cmap.set(nd.key,{...nd,count:0});cmap.get(nd.key).count++;});
-  const KORD=['LB','LVP','LC','LT','LTR','LCB','LCL'];
-  const conns=[...cmap.values()].sort((a,b)=>KORD.indexOf(a.kind)-KORD.indexOf(b.kind)||(b.sides||0)-(a.sides||0));
+  const KORD=['LB','LVP','LC','LPT','LT','LTR','LMF','LMP','LCB','LCL'];
+  const conns=[...cmap.values()].sort((a,b)=>KORD.indexOf(a.kind)-KORD.indexOf(b.kind)||(a.rank||0)-(b.rank||0)||(b.sides||0)-(a.sides||0));
   const kc={};conns.forEach(c=>{kc[c.kind]=(kc[c.kind]||0)+1;c.mark=c.kind+kc[c.kind];});
   const A325='Parafuso ASTM A325 com porca e arruela',A307='Parafuso ASTM A307 com porca e arruela';
   conns.forEach(c=>{c.checks=[];
-    if(c.kind==='LB'){c.title='Base de pilar';c.desc=`${Pp.label} soldado na PB1 · 4 chumbadores ø${numBR(dCh)}`;
+    if(c.kind==='LB'){const pb=c.rank?PB2:PB;c.pb=pb;c.title=c.rank?'Base de pilarete':'Base de pilar';c.desc=`${pb.prof.label} soldado na ${pb.mark} · 4 chumbadores ø${numBR(dCh)}`;
       c.bolts=[['Chumbador com porca e arruela, L = 600 mm',dCh,4]];
       if(ed<eCh)c.checks.push(`Borda da placa de ${ed} mm, menor que ${eCh} mm.`);
-      if(g<3*dCh)c.checks.push(`Distância entre chumbadores de ${g} mm, menor que 3d.`);}
+      if(pb.g<3*dCh)c.checks.push(`Distância entre chumbadores de ${pb.g} mm, menor que 3d.`);}
+    else if(c.kind==='LPT'){c.title='Topo do pilarete na viga';c.desc=`CP1 com furos oblongos verticais · 2 parafusos ø${numBR(dpt)}`;
+      c.bolts=[[A325,dpt,2]];const livre=PLp.d-2*PLp.tf-10;
+      if(CP.W>livre)c.checks.push(`A chapa CP1 (${CP.W} mm) não cabe entre as mesas do pilarete ${PLp.label} (${nf0.format(livre)} mm livres).`);
+      if((PLp.bf-PLp.tw)/2<clrOf(dpt)-5)c.checks.push(`Mesa estreita no pilarete: pouca folga para apertar o parafuso.`);
+      if((Vp.bf-PLp.tw)/2<10)c.checks.push('Pilarete mais largo que a mesa da viga.');}
+    else if(c.kind==='LMF'||c.kind==='LMP'){const col=c.kind==='LMP',er=edgeOf(p.dParT)[1];
+      c.title=(col?'Mão-francesa no pilar':'Mão-francesa na viga')+(c.sides===2?', dos dois lados':', de um lado');
+      c.desc=`${c.sides} ${MFp.label} · ${2*c.sides} parafusos ø${numBR(p.dParT)} · chapa CM1`;c.bolts=[[A307,p.dParT,2*c.sides]];
+      if(MFp.bf/2<er)c.checks.push(`Aba de ${MFp.bf} mm pequena para parafuso ø${numBR(p.dParT)}: furo no meio da aba fica a ${numBR(MFp.bf/2)} mm da borda (mínimo ${er} mm).`);
+      const T2=col?TRp:Tp;if(cMF-(T2.t||T2.tf)<clrOf(p.dParT))c.checks.push(`Furo na ${col?'travessa':'terça'} muito perto da mesa.`);}
     else if(c.kind==='LVP'){c.title='Viga-pilar (beiral)';c.desc=`Chapa de topo CT1 estendida · ${p.nbVP} parafusos ø${numBR(p.dPar)}`;
       c.bolts=[[A325,p.dPar,p.nbVP]];c.checks=checkEndPlate(Lvp,Vp,Pp);
       if(Pp.kind!=='W'||Vp.kind!=='W')c.checks.push('Pórtico com perfil Ue: este detalhe foi pensado para perfil W.');}
@@ -365,8 +428,9 @@ function build(p){
       c.bolts=[[A325,p.dPar,p.nbC]];c.checks=checkEndPlate(Lc,Vp,null);}
     else if(c.kind==='LT'){c.title=c.sides===2?'Terça em apoio intermediário':'Terça em apoio de extremidade';
       c.desc=`ST1 na mesa da viga · ${2*c.sides} parafusos ø${numBR(p.dParT)}`;c.bolts=[[A307,p.dParT,2*c.sides]];c.checks=checkCleat(clT,Tp);}
-    else if(c.kind==='LTR'){c.title=c.sides===2?'Travessa em apoio intermediário':'Travessa em apoio de extremidade';
-      c.desc=`ST2 na mesa do pilar · ${2*c.sides} parafusos ø${numBR(p.dParT)}`;c.bolts=[[A307,p.dParT,2*c.sides]];c.checks=checkCleat(clG,TRp);}
+    else if(c.kind==='LTR'){const rk=c.rank||0;
+      c.title=rk===2?'Travessa de oitão no pilar de canto':rk===1?(c.sides===2?'Travessa de oitão no pilarete':'Travessa de oitão no pilarete, um lado'):(c.sides===2?'Travessa em apoio intermediário':'Travessa em apoio de extremidade');
+      c.desc=`ST2 na ${rk===2?'alma do pilar':rk===1?'mesa do pilarete':'mesa do pilar'} · ${2*c.sides} parafusos ø${numBR(p.dParT)}`;c.bolts=[[A307,p.dParT,2*c.sides]];c.checks=checkCleat(clG,TRp);}
     else{const roof=c.kind==='LCB';c.title=roof?'Tirante da cobertura na alma da viga':'Tirante lateral na alma do pilar';
       c.desc=`Barra ø${numBR(c.dia)} · θ = ${deg1(c.ang)}° · arruela biselada`;
       c.bolts=[['Porca e contraporca para tirante',c.dia,2],['Arruela biselada para tirante',c.dia,1]];
@@ -385,9 +449,9 @@ function build(p){
   if(p.mureta*1000>=H-300)warns.push('Alvenaria chega ao beiral: nenhuma travessa lateral foi gerada.');
   if(nAlert)warns.push(`${nAlert} alerta(s) nas ligações. Veja a aba Ligações.`);
   if(rafCut<500)warns.push('Viga muito curta: revise o vão e o perfil do pilar.');
-  return {p,B,L,H,i,th,cs,sn,nV,nF,e,Zr,ys,hv,zFace,Lvp,Lc,clT,clG,conns,nAlert,colCut,rafCut,Ls,purS,purX,girtZ,mur,mem,groups,plates,pl:{PB,CT,CC,ST,STL},bolts,
+  return {p,B,L,H,i,th,cs,sn,nV,nF,e,Zr,ys,hv,zFace,Lvp,Lc,clT,clG,conns,nAlert,pilX,pilTop,zBotAt,CP,PB2,PL:PLp,MF:MFp,mfV,mfP,mfS,mfZ,cMF,yMF,CM,colCut,rafCut,Ls,purS,purX,girtZ,mur,mem,groups,plates,pl:{PB,CT,CC,ST,STL},bolts,
     P:Pp,V:Vp,T:Tp,TR:TRp,kgPerf,kgCh,kgTot:kgPerf+kgCh,area,warns,
-    markOf:t=>groups.filter(g=>g.type===t),conn:(k,sd)=>conns.find(c=>c.kind===k&&(!sd||c.sides===sd))};
+    markOf:t=>groups.filter(g=>g.type===t),conn:(k,sd,rk=0)=>conns.find(c=>c.kind===k&&(!sd||c.sides===sd)&&(c.rank||0)===rk)};
 }
 
 /* ---------------- Desenho 2D (modelo em mm, y para cima) ---------------- */
@@ -447,9 +511,15 @@ function drawLocacao(m){
     pb.holes.forEach(([hu,hv])=>d.C(y+hu,x+hv,pb.hole/2,'CHAPA'));
     d.T(y+pb.W/2+ts*.2,x+(x===0?-pb.L/2-ts*.8:pb.L/2+ts*.15),'PB1','TEXTO',{h:ts*.65});
   }));
+  if(m.pilX.length){const p2=m.PB2,pp=sectionPts(m.PL);
+    [0,m.L].forEach(y=>m.pilX.forEach(x=>{
+      d.R(y-p2.L/2,x-p2.W/2,p2.L,p2.W,'CHAPA');d.P(pp.map(([w,h])=>[y+h,x+w]),'PILAR');
+      p2.holes.forEach(([hu,hv])=>d.C(y+hv,x+hu,p2.hole/2,'CHAPA'));
+      d.T(y+(y?-p2.L/2-ts*.2:p2.L/2+ts*.2),x+p2.W/2+ts*.15,'PB2','TEXTO',{h:ts*.65,an:y?'end':'start'});}));
+    d.chain([0,...m.pilX,m.B],0,ext+2*r+ts,true);}
   const yb=bayDims(d,m,ext,r);
-  d.D(0,0,0,m.B,ext+2*r+ts);
-  d.heading(m.L/2,yb-ts*3.4,'LOCAÇÃO DAS BASES',subline(m)+' · placas PB1 conforme detalhe');
+  d.D(0,0,0,m.B,ext+2*r+ts*(m.pilX.length?2.8:1));
+  d.heading(m.L/2,yb-ts*3.4,'LOCAÇÃO DAS BASES',subline(m)+(m.pilX.length?' · pilaretes nos oitões com placa PB2':'')+' · placas conforme detalhe das ligações');
   return d;}
 
 function arrow(d,x1,y1,x2,y2,ly){d.L(x1,y1,x2,y2,ly);const a=Math.atan2(y2-y1,x2-x1),k=d.ts*.6;
@@ -504,6 +574,10 @@ function drawPortico(m){
   d.tag(B/2,Zr+Lc.yBot,B/2,Zr-hv-ts*5.5,cn('LC'));
   {const s2=m.purS[Math.min(2,m.purS.length-1)],xp=s2*cs,zp=H+s2*sn-hv;d.tag(xp,zp,xp+ts*2,zp-ts*4.5,[cn('LT',2),cn('LT',1)].filter(Boolean).join(' / '));}
   d.tag(B-P.d/2,ts*.2,B-P.d/2-ts*5,ts*3.5,cn('LB'));
+  m.mfS.forEach(s=>[0,1].forEach(side=>{const ax=side?B-s*cs:s*cs,az=H+s*sn,nx=side?sn:-sn;
+    const n1=-(V.d/2+40),n2=V.d/2+m.cMF;d.L(ax+nx*n1,az+cs*n1,ax+nx*n2,az+cs*n2,'CONTRAV');}));
+  if(m.mfS.length){const s3=m.mfS[m.mfS.length-1],ax=B-s3*cs,az=H+s3*sn-V.d/2-40;
+    d.tag(ax,az,ax-ts*2,az-ts*4,[cn('LMF',2),cn('LMF',1)].filter(Boolean).join(' / '));}
   d.T(B*3/4,zc(B*3/4)+hv+T.d+ts*1.4,`i = ${numBR(m.p.incl)}%`,'TEXTO',{an:'middle',rot:-deg});
   // cotas
   d.D(0,0,B,0,-(pb.t+ts*2.2));
@@ -513,6 +587,31 @@ function drawPortico(m){
   const sv=[0,...m.purS,m.Ls];
   for(let k=0;k<sv.length-1;k++)d.D(sv[k]*cs,H+sv[k]*sn,sv[k+1]*cs,H+sv[k+1]*sn,hv+T.d+ts*1.1);
   d.heading(B/2,-ts*9.2,`PÓRTICO TÍPICO · EIXOS 1 A ${m.nF}`,subline(m)+' · terças cotadas na rampa');
+  return d;}
+
+function drawOitao(m){
+  const {B,H,Zr,i,hv}=m,P=m.P,V=m.V,TR=m.TR,PL=m.PL,pb=m.pl.PB,t=m.p.tTopo;
+  const d=new Dwg('oitao','Oitão',Math.max(B,Zr)/55),ts=d.ts,r=ts*1.05,zc=x=>H+(x<=B/2?x:B-x)*i;
+  d.L(-ts*3,-pb.t-30,B+ts*3,-pb.t-30,'ANOT');
+  [0,B].forEach((x,k)=>{d.L(x,-ts*4.5,x,m.colCut+ts*1.2,'EIXO');d.bubble(x,-ts*4.5-r,k?'B':'A');
+    d.R(x-pb.L/2,-pb.t,pb.L,pb.t,'CHAPA');d.R(x-P.d/2,0,P.d,m.colCut,'PILAR');});
+  [[P.d/2+t,B/2],[B-P.d/2-t,B/2]].forEach(([xa,xb])=>{d.L(xa,zc(xa)+hv,xb,zc(xb)+hv,'VIGA');d.L(xa,zc(xa)-hv,xb,zc(xb)-hv,'VIGA');});
+  const sup=[0,...m.pilX,B];
+  m.pilX.forEach(x=>{const zt=m.pilTop(x),p2=m.PB2;d.R(x-p2.W/2,-p2.t,p2.W,p2.t,'CHAPA');d.R(x-PL.bf/2,0,PL.bf,zt,'PILAR');
+    d.R(x-m.CP.t/2,zt+m.CP.gap-m.CP.L,m.CP.t,m.CP.L,'CHAPA');d.L(x,-ts*1.5,x,zt+ts,'EIXO');
+    const g=m.groups.find(q=>q.type==='pilarete'&&q.cut===zt);if(g)d.T(x-PL.bf/2-ts*.35,zt*.45,g.mark,'TEXTO',{an:'middle',rot:90});});
+  m.mem.filter(q=>q.oit&&q.a[1]===0).forEach(q=>{const z=q.a[2];d.L(q.a[0],z-TR.d/2,q.b[0],z-TR.d/2,'TRAVESSA');d.L(q.a[0],z+TR.d/2,q.b[0],z+TR.d/2,'TRAVESSA');});
+  if(m.mur>0){d.L(0,m.mur,B,m.mur,'ANOT');d.T(B/2,m.mur/2,'ALVENARIA (POR TERCEIROS)','ANOT',{an:'middle',h:ts*.7});}
+  const cn=(k,sd,rk)=>(m.conn(k,sd,rk)||{}).mark;
+  if(m.pilX.length){const x=m.pilX[0],zt=m.pilTop(x);
+    d.tag(x,zt+m.CP.gap/2,x+ts*4,zt-ts*3,cn('LPT'));d.tag(x,0,x+ts*4,ts*3,cn('LB',0,1));
+    const gz=m.mem.filter(q=>q.oit&&q.a[1]===0).map(q=>q.a[2]).sort((a,b)=>a-b);
+    if(gz.length>1){d.tag(x,gz[1],x+ts*4.5,gz[1]+ts*2.6,[cn('LTR',2,1),cn('LTR',1,1)].filter(Boolean).join(' / '));d.tag(P.d/2,gz[1],P.d/2+ts*4,gz[1]-ts*2.6,cn('LTR',1,2));}
+    d.chain(sup,0,-(pb.t+ts*2.2),false);
+    d.chain([0,...new Set(m.mem.filter(q=>q.oit).map(q=>Math.round(q.a[2])))].sort((a,b)=>a-b),0,pb.L/2+ts*1.4,true);}
+  else d.T(B/2,H*.5,'Oitão sem pilaretes: ative a opção no painel Oitões','ANOT',{an:'middle'});
+  d.D(0,0,B,0,-(pb.t+ts*4));
+  d.heading(B/2,-ts*10,'OITÃO · EIXOS 1 E '+m.nF,subline(m)+' · vista externa, fundo simétrico');
   return d;}
 
 function drawLateral(m){
@@ -562,8 +661,12 @@ function drawPecas(m){
   let y=v0-ts*7.5;
   d.T(0,y,'DEMAIS PEÇAS (BARRA RETA)','TEXTO',{h:ts*1.05});y-=ts*1.6;
   m.groups.filter(g=>g.type!=='pilar'&&g.type!=='viga').forEach(g=>{
-    const cl=g.type==='terca'?m.clT:m.clG;
-    const extra=g.type==='cb'||g.type==='cl'?' · rosca de 100 mm nas duas pontas':` · 2 furos ø${numBR(cl.hole)} em cada ponta, a ${cl.e} mm da ponta, espaçados ${cl.s} mm`;
+    const cl=g.type==='terca'?m.clT:m.clG,eM=edgeOf(m.p.dParT)[0];
+    const gzs=g.type==='pilarete'?[...new Set(m.mem.filter(q=>q.oit&&q.b[2]<=g.cut).map(q=>Math.round(q.a[2])))].sort((a,b)=>a-b):[];
+    const extra=g.type==='cb'||g.type==='cl'?' · rosca de 100 mm nas duas pontas'
+      :g.type==='mf'?` · 1 furo ø${numBR(holeOf(m.p.dParT))} em cada ponta, a ${eM} mm da ponta, no meio da aba`
+      :g.type==='pilarete'?` · base PB2 · ST2 a ${gzs.join(', ')} mm · 2 furos ø${numBR(m.CP.hole)} na alma a ${m.CP.yb} mm do topo`
+      :` · 2 furos ø${numBR(cl.hole)} em cada ponta, a ${cl.e} mm da ponta, espaçados ${cl.s} mm`;
     d.T(0,y,`${g.mark} · ${DESC[g.type]} · ${g.prof.label} · L = ${g.cut} mm · ${g.qty} un${extra}`,'ANOT',{h:ts*.8});y-=ts*1.25;});
   d.heading(Math.max(m.colCut,m.rafCut)/2,y-ts*2.2,'DESENHOS DE FABRICAÇÃO',subline(m));
   return d;}
@@ -593,7 +696,7 @@ function plateFront(d,ox,oz,L,V,mark){
   d.T(ox,oz+L.yTop+ts*.9,`VISTA DA CHAPA ${mark}`,'TEXTO',{an:'middle',h:ts*.9});}
 
 function detLB(m,c,ts){
-  const pb=m.pl.PB,P=m.P,dCh=m.p.dCh,d=new Dwg('LB','',ts);
+  const pb=c.pb,P=pb.prof,dCh=m.p.dCh,d=new Dwg('LB','',ts);
   const W=pb.W,L=pb.L,hy=P.d/2+pb.a,g=pb.g;
   d.R(-W/2,-L/2,W,L,'CHAPA');d.P(sectionPts(P),'PILAR');
   pb.holes.forEach(([x,y])=>d.C(x,y,pb.hole/2,'CHAPA'));
@@ -611,9 +714,9 @@ function detLB(m,c,ts){
   d.D(u(L/2),0,u(L/2),t,-ts*1.2,numBR(t));
   d.T(u(0),t+hc+ts*.9,'CORTE','TEXTO',{an:'middle',h:ts*.9});
   return finishDet(d,c,[
-    `PB1 · chapa ${numBR(t)} mm · ${W} x ${L} mm · ${pb.qty} un · ${nf1.format(pb.kgUn)} kg/un`,
+    `${pb.mark} · chapa ${numBR(t)} mm · ${W} x ${L} mm · ${pb.qty} un · ${nf1.format(pb.kgUn)} kg/un`,
     `4 furos ø${pb.hole} para chumbadores ø${numBR(dCh)}, L = 600 mm (confirmar com o projeto de fundações)`,
-    `Pilar ${P.label} soldado à placa com filete contínuo (dimensão conforme cálculo)`,
+    `${c.rank?'Pilarete':'Pilar'} ${P.label} soldado à placa com filete contínuo (dimensão conforme cálculo)`,
     'Graute não retrátil de 30 mm, aplicado após o nivelamento']);}
 
 function detVP(m,c,ts){
@@ -657,9 +760,9 @@ function detC(m,c,ts){
     'Cotas verticais a partir do eixo da viga na cumeeira',
     'Soldas conforme cálculo']);}
 
-function detSup(m,c,ts,S,T,cl,plate,supLy,memLy,supName){
+function detSup(m,c,ts,S,T,cl,plate,supLy,memLy,supName,rot){
   const d=new Dwg(c.kind,'',ts),sides=c.sides,len=Math.max(300,T.d*2);
-  d.P(sectionPts(S).map(([x,z])=>[x,z-S.d/2]),supLy);
+  if(rot)d.P(sectionPts(S).map(([x,z])=>[z,x-S.bf/2]),supLy);else d.P(sectionPts(S).map(([x,z])=>[x,z-S.d/2]),supLy);
   d.R(-cl.W/2,0,cl.W,cl.H,'CHAPA');
   const segs=sides===2?[[-cl.gap/2-len,-cl.gap/2],[cl.gap/2,cl.gap/2+len]]:[[cl.gap/2,cl.gap/2+len]];
   segs.forEach(([a,b])=>{d.R(a,0,b-a,T.d,memLy);d.L(a,T.t||T.tf,b,T.t||T.tf,'ANOT');d.L(a,T.d-(T.t||T.tf),b,T.d-(T.t||T.tf),'ANOT');
@@ -672,7 +775,7 @@ function detSup(m,c,ts,S,T,cl,plate,supLy,memLy,supName){
   d.D(-cl.W/2,0,-cl.W/2,cl.H,(sides===2?len:0)+ts*1.4);
   const mm=mk(m,T===m.T?'terca':'travessa');
   segs.forEach(([a,b])=>d.T((a+b)/2+(a<0?-ts:ts),T.d/2-ts*.35,mm,'TEXTO',{an:'middle',h:ts*.9}));
-  d.T(0,-S.d-ts*1.2,supName,'TEXTO',{an:'middle',h:ts*.8});
+  d.T(0,-(rot?S.bf:S.d)-ts*1.2,supName,'TEXTO',{an:'middle',h:ts*.8});
   d.T(cl.W/2+ts*.3,cl.H+ts*.3,plate,'TEXTO',{h:ts*.8});
   return finishDet(d,c,[
     `${plate} · chapa ${numBR(cl.t)} mm · ${cl.W} x ${cl.H} mm · soldada na mesa de ${supName}`,
@@ -700,9 +803,57 @@ function detTir(m,c,ts){
     'Rosca de 100 mm nas duas pontas da barra; esticar antes do fechamento',
     roof?'Vista no plano da cobertura':'Vista no plano da parede']);}
 
-const DET={LB:detLB,LVP:detVP,LC:detC,
+function slot(d,cx,cy,w,h,ly){const r=w/2,pts=[];for(let k=0;k<=8;k++){const a=Math.PI*k/8;pts.push([cx+r*Math.cos(a),cy+h/2-r+r*Math.sin(a)]);}
+  for(let k=0;k<=8;k++){const a=Math.PI+Math.PI*k/8;pts.push([cx+r*Math.cos(a),cy-h/2+r+r*Math.sin(a)]);}d.P(pts,ly);}
+function detPT(m,c,ts){
+  const d=new Dwg('LPT','',ts),V=m.V,PL=m.PL,CP=m.CP,zt=-CP.gap,zb=zt-CP.yb;
+  d.P(sectionPts(V).map(([x,z])=>[x,z+V.d/2]),'VIGA');
+  d.R(-CP.W/2,-CP.L,CP.W,CP.L,'CHAPA');
+  const zl=zt-Math.max(400,PL.d*2);
+  [-PL.d/2,PL.d/2].forEach(x=>d.L(x,zl,x,zt,'PILAR'));d.L(-PL.d/2,zt,PL.d/2,zt,'PILAR');
+  [-PL.d/2+PL.tf,PL.d/2-PL.tf].forEach(x=>d.L(x,zl,x,zt,'ANOT'));breakH(d,-PL.d/2-ts*.4,PL.d/2+ts*.4,zl);
+  [-CP.s/2,CP.s/2].forEach(x=>{slot(d,x,zb,CP.hole,CP.slot,'CHAPA');d.C(x,zb,CP.d/2,'CHAPA');});
+  d.L(0,zl-ts*.5,0,V.d+ts,'EIXO');
+  d.chain([-CP.W/2,-CP.s/2,CP.s/2,CP.W/2],-CP.L,-ts*1.4,false);
+  d.chain([-CP.L,zb,zt,0],CP.W/2,-ts*1.5,true);d.D(CP.W/2,-CP.L,CP.W/2,0,-ts*3.3);
+  d.D(-PL.d/2,zt,-PL.d/2,0,ts*1.5,String(CP.gap));
+  d.T(CP.W/2+ts*.3,-CP.L-ts*1.6,'CP1','TEXTO',{h:ts*.8});
+  d.T(0,V.d+ts*1.3,`${mk(m,'viga')} (corte)`,'TEXTO',{an:'middle',h:ts*.8});d.T(-PL.d/2-ts*.4,zl+ts,`${PL.label}`,'TEXTO',{an:'end',h:ts*.75});
+  return finishDet(d,c,[
+    `CP1 · chapa ${numBR(CP.t)} mm · ${CP.W} x ${CP.L} mm · soldada na mesa inferior da viga, encostada na alma do pilarete`,
+    `2 parafusos ASTM A325 ø${numBR(CP.d)} · furos oblongos ${numBR(CP.hole)} x ${CP.slot} mm na CP1, verticais · furos ø${numBR(CP.hole)} no pilarete`,
+    `Folga de ${CP.gap} mm entre o topo do pilarete e a viga: o pilarete recebe o vento do oitão, não a carga do telhado`,
+    'Apertar sem travar o deslizamento vertical · vista no plano do oitão']);}
+function detMF(m,c,ts){
+  const col=c.kind==='LMP',S=col?m.P:m.V,T=col?m.TR:m.T,g=col?m.mfP:m.mfV,MF=m.MF,CM=m.CM,d=new Dwg(c.kind,'',ts);
+  const yL=m.yMF,cM=m.cMF,zLow=-S.d-40,zUp=cM,sides=c.sides===2?[1,-1]:[1],hole=holeOf(m.p.dParT);
+  d.P(sectionPts(S).map(([x,z])=>[x,z-S.d/2]),col?'PILAR':'VIGA');
+  const ext=g.a+Math.max(150,T.d);
+  d.R(c.sides===2?-ext:-S.bf/2-40,0,c.sides===2?2*ext:ext+S.bf/2+40,T.d,col?'TRAVESSA':'TERCA');
+  [T.t||T.tf,T.d-(T.t||T.tf)].forEach(z=>d.L(c.sides===2?-ext:-S.bf/2-40,z,ext,z,'ANOT'));
+  d.R(-CM.W/2,-S.d-CM.L,CM.W,CM.L,'CHAPA');
+  sides.forEach(sg=>{const x1=sg*yL,x2=sg*g.a,ux=(x2-x1)/g.L0,uz=(zUp-zLow)/g.L0,nx=-uz,nz=ux,b=MF.bf;
+    const ext2=edgeOf(m.p.dParT)[0];
+    const A=[x1-ux*ext2,zLow-uz*ext2],Bp=[x2+ux*ext2,zUp+uz*ext2];
+    [-b/2,b/2].forEach(o=>d.L(A[0]+nx*o*sg,A[1]+nz*o*sg,Bp[0]+nx*o*sg,Bp[1]+nz*o*sg,'CONTRAV'));
+    d.L(A[0]-nx*b/2*sg,A[1]-nz*b/2*sg,A[0]+nx*b/2*sg,A[1]+nz*b/2*sg,'CONTRAV');d.L(Bp[0]-nx*b/2*sg,Bp[1]-nz*b/2*sg,Bp[0]+nx*b/2*sg,Bp[1]+nz*b/2*sg,'CONTRAV');
+    d.C(x1,zLow,hole/2,'CHAPA');d.C(x2,zUp,hole/2,'CHAPA');});
+  d.D(0,zUp,g.a,zUp,T.d-cM+ts*1.4);
+  d.chain([zLow,-S.d,0,zUp],g.a,-ts*1.6,true);
+  d.D(yL,zLow,g.a,zUp,-ts*1.6,`${nf0.format(Math.round(g.L0))} entre furos`);
+  d.T(-CM.W/2-ts*.3,-S.d-CM.L,'CM1','TEXTO',{an:'end',h:ts*.8});
+  d.T(g.a*.5+ts*1.2,(zLow+zUp)/2-ts*1.6,mk(m,'mf'),'TEXTO',{h:ts*.85});
+  d.T(-S.bf/2-ts*.4,-S.d/2,col?mk(m,'pilar'):mk(m,'viga'),'TEXTO',{an:'end',h:ts*.8});
+  d.T(ext-ts*.3,T.d+ts*.4,col?mk(m,'travessa'):mk(m,'terca'),'TEXTO',{an:'end',h:ts*.8});
+  return finishDet(d,c,[
+    `${MF.label} a 45° · comprimento de corte ${g.cut} mm · ${c.sides} por ${col?'pilar':'viga'} neste ponto`,
+    `1 parafuso ASTM A307 ø${numBR(m.p.dParT)} em cada ponta · furos ø${numBR(hole)} · furo na ${col?'travessa':'terça'} a ${cM} mm da face ${col?'do pilar':'da viga'}`,
+    `CM1 · chapa ${numBR(CM.t)} mm · ${CM.W} x ${CM.L} mm · soldada na mesa ${col?'interna do pilar':'inferior da viga'}`,
+    `Vista ao longo ${col?'do pilar':'da viga'} · trava a mesa ${col?'interna':'inferior'} contra flambagem lateral`]);}
+const DET={LB:detLB,LVP:detVP,LC:detC,LPT:detPT,LMF:detMF,LMP:detMF,
   LT:(m,c,ts)=>detSup(m,c,ts,m.V,m.T,m.clT,'ST1','VIGA','TERCA',m.V.label),
-  LTR:(m,c,ts)=>detSup(m,c,ts,m.P,m.TR,m.clG,'ST2','PILAR','TRAVESSA',m.P.label),
+  LTR:(m,c,ts)=>c.rank===2?detSup(m,c,ts,m.P,m.TR,m.clG,'ST2','PILAR','TRAVESSA','alma do '+m.P.label,true)
+    :c.rank===1?detSup(m,c,ts,m.PL,m.TR,m.clG,'ST2','PILAR','TRAVESSA',m.PL.label):detSup(m,c,ts,m.P,m.TR,m.clG,'ST2','PILAR','TRAVESSA',m.P.label),
   LCB:detTir,LCL:detTir};
 function mergeDwg(d,p,ox,oy){for(const e of p.e){const n={...e};if(e.t==='l'){n.x1+=ox;n.x2+=ox;n.y1+=oy;n.y2+=oy;}else{n.x+=ox;n.y+=oy;}d.e.push(n);}}
 function drawLigacoes(m){
@@ -719,6 +870,7 @@ const VIEWS=[
   {id:'cobertura',label:'Planta de cobertura',fn:drawCobertura},
   {id:'portico',label:'Pórtico típico',fn:drawPortico},
   {id:'lateral',label:'Elevação lateral',fn:drawLateral},
+  {id:'oitao',label:'Oitão',fn:drawOitao},
   {id:'pecas',label:'Peças',fn:drawPecas},
   {id:'ligacoes',label:'Ligações',fn:drawLigacoes},
   {id:'romaneio',label:'Romaneio'}];
@@ -761,13 +913,14 @@ function draw3D(){
   [[0,'A'],[m.B,'B']].forEach(([x,l])=>{const p=pr([x,-2300,0]);c.fillText(l,p[0],p[1]);});
   // placas de base
   c.fillStyle=tok('--d-chapa');const pb=m.pl.PB;
-  m.ys.forEach(y=>[0,m.B].forEach(x=>{const q=[[x-pb.L/2,y-pb.W/2,0],[x+pb.L/2,y-pb.W/2,0],[x+pb.L/2,y+pb.W/2,0],[x-pb.L/2,y+pb.W/2,0]].map(pr);
-    c.beginPath();q.forEach((p,k)=>k?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();}));
-  const sty={travessa:['--d-trav',1.3,[]],terca:['--d-terca',1.3,[]],cb:['--d-contrav',1,[5,3]],cl:['--d-contrav',1,[5,3]],viga:['--d-viga',3,[]],pilar:['--d-pilar',3,[]]};
-  ['travessa','terca','cb','cl','viga','pilar'].forEach(t=>{const [col,w,ds]=sty[t];c.strokeStyle=tok(col);c.lineWidth=w;c.setLineDash(ds);c.lineCap='round';
+  const bases=[...m.ys.flatMap(y=>[[0,y,pb],[m.B,y,pb]]),...(m.pilX.length?[0,m.L].flatMap(y=>m.pilX.map(x=>[x,y,{L:m.PB2.W,W:m.PB2.L}])):[])];
+  bases.forEach(([x,y,pb])=>{{const q=[[x-pb.L/2,y-pb.W/2,0],[x+pb.L/2,y-pb.W/2,0],[x+pb.L/2,y+pb.W/2,0],[x-pb.L/2,y+pb.W/2,0]].map(pr);
+    c.beginPath();q.forEach((p,k)=>k?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fill();}});
+  const sty={travessa:['--d-trav',1.3,[]],terca:['--d-terca',1.3,[]],cb:['--d-contrav',1,[5,3]],cl:['--d-contrav',1,[5,3]],mf:['--d-contrav',1.6,[]],viga:['--d-viga',3,[]],pilar:['--d-pilar',3,[]],pilarete:['--d-pilar',2,[]]};
+  ['travessa','terca','cb','cl','mf','viga','pilarete','pilar'].forEach(t=>{const [col,w,ds]=sty[t];c.strokeStyle=tok(col);c.lineWidth=w;c.setLineDash(ds);c.lineCap='round';
     c.beginPath();m.mem.filter(q=>q.type===t).forEach(q=>seg(q.a,q.b));c.stroke();});
   c.setLineDash([]);}
-function legend3D(){const it=[['--d-pilar','Pilares'],['--d-viga','Vigas'],['--d-terca','Terças'],['--d-trav','Travessas'],['--d-contrav','Contraventamentos'],['--d-chapa','Placas de base']];
+function legend3D(){const it=[['--d-pilar','Pilares'],['--d-viga','Vigas'],['--d-terca','Terças'],['--d-trav','Travessas'],['--d-contrav','Contraventamentos e mãos-francesas'],['--d-chapa','Placas de base']];
   $('#legend').innerHTML=it.map(([c,l])=>`<span><i style="background:var(${c})"></i>${l}</span>`).join('');}
 
 /* ---------------- Romaneio ---------------- */
@@ -849,14 +1002,15 @@ function buildForm(){
     for(const f of g.f){const id='f_'+f.id;
       if(f.kind==='num')h+=`<div class="f"><label for="${id}">${f.label}</label><span class="in"><input id="${id}" type="number" inputmode="decimal" step="${f.step}" min="${f.min}" max="${f.max}"><span class="unit">${f.unit}</span></span></div>`;
       else if(f.kind==='opt')h+=`<div class="f"><label for="${id}">${f.label}</label><span class="in"><select id="${id}">${f.opts.map(o=>`<option value="${o}">${numBR(o)}</option>`).join('')}</select><span class="unit">${f.unit}</span></span></div>`;
+      else if(f.kind==='chk')h+=`<div class="f ck"><label for="${id}">${f.label}</label><input id="${id}" type="checkbox"></div>`;
       else if(f.kind==='prof')h+=`<div class="f wide"><label for="${id}">${f.label}</label><select id="${id}">${f.opts().map(([gl,arr])=>`<optgroup label="${gl}">${arr.map(c=>`<option value="${c.key}">${esc(c.label)} · ${nf2.format(c.kgm)} kg/m</option>`).join('')}</optgroup>`).join('')}</select></div>`;
       else h+=`<div class="f wide"><label for="${id}">${f.label}</label><input id="${id}" type="text" maxlength="120"></div>`;}
     h+='</div></details>';}
   const form=$('#form');form.innerHTML=h;fillForm();
   let tmr;const on=()=>{clearTimeout(tmr);tmr=setTimeout(()=>{P=readForm();update();},140);};
   form.addEventListener('input',on);form.addEventListener('change',on);form.addEventListener('submit',e=>e.preventDefault());}
-function fillForm(){for(const f of FIELDS){const el=document.getElementById('f_'+f.id);if(el)el.value=P[f.id];}}
-function readForm(){const o={};for(const f of FIELDS){const el=document.getElementById('f_'+f.id);o[f.id]=el?el.value:P[f.id];if((f.kind==='num')&&o[f.id]==='')o[f.id]=P[f.id];}return sanitize(o);}
+function fillForm(){for(const f of FIELDS){const el=document.getElementById('f_'+f.id);if(!el)continue;if(f.kind==='chk')el.checked=!!P[f.id];else el.value=P[f.id];}}
+function readForm(){const o={};for(const f of FIELDS){const el=document.getElementById('f_'+f.id);o[f.id]=el?(f.kind==='chk'?el.checked:el.value):P[f.id];if((f.kind==='num')&&o[f.id]==='')o[f.id]=P[f.id];}return sanitize(o);}
 
 function buildTabs(){
   $('#tabs').innerHTML=VIEWS.map(v=>`<button type="button" class="tab" role="tab" data-v="${v.id}" aria-selected="${v.id===TAB}">${v.label}</button>`).join('');
