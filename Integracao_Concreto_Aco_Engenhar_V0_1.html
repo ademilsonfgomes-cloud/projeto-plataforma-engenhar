@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Integração Concreto-Aço Engenhar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: faixa da marca Engenhar + painel de arquivos à esquerda + vista 3D e tabela de elementos à direita */
+:root{
+  --bg:#edf2f7; --panel:#ffffff; --ink:#1b2c3e; --muted:#586c7c; --line:#d2dce6;
+  --brand:#102e4b; --brand-ink:#ffffff; --brand-sub:#bed6ea; --accent:#174a78; --accent-ink:#ffffff;
+  --sheet:#f6f8fa; --sel:#e8792b;
+  --c-pilar:#8d99a8; --c-viga:#a7b2be; --c-laje:#c7ced6; --c-parede:#b5aea3; --c-fund:#9a8f80; --c-outro:#b9c2cc; --c-arm:#c0392b;
+  --c-arq:#e2a23b; --edge:#3e4a57;
+  --warn-bg:#fff3dc; --warn-ink:#744800; --ok-bg:#e3f3e5; --ok-ink:#1f6b2a;
+  --f-disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --panel:#17202a; --ink:#e3eaf1; --muted:#93a3b3; --line:#2a3644;
+  --brand:#0b2238; --brand-ink:#ffffff; --brand-sub:#9fc0dc; --accent:#6fa3d6; --accent-ink:#0b1824;
+  --sheet:#121a23; --sel:#ff9a52;
+  --c-pilar:#7d8a99; --c-viga:#94a0ad; --c-laje:#6c7784; --c-parede:#8f877c; --c-fund:#7c7266; --c-outro:#7f8995; --c-arm:#e05a4a;
+  --c-arq:#f0b453; --edge:#c9d3dd;
+  --warn-bg:#2e2410; --warn-ink:#f2c879; --ok-bg:#16301b; --ok-ink:#8fd99a;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --panel:#17202a; --ink:#e3eaf1; --muted:#93a3b3; --line:#2a3644;
+  --brand:#0b2238; --brand-ink:#ffffff; --brand-sub:#9fc0dc; --accent:#6fa3d6; --accent-ink:#0b1824;
+  --sheet:#121a23; --sel:#ff9a52;
+  --c-pilar:#7d8a99; --c-viga:#94a0ad; --c-laje:#6c7784; --c-parede:#8f877c; --c-fund:#7c7266; --c-outro:#7f8995; --c-arm:#e05a4a;
+  --c-arq:#f0b453; --edge:#c9d3dd;
+  --warn-bg:#2e2410; --warn-ink:#f2c879; --ok-bg:#16301b; --ok-ink:#8fd99a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body)}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--brand);color:var(--brand-ink);padding-block:14px}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+.brand{display:grid;gap:2px}
+.brand small{font:500 11px var(--f-mono);letter-spacing:.18em;text-transform:uppercase;color:var(--brand-sub)}
+.brand h1{margin:0;font:700 26px/1 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+.steps{margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;font:500 12px var(--f-body)}
+.steps span{border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:4px 10px;color:var(--brand-sub)}
+.steps span.on{background:var(--brand-ink);color:var(--brand);border-color:var(--brand-ink)}
+button,.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 11px;border-radius:6px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;padding-block:16px;align-items:start}
+@media (max-width:920px){.wrap{grid-template-columns:minmax(0,1fr)}}
+aside{display:grid;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:10px;min-width:0}
+.card h2{margin:0;font:600 15px var(--f-disp);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+.slot{display:grid;gap:6px;padding:10px;border:1px dashed var(--line);border-radius:6px}
+.slot b{font:600 13px var(--f-body)}
+.slot .st{font:12px var(--f-mono);color:var(--muted);word-break:break-word}
+.slot .row{display:flex;flex-wrap:wrap;gap:6px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px}
+.chk input{width:16px;height:16px;accent-color:var(--accent);margin:0}
+label.rng{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input[type=range]{accent-color:var(--accent)}
+.note{font-size:12.5px;color:var(--muted);margin:0}
+main{min-width:0;display:grid;gap:12px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 12px;display:grid;gap:2px;min-width:0}
+.kpi span{font:500 11px var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;align-items:center;gap:6px}
+.kpi span i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.kpi b{font:600 20px var(--f-mono);font-variant-numeric:tabular-nums}
+.stage{position:relative;background:var(--sheet);border:1px solid var(--line);border-radius:8px;height:clamp(360px,62vh,820px);overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.stage-tools{position:absolute;right:8px;top:8px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.hint{position:absolute;left:10px;bottom:8px;font:11px var(--f-mono);color:var(--muted);background:var(--sheet);padding:2px 6px;border-radius:4px;pointer-events:none}
+.selcard{position:absolute;left:10px;top:10px;max-width:min(340px,calc(100% - 20px));background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--sel);border-radius:6px;padding:8px 11px;font-size:13px;display:grid;gap:2px}
+.selcard b{font:600 15px var(--f-disp);letter-spacing:.03em}
+.selcard dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
+.selcard dt{color:var(--muted)}.selcard dd{margin:0;font-family:var(--f-mono);font-size:12.5px}
+.loading{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--sheet) 80%,transparent);font:600 15px var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.msg{border-radius:6px;padding:7px 11px;font-size:13px}
+.msg.ok{background:var(--ok-bg);color:var(--ok-ink)}.msg.al{background:var(--warn-bg);color:var(--warn-ink)}
+.table-wrap{overflow:auto;max-height:420px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.tbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}
+.tbar h3{margin:0;font:600 16px var(--f-disp);text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
+select{font:13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;font:600 11px var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);z-index:1}
+td.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.mk{font:600 13px var(--f-mono);color:var(--accent)}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--bg)}
+tbody tr.on{background:color-mix(in srgb,var(--sel) 16%,transparent)}
+.dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:baseline}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top gutter">
+  <div class="top-in">
+    <div class="brand"><small>Engenhar · V0.1 · etapa 1</small><h1>Integração Concreto + Aço</h1></div>
+    <div class="steps" aria-label="Etapas">
+      <span class="on">1 · Ler IFC</span><span>2 · Lançar aço</span><span>3 · Ligações aço-concreto</span><span>4 · Pré-dimensionamento</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap gutter">
+  <aside>
+    <section class="card">
+      <h2>Arquivos IFC</h2>
+      <div class="slot">
+        <b>Estrutural (CypeCAD, TQS)</b>
+        <div class="st" id="stEst">Nenhum arquivo.</div>
+        <div class="row"><button class="primary" type="button" id="bEst">Abrir IFC estrutural</button></div>
+        <input type="file" id="fEst" accept=".ifc" hidden>
+      </div>
+      <div class="slot">
+        <b>Arquitetônico (referência)</b>
+        <div class="st" id="stArq">Nenhum arquivo.</div>
+        <div class="row"><button type="button" id="bArq">Abrir IFC arquitetônico</button></div>
+        <input type="file" id="fArq" accept=".ifc" hidden>
+      </div>
+      <button type="button" id="bEx">Recarregar o exemplo</button>
+      <p class="note">O arquivo é lido no seu navegador e não é enviado para nenhum servidor.</p>
+    </section>
+    <section class="card">
+      <h2>Exibição</h2>
+      <label class="chk"><input type="checkbox" id="vEst" checked> Mostrar o estrutural</label>
+      <label class="chk"><input type="checkbox" id="vArq" checked> Mostrar o arquitetônico</label>
+      <label class="chk"><input type="checkbox" id="vEdge" checked> Arestas no estrutural</label>
+      <label class="rng">Transparência do arquitetônico<input type="range" id="opArq" min="5" max="100" value="35"></label>
+    </section>
+    <section class="card">
+      <h2>Próximas etapas</h2>
+      <p class="note"><strong>2.</strong> Lançar vigas, pilares, tesouras e a grelha metálica, com encaixe nos pilares e nas faces de concreto.</p>
+      <p class="note"><strong>3.</strong> Ligações aço-concreto automáticas (placa de base, chapa embutida, chumbadores), com verificação de bordas no concreto.</p>
+      <p class="note"><strong>4.</strong> Pré-dimensionamento e exportação do aço em IFC.</p>
+    </section>
+  </aside>
+
+  <main>
+    <section class="summary" id="summary" aria-label="Elementos reconhecidos"></section>
+    <div id="msgs" aria-live="polite"></div>
+    <section class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="selcard" id="sel" hidden></div>
+      <div class="stage-tools"><button type="button" id="bFit">Enquadrar</button><button type="button" id="bTop">Planta</button></div>
+      <div class="hint">Arraste para girar · botão direito ou dois dedos para mover · role para zoom · clique numa peça para ver os dados</div>
+      <div class="loading" id="loading" hidden>Lendo o IFC…</div>
+    </section>
+    <section class="card">
+      <div class="tbar"><h3>Elementos do estrutural</h3>
+        <select id="filt" aria-label="Filtrar por tipo"><option value="">Todos os tipos</option></select></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Elemento</th><th>Tipo</th><th>Seção</th><th class="n">Comp./altura</th><th class="n">Base z</th><th class="n">Topo z</th><th>Pavimento</th><th>Material</th></tr></thead>
+        <tbody id="tbody"></tbody></table></div>
+      <p class="note">Seções em cm, comprimentos e cotas em m. Pilares mostram a altura; vigas, o comprimento; lajes, a espessura e a área.</p>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nf2=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nf0=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+const cm=v=>nf0.format(Math.round(v/10));       // mm -> cm
+const m2=v=>nf2.format(v/1000);                  // mm -> m
+
+/* ================= Leitor de IFC (STEP) ================= */
+function decodeStr(s){
+  return s.replace(/\\X2\\([0-9A-F]+)\\X0\\/gi,(_,h)=>{let o='';for(let k=0;k+4<=h.length;k+=4)o+=String.fromCharCode(parseInt(h.substr(k,4),16));return o;})
+          .replace(/\\X\\([0-9A-F]{2})/gi,(_,h)=>String.fromCharCode(parseInt(h,16)))
+          .replace(/\\S\\(.)/g,(_,c)=>String.fromCharCode(c.charCodeAt(0)+128));
+}
+function parseArgs(s){
+  let i=0;const n=s.length;
+  const skip=()=>{while(i<n){const c=s.charCodeAt(i);if(c===32||c===10||c===13||c===9)i++;else break;}};
+  const isAl=c=>(c>=65&&c<=90)||(c>=97&&c<=122)||c===95||(c>=48&&c<=57);
+  function val(){
+    skip();const c=s[i];
+    if(c==="'"){let o='';i++;while(i<n){if(s[i]==="'"){if(s[i+1]==="'"){o+="'";i+=2;continue;}i++;break;}o+=s[i++];}return decodeStr(o);}
+    if(c==='#'){let j=i+1;while(j<n&&s.charCodeAt(j)>=48&&s.charCodeAt(j)<=57)j++;const r={ref:+s.slice(i+1,j)};i=j;return r;}
+    if(c==='('){i++;const arr=[];skip();if(s[i]===')'){i++;return arr;}
+      while(i<n){arr.push(val());skip();if(s[i]===','){i++;continue;}if(s[i]===')'){i++;break;}i++;}return arr;}
+    if(c==='$'||c==='*'){i++;return null;}
+    if(c==='.'){const j=s.indexOf('.',i+1);const e=s.slice(i+1,j);i=j+1;return {en:e};}
+    if(/[A-Za-z]/.test(c)){let j=i;while(j<n&&isAl(s.charCodeAt(j)))j++;i=j;skip();
+      if(s[i]==='('){i++;const v=val();skip();if(s[i]===')')i++;return v;}return null;}
+    let j=i;while(j<n&&/[-+0-9.Ee]/.test(s[j]))j++;const v=parseFloat(s.slice(i,j));i=j;return isNaN(v)?null:v;
+  }
+  const out=[];skip();if(i>=n)return out;
+  while(i<n){out.push(val());skip();if(s[i]===','){i++;continue;}break;}
+  return out;
+}
+const V={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm:a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l];}};
+const ID={o:[0,0,0],x:[1,0,0],y:[0,1,0],z:[0,0,1]};
+const ap=(M,p)=>[M.o[0]+M.x[0]*p[0]+M.y[0]*p[1]+M.z[0]*p[2],M.o[1]+M.x[1]*p[0]+M.y[1]*p[1]+M.z[1]*p[2],M.o[2]+M.x[2]*p[0]+M.y[2]*p[1]+M.z[2]*p[2]];
+const da=(M,d)=>[M.x[0]*d[0]+M.y[0]*d[1]+M.z[0]*d[2],M.x[1]*d[0]+M.y[1]*d[1]+M.z[1]*d[2],M.x[2]*d[0]+M.y[2]*d[1]+M.z[2]*d[2]];
+const comp=(A,B)=>({o:ap(A,B.o),x:da(A,B.x),y:da(A,B.y),z:da(A,B.z)});
+
+const PRODUCTS=new Set(['IFCCOLUMN','IFCCOLUMNSTANDARDCASE','IFCBEAM','IFCBEAMSTANDARDCASE','IFCSLAB','IFCSLABSTANDARDCASE','IFCSLABELEMENTEDCASE','IFCWALL','IFCWALLSTANDARDCASE','IFCWALLELEMENTEDCASE',
+ 'IFCFOOTING','IFCPILE','IFCMEMBER','IFCMEMBERSTANDARDCASE','IFCPLATE','IFCPLATESTANDARDCASE','IFCROOF','IFCSTAIR','IFCSTAIRFLIGHT','IFCRAMP','IFCRAMPFLIGHT','IFCRAILING','IFCWINDOW','IFCDOOR',
+ 'IFCCOVERING','IFCBUILDINGELEMENTPROXY','IFCCURTAINWALL','IFCREINFORCINGBAR','IFCREINFORCINGMESH','IFCTENDON','IFCFURNISHINGELEMENT','IFCFURNITURE','IFCELEMENTASSEMBLY','IFCCHIMNEY','IFCSHADINGDEVICE','IFCDISCRETEACCESSORY']);
+const CAT=t=>/COLUMN/.test(t)?'Pilar':/BEAM/.test(t)?'Viga':/SLAB|ROOF/.test(t)?'Laje':/WALL/.test(t)&&!/CURTAIN/.test(t)?'Parede':/FOOTING|PILE/.test(t)?'Fundação':/REINFORC|TENDON/.test(t)?'Armadura':'Outro';
+const CAT_ORDER=['Pilar','Viga','Laje','Parede','Fundação','Armadura','Outro'];
+const CAT_TOK={'Pilar':'--c-pilar','Viga':'--c-viga','Laje':'--c-laje','Parede':'--c-parede','Fundação':'--c-fund','Armadura':'--c-arm','Outro':'--c-outro'};
+
+class IFC{
+  constructor(text){
+    this.ents=new Map();this.byType=new Map();
+    const sm=/FILE_SCHEMA\s*\(\s*\(\s*'([^']+)'/i.exec(text);this.schema=sm?sm[1]:'?';
+    this.scan(text);this.cache=new Map();this.sc=1000;this.ang=1;this.units();this.miss=new Map();
+  }
+  scan(t){
+    const n=t.length;let i=t.search(/\bDATA\s*;/);i=i<0?0:i+5;
+    while(i<n){
+      const h=t.indexOf('#',i);if(h<0)break;
+      let j=h+1;while(j<n){const c=t.charCodeAt(j);if(c>=48&&c<=57)j++;else break;}
+      if(j===h+1){i=j;continue;}
+      const id=+t.slice(h+1,j);
+      while(j<n&&t.charCodeAt(j)<=32)j++;
+      if(t[j]!=='='){i=j;continue;}
+      j++;while(j<n&&t.charCodeAt(j)<=32)j++;
+      let k=j;while(k<n){const c=t.charCodeAt(k);if((c>=65&&c<=90)||(c>=97&&c<=122)||(c>=48&&c<=57)||c===95)k++;else break;}
+      const type=t.slice(j,k).toUpperCase();
+      let depth=0,p=k,start=-1;
+      for(;p<n;p++){const c=t[p];
+        if(c==="'"){p++;while(p<n){if(t[p]==="'"){if(t[p+1]==="'"){p+=2;continue;}break;}p++;}continue;}
+        if(c==='('){if(depth===0)start=p;depth++;}else if(c===')'){depth--;if(depth===0)break;}}
+      if(start<0)break;
+      this.ents.set(id,{t:type,s:t.slice(start+1,p),a:null});
+      if(!this.byType.has(type))this.byType.set(type,[]);this.byType.get(type).push(id);
+      i=p+1;
+    }
+  }
+  get(r){if(r==null)return null;const id=typeof r==='object'?r.ref:r;const e=this.ents.get(id);if(!e)return null;if(!e.a)e.a=parseArgs(e.s);return e;}
+  all(type){return (this.byType.get(type)||[]);}
+  units(){
+    const pre={EXA:1e18,PETA:1e15,TERA:1e12,GIGA:1e9,MEGA:1e6,KILO:1e3,HECTO:100,DECA:10,DECI:.1,CENTI:.01,MILLI:.001,MICRO:1e-6};
+    const si=e=>(e.a[2]&&pre[e.a[2].en])||1;
+    this.unitName='metro';
+    for(const id of this.all('IFCUNITASSIGNMENT')){const ua=this.get(id);
+      for(const u of ua.a[0]||[]){const e=this.get(u);if(!e)continue;const ut=e.a[1]&&e.a[1].en;
+        if(e.t==='IFCSIUNIT'&&ut==='LENGTHUNIT'){const f=si(e);this.sc=1000*f;this.unitName=f===.001?'milímetro':f===.01?'centímetro':'metro';}
+        else if(e.t==='IFCCONVERSIONBASEDUNIT'&&ut==='LENGTHUNIT'){const mw=this.get(e.a[3]),uc=this.get(mw.a[1]);this.sc=1000*mw.a[0]*(uc&&uc.t==='IFCSIUNIT'?si(uc):1);this.unitName=String(e.a[2]||'').toLowerCase();}
+        else if(e.t==='IFCCONVERSIONBASEDUNIT'&&ut==='PLANEANGLEUNIT'){const mw=this.get(e.a[3]);this.ang=+mw.a[0]||Math.PI/180;}
+        else if(e.t==='IFCSIUNIT'&&ut==='PLANEANGLEUNIT')this.ang=1;}}
+  }
+  pt(r){const e=this.get(r);const c=e.a[0];return [c[0]*this.sc,c[1]*this.sc,(c[2]||0)*this.sc];}
+  dir(r){const e=this.get(r);const c=e.a[0];return V.norm([c[0],c[1],c[2]||0]);}
+  axis(r){
+    if(!r)return ID;const e=this.get(r);if(!e)return ID;
+    if(e.t==='IFCAXIS2PLACEMENT2D'){const o=this.pt(e.a[0]);let x=e.a[1]?this.dir(e.a[1]):[1,0,0];x=V.norm([x[0],x[1],0]);return {o,x,y:[-x[1],x[0],0],z:[0,0,1]};}
+    const o=this.pt(e.a[0]);const z=e.a[1]?this.dir(e.a[1]):[0,0,1];
+    let xr=e.a[2]?this.dir(e.a[2]):[1,0,0];if(Math.abs(V.dot(xr,z))>.999)xr=Math.abs(z[0])>.9?[0,1,0]:[1,0,0];
+    const x=V.norm(V.sub(xr,V.mul(z,V.dot(xr,z))));return {o,x,y:V.cross(z,x),z};
+  }
+  place(r){
+    if(!r)return ID;const id=r.ref;if(this.cache.has(id))return this.cache.get(id);
+    const e=this.get(r);let M=ID;
+    if(e&&e.t==='IFCLOCALPLACEMENT'){const rel=e.a[0]?this.place(e.a[0]):ID;M=comp(rel,this.axis(e.a[1]));}
+    this.cache.set(id,M);return M;
+  }
+  cto(r){
+    const e=this.get(r);if(!e)return ID;const a=e.a;
+    const x=a[0]?this.dir(a[0]):[1,0,0],z=a[4]?this.dir(a[4]):[0,0,1],y=a[1]?this.dir(a[1]):V.cross(z,x),s=a[3]==null?1:a[3];
+    const s2=e.t.includes('NONUNIFORM')&&a[5]!=null?a[5]:s,s3=e.t.includes('NONUNIFORM')&&a[6]!=null?a[6]:s;
+    return {o:a[2]?this.pt(a[2]):[0,0,0],x:V.mul(x,s),y:V.mul(y,s2),z:V.mul(z,s3)};
+  }
+  arc3(a,b,c,n=16){
+    const d=2*(a[0]*(b[1]-c[1])+b[0]*(c[1]-a[1])+c[0]*(a[1]-b[1]));if(Math.abs(d)<1e-9)return [a,b,c];
+    const s=p=>p[0]*p[0]+p[1]*p[1];
+    const ux=(s(a)*(b[1]-c[1])+s(b)*(c[1]-a[1])+s(c)*(a[1]-b[1]))/d,uy=(s(a)*(c[0]-b[0])+s(b)*(a[0]-c[0])+s(c)*(b[0]-a[0]))/d;
+    const r=Math.hypot(a[0]-ux,a[1]-uy),ang=p=>Math.atan2(p[1]-uy,p[0]-ux),T=2*Math.PI,nm=t=>((t%T)+T)%T;
+    const t1=ang(a),s2=nm(ang(b)-t1),s3=nm(ang(c)-t1),sw=s2<s3?s3:s3-T;
+    const o=[];for(let k=0;k<=n;k++){const t=t1+sw*k/n;o.push([ux+r*Math.cos(t),uy+r*Math.sin(t),a[2]||0]);}return o;
+  }
+  curve(r){
+    const e=this.get(r);if(!e)return [];
+    switch(e.t){
+      case 'IFCPOLYLINE':return e.a[0].map(p=>this.pt(p));
+      case 'IFCINDEXEDPOLYCURVE':{
+        const pl=this.get(e.a[0]);const L=pl.a[0].map(c=>[c[0]*this.sc,c[1]*this.sc,(c[2]||0)*this.sc]);
+        if(!e.a[1])return L;const o=[];
+        for(const sg of e.a[1]){const ix=Array.isArray(sg)?sg:[];if(ix.length===3&&e.a[1].length&&sg.length===3&&this.isArcSeg(e,sg))o.push(...this.arc3(L[ix[0]-1],L[ix[1]-1],L[ix[2]-1]));else ix.forEach(k=>o.push(L[k-1]));}
+        return o;}
+      case 'IFCCOMPOSITECURVE':return e.a[0].flatMap(sr=>{const sg=this.get(sr);const p=this.curve(sg.a[2]);return sg.a[1]&&sg.a[1].en==='F'?p.reverse():p;});
+      case 'IFCTRIMMEDCURVE':return this.trimmed(e);
+      case 'IFCCIRCLE':{const C=this.axis(e.a[0]),R=e.a[1]*this.sc,o=[];for(let k=0;k<32;k++){const t=k/32*2*Math.PI;o.push(ap(C,[R*Math.cos(t),R*Math.sin(t),0]));}return o;}
+      default:this.note(e.t);return [];
+    }
+  }
+  isArcSeg(e,sg){const raw=e.s;return /IFCARCINDEX/i.test(raw)&&raw.indexOf('IFCARCINDEX(('+sg.join(','))>=0;}
+  trimmed(e){
+    const b=this.get(e.a[0]),tr=x=>{for(const v of x||[]){if(v&&typeof v==='object'&&'ref' in v)return {p:this.pt(v)};if(typeof v==='number')return {t:v};}return null;};
+    const t1=tr(e.a[1]),t2=tr(e.a[2]),sense=!(e.a[3]&&e.a[3].en==='F');
+    if(b.t==='IFCLINE'){if(t1&&t2&&t1.p&&t2.p)return [t1.p,t2.p];const p0=this.pt(b.a[0]),vv=this.get(b.a[1]),d=this.dir(vv.a[0]),mg=vv.a[1]*this.sc;
+      const at=t=>[p0[0]+d[0]*mg*t,p0[1]+d[1]*mg*t,p0[2]+d[2]*mg*t];return [at(t1?t1.t:0),at(t2?t2.t:1)];}
+    if(b.t==='IFCCIRCLE'){
+      const C=this.axis(b.a[0]),R=b.a[1]*this.sc;
+      const angOf=q=>{if(!q)return 0;if(q.t!=null)return q.t*this.ang;const w=V.sub(q.p,C.o);return Math.atan2(V.dot(w,C.y),V.dot(w,C.x));};
+      let a1=angOf(t1),a2=angOf(t2);const T=2*Math.PI;
+      let sw=sense?((a2-a1)%T+T)%T:-(((a1-a2)%T+T)%T);if(Math.abs(sw)<1e-9)sw=sense?T:-T;
+      const n=Math.max(4,Math.ceil(Math.abs(sw)/(Math.PI/24))),o=[];
+      for(let k=0;k<=n;k++){const t=a1+sw*k/n;o.push(ap(C,[R*Math.cos(t),R*Math.sin(t),0]));}return o;}
+    this.note(b.t);return [];
+  }
+  profile(r){
+    const e=this.get(r);if(!e)return null;const a=e.a,sc=this.sc;let pts=null,info={kind:'?'},param=true;
+    const P=()=>a[2]&&typeof a[2]==='object'&&'ref' in a[2]?this.axis(a[2]):ID;
+    switch(e.t){
+      case 'IFCRECTANGLEPROFILEDEF':case 'IFCRECTANGLEHOLLOWPROFILEDEF':case 'IFCROUNDEDRECTANGLEPROFILEDEF':{const X=a[3]*sc,Y=a[4]*sc;pts=[[-X/2,-Y/2],[X/2,-Y/2],[X/2,Y/2],[-X/2,Y/2]];info={kind:'rect',b:X,h:Y};break;}
+      case 'IFCCIRCLEPROFILEDEF':case 'IFCCIRCLEHOLLOWPROFILEDEF':{const R=a[3]*sc;pts=[];for(let k=0;k<24;k++){const t=k/24*2*Math.PI;pts.push([R*Math.cos(t),R*Math.sin(t)]);}info={kind:'circ',D:2*R};break;}
+      case 'IFCISHAPEPROFILEDEF':{const b=a[3]*sc,h=a[4]*sc,tw=a[5]*sc,tf=a[6]*sc;
+        pts=[[-b/2,-h/2],[b/2,-h/2],[b/2,-h/2+tf],[tw/2,-h/2+tf],[tw/2,h/2-tf],[b/2,h/2-tf],[b/2,h/2],[-b/2,h/2],[-b/2,h/2-tf],[-tw/2,h/2-tf],[-tw/2,-h/2+tf],[-b/2,-h/2+tf]];info={kind:'I',b,h};break;}
+      case 'IFCARBITRARYCLOSEDPROFILEDEF':case 'IFCARBITRARYPROFILEDEFWITHVOIDS':
+        pts=this.curve(a[2]).map(p=>[p[0],p[1]]);info={kind:'poly'};param=false;break;
+      default:
+        if(typeof a[3]==='number'&&typeof a[4]==='number'){const X=a[3]*sc,Y=a[4]*sc;pts=[[-X/2,-Y/2],[X/2,-Y/2],[X/2,Y/2],[-X/2,Y/2]];info={kind:'aprox',b:X,h:Y};}
+        else{this.note(e.t);return null;}
+    }
+    if(param){const M=P();pts=pts.map(p=>{const w=ap(M,[p[0],p[1],0]);return [w[0],w[1]];});info.c=[M.o[0],M.o[1]];}
+    const cl=[];for(const p of pts){const l=cl[cl.length-1];if(!l||Math.hypot(l[0]-p[0],l[1]-p[1])>1e-6)cl.push(p);}
+    if(cl.length>2&&Math.hypot(cl[0][0]-cl.at(-1)[0],cl[0][1]-cl.at(-1)[1])<1e-6)cl.pop();
+    if(!info.c){let sx=0,sy=0;cl.forEach(p=>{sx+=p[0];sy+=p[1];});info.c=[sx/cl.length,sy/cl.length];}
+    let A=0,Pm=0;for(let k=0;k<cl.length;k++){const p=cl[k],q=cl[(k+1)%cl.length];A+=p[0]*q[1]-q[0]*p[1];Pm+=Math.hypot(q[0]-p[0],q[1]-p[1]);}info.area=Math.abs(A)/2;info.per=Pm;
+    let x0=1e18,x1=-1e18,y0=1e18,y1=-1e18;cl.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);});info.bx=x1-x0;info.by=y1-y0;
+    return {pts:cl,info};
+  }
+  note(t){this.miss.set(t,(this.miss.get(t)||0)+1);}
+  // ---- geometria: triângulos em coordenadas do projeto (mm)
+  tri(o,a,b,c){o.p.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]);}
+  poly(o,pts){
+    if(pts.length<3)return;if(pts.length===3){this.tri(o,pts[0],pts[1],pts[2]);return;}
+    let nx=0,ny=0,nz=0;for(let k=0;k<pts.length;k++){const p=pts[k],q=pts[(k+1)%pts.length];nx+=(p[1]-q[1])*(p[2]+q[2]);ny+=(p[2]-q[2])*(p[0]+q[0]);nz+=(p[0]-q[0])*(p[1]+q[1]);}
+    const ax=Math.abs(nx),ay=Math.abs(ny),az=Math.abs(nz),pr=az>=ax&&az>=ay?p=>[p[0],p[1]]:ax>=ay?p=>[p[1],p[2]]:p=>[p[0],p[2]];
+    const f=THREE.ShapeUtils.triangulateShape(pts.map(p=>{const q=pr(p);return new THREE.Vector2(q[0],q[1]);}),[]);
+    f.forEach(([i,j,k])=>this.tri(o,pts[i],pts[j],pts[k]));
+  }
+  extrude(e,M,o){
+    const pr=this.profile(e.a[0]);if(!pr||pr.pts.length<3)return;
+    const Ml=comp(M,this.axis(e.a[1])),d=this.dir(e.a[2]),D=e.a[3]*this.sc,v=[d[0]*D,d[1]*D,d[2]*D],P=pr.pts;
+    const f=THREE.ShapeUtils.triangulateShape(P.map(p=>new THREE.Vector2(p[0],p[1])),[]);
+    const B=P.map(p=>ap(Ml,[p[0],p[1],0])),T=P.map(p=>ap(Ml,[p[0]+v[0],p[1]+v[1],v[2]]));
+    f.forEach(([i,j,k])=>{this.tri(o,B[i],B[k],B[j]);this.tri(o,T[i],T[j],T[k]);});
+    for(let k=0;k<P.length;k++){const n=(k+1)%P.length;this.tri(o,B[k],B[n],T[n]);this.tri(o,B[k],T[n],T[k]);}
+    const c=pr.info.c;o.ex.push({prof:pr.info,depth:D,start:ap(Ml,[c[0],c[1],0]),end:ap(Ml,[c[0]+v[0],c[1]+v[1],v[2]]),dirW:V.norm(da(Ml,d))});
+  }
+  faces(list,M,o){
+    for(const fr of list||[]){const f=this.get(fr);if(!f)continue;const bs=f.a[0]||[];
+      let b=bs.map(x=>this.get(x)).find(x=>x&&x.t==='IFCFACEOUTERBOUND')||this.get(bs[0]);if(!b)continue;
+      const loop=this.get(b.a[0]);if(!loop||loop.t!=='IFCPOLYLOOP'){if(loop)this.note(loop.t);continue;}
+      this.poly(o,loop.a[0].map(r=>ap(M,this.pt(r))));}
+  }
+  item(r,M,o,depth=0){
+    const e=this.get(r);if(!e||depth>8)return;
+    switch(e.t){
+      case 'IFCEXTRUDEDAREASOLID':case 'IFCEXTRUDEDAREASOLIDTAPERED':this.extrude(e,M,o);break;
+      case 'IFCFACETEDBREP':case 'IFCFACETEDBREPWITHVOIDS':this.faces(this.get(e.a[0]).a[0],M,o);break;
+      case 'IFCSHELLBASEDSURFACEMODEL':case 'IFCFACEBASEDSURFACEMODEL':(e.a[0]||[]).forEach(s=>{const sh=this.get(s);if(sh)this.faces(sh.a[0],M,o);});break;
+      case 'IFCTRIANGULATEDFACESET':case 'IFCTRIANGULATEDIRREGULARNETWORK':{
+        const C=this.get(e.a[0]).a[0].map(c=>ap(M,[c[0]*this.sc,c[1]*this.sc,c[2]*this.sc]));const pn=e.a[4];const ix=k=>C[(pn?pn[k-1]:k)-1];
+        (e.a[3]||[]).forEach(t=>this.tri(o,ix(t[0]),ix(t[1]),ix(t[2])));break;}
+      case 'IFCPOLYGONALFACESET':{
+        const C=this.get(e.a[0]).a[0].map(c=>ap(M,[c[0]*this.sc,c[1]*this.sc,c[2]*this.sc]));const pn=e.a[3];const ix=k=>C[(pn?pn[k-1]:k)-1];
+        (e.a[2]||[]).forEach(fr=>{const f=this.get(fr);if(f)this.poly(o,f.a[0].map(ix));});break;}
+      case 'IFCMAPPEDITEM':{const src=this.get(e.a[0]);const Mt=comp(comp(M,this.cto(e.a[1])),this.axis(src.a[0]));const rep=this.get(src.a[1]);
+        (rep.a[3]||[]).forEach(it=>this.item(it,Mt,o,depth+1));break;}
+      case 'IFCBOOLEANCLIPPINGRESULT':case 'IFCBOOLEANRESULT':this.item(e.a[1],M,o,depth+1);break;
+      default:this.note(e.t);
+    }
+  }
+  storeys(){
+    const m=new Map();
+    for(const id of this.all('IFCRELCONTAINEDINSPATIALSTRUCTURE')){const r=this.get(id);const s=this.get(r.a[5]);if(!s)continue;
+      const nm=s.t==='IFCBUILDINGSTOREY'?(s.a[2]||'Pavimento'):(s.a[2]||'');(r.a[4]||[]).forEach(x=>m.set(x.ref,nm));}
+    return m;
+  }
+  materials(){
+    const m=new Map(),nameOf=r=>{const e=this.get(r);if(!e)return '';
+      if(e.t==='IFCMATERIAL')return e.a[0]||'';
+      if(e.t==='IFCMATERIALLAYERSETUSAGE')return nameOf(e.a[0]);
+      if(e.t==='IFCMATERIALLAYERSET')return (e.a[0]||[]).map(l=>nameOf(this.get(l).a[0])).filter(Boolean).join(' + ');
+      if(e.t==='IFCMATERIALLIST')return (e.a[0]||[]).map(nameOf).join(' + ');
+      if(e.t==='IFCMATERIALPROFILESETUSAGE')return nameOf(e.a[0]);
+      if(e.t==='IFCMATERIALPROFILESET')return (e.a[2]||[]).map(p=>nameOf(this.get(p).a[2])).join(' + ');
+      return '';};
+    for(const id of this.all('IFCRELASSOCIATESMATERIAL')){const r=this.get(id);const nm=nameOf(r.a[5]);(r.a[4]||[]).forEach(x=>m.set(x.ref,nm));}
+    return m;
+  }
+  elements(){
+    const st=this.storeys(),mt=this.materials(),out=[];
+    for(const [type,ids] of this.byType){if(!PRODUCTS.has(type))continue;
+      for(const id of ids){const e=this.get(id),a=e.a;const pds=this.get(a[6]);if(!pds||!pds.a[2])continue;
+        const reps=pds.a[2].map(x=>this.get(x)).filter(Boolean);
+        const rep=reps.find(r=>r.a[1]==='Body')||reps.find(r=>!['Axis','Box','FootPrint','Annotation','Profile'].includes(r.a[1]));if(!rep)continue;
+        const M=this.place(a[5]),o={p:[],ex:[]};
+        try{(rep.a[3]||[]).forEach(it=>this.item(it,M,o));}catch(err){this.note('erro em '+type);continue;}
+        if(!o.p.length)continue;
+        out.push({id,type,cat:CAT(type),name:a[2]||'',tag:typeof a[7]==='string'?a[7]:'',storey:st.get(id)||'',mat:mt.get(id)||'',p:o.p,ex:o.ex});}}
+    return out;
+  }
+}
+
+/* ================= Dimensões dos elementos ================= */
+function describe(el){
+  let x0=1e18,y0=1e18,z0=1e18,x1=-1e18,y1=-1e18,z1=-1e18;const p=el.p;
+  for(let k=0;k<p.length;k+=3){const x=p[k],y=p[k+1],z=p[k+2];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;if(z<z0)z0=z;if(z>z1)z1=z;}
+  el.bb={x0,y0,z0,x1,y1,z1};el.zb=z0;el.zt=z1;
+  const ex=el.ex.length===1?el.ex[0]:null,pr=ex&&ex.prof,vert=ex&&Math.abs(ex.dirW[2])>.9;
+  let sec='',len='';
+  const rs=pr&&(pr.kind==='rect'||pr.kind==='aprox')?`${cm(Math.min(pr.b,pr.h))} × ${cm(Math.max(pr.b,pr.h))}`:pr&&pr.kind==='circ'?`ø ${cm(pr.D)}`:pr&&pr.kind==='I'?`I ${cm(pr.b)} × ${cm(pr.h)}`:'';
+  if(el.cat==='Pilar'){sec=rs||(pr?`${cm(Math.min(pr.bx,pr.by))} × ${cm(Math.max(pr.bx,pr.by))}`:`${cm(Math.min(x1-x0,y1-y0))} × ${cm(Math.max(x1-x0,y1-y0))}`);len=m2(ex?ex.depth:z1-z0);}
+  else if(el.cat==='Viga'){sec=ex&&pr&&(pr.kind==='rect'||pr.kind==='aprox')?`${cm(pr.b)} × ${cm(pr.h)}`:rs;len=m2(ex?ex.depth:Math.max(x1-x0,y1-y0));}
+  else if(el.cat==='Laje'){const t=ex&&vert?ex.depth:z1-z0;sec=`e = ${cm(t)}`;len=ex&&vert?`${nf2.format(pr.area/1e6)} m²`:'';}
+  else if(el.cat==='Parede'){
+    // espessura de parede de perfil qualquer: faixa de comprimento L e espessura t, com A = t·L e P = 2L + 2t
+    const t=pr?(pr.kind==='rect'?Math.min(pr.b,pr.h):(pr.per-Math.sqrt(Math.max(0,pr.per*pr.per-16*pr.area)))/4):Math.min(x1-x0,y1-y0);
+    const curva=pr&&pr.kind==='poly'&&Math.min(pr.bx,pr.by)>3*t;
+    sec=`e = ${cm(t)}${curva?' (curva)':''}`;len=m2(ex&&vert?ex.depth:z1-z0);}
+  else if(el.cat==='Fundação'){sec=`${cm(x1-x0)} × ${cm(y1-y0)}`;len=m2(z1-z0);}
+  else{sec=`${cm(x1-x0)} × ${cm(y1-y0)}`;len=m2(z1-z0);}
+  el.sec=sec;el.len=len;
+}
+
+/* ================= Cena 3D ================= */
+let renderer,scene,camera,controls,ORIGIN=null;
+const MODELS={est:null,arq:null},sel={el:null};
+const tok=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim()||'#888';
+function initScene(){
+  const cv=$('#cv');
+  renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});renderer.setPixelRatio(window.devicePixelRatio||1);
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(40,1,10,2e6);camera.up.set(0,0,1);camera.position.set(15000,-15000,12000);
+  controls=new THREE.OrbitControls(camera,cv);controls.enableDamping=true;controls.dampingFactor=.12;controls.screenSpacePanning=true;
+  scene.add(new THREE.HemisphereLight(0xffffff,0x445566,.85));
+  const dl=new THREE.DirectionalLight(0xffffff,.55);dl.position.set(.6,-.4,1);scene.add(dl);
+  const dl2=new THREE.DirectionalLight(0xffffff,.25);dl2.position.set(-.5,.7,.3);scene.add(dl2);
+  new ResizeObserver(resize).observe($('#stage'));resize();applyTheme();
+  (function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera);})();
+  bindPick(cv);
+}
+function resize(){const r=$('#stage').getBoundingClientRect();if(!r.width)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();}
+function applyTheme(){
+  scene.background=new THREE.Color(tok('--sheet'));
+  for(const k of ['est','arq']){const M=MODELS[k];if(!M)continue;
+    M.els.forEach(el=>{if(el.mesh&&el!==sel.el)el.mesh.material=matFor(k,el);});
+    if(M.edgeMat)M.edgeMat.color.set(tok('--edge'));}
+  if(sel.el)sel.el.mesh.material=selMat();
+}
+const MATS={};
+function matFor(k,el){
+  if(k==='arq'){const key='arq';if(!MATS[key])MATS[key]=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,depthWrite:false});
+    MATS[key].color.set(tok('--c-arq'));MATS[key].opacity=+$('#opArq').value/100;return MATS[key];}
+  const key='est'+el.cat;if(!MATS[key])MATS[key]=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
+  MATS[key].color.set(tok(CAT_TOK[el.cat]));return MATS[key];
+}
+let SELMAT;function selMat(){if(!SELMAT)SELMAT=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});SELMAT.color.set(tok('--sel'));return SELMAT;}
+
+function buildModel(k,ifc,fileName,isExample){
+  const t0=performance.now();
+  const els=ifc.elements();els.forEach(describe);
+  if(MODELS[k]){scene.remove(MODELS[k].group);MODELS[k].els.forEach(el=>{el.mesh.geometry.dispose();if(el.edges)el.edges.geometry.dispose();});}
+  if(!ORIGIN&&els.length){let x0=1e18,y0=1e18,z0=1e18,x1=-1e18,y1=-1e18;els.forEach(e=>{x0=Math.min(x0,e.bb.x0);x1=Math.max(x1,e.bb.x1);y0=Math.min(y0,e.bb.y0);y1=Math.max(y1,e.bb.y1);z0=Math.min(z0,e.bb.z0);});ORIGIN=[(x0+x1)/2,(y0+y1)/2,0];}
+  const O=ORIGIN||[0,0,0],group=new THREE.Group(),edgeMat=new THREE.LineBasicMaterial({color:tok('--edge'),transparent:true,opacity:.55});
+  els.forEach(el=>{
+    const f=new Float32Array(el.p.length);for(let i=0;i<el.p.length;i+=3){f[i]=el.p[i]-O[0];f[i+1]=el.p[i+1]-O[1];f[i+2]=el.p[i+2]-O[2];}
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(f,3));g.computeVertexNormals();
+    el.mesh=new THREE.Mesh(g,matFor(k,el));el.mesh.userData={k,el};group.add(el.mesh);
+    if(k==='est'){el.edges=new THREE.LineSegments(new THREE.EdgesGeometry(g,25),edgeMat);el.edges.visible=$('#vEdge').checked;group.add(el.edges);}
+    delete el.p;});
+  group.visible=$(k==='est'?'#vEst':'#vArq').checked;
+  scene.add(group);
+  MODELS[k]={group,els,edgeMat,name:fileName,schema:ifc.schema,unit:ifc.unitName,miss:ifc.miss,example:isExample,ms:performance.now()-t0,ents:ifc.ents.size};
+  if(sel.el&&sel.el.mesh.parent!==scene&&!sel.el.mesh.parent?.parent)select(null);
+}
+function fit(top){
+  const box=new THREE.Box3();let any=false;
+  for(const k of ['est','arq'])if(MODELS[k]&&MODELS[k].group.visible){box.expandByObject(MODELS[k].group);any=true;}
+  if(!any||box.isEmpty())return;
+  const c=box.getCenter(new THREE.Vector3()),s=box.getSize(new THREE.Vector3()),R=Math.max(s.x,s.y,s.z)*.5;
+  const dist=R/Math.sin(camera.fov*Math.PI/360)*1.05;
+  const dir=top?new THREE.Vector3(0,-.001,1):new THREE.Vector3(.8,-1.1,.75);dir.normalize();
+  camera.position.copy(c).addScaledVector(dir,dist);controls.target.copy(c);camera.near=Math.max(1,dist/1000);camera.far=dist*20;camera.updateProjectionMatrix();controls.update();
+}
+
+/* ================= Seleção ================= */
+function bindPick(cv){
+  let down=null;const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
+  cv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
+  cv.addEventListener('pointerup',e=>{
+    if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5){down=null;return;}down=null;
+    const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);rc.setFromCamera(mv,camera);
+    const objs=[];for(const k of ['est','arq'])if(MODELS[k]&&MODELS[k].group.visible)MODELS[k].els.forEach(el=>objs.push(el.mesh));
+    const hit=rc.intersectObjects(objs,false)[0];select(hit?hit.object.userData.el:null);});
+}
+function select(el){
+  if(sel.el&&sel.el.mesh){const k=sel.el.mesh.userData.k;sel.el.mesh.material=matFor(k,sel.el);}
+  sel.el=el;const card=$('#sel');
+  document.querySelectorAll('#tbody tr').forEach(tr=>tr.classList.toggle('on',el&&+tr.dataset.id===el.id&&tr.dataset.k===el.mesh.userData.k));
+  if(!el){card.hidden=true;return;}
+  el.mesh.material=selMat();
+  const k=el.mesh.userData.k,b=el.bb;
+  const rows=[['Tipo',`${el.cat}${k==='arq'?' (arquitetônico)':''} · ${el.type.replace('IFC','Ifc')}`],['Seção',el.sec],[el.cat==='Viga'?'Comprimento':el.cat==='Laje'?'Área':'Altura',el.len],
+    ['Base / topo',`z = ${m2(b.z0)} / ${m2(b.z1)} m`],['Pavimento',el.storey||'—'],['Material',el.mat||'—']];
+  if(el.cat==='Pilar'&&el.ex[0]){const t=el.ex[0].end;rows.push(['Topo (x, y)',`${m2(t[0])} ; ${m2(t[1])} m`]);}
+  if(el.cat==='Viga'&&el.ex[0]){const s=el.ex[0].start,t=el.ex[0].end;rows.push(['Eixo',`(${m2(s[0])}; ${m2(s[1])}) → (${m2(t[0])}; ${m2(t[1])})`]);}
+  card.innerHTML=`<b>${esc(el.name||el.tag||'(sem nome)')}</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;card.hidden=false;
+}
+
+/* ================= Interface ================= */
+function renderAll(){
+  const M=MODELS.est,cnt={};(M?M.els:[]).forEach(e=>cnt[e.cat]=(cnt[e.cat]||0)+1);
+  $('#summary').innerHTML=CAT_ORDER.filter(c=>cnt[c]||['Pilar','Viga','Laje','Parede','Fundação'].includes(c)).map(c=>`<div class="kpi"><span><i style="background:var(${CAT_TOK[c]})"></i>${({'Pilar':'Pilares','Viga':'Vigas','Laje':'Lajes','Parede':'Paredes','Fundação':'Fundações','Armadura':'Armaduras','Outro':'Outros'})[c]}</span><b>${cnt[c]||0}</b></div>`).join('')
+    +`<div class="kpi"><span><i style="background:var(--c-arq)"></i>Arquitetônico</span><b>${MODELS.arq?MODELS.arq.els.length:0}</b></div>`;
+  for(const k of ['est','arq']){const m=MODELS[k],st=$(k==='est'?'#stEst':'#stArq');
+    st.textContent=m?`${m.example?'EXEMPLO · ':''}${m.name} · ${m.schema} · ${m.unit} · ${m.els.length} elementos lidos em ${nf2.format(m.ms/1000)} s`:'Nenhum arquivo.';}
+  const msgs=[];
+  for(const k of ['est','arq']){const m=MODELS[k];if(!m)continue;const miss=[...m.miss.entries()];
+    if(miss.length)msgs.push(`<div class="msg al">${k==='est'?'Estrutural':'Arquitetônico'}: algumas geometrias ainda não são lidas por esta versão (${miss.map(([t,n])=>`${esc(t.replace('IFC','Ifc'))} ×${n}`).join(', ')}). Se faltar alguma peça, me mande o arquivo.</div>`);}
+  if(MODELS.est&&MODELS.est.example)msgs.push('<div class="msg ok">Este é um modelo de exemplo, inspirado na garagem do seu projeto: pilares, vigas, paredes de concreto (uma curva), laje e sapatas, mais o volume da grelha como referência arquitetônica. Abra o seu IFC para substituí-lo.</div>');
+  $('#msgs').innerHTML=msgs.join('');
+  const f=$('#filt'),cur=f.value;f.innerHTML='<option value="">Todos os tipos</option>'+CAT_ORDER.filter(c=>cnt[c]).map(c=>`<option${c===cur?' selected':''}>${c}</option>`).join('');
+  renderTable();
+}
+function renderTable(){
+  const M=MODELS.est,fc=$('#filt').value;
+  const els=(M?M.els:[]).filter(e=>!fc||e.cat===fc).sort((a,b)=>CAT_ORDER.indexOf(a.cat)-CAT_ORDER.indexOf(b.cat)||String(a.name).localeCompare(String(b.name),'pt-BR',{numeric:true}));
+  $('#tbody').innerHTML=els.map(e=>`<tr data-id="${e.id}" data-k="est"${sel.el===e?' class="on"':''}><td class="mk">${esc(e.name||e.tag||'#'+e.id)}</td><td><span class="dot" style="background:var(${CAT_TOK[e.cat]})"></span>${e.cat}</td><td>${esc(e.sec)}</td><td class="n">${esc(e.len)}</td><td class="n">${m2(e.bb.z0)}</td><td class="n">${m2(e.bb.z1)}</td><td>${esc(e.storey)}</td><td>${esc(e.mat)}</td></tr>`).join('')
+    ||'<tr><td colspan="8">Nenhum elemento. Abra um IFC estrutural.</td></tr>';
+}
+$('#tbody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const el=MODELS.est.els.find(x=>x.id===+tr.dataset.id);if(!el)return;select(el);
+  const c=new THREE.Box3().setFromObject(el.mesh).getCenter(new THREE.Vector3());controls.target.copy(c);controls.update();});
+$('#filt').addEventListener('change',renderTable);
+$('#vEst').addEventListener('change',e=>{if(MODELS.est)MODELS.est.group.visible=e.target.checked;});
+$('#vArq').addEventListener('change',e=>{if(MODELS.arq)MODELS.arq.group.visible=e.target.checked;});
+$('#vEdge').addEventListener('change',e=>{if(MODELS.est)MODELS.est.els.forEach(el=>{if(el.edges)el.edges.visible=e.target.checked;});});
+$('#opArq').addEventListener('input',()=>{if(MATS.arq)MATS.arq.opacity=+$('#opArq').value/100;});
+$('#bFit').onclick=()=>fit(false);$('#bTop').onclick=()=>fit(true);
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);}catch(e){}
+new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+function loadText(k,text,name,isExample){
+  $('#loading').hidden=false;
+  setTimeout(()=>{
+    try{const ifc=new IFC(text);if(!ifc.ents.size)throw new Error('vazio');
+      if(k==='est'&&!isExample&&MODELS.est&&MODELS.est.example){ORIGIN=null;if(MODELS.arq&&MODELS.arq.example){scene.remove(MODELS.arq.group);MODELS.arq=null;}}
+      buildModel(k,ifc,name,isExample);renderAll();fit(false);}
+    catch(err){$('#msgs').innerHTML=`<div class="msg al">Não consegui ler “${esc(name)}”. Confira se é um arquivo IFC (texto STEP, extensão .ifc). Detalhe: ${esc(err.message)}</div>`;}
+    finally{$('#loading').hidden=true;}},30);
+}
+function bindFile(btn,inp,k){$(btn).onclick=()=>$(inp).click();$(inp).onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadText(k,r.result,f.name,false);r.readAsText(f);e.target.value='';};}
+bindFile('#bEst','#fEst','est');bindFile('#bArq','#fArq','arq');
+
+/* ================= Modelos de exemplo (gerados aqui, no formato IFC) ================= */
+function writer(schema){
+  const L=[];let n=0;const w=s=>{n++;L.push('#'+n+'='+s+';');return '#'+n;};
+  const f=v=>{const s=String(Math.round(v*1e6)/1e6);return /[.eE]/.test(s)?s:s+'.';};
+  const P=(...c)=>w(`IFCCARTESIANPOINT((${c.map(f).join(',')}))`),D=(...c)=>w(`IFCDIRECTION((${c.map(f).join(',')}))`);
+  const ch='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$';let seed=7;
+  const gid=()=>{let s='';for(let k=0;k<22;k++){seed=(seed*1103515245+12345)%2147483648;s+=ch[seed%64];}return `'${s}'`;};
+  const text=()=>`ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');\nFILE_NAME('exemplo.ifc','2026-11-12T00:00:00',(''),(''),'Engenhar','Engenhar','');\nFILE_SCHEMA(('${schema}'));\nENDSEC;\nDATA;\n${L.join('\n')}\nENDSEC;\nEND-ISO-10303-21;\n`;
+  return {w,f,P,D,gid,text};
+}
+function sampleEst(){
+  const {w,f,P,D,gid,text}=writer('IFC2X3');
+  const O=P(0,0,0),Z=D(0,0,1),A0=w(`IFCAXIS2PLACEMENT3D(${O},$,$)`);
+  const ctx=w(`IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,${A0},$)`);
+  const uL=w('IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.)'),uR=w('IFCSIUNIT(*,.PLANEANGLEUNIT.,$,.RADIAN.)'),dm=w('IFCDIMENSIONALEXPONENTS(0,0,0,0,0,0,0)');
+  const mw=w(`IFCMEASUREWITHUNIT(IFCPLANEANGLEMEASURE(0.0174532925199433),${uR})`),uD=w(`IFCCONVERSIONBASEDUNIT(${dm},.PLANEANGLEUNIT.,'DEGREE',${mw})`);
+  const ua=w(`IFCUNITASSIGNMENT((${uL},${uD}))`);
+  w(`IFCPROJECT(${gid()},$,'Exemplo garagem',$,$,$,$,(${ctx}),${ua})`);
+  const pSite=w(`IFCLOCALPLACEMENT($,${A0})`);w(`IFCSITE(${gid()},$,'Terreno',$,$,${pSite},$,$,.ELEMENT.,$,$,$,$,$)`);
+  const pB=w(`IFCLOCALPLACEMENT(${pSite},${A0})`);w(`IFCBUILDING(${gid()},$,'Resid\\X2\\00EA\\X0\\ncia',$,$,${pB},$,$,.ELEMENT.,$,$,$)`);
+  const pS=w(`IFCLOCALPLACEMENT(${pB},${A0})`);const st=w(`IFCBUILDINGSTOREY(${gid()},$,'T\\X2\\00E9\\X0\\rreo',$,$,${pS},$,$,.ELEMENT.,0.)`);
+  const els=[];
+  const body=(items,t='SweptSolid')=>{const r=w(`IFCSHAPEREPRESENTATION(${ctx},'Body','${t}',(${items.join(',')}))`);return w(`IFCPRODUCTDEFINITIONSHAPE($,$,(${r}))`);};
+  const place=(x,y,z,ax,rf)=>{const a=w(`IFCAXIS2PLACEMENT3D(${P(x,y,z)},${ax||'$'},${rf||'$'})`);return w(`IFCLOCALPLACEMENT(${pS},${a})`);};
+  const rect=(b,h,cx=0,cy=0)=>{const a=w(`IFCAXIS2PLACEMENT2D(${P(cx,cy)},$)`);return w(`IFCRECTANGLEPROFILEDEF(.AREA.,$,${a},${f(b)},${f(h)})`);};
+  const ext=(pr,dep,dir=Z)=>w(`IFCEXTRUDEDAREASOLID(${pr},${A0},${dir},${f(dep)})`);
+  const el=(t,nm,pl,pds,x='')=>{const id=w(`${t}(${gid()},$,'${nm}',$,$,${pl},${pds},'${nm}'${x})`);els.push(id);return id;};
+  const polyProf=pts=>{const ps=pts.map(p=>P(p[0],p[1]));return w(`IFCARBITRARYCLOSEDPROFILEDEF(.AREA.,$,${w(`IFCPOLYLINE((${[...ps,ps[0]].join(',')}))`)})`);};
+  // sapatas e pilares (P2 usa representação mapeada, como alguns programas exportam)
+  el('IFCFOOTING','S1',place(1,1,-.5),body([ext(rect(1.2,1.2),.5)]),',.PAD_FOOTING.');
+  el('IFCFOOTING','S2',place(1,7,-.5),body([ext(rect(1.2,1.2),.5)]),',.PAD_FOOTING.');
+  el('IFCCOLUMN','P1',place(1,1,0),body([ext(rect(.4,.4),3.2)]));
+  const colRep=w(`IFCSHAPEREPRESENTATION(${ctx},'Body','SweptSolid',(${ext(rect(.4,.4),3.2)}))`),rmap=w(`IFCREPRESENTATIONMAP(${A0},${colRep})`);
+  const op=w(`IFCCARTESIANTRANSFORMATIONOPERATOR3D($,$,${O},1.,$)`);
+  el('IFCCOLUMN','P2',place(1,7,0),body([w(`IFCMAPPEDITEM(${rmap},${op})`)],'MappedRepresentation'));
+  // vigas: eixo local Z ao longo da viga, topo na cota 3,20 m
+  el('IFCBEAM','V1',place(1,1,3.2,D(0,1,0),D(-1,0,0)),body([ext(rect(.2,.5,0,-.25),6)]));
+  el('IFCBEAM','V2',place(1,7,3.2,D(1,0,0),D(0,1,0)),body([ext(rect(.2,.5,0,-.25),5)]));
+  // paredes de concreto
+  el('IFCWALLSTANDARDCASE','PAR1',place(0,0,0),body([ext(polyProf([[5.9,2],[6.1,2],[6.1,8],[5.9,8]]),3.2)]));
+  el('IFCWALLSTANDARDCASE','PAR2',place(0,0,0),body([ext(polyProf([[6,7.9],[14,7.9],[14,8.1],[6,8.1]]),3.2)]));
+  { // parede curva: perfil com arcos (IfcTrimmedCurve em graus)
+    const c2=w(`IFCAXIS2PLACEMENT2D(${P(8,2)},$)`),cE=w(`IFCCIRCLE(${c2},2.1)`),cI=w(`IFCCIRCLE(${c2},1.9)`);
+    const tE=w(`IFCTRIMMEDCURVE(${cE},(IFCPARAMETERVALUE(180.)),(IFCPARAMETERVALUE(270.)),.T.,.PARAMETER.)`);
+    const tI=w(`IFCTRIMMEDCURVE(${cI},(IFCPARAMETERVALUE(180.)),(IFCPARAMETERVALUE(270.)),.T.,.PARAMETER.)`);
+    const l1=w(`IFCPOLYLINE((${P(8,-.1)},${P(8,.1)}))`),l2=w(`IFCPOLYLINE((${P(6.1,2)},${P(5.9,2)}))`);
+    const seg=(c,s)=>w(`IFCCOMPOSITECURVESEGMENT(.CONTINUOUS.,${s},${c})`);
+    const cc=w(`IFCCOMPOSITECURVE((${seg(tE,'.T.')},${seg(l1,'.T.')},${seg(tI,'.F.')},${seg(l2,'.T.')}),.F.)`);
+    el('IFCWALL','PAR3',place(0,0,0),body([ext(w(`IFCARBITRARYCLOSEDPROFILEDEF(.AREA.,$,${cc})`),3.2)]));
+  }
+  // laje da casa, extrudada para baixo a partir do topo
+  el('IFCSLAB','L1',place(10,4,3.2),body([ext(rect(8,8),.12,D(0,0,-1))]),',.FLOOR.');
+  const mat=w(`IFCMATERIAL('Concreto C30')`);
+  w(`IFCRELASSOCIATESMATERIAL(${gid()},$,$,$,(${els.join(',')}),${mat})`);
+  w(`IFCRELCONTAINEDINSPATIALSTRUCTURE(${gid()},$,$,$,(${els.join(',')}),${st})`);
+  return text();
+}
+function sampleArq(){
+  const {w,f,P,D,gid,text}=writer('IFC4');
+  const O=P(0,0,0),A0=w(`IFCAXIS2PLACEMENT3D(${O},$,$)`),ctx=w(`IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,${A0},$)`);
+  const ua=w(`IFCUNITASSIGNMENT((${w('IFCSIUNIT(*,.LENGTHUNIT.,.MILLI.,.METRE.)')}))`);
+  w(`IFCPROJECT(${gid()},$,'Exemplo arquitet\\X2\\00F4\\X0\\nico',$,$,$,$,(${ctx}),${ua})`);
+  const pS=w(`IFCLOCALPLACEMENT($,${A0})`),st=w(`IFCBUILDINGSTOREY(${gid()},$,'T\\X2\\00E9\\X0\\rreo',$,$,${pS},$,$,.ELEMENT.,0.)`);
+  const els=[],body=(items,t)=>{const r=w(`IFCSHAPEREPRESENTATION(${ctx},'Body','${t}',(${items.join(',')}))`);return w(`IFCPRODUCTDEFINITIONSHAPE($,$,(${r}))`);};
+  const boxPts=(x0,y0,z0,x1,y1,z1)=>[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+  const BOXF=[[1,3,2],[1,4,3],[5,6,7],[5,7,8],[1,2,6],[1,6,5],[2,3,7],[2,7,6],[3,4,8],[3,8,7],[4,1,5],[4,5,8]];
+  // volume da grelha como malha triangulada (IFC4)
+  const tfs=(pts)=>{const pl=w(`IFCCARTESIANPOINTLIST3D((${pts.map(p=>'('+p.map(f).join(',')+')').join(',')}))`);return w(`IFCTRIANGULATEDFACESET(${pl},$,.T.,(${BOXF.map(t=>'('+t.join(',')+')').join(',')}),$)`);};
+  els.push(w(`IFCBUILDINGELEMENTPROXY(${gid()},$,'Volume da grelha (refer\\X2\\00EA\\X0\\ncia)',$,$,${pS},${body([tfs(boxPts(-500,500,3200,9900,7500,6200))],'Tessellation')},$,$)`));
+  // muro da fachada como brep facetado
+  const bp=boxPts(6000,8100,0,14000,8300,3400).map(p=>P(...p));
+  const face=ix=>{const lp=w(`IFCPOLYLOOP((${ix.map(i=>bp[i-1]).join(',')}))`);return w(`IFCFACE((${w(`IFCFACEOUTERBOUND(${lp},.T.)`)}))`);};
+  const fcs=[[1,4,3,2],[5,6,7,8],[1,2,6,5],[2,3,7,6],[3,4,8,7],[4,1,5,8]].map(face);
+  els.push(w(`IFCWALL(${gid()},$,'Revestimento da fachada',$,$,${pS},${body([w(`IFCFACETEDBREP(${w(`IFCCLOSEDSHELL((${fcs.join(',')}))`)})`)],'Brep')},$,$)`));
+  w(`IFCRELCONTAINEDINSPATIALSTRUCTURE(${gid()},$,$,$,(${els.join(',')}),${st})`);
+  return text();
+}
+function loadExample(){ORIGIN=null;select(null);loadText('est',sampleEst(),'exemplo-estrutural.ifc',true);setTimeout(()=>loadText('arq',sampleArq(),'exemplo-arquitetonico.ifc',true),60);}
+$('#bEx').onclick=loadExample;
+
+if(!window.THREE||!THREE.OrbitControls){$('#msgs').innerHTML='<div class="msg al">Não consegui carregar a biblioteca 3D (three.js). Confira a conexão com a internet e recarregue a página.</div>';return;}
+initScene();renderAll();loadExample();
+window.__eng={MODELS,IFC,sampleEst,sampleArq,select};
+})();
+</script>
+</body>
+</html>
