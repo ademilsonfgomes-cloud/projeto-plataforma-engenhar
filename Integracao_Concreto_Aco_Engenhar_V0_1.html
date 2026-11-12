@@ -193,7 +193,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f"><label for="g_incl">Inclinação (%)</label><input id="g_incl" type="number" step="1" value="10"></div>
         <div class="f"><label for="g_h0">Altura da tesoura no apoio (m)</label><input id="g_h0" type="number" step="0.05" value="0.5"></div>
         <div class="f"><label for="g_pT">Espaçamento das terças (m)</label><input id="g_pT" type="number" step="0.1" value="1.5"></div>
-        <div class="f"><label for="g_tTipo">Perfis das treliças</label><select id="g_tTipo"><option value="enc">Ue encaixado</option><option value="ue">Ue (almas sobrepostas)</option><option value="L">Cantoneira + gusset</option></select></div>
+        <div class="f"><label for="g_tTipo">Perfis das treliças</label><select id="g_tTipo"><option value="enc">U simples encaixado</option><option value="ue">Ue (almas sobrepostas)</option><option value="L">Cantoneira + gusset</option></select></div>
         <div class="f" data-tEnc><label for="g_fEnc">Folga do encaixe, por lado (mm)</label><input id="g_fEnc" type="number" step="0.5" min="0" value="1"></div>
         <div class="f w"><label for="g_pBanzo">Banzos</label><select id="g_pBanzo"></select></div>
         <div class="f w"><label for="g_pAlma">Montantes e diagonais</label><select id="g_pAlma"></select></div>
@@ -666,20 +666,31 @@ const STP={
  'Ue75x2.00':{label:'Ue 75x40x15x2,00',w:40,h:75,kgm:2.78,b:40,c:15,t:2},
  'Ue150x2.65':{label:'Ue 150x60x20x2,65',w:60,h:150,kgm:6.23,b:60,c:20,t:2.65},
  'Ue150x2.00':{label:'Ue 150x60x20x2,00',w:60,h:150,kgm:4.74,b:60,c:20,t:2},
+ // U simples dobrado (sem enrijecedor de borda)
+ 'U200x75x3.00':{label:'U 200x75x3.00'.replace('.',','),w:75,h:200,kgm:8.1,b:75,c:0,t:3.0},
+ 'U200x50x3.00':{label:'U 200x50x3.00'.replace('.',','),w:50,h:200,kgm:6.92,b:50,c:0,t:3.0},
+ 'U150x60x3.00':{label:'U 150x60x3.00'.replace('.',','),w:60,h:150,kgm:6.22,b:60,c:0,t:3.0},
+ 'U150x50x3.00':{label:'U 150x50x3.00'.replace('.',','),w:50,h:150,kgm:5.75,b:50,c:0,t:3.0},
+ 'U150x50x2.65':{label:'U 150x50x2.65'.replace('.',','),w:50,h:150,kgm:5.09,b:50,c:0,t:2.65},
+ 'U127x50x2.65':{label:'U 127x50x2.65'.replace('.',','),w:50,h:127,kgm:4.61,b:50,c:0,t:2.65},
+ 'U100x50x2.65':{label:'U 100x50x2.65'.replace('.',','),w:50,h:100,kgm:4.05,b:50,c:0,t:2.65},
+ 'U100x40x2.65':{label:'U 100x40x2.65'.replace('.',','),w:40,h:100,kgm:3.63,b:40,c:0,t:2.65},
+ 'U100x40x2.00':{label:'U 100x40x2.00'.replace('.',','),w:40,h:100,kgm:2.76,b:40,c:0,t:2.0},
+ 'U75x40x2.00':{label:'U 75x40x2.00'.replace('.',','),w:40,h:75,kgm:2.37,b:40,c:0,t:2.0},
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 const TDESC={MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
 const TORD=['BI','BS','MO','DG','TC','PT','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,pBanzo:'Ue150x3.00',pAlma:'Ue100x2.65',pTerca:'Ue200x2.65',
-  tg:6.3,mOn:true,side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'Ue100x2.00',pMA:'Ue75x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
+const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pTerca:'Ue200x2.65',
+  tg:6.3,mOn:true,side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
-function ueProps(P){const t=P.t,h=P.h-t,b=P.b-t,c=P.c-t/2,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
+function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
   const Ix=t*(h**3/12+2*b*(h/2)**2+2*(c**3/12+c*(h/2-c/2)**2)),Iy=t*(h*xc*xc+2*(b**3/12+b*(b/2-xc)**2)+2*c*(b-xc)**2);
   return {A:A/100,rx:Math.sqrt(Ix/A)/10,ry:Math.sqrt(Iy/A)/10};}
 // Ue "deitado" para encaixe: alma perpendicular ao plano da treliça; w = largura fora do plano (alma), h = altura no plano (aba)
 function encChord(P){return {...P,base:P,w:P.h,h:P.b,enc:true};}
 // montante ou diagonal sob medida: largura = vão interno do banzo menos a folga dos dois lados; aba, enrijecedor e espessura do perfil escolhido
-function encWeb(C,Wb,gap){const h=Math.round((C.h-2*C.t-2*gap)*10)/10,b=Wb.b,c=Wb.c,t=Wb.t,kgm=t*(h+2*b+2*c-4*t)*.00785;
-  const base={h,b,c,t,kgm};return {...base,base,w:h,h:b,enc:true,kgm,label:`Ue ${String(h).replace('.',',')}x${b}x${c}x${t.toFixed(2).replace('.',',')} (sob medida)`};}
+function encWeb(C,Wb,gap){const h=Math.round((C.h-2*C.t-2*gap)*10)/10,b=Wb.b,c=Wb.c,t=Wb.t,kgm=t*(h+2*b+2*c-(c>0?4:2)*t)*.00785;
+  const base={h,b,c,t,kgm};return {...base,base,w:h,h:b,enc:true,kgm,label:`${c>0?'Ue':'U'} ${String(h).replace('.',',')}x${b}x${c>0?c+'x':''}${t.toFixed(2).replace('.',',')} (sob medida)`};}
 const FU_CF=36,FY_CF=25;   // aço de perfil formado a frio (ex.: ZAR 250): fu 360 MPa, fy 250 MPa
 // solda longitudinal em chapa fina, NBR 14762: por linha de solda de comprimento L (mm) em chapa t (mm), kN
 // solda transversal em chapa fina (NBR 14762): t·L·fu/1,65
@@ -762,11 +773,12 @@ function genSteel(G){
       const wd=(1.25*.20+1.5*.25)*amax/1000;let N=0;for(let k=1;k<tr[0].n;k++){const s=k*Lmax/tr[0].n,Mx=wd*(s/1000)*((Lmax-s)/1000)/2,h=((h0-Bz.h)+i*Math.min(s,Lmax-s))/1000;N=Math.max(N,Mx/h);}
       const isUe=!!Bz.t,BB0=Bz.base||Bz,up=isUe?ueProps(BB0):null,Ab=isUe?up.A:Bz.A,rr=isUe?Math.min(up.rx,up.ry):Bz.r,fy=25,gm=isUe?1.2:1.1;
       const Nt=Ab*fy/1.1,Lb=Lmax/tr[0].n/Math.cos(Math.atan(i))/10,lam=Lb/rr,l0=lam/Math.PI*Math.sqrt(fy/20000),chi=l0<=1.5?Math.pow(.658,l0*l0):.877/(l0*l0);
-      let Aef=Ab;if(isUe){const lp=(BB0.h/BB0.t)/(1.052*2)*Math.sqrt(fy/20000);if(lp>.673)Aef=Ab-(1-(1-.22/lp)/lp)*BB0.h*BB0.t/100;}
+      let Aef=Ab;if(isUe){const lp=(BB0.h/BB0.t)/(1.052*2)*Math.sqrt(fy/20000);if(lp>.673)Aef=Ab-(1-(1-.22/lp)/lp)*BB0.h*BB0.t/100;
+        if(!(BB0.c>0)){const lf=(BB0.b/BB0.t)/(1.052*Math.sqrt(.43))*Math.sqrt(fy/20000);if(lf>.673)Aef-=2*(1-(1-.22/lf)/lf)*BB0.b*BB0.t/100;}}
       const Nc=chi*Aef*fy/gm;
       out.trussN=N;out.trussWd=wd;
       out.pre.push({item:'Banzo inferior (tração)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nt)} kN`,u:N/Nt,obs:`${Bz.label}, ${isUe?'aço ZAR 250 (fy 250 MPa)':'ASTM A36'}`});
-      out.pre.push({item:'Banzo superior (compressão)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nc)} kN`,u:N/Nc,obs:`travado pelas terças a cada ${m2(Lb*10)} m${isUe?'; NBR 14762 com área efetiva da alma, sem flambagem distorcional':''}`});
+      out.pre.push({item:'Banzo superior (compressão)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nc)} kN`,u:N/Nc,obs:`travado pelas terças a cada ${m2(Lb*10)} m${isUe?(BB0.c>0?'; NBR 14762 com área efetiva da alma, sem flambagem distorcional':'; NBR 14762 com área efetiva da alma e das abas livres (U simples)'):''}`});
       out.preHyp=`Tesouras: vão ${m2(Lmax)} m, espaçamento ${m2(amax)} m, carga permanente 0,20 kN/m² (telha e estrutura) e sobrecarga 0,25 kN/m², γg = 1,25 e γq = 1,5.`;}
   }
 
@@ -1095,7 +1107,7 @@ function encNode(nd,ch,wb,top,d,n,hC,opt){
     if(w.u2>1)alerts.push(`${w.m.mark}: solda completa (2 x ${w.Lc} mm nas abas + ${w.Lt} mm na alma do banzo) não resiste a ${nf1.format(w.F)} kN (${nf0.format(w.u2*100)}%); completar com solda nas quinas da peça ou chapa de nó.`);
     if(Math.abs(w.sh)>hC)alerts.push(`${w.m.mark}: excentricidade de ${Math.abs(w.sh)} mm no nó; considerar no cálculo.`);
     if(/DG/.test(w.m.type)&&Math.min(w.ang,180-w.ang)<25)alerts.push(`Diagonal ${w.m.mark} a ${w.ang}° do banzo, muito abatida (recomendado ≥ 30°).`);});
-  const fs=webs.map(w=>foot(w,w.sh)),rec=webs.length?{a:Math.floor(Math.min(...fs.map(f=>f[0]))-10),b:Math.ceil(Math.max(...fs.map(f=>f[1]))+10)}:null;
+  const fs=webs.map(w=>foot(w,w.sh)),rec=webs.length&&base.c>0?{a:Math.floor(Math.min(...fs.map(f=>f[0]))-10),b:Math.ceil(Math.max(...fs.map(f=>f[1]))+10)}:null;
   const sp=opt.splice(nd);let bolts=[],tala=null;
   if(sp){const ext=fs.reduce((a,f)=>Math.max(a,Math.abs(f[0]),Math.abs(f[1])),0),x0=Math.max(35,Math.ceil((ext+9+20)/5)*5),cols=sp.cols,Lt=2*(x0+50*(cols-1)+30);
     tala={L:Lt,H:Math.floor((hC-10)/5)*5,t:4.75,x0,ext:true};for(let k=0;k<cols;k++)[1,-1].forEach(sx=>bolts.push(v2.add(P,v2.mul(d,sx*(x0+50*k)))));}
@@ -1258,13 +1270,14 @@ function ueDraw(sd,o,s,ns,ts){
 }
 // Ue deitado em corte: alma horizontal (em cima se webUp), abas verticais, enrijecedores para dentro
 function secUeH(d,cx,y0,P,webUp,ly){const h=P.h,b=P.b,c=P.c,t=P.t,k=webUp?-1:1,Y=v=>y0+k*v,X=v=>cx+v;
+  if(!(c>0)){d.P([[X(-h/2),Y(0)],[X(h/2),Y(0)],[X(h/2),Y(b)],[X(h/2-t),Y(b)],[X(h/2-t),Y(t)],[X(-h/2+t),Y(t)],[X(-h/2+t),Y(b)],[X(-h/2),Y(b)]],ly);return;}
   d.P([[X(-h/2),Y(0)],[X(h/2),Y(0)],[X(h/2),Y(b)],[X(h/2-c),Y(b)],[X(h/2-c),Y(b-t)],[X(h/2-t),Y(b-t)],[X(h/2-t),Y(t)],[X(-h/2+t),Y(t)],[X(-h/2+t),Y(b-t)],[X(-h/2+c),Y(b-t)],[X(-h/2+c),Y(b)],[X(-h/2),Y(b)]],ly);}
 // nó com encaixe: banzo (alma na borda externa), peças entrando entre as abas, solda na borda das abas, recorte dos enrijecedores
 function encDraw(sd,o,s,ns,ts){
-  const h=o.hC/2,bp=o.base,nn=o.n,D=o.d,lipN=h-bp.c;
+  const h=o.hC/2,bp=o.base,nn=o.n,D=o.d,lipN=h-bp.c,UN=bp.c>0?'Ue':'U SIMPLES';
   o.ch.forEach(c=>{const L=Math.max(o.hC*5,300),b=v2.mul(c.u,L),q=[-c.u[1],c.u[0]],sg=v2.dot(q,nn)>0?1:-1;
     sd.L(-q[0]*h*sg,-q[1]*h*sg,b[0]-q[0]*h*sg,b[1]-q[1]*h*sg,'ACO');sd.L(q[0]*h*sg,q[1]*h*sg,b[0]+q[0]*h*sg,b[1]+q[1]*h*sg,'ACO');
-    sd.L(-q[0]*(h-bp.t)*sg,-q[1]*(h-bp.t)*sg,b[0]-q[0]*(h-bp.t)*sg,b[1]-q[1]*(h-bp.t)*sg,'ANOT');sd.L(q[0]*lipN*sg,q[1]*lipN*sg,b[0]+q[0]*lipN*sg,b[1]+q[1]*lipN*sg,'EIXO');
+    sd.L(-q[0]*(h-bp.t)*sg,-q[1]*(h-bp.t)*sg,b[0]-q[0]*(h-bp.t)*sg,b[1]-q[1]*(h-bp.t)*sg,'ANOT');if(bp.c>0)sd.L(q[0]*lipN*sg,q[1]*lipN*sg,b[0]+q[0]*lipN*sg,b[1]+q[1]*lipN*sg,'EIXO');
     sd.L(0,0,b[0],b[1],'EIXO');sd.T(b[0]*.8-nn[0]*(h+ts*1.3),b[1]*.8-nn[1]*(h+ts*1.3),`${c.m.mark} · ${bp.label} (alma por fora)`,'TEXTO',{an:'middle',h:ts*.75});});
   if(o.rec){const a=v2.add(v2.mul(D,o.rec.a),v2.mul(nn,h+ts*.6)),b=v2.add(v2.mul(D,o.rec.b),v2.mul(nn,h+ts*.6));sd.D(a[0]-nn[0]*ts*.6,a[1]-nn[1]*ts*.6,b[0]-nn[0]*ts*.6,b[1]-nn[1]*ts*.6,(v2.dot([-D[1],D[0]],nn)>0?1:-1)*(ts*2.4),`recorte dos enrijecedores ${o.rec.b-o.rec.a}`);}
   o.webs.forEach(w=>{const O=v2.mul(D,w.sh),q=w.q,hw=w.W/2,pt=(sg,nu)=>v2.add(O,v2.add(v2.mul(w.u,w.tAt(sg,nu)),v2.mul(q,sg*hw)));
@@ -1280,14 +1293,14 @@ function encDraw(sd,o,s,ns,ts){
     sd.P(pts,'CHAPA');o.bolts.forEach(b=>{const q=v2.sub(b,o.p);sd.C(q[0],q[1],9,'CHAPA');});
     const xs=o.bolts.map(b=>Math.round(v2.dot(v2.sub(b,o.p),D))).sort((a,b)=>a-b),pp=xs.map(x=>v2.add(v2.mul(D,x),v2.mul(nn,-o.tala.H/2)));
     for(let k=0;k<pp.length-1;k++)sd.D(pp[k][0],pp[k][1],pp[k+1][0],pp[k+1][1],-ts*2.8);sd.D(pts[0][0],pts[0][1],pts[1][0],pts[1][1],-ts*4.4,String(o.tala.L));}
-  const bb=sd.bbox(),inner=bp.h-2*bp.t,lines=[`Banzo ${bp.label} com a alma por fora (perpendicular ao plano da tesoura) e as abas para dentro; vão interno de ${nf1.format(inner)} mm.`,
+  const bb=sd.bbox(),inner=bp.h-2*bp.t,lines=[`Banzo ${bp.label}${bp.c>0?'':' (U simples, sem enrijecedor)'} com a alma por fora (perpendicular ao plano da tesoura) e as abas para dentro; vão interno de ${nf1.format(inner)} mm.`,
     `Montantes e diagonais ${o.webs[0]?o.webs[0].m.prof.label:''} encaixados entre as abas, com a ponta cortada paralela ao banzo e encostada na alma do banzo.`,
     `SOLDA COMPLETA (filete, E70XX): na borda das duas abas do banzo e na ponta da peça contra a alma do banzo: ${o.webs.map(w=>`${w.m.mark} 2 x ${w.Lc} + ${w.Lt} mm`).join(', ')}.`,
     o.rec?`Recortar os enrijecedores do banzo em ${o.rec.b-o.rec.a} mm no trecho do nó para a peça entrar.`:'',
     o.webs.some(w=>w.sh)?`Nó excêntrico: peças lado a lado dentro do banzo com 10 mm de folga; excentricidades de ${o.webs.map(w=>`${w.m.mark} ${w.sh>0?'+':''}${w.sh}`).join(', ')} mm.`:'Eixos concorrentes no nó.'].filter(Boolean);
   if(o.tala)lines.push(`EMENDA DE CAMPO: talas externas ${o.tala.L} x ${o.tala.H} x 4,75 mm nas duas abas, ${o.bolts.length} parafusos A325 ø16 (${o.bolts.length/2} por metade) atravessando o banzo, furos ø18, espaçamento 50 mm, borda 30 mm; parafusos fora do trecho das peças.`);
   o.alerts.forEach(a=>lines.push('ALERTA: '+a));
-  sd.notes(bb.x0,bb.y0-ts*2.2,lines,`${s.mark} · ${ns.name.toUpperCase()} · ${o.top?'NÓ DO BANZO SUPERIOR':'NÓ DO BANZO INFERIOR'}${o.sp?' COM EMENDA':''} · Ue ENCAIXADO`,`${s.count} unidades`);
+  sd.notes(bb.x0,bb.y0-ts*2.2,lines,`${s.mark} · ${ns.name.toUpperCase()} · ${o.top?'NÓ DO BANZO SUPERIOR':'NÓ DO BANZO INFERIOR'}${o.sp?' COM EMENDA':''} · ${UN} ENCAIXADO`,`${s.count} unidades`);
 }
 function drawNos(S){
   const D=S.det;if(!D||!D.nodeSets.length)return null;const d=Dwg.at(10),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*9;
@@ -1403,10 +1416,10 @@ function drawCortesEnc(S){
   const yb2=-B.b/2;d.L(ox-B.h/2-4.75-14,yb2,ox+B.h/2+4.75+18,yb2,'CHAPA');d.R(ox-B.h/2-4.75-12,yb2-12,12,24,'CHAPA');d.R(ox+B.h/2+4.75,yb2-12,14,24,'CHAPA');
   lab(ox+B.h/2+ts*3,yb2,`parafuso A325 ø16, L ≈ ${Math.ceil((B.h+2*4.75+30)/10)*10} mm`);
   panel(ox-B.h/2,'CORTE D-D · EMENDA DE CAMPO','talas externas de 4,75 mm nas duas abas; corte duplo',yb);
-  d.notes(0,yb-ts*7,['Perfis formados a frio Ue, aço ZAR 250 ou CF-26, conforme NBR 14762 e NBR 6355.',
+  d.notes(0,yb-ts*7,[`Perfis formados a frio ${B.c>0?'Ue':'U simples (sem enrijecedor de borda)'}, aço ZAR 250 ou CF-26, conforme NBR 14762 e NBR 6355.`,
     `Banzos com a alma por fora e as abas para dentro da tesoura. Montantes e diagonais dobrados sob medida para entrar justos no vão interno do banzo (${nf1.format(B.h-2*B.t)} mm), com ${nf1.format(+(S.det&&S.det.fit?(B.h-2*B.t-A.h)/2:1))} mm de folga por lado.`,
-    'Recortar os enrijecedores do banzo no trecho de cada nó (comprimentos na folha de nós). Solda completa de filete, eletrodo E70XX: borda das abas do banzo nos dois lados e ponta de cada peça contra a alma do banzo.',
-    'Proteção anticorrosiva nas áreas soldadas.'],'CORTES DAS PEÇAS DA TESOURA · Ue ENCAIXADO',sub());
+    (B.c>0?'Recortar os enrijecedores do banzo no trecho de cada nó (comprimentos na folha de nós). ':'Banzo em U simples: a peça entra pela boca do banzo sem recorte. ')+'Solda completa de filete, eletrodo E70XX: borda das abas do banzo nos dois lados e ponta de cada peça contra a alma do banzo.',
+    'Proteção anticorrosiva nas áreas soldadas.'],`CORTES DAS PEÇAS DA TESOURA · ${B.c>0?'Ue':'U SIMPLES'} ENCAIXADO`,sub());
   return d;}
 function drawCortes(S){
   if(S.det&&S.det.enc)return drawCortesEnc(S);
@@ -1571,8 +1584,8 @@ $('#vEdge').addEventListener('change',e=>{if(MODELS.est)MODELS.est.els.forEach(e
 $('#opArq').addEventListener('input',()=>{if(MATS.arq)MATS.arq.opacity=+$('#opArq').value/100;});
 $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.target.checked;});
 {const opt=(id,keys,def)=>{$('#'+id).innerHTML=keys.map(k=>`<option value="${k}"${k===def?' selected':''}>${esc(STP[k].label)} · ${nf2.format(STP[k].kgm)} kg/m</option>`).join('');};
- const LISTS={enc:{B:['Ue150x2.65','Ue150x3.00','Ue200x2.65','Ue200x3.00','Ue127x2.65','Ue100x2.65'],A:['Ue100x2.00','Ue100x2.65','Ue75x2.00'],MB:['Ue100x2.00','Ue100x2.65','Ue127x2.65','Ue150x2.65'],MA:['Ue75x2.00','Ue100x2.00'],
-   d:{B:'Ue150x3.00',A:'Ue100x2.65',MB:'Ue100x2.00',MA:'Ue75x2.00'}},
+ const LISTS={enc:{B:['U150x50x2.65','U150x50x3.00','U150x60x3.00','U200x50x3.00','U200x75x3.00','U127x50x2.65','U100x50x2.65'],A:['U100x40x2.00','U100x40x2.65','U100x50x2.65','U75x40x2.00'],MB:['U100x40x2.65','U100x50x2.65','U127x50x2.65','U150x50x2.65'],MA:['U75x40x2.00','U100x40x2.00'],
+   d:{B:'U200x75x3.00',A:'U100x40x2.65',MB:'U100x50x2.65',MA:'U75x40x2.00'}},
   ue:{B:['Ue150x2.65','Ue150x3.00','Ue200x2.65','Ue200x3.00','Ue127x2.65'],A:['Ue75x2.00','Ue100x2.00','Ue100x2.65'],MB:['Ue100x2.00','Ue100x2.65','Ue127x2.65','Ue150x2.65'],MA:['Ue75x2.00','Ue100x2.00'],
    d:{B:'Ue150x3.00',A:'Ue100x2.65',MB:'Ue100x2.00',MA:'Ue75x2.00'}},
   L:{B:['2L51x4.8','2L64x4.8'],A:['L38x3.2','L51x3.2','L51x4.8'],MB:['2L51x4.8','L51x4.8','2L64x4.8'],MA:['L38x3.2','L51x3.2','L51x4.8'],d:{B:'2L51x4.8',A:'L51x4.8',MB:'2L51x4.8',MA:'L38x3.2'}}};
