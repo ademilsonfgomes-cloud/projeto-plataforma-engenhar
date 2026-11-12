@@ -918,12 +918,20 @@ function drawWallElevations(parent){
 }
 // Armaduras do detalhamento de pilares: N1 estribo, N2 longitudinal, N3 espera.
 // Edição compartilhada do modelo P1; individualização P2/P3 será etapa posterior.
-let pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};
+// V234 — Armadura longitudinal do pilar por faces: 4 barras de canto + barras adicionais
+// em cada face (tardoz/solo, externa, laterais), cada grupo com quantidade e bitola próprias.
+const pillarArmsDefault=()=>({N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3,cornerDia:10,soloN:0,soloDia:10,extN:0,extDia:10,latN:1,latDia:10},N3:{dia:10,qty:6,lapFactor:60,bend:21,follow:1}});
+let pillarArms=pillarArmsDefault();
+// Compatibilidade com projetos antigos (quantidade única de barras).
+function pillarN2(){const a=pillarArms.N2;if(a.cornerDia==null){const extra=Math.max(0,Math.round(a.qty||4)-4);a.cornerDia=a.dia||10;a.latN=Math.ceil(extra/2);a.latDia=a.dia||10;a.soloN=0;a.soloDia=a.dia||10;a.extN=0;a.extDia=a.dia||10}if(pillarArms.N3.follow==null)pillarArms.N3.follow=0;return a}
+// Grupos de barras por bitola (uma posição N por bitola) e composição por face.
+function pillarBarGroups(){const a=pillarN2(),faces=[['CANTOS',4,a.cornerDia],['TARDOZ',a.soloN,a.soloDia],['EXTERNA',a.extN,a.extDia],['LATERAIS',2*a.latN,a.latDia]].filter(f=>f[1]>0);const map=new Map();for(const [name,n,dia] of faces){const k=Number(dia);if(!map.has(k))map.set(k,{dia:k,qty:0,parts:[]});const gr=map.get(k);gr.qty+=n;gr.parts.push(name==='LATERAIS'?`${a.latN}+${a.latN} LATERAIS`:`${n} ${name}`)}const tokens=['N2','N4','N5','N6'],wt=['N3','N7','N8','N9'];return [...map.values()].map((gr,i)=>({...gr,token:tokens[i]||'N2',waitToken:wt[i]||'N3'}))}
 let pillarArmEditing=null;
-const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento (cm)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['dia','Bitola (mm)'],['qty','Quantidade de barras'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['dia','Bitola (mm)'],['qty','Quantidade de esperas'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
-function openPillarArm(pos){if(!pillarArmFields[pos])return;pillarArmEditing=pos;const titles={N1:'ESTRIBO DO PILAR',N2:'BARRAS LONGITUDINAIS',N3:'ESPERAS DO PILAR'};$('pillarArmTitle').textContent=`${pos} — ${titles[pos]}`;$('pillarArmHelp').textContent='Clique nas posições N1, N2 ou N3 do desenho para editar a armadura. A alteração atualiza o modelo de pilar exibido.';$('pillarArmFields').replaceChildren();for(const [id,label] of pillarArmFields[pos]){const lab=document.createElement('label');lab.textContent=label;lab.style.display='flex';lab.style.flexDirection='column';lab.style.gap='4px';const input=document.createElement('input');input.type='number';input.step='any';input.min='0';input.value=pillarArms[pos][id];input.dataset.pillarField=id;input.style.width='120px';lab.append(input);$('pillarArmFields').append(lab)}$('pillarArmEditor').hidden=false;}
+const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento (cm)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['cornerDia','Cantos (4 barras) — Ø (mm)'],['soloN','Face do TARDOZ (solo): barras além dos cantos'],['soloDia','Face do tardoz — Ø (mm)'],['extN','Face EXTERNA: barras além dos cantos'],['extDia','Face externa — Ø (mm)'],['latN','CADA face LATERAL: barras além dos cantos'],['latDia','Faces laterais — Ø (mm)'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['follow','Esperas iguais às barras do pilar (1 = sim, 0 = não)'],['dia','Ø se independentes (mm)'],['qty','Quantidade se independentes'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
+const pillarZeroOk=['soloN','extN','latN','follow'];
+function openPillarArm(pos){if(!pillarArmFields[pos])return;pillarN2();pillarArmEditing=pos;const titles={N1:'ESTRIBO DO PILAR',N2:'BARRAS LONGITUDINAIS',N3:'ESPERAS DO PILAR'};$('pillarArmTitle').textContent=`${pos} — ${titles[pos]}`;$('pillarArmHelp').textContent=pos==='N2'?'Barras longitudinais por face. A face do TARDOZ é a voltada para o solo (lado superior da seção no desenho). Barras de mesma bitola formam uma única posição N.':pos==='N3'?'Com 1, as esperas acompanham as barras do pilar (mesma quantidade e bitola, transpasse pela bitola de cada uma). Com 0, use Ø e quantidade independentes.':'Clique nas posições N do desenho para editar a armadura.';$('pillarArmFields').replaceChildren();for(const [id,label] of pillarArmFields[pos]){const lab=document.createElement('label');lab.textContent=label;lab.style.display='flex';lab.style.flexDirection='column';lab.style.gap='4px';const input=document.createElement('input');input.type='number';input.step='any';input.min='0';input.value=pillarArms[pos][id];input.dataset.pillarField=id;input.style.width='120px';lab.append(input);$('pillarArmFields').append(lab)}$('pillarArmEditor').hidden=false;}
 $('pillarArmCancel').onclick=()=>{$('pillarArmEditor').hidden=true;pillarArmEditing=null};
-$('pillarArmApply').onclick=()=>{if(!pillarArmEditing)return;const vals={};for(const input of $('pillarArmFields').querySelectorAll('input')){const n=Number(input.value);if(!Number.isFinite(n)||n<=0){input.focus();status('Informe valores positivos para a armadura.');return}vals[input.dataset.pillarField]=n}if(vals.qty!==undefined)vals.qty=Math.max(1,Math.round(vals.qty));pillarArms[pillarArmEditing]={...pillarArms[pillarArmEditing],...vals};const pos=pillarArmEditing;$('pillarArmEditor').hidden=true;pillarArmEditing=null;draw();status(`Armadura ${pos} do pilar atualizada. Confira o detalhamento e valide os valores executivos.`)};
+$('pillarArmApply').onclick=()=>{if(!pillarArmEditing)return;const vals={};for(const input of $('pillarArmFields').querySelectorAll('input')){const n=Number(input.value),key=input.dataset.pillarField,zero=pillarZeroOk.includes(key);if(!Number.isFinite(n)||n<0||(!zero&&n<=0)){input.focus();status(zero?'Informe 0 ou mais para a quantidade.':'Informe valores positivos para a armadura.');return}vals[key]=zero?Math.round(n):n}if(vals.qty!==undefined)vals.qty=Math.max(1,Math.round(vals.qty));if(vals.follow!==undefined)vals.follow=vals.follow?1:0;pillarArms[pillarArmEditing]={...pillarArms[pillarArmEditing],...vals};const pos=pillarArmEditing;$('pillarArmEditor').hidden=true;pillarArmEditing=null;draw();status(`Armadura ${pos} do pilar atualizada. Confira o detalhamento e valide os valores executivos.`)};
 // VB — viga de base: seção e elevação em escala geométrica do CAD.
 let beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};
 let beamEditing=null;let beamEditingKind="VB";
@@ -1094,19 +1102,31 @@ function drawPillarDetails(parent){
   rect(sx,sy,sw,sh,'#334657');
   const ci=cover*factor;
   rect(sx+ci,sy+ci,Math.max(4,sw-2*ci),Math.max(4,sh-2*ci),'none',blue);
-  // Barras N2: quatro cantos e as demais distribuídas nas faces maiores.
-  const qty=Math.max(4,Math.round(pillarArms.N2.qty)||4),bi=ci+pillarArms.N1.dia/10*factor+pillarArms.N2.dia/20*factor;
-  const longVertical=v.b>=v.a,extra=qty-4,perSide=[Math.ceil(extra/2),Math.floor(extra/2)];
-  const bars=[[sx+bi,sy+bi],[sx+sw-bi,sy+bi],[sx+bi,sy+sh-bi],[sx+sw-bi,sy+sh-bi]];
-  perSide.forEach((k,side)=>{for(let m=1;m<=k;m++){const f=m/(k+1);bars.push(longVertical?[side?sx+sw-bi:sx+bi,sy+bi+(sh-2*bi)*f]:[sx+bi+(sw-2*bi)*f,side?sy+sh-bi:sy+bi])}});
-  const barR=Math.max(1.6,pillarArms.N2.dia/20*factor);
-  for(const [cx,cy] of bars)circle(cx,cy,barR,blue,blue,1,g);
+  // Barras longitudinais por face: cantos + adicionais no tardoz (face superior do desenho),
+  // na face externa (inferior) e nas laterais; cada grupo com sua bitola.
+  const A2=pillarN2(),groups=pillarBarGroups(),qty=groups.reduce((t,gr)=>t+gr.qty,0);
+  const inset=dia=>ci+pillarArms.N1.dia/10*factor+dia/20*factor,rad=dia=>Math.max(1.4,dia/20*factor);
+  const bc=inset(A2.cornerDia),bars=[];
+  for(const [cx,cy] of [[sx+bc,sy+bc],[sx+sw-bc,sy+bc],[sx+bc,sy+sh-bc],[sx+sw-bc,sy+sh-bc]])bars.push({x:cx,y:cy,dia:A2.cornerDia,face:'CANTOS'});
+  const faceBars=(n,dia,face,p0,p1)=>{for(let m=1;m<=n;m++){const f=m/(n+1);bars.push({x:p0[0]+(p1[0]-p0[0])*f,y:p0[1]+(p1[1]-p0[1])*f,dia,face})}};
+  const bs=inset(A2.soloDia),be=inset(A2.extDia),bl=inset(A2.latDia);
+  faceBars(A2.soloN,A2.soloDia,'TARDOZ',[sx+bc,sy+bs],[sx+sw-bc,sy+bs]);
+  faceBars(A2.extN,A2.extDia,'EXTERNA',[sx+bc,sy+sh-be],[sx+sw-bc,sy+sh-be]);
+  faceBars(A2.latN,A2.latDia,'LATERAIS',[sx+bl,sy+bc],[sx+bl,sy+sh-bc]);
+  faceBars(A2.latN,A2.latDia,'LATERAIS',[sx+sw-bl,sy+bc],[sx+sw-bl,sy+sh-bc]);
+  for(const bar of bars)circle(bar.x,bar.y,rad(bar.dia),blue,blue,1,g);
+  // Lado do solo (tardoz) indicado com hachura sobre a face superior.
+  for(let xx=sx+2;xx<sx+sw-1;xx+=4)line(xx,sy-1,xx+3,sy-4,'#eaa85d',.6,g);
   dimH(sx,sx+sw,sy-16,sy,String(v.a),g);dimV(sy,sy+sh,sx-19,sx,String(v.b),g);
-  // Linhas de chamada da seção.
-  const [bx0,by0]=bars[1];path(`M${bx0} ${by0} L${sx+sw+22} ${by0-14} H${sx+sw+34}`,ink,'none',.6,g,{'data-layer':'cotas'});
-  txt(sx+sw+37,by0-11,`${qty} N2`,10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
-  path(`M${sx+sw-ci} ${sy+sh*.7} L${sx+sw+22} ${sy+sh*.7+12} H${sx+sw+34}`,ink,'none',.6,g,{'data-layer':'cotas'});
-  txt(sx+sw+37,sy+sh*.7+15,'N1',10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
+  // Linhas de chamada: uma por posição (bitola), empilhadas à direita da seção.
+  const PUs=unitFor(detailScale[code]||25);let ly=sy+3*PUs;
+  for(const gr of groups){const rep=bars.find(b=>b.dia===gr.dia&&(gr.parts.length>1||true));
+   path(`M${rep.x} ${rep.y} L${sx+sw+9*PUs} ${ly-1.6*PUs} H${sx+sw+13*PUs}`,ink,'none',.6,g,{'data-layer':'cotas'});
+   txt(sx+sw+14*PUs,ly,`${gr.qty} ${gr.token}`,10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});ly+=7*PUs}
+  path(`M${sx+sw-ci} ${sy+sh*.75} L${sx+sw+9*PUs} ${ly-1.6*PUs} H${sx+sw+13*PUs}`,ink,'none',.6,g,{'data-layer':'cotas'});
+  txt(sx+sw+14*PUs,ly,'N1',10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
+  // Conferência de espaço livre entre barras em cada face (mínimo 2 cm ou Ø).
+  const crowd=[];for(const [face,n,dia,len] of [['TARDOZ',A2.soloN,A2.soloDia,v.a],['EXTERNA',A2.extN,A2.extDia,v.a],['LATERAIS',A2.latN,A2.latDia,v.b]]){if(!n)continue;const span=len-2*(cover+pillarArms.N1.dia/10)-A2.cornerDia/10;const clear=span/(n+1)-(dia+A2.cornerDia)/20;if(clear<Math.max(2,dia/10))crowd.push(face)}
   // Estribo N1 em verdadeira grandeza (mesma escala da seção).
   const ey=sy+sh+62,ex=sx;
   txt(sx-12,ey-22,'ESTRIBO N1',12,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
@@ -1123,9 +1143,15 @@ function drawPillarDetails(parent){
   let ty=ey+eh+38;
   txt(sx-12,ty,`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${stirrupSpacing} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
   txt(sx-12,ty,`Cobrimento: ${cover} cm · corte e quantidade preliminares`,8,gold);
+  // Composição das barras longitudinais por face (face superior da seção = tardoz/solo).
+  ty+=18;txt(sx-12,ty,'BARRAS LONGITUDINAIS POR FACE',10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
+  const PL=unitFor(detailScale[code]||25);
+  for(const gr of groups){ty+=6.5*PL;txt(sx-12,ty,`${gr.token} — ${gr.qty} Ø${String(gr.dia).replace('.',',')}: ${gr.parts.join(' + ')}`,9,ink,{'data-pillar-arm':'N2',style:'cursor:pointer','data-pt':'1','font-size':(2.5/CAP*PL).toFixed(2)})}
+  if(crowd.length){ty+=6.5*PL;txt(sx-12,ty,`ATENÇÃO: espaço livre entre barras < 2 cm na(s) face(s) ${crowd.join(', ')}`,9,'#ff7777')}
   // Vistas em escala real do desenho (0,78 unidade por cm), com nível +0,00 no topo do bloco.
   const sc=.78,colX=Math.max(sx+sw+120,sx+ew+120),top=110,drawH=v.height*sc,bottom=top+drawH;
-  const wH=v.b*sc,wB=v.a*sc,xH=colX,n2X=xH+wH+30,xB=n2X+56,waitX=xB+wB+44;
+  const wH=v.b*sc,wB=v.a*sc,xH=colX,n2X=xH+wH+30,xB=n2X+groups.length*26+30,waitX=xB+wB+44;
+  const waits=pillarArms.N3.follow?groups.map(gr=>({dia:gr.dia,qty:gr.qty,token:gr.waitToken})):[{dia:pillarArms.N3.dia,qty:pillarArms.N3.qty,token:'N3'}];
   txt(xH,74,'VISTA H',12,cyan,{'font-weight':'bold'});txt(xB,74,'VISTA B',12,cyan,{'font-weight':'bold'});
   function elevation(x,w){
    rect(x,top,w,drawH,'#334657');
@@ -1135,32 +1161,34 @@ function drawPillarDetails(parent){
   }
   elevation(xH,wH);elevation(xB,wB);
   dimV(top,bottom,xH-22,xH,String(v.height),g);
-  const waitDiameter=pillarArms.N3.dia,lapCm=pillarArms.N3.lapFactor*waitDiameter/10;
+  const waitDiameter=waits[0].dia,lapCm=pillarArms.N3.lapFactor*waitDiameter/10;
   const waitTop=bottom-lapCm*sc,waitBaseY=bottom+v.blockHeight*sc,waitBend=pillarArms.N3.bend*sc,waitBendCm=pillarArms.N3.bend;
   const waitCutCm=Math.round(v.blockHeight+lapCm+waitBendCm);
-  const lineEnd=waitX+waitBend+30;
+  const lineEnd=waitX+(waits.length-1)*24+waitBend+30;
   ln(xH-30,top,lineEnd,top,'#7e9bb3',.8);ln(xH-30,bottom,lineEnd,bottom,gold,1.5);ln(xH-30,waitBaseY,lineEnd,waitBaseY,'#7e9bb3',1);
   txt(lineEnd+4,top+4,`NÍVEL ${levelFmt(v.height)} · TOPO DO MURO`,9,gold);
   txt(lineEnd+4,bottom+4,'NÍVEL +0,00 · TOPO DO BLOCO',9,gold);
   txt(lineEnd+4,waitBaseY+4,`NÍVEL ${levelFmt(-v.blockHeight)} · FUNDO DO BLOCO`,9,gold);
-  // Barra N2 isolada entre as vistas.
+  // Uma barra isolada por posição (bitola) entre as vistas.
   const barLength=Math.max(0,v.height-pillarArms.N2.topCover-pillarArms.N2.bottomCover);
-  ln(n2X,top+pillarArms.N2.topCover*sc,n2X,bottom-pillarArms.N2.bottomCover*sc,blue,2.7);
-  el('rect',{x:n2X-9,y:top,width:18,height:drawH,fill:'transparent','pointer-events':'all','data-pillar-arm':'N2',style:'cursor:pointer'},g);
-  txt(n2X+14,top+drawH/2,`${qty} N2 Ø${pillarArms.N2.dia.toFixed(1).replace('.',',')} C=${barLength} cm`,10,blue,{'text-anchor':'middle','font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 ${n2X+14} ${top+drawH/2})`});
-  // Espera N3: trecho de transpasse acima de +0,00, trecho no bloco e dobra inferior.
-  path(`M ${waitX} ${waitTop} L ${waitX} ${waitBaseY-9} Q ${waitX} ${waitBaseY-5} ${waitX+5} ${waitBaseY-5} L ${waitX+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
-  el('rect',{x:waitX-8,y:waitTop,width:16,height:waitBaseY-waitTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N3',style:'cursor:pointer'},g);
-  dimV(waitTop,bottom,waitX-16,waitX,String(lapCm),g);
-  dimV(bottom,waitBaseY,waitX-16,waitX,`${v.blockHeight}`,g);
-  txt(waitX+waitBend/2,waitBaseY+14,`${waitBendCm}`,9,ink,{'text-anchor':'middle'});
-  // Chamada da espera em texto horizontal acima da barra, com linha de chamada.
-  const PU=unitFor(detailScale[code]||25),wly=waitTop-9*PU;
-  path(`M${waitX} ${waitTop+2*PU} L${waitX+4*PU} ${wly+1.5*PU} H${waitX+7*PU}`,ink,'none',.6,g,{'data-layer':'cotas'});
-  txt(waitX+8*PU,wly+2.5*PU,`${pillarArms.N3.qty} N3 Ø${waitDiameter.toFixed(1).replace('.',',')} C≈${waitCutCm} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'});
+  groups.forEach((gr,k)=>{const bx=n2X+k*26;
+   ln(bx,top+pillarArms.N2.topCover*sc,bx,bottom-pillarArms.N2.bottomCover*sc,blue,2.7);
+   el('rect',{x:bx-9,y:top,width:18,height:drawH,fill:'transparent','pointer-events':'all','data-pillar-arm':'N2',style:'cursor:pointer'},g);
+   txt(bx+12,top+drawH/2,`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C=${barLength} cm`,10,blue,{'text-anchor':'middle','font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 ${bx+12} ${top+drawH/2})`});
+  });
+  // Esperas: uma barra por posição; transpasse pela bitola de cada uma.
+  const PU=unitFor(detailScale[code]||25),minTop=Math.min(...waits.map(w=>bottom-pillarArms.N3.lapFactor*w.dia/10*sc));
+  waits.forEach((w,k)=>{const wx=waitX+k*24,lap=pillarArms.N3.lapFactor*w.dia/10,wTop=bottom-lap*sc,cut=Math.round(v.blockHeight+lap+waitBendCm);
+   path(`M ${wx} ${wTop} L ${wx} ${waitBaseY-9} Q ${wx} ${waitBaseY-5} ${wx+5} ${waitBaseY-5} L ${wx+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
+   el('rect',{x:wx-8,y:wTop,width:16,height:waitBaseY-wTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N3',style:'cursor:pointer'},g);
+   if(k===0){dimV(wTop,bottom,wx-16,wx,String(lap),g);dimV(bottom,waitBaseY,wx-16,wx,`${v.blockHeight}`,g);txt(wx+waitBend/2,waitBaseY+14,`${waitBendCm}`,9,ink,{'text-anchor':'middle'})}
+   const wly=minTop-9*PU-(waits.length-1-k)*7.5*PU;
+   path(`M${wx} ${wTop+2*PU} L${wx+4*PU} ${wly+1.5*PU} H${wx+7*PU}`,ink,'none',.6,g,{'data-layer':'cotas'});
+   txt(wx+8*PU,wly+2.5*PU,`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cut} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'});
+  });
   // Notas do pilar: um único bloco de texto, abaixo de todo o desenho.
   ty=Math.max(ty+30,waitBaseY+48);
-  for(const [str,size,color,attrs] of [[`ESPERA N3 — ${pillarArms.N3.qty} BARRAS · ${v.blockHeight} cm NO BLOCO + TRANSPASSE ${lapCm} cm (${pillarArms.N3.lapFactor}Ø) + DOBRA ${waitBendCm} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.height} cm (VB + ALVENARIA)`,10,ink,{}],['Pilar N1/N2 e espera N3: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
+  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.blockHeight} cm NO BLOCO + TRANSPASSE ${pillarArms.N3.lapFactor}Ø + DOBRA ${waitBendCm} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.height} cm (VB + ALVENARIA)`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
  }
 }
 function fit(){let w=cad.clientWidth,h=cad.clientHeight;if(!wallPoints.length && sheets.length){const sh=sheets[0],d=sheetDims(sh);view.k=clamp(Math.min((w-90)/d.w,(h-85)/d.h),.035,2);view.x=(w-d.w*view.k)/2-sh.x*view.k;view.y=(h-d.h*view.k)/2-sh.y*view.k;}else{view.k=clamp(Math.min((w-90)/scene.w,(h-70)/scene.h),.15,2);view.x=(w-scene.w*view.k)/2;view.y=(h-scene.h*view.k)/2;}draw()}
@@ -1268,7 +1296,7 @@ $('quickElevations').onclick=()=>{$('elevationBtn').click()};
 $('elevationBtn').onclick=()=>{if(!wallFinished||wallPoints.length<2){status('Conclua primeiro o lançamento do muro para gerar as elevações.');return}const S=elevationSettings;for(const [id,v] of Object.entries({elevTop:S.top,elevMid:S.mid,elevCourse:S.course,elevHDia:S.hDia,elevVDia:S.vDia,elevVSpace:S.vSpace,elevFound:S.found})){const e=$(id);if(e.type==='checkbox')e.checked=v;else e.value=v}$('elevationDialog').showModal()};
 $('elevCancel').onclick=()=>$('elevationDialog').close();
 $('elevApply').onclick=()=>{const n=id=>Number($(id).value);if(n('elevCourse')<10||n('elevHDia')<4||n('elevVDia')<4||n('elevVSpace')<5||n('elevMid')<0||n('elevMid')>5){alert('Confira os valores de elevação.');return}elevationSettings={top:$('elevTop').checked,mid:Math.round(n('elevMid')),course:n('elevCourse'),hDia:n('elevHDia'),vDia:n('elevVDia'),vSpace:n('elevVSpace'),found:$('elevFound').checked};if(!elevationEnabled){draw();if([...steelBySheet.values()].some(rows=>rows.length))lastValidSteelBySheet=new Map([...steelBySheet].map(([id,rows])=>[id,rows.map(r=>({...r}))]));}elevationEnabled=true;$('elevationDialog').close();draw();organizeSheets(true);focusFirstElevation();status((steelRegistryFallback?'ATENÇÃO: relação de aço anterior preservada, mas pendente de recálculo. ':'')+'Elevações geradas. Conferir comprimentos, ancoragens e emendas antes do uso executivo.')};
-$('wallDraw').onclick=()=>{setActiveEditor('muro');if(wallFinished){wallPoints=[];wallSegments=[];foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;wallActive=0;wallSyncOptions();wallFinished=false;detailsPlaced=false}wallPreview=null;wallAwaitNextClick=false;wallHideMeasure();setMode('wallDraw');focusWall();status('Clique o início e o fim do trecho; confirme a medida ou digite o comprimento na caixa do CAD. F8 alterna ORTO.')};
+$('wallDraw').onclick=()=>{setActiveEditor('muro');if(wallFinished){wallPoints=[];wallSegments=[];foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms=pillarArmsDefault();foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;wallActive=0;wallSyncOptions();wallFinished=false;detailsPlaced=false}wallPreview=null;wallAwaitNextClick=false;wallHideMeasure();setMode('wallDraw');focusWall();status('Clique o início e o fim do trecho; confirme a medida ou digite o comprimento na caixa do CAD. F8 alterna ORTO.')};
 $('wallFinish').onclick=wallEnd;
 $('wallExact').onclick=()=>{setActiveEditor('muro');wallCommitExact();wallAwaitNextClick=true;status('Trecho exato adicionado. Mova o cursor para escolher a direção do próximo trecho ou conclua.');};
 $('wallUndo').onclick=()=>{wallPoints.pop();wallSegments.pop();wallActive=Math.max(0,wallSegments.length-1);wallSyncOptions();wallFinished=false;draw()};
@@ -1276,10 +1304,10 @@ $('wallClear').onclick=()=>{if(wallPoints.length&&!confirm('Apagar o traçado do
 $('wallFocus').onclick=focusWall;
 wallIds.forEach(id=>$(id).addEventListener('input',wallUpdateActive));
 const refreshAllDetails=()=>{foundationFreezeDefaults();const existingBlockVariants=Object.keys(foundationCounts('block')).some(c=>c!=='B1');if(existingBlockVariants)$('blockEnabled').checked=true;draw();const t=foundationCounts('pile'),b=foundationCounts('block');const codes=Object.keys(t).concat(Object.keys(b)).filter(c=>c!=='T1'&&c!=='B1');const rendered=visibleFoundationCodes();const missing=codes.filter(c=>!rendered.includes(c));const last=codes.filter(c=>rendered.includes(c)).at(-1);if(last)revealFoundationDetail(last);status((missing.length?'ATENÇÃO: desenho não gerado: '+missing.join(', ')+' | ':'')+'Detalhamentos: '+Object.entries(t).map(([k,v])=>k+' '+v+' un.').concat(Object.entries(b).map(([k,v])=>k+' '+v+' un.')).join(' | ')+' · Novos desenhos no CAD: '+rendered.join(', ')+(last?' · Exibindo '+last:''));};$('refresh').onclick=refreshAllDetails;$('refreshSteel').onclick=()=>{draw();status('V205: numeração única por prancha e tabelas atualizadas. Conferir quantitativos e comprimentos preliminares antes do uso executivo.');};$('refreshNear').onclick=refreshAllDetails;$('foundationRefresh').onclick=refreshAllDetails;
-$('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15};$(id).value=defaults[id]});closePanels();fit()};
+$('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms=pillarArmsDefault();foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15};$(id).value=defaults[id]});closePanels();fit()};
 function download(name,content,mime){let blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
 $('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,elevationEnabled,elevationSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,detailScale,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
-$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object')for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
+$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object'){pillarArms=pillarArmsDefault();for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.pillarArms.N2&&d.pillarArms.N2.cornerDia==null){delete pillarArms.N2.cornerDia;pillarN2()}if(d.pillarArms.N3&&d.pillarArms.N3.follow==null)pillarArms.N3.follow=0}if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
 $('exportBtn').onclick=()=>{
 const denom=Number($('printScale').value),factor=10/(denom*.78),margin=8;
 const w=scene.w*factor+2*margin,h=scene.h*factor+2*margin;
@@ -1513,23 +1541,23 @@ function steelParseLabel(str){
  // Aceita as legendas efetivamente produzidas pelos módulos de tubulão,
  // bloco, pilar, VB, VT e elevação, independentemente da ordem QTD/N.
  const normalized=String(str||'').replace(/[–—−]/g,'-').replace(/\s+/g,' ');
- let q=normalized.match(/\b(N\d+)\s*[-·:]?\s*(\d+)\s*Ø\s*([\d.,]+).*?\bC\s*[=≈]\s*([\d.,]+)\s*cm/i);
+ let q=normalized.match(/\b(N\d+)(?!\d)\s*[-·:]?\s*(\d+)\s*Ø\s*([\d.,]+).*?\bC\s*[=≈]\s*([\d.,]+)\s*cm/i);
  if(q)return {old:q[1],qty:+q[2],dia:+q[3].replace(',','.'),len:+q[4].replace(',','.')};
- q=normalized.match(/\b(\d+)\s+(N\d+)\s*Ø\s*([\d.,]+).*?\bC\s*[=≈]\s*([\d.,]+)\s*cm/i);
+ q=normalized.match(/\b(\d+)\s+(N\d+)(?!\d)\s*Ø\s*([\d.,]+).*?\bC\s*[=≈]\s*([\d.,]+)\s*cm/i);
  if(q)return {old:q[2],qty:+q[1],dia:+q[3].replace(',','.'),len:+q[4].replace(',','.')};
 
  const n='([\\d.,]+)',dia='([\\d.,]+)';
- let m=str.match(/\b(N\d+)\s*[·-]\s*(\d+)\s*Ø\s*([\d.,]+).*?C\s*[≈=]\s*([\d.,]+)\s*cm/i);
+ let m=str.match(/\b(N\d+)(?!\d)\s*[·-]\s*(\d+)\s*Ø\s*([\d.,]+).*?C\s*[≈=]\s*([\d.,]+)\s*cm/i);
  if(m)return {old:m[1],qty:+m[2],dia:+m[3].replace(',','.'),len:+m[4].replace(',','.')};
- m=str.match(/\b(\d+)\s+(N\d+)\s*Ø\s*([\d.,]+).*?C\s*[≈=]\s*([\d.,]+)\s*cm/i);
+ m=str.match(/\b(\d+)\s+(N\d+)(?!\d)\s*Ø\s*([\d.,]+).*?C\s*[≈=]\s*([\d.,]+)\s*cm/i);
  if(m)return {old:m[2],qty:+m[1],dia:+m[3].replace(',','.'),len:+m[4].replace(',','.')};
- m=str.match(/\b(N\d+)\s*[·-]\s*(\d+)\s*Ø\s*([\d.,]+).*?C\s*[≈=]\s*([\d.,]+)\s*cm/i);
+ m=str.match(/\b(N\d+)(?!\d)\s*[·-]\s*(\d+)\s*Ø\s*([\d.,]+).*?C\s*[≈=]\s*([\d.,]+)\s*cm/i);
  if(m)return {old:m[1],qty:+m[2],dia:+m[3].replace(',','.'),len:+m[4].replace(',','.')};
  // Barras identificadas com 'COMPR.' ou 'COMP.' e comprimento em cm.
- m=str.match(/\b(N\d+)\s*[-·:]?\s*(\d+)\s*(?:ferros?\s*)?Ø\s*([\d.,]+).*?(?:COMPR?\.?|COMP\.?|L)\s*[=:≈]?\s*([\d.,]+)\s*cm/i);
+ m=str.match(/\b(N\d+)(?!\d)\s*[-·:]?\s*(\d+)\s*(?:ferros?\s*)?Ø\s*([\d.,]+).*?(?:COMPR?\.?|COMP\.?|L)\s*[=:≈]?\s*([\d.,]+)\s*cm/i);
  if(m)return {old:m[1],qty:+m[2],dia:+m[3].replace(',','.'),len:+m[4].replace(',','.')};
  // Etiquetas de elevação e detalhamentos com espaçamento ou pontuação variáveis.
- m=str.match(/\b(N\d+)\s*[-·:]?\s*(\d+)\s*(?:ferros?\s*)?Ø\s*([\d.,]+).*?(?:C|L|COMP(?:RIMENTO)?)\s*[=:≈]\s*([\d.,]+)\s*(?:cm)?/i);
+ m=str.match(/\b(N\d+)(?!\d)\s*[-·:]?\s*(\d+)\s*(?:ferros?\s*)?Ø\s*([\d.,]+).*?(?:C|L|COMP(?:RIMENTO)?)\s*[=:≈]\s*([\d.,]+)\s*(?:cm)?/i);
  if(m)return {old:m[1],qty:+m[2],dia:+m[3].replace(',','.'),len:+m[4].replace(',','.')};
  return null;
 }
@@ -1574,7 +1602,7 @@ function buildSteelRegistry(sceneG){
    const raw=t.textContent||'';const parsed=steelParseLabel(raw) || (()=>{const m=raw.match(/\b(N\d+)\s*[-–:]\s*(\d+)\s*Ø\s*([\d.,]+)\s*C\s*[=≈]\s*([\d.,]+)\s*cm/i);return m?{old:m[1],qty:Number(m[2]),dia:Number(m[3].replace(',','.')),len:Number(m[4].replace(',','.'))}:null})();
    if(!parsed||!Number.isFinite(parsed.len)||parsed.len<=0||!Number.isFinite(parsed.qty)||parsed.qty<=0)continue;
    // Não contabilizar rótulos descritivos sem quantidade e comprimento.
-   const shape=src.kind==='elevation'?'reta':src.kind==='beam'?(parsed.old==='N1'?'estribo':'barra dobrada'):src.kind==='pillar'?(parsed.old==='N1'?'estribo':parsed.old==='N3'?'espera':'reta'):src.kind==='pile'?(parsed.old==='N2'?'circular':'reta'):'bloco';
+   const shape=src.kind==='elevation'?'reta':src.kind==='beam'?(parsed.old==='N1'?'estribo':'barra dobrada'):src.kind==='pillar'?(t.getAttribute('data-pillar-arm')==='N1'?'estribo':t.getAttribute('data-pillar-arm')==='N3'?'espera':'reta'):src.kind==='pile'?(parsed.old==='N2'?'circular':'reta'):'bloco';
    const signature=[shape,parsed.dia.toFixed(3),parsed.len.toFixed(3)].join('|');
    let entry=local.get(signature);
    if(!entry){entry={pos:'N'+(local.size+1),dia:parsed.dia,len:parsed.len,qty:0,shape,elems:new Set()};local.set(signature,entry);rows.push(entry)}
