@@ -911,7 +911,7 @@ function drawWallElevations(parent){
   t(x+W+24*U,yFront+4.6*U,`NT FACE EXTERNA ${levelFmt(front)}`,earth,8,{'text-anchor':'start'});
   // Dreno no tardoz, representado em linha oculta logo acima da VB.
   const yDrain=baseY-6*sc;ln(x+4,yDrain,x+W-4,yDrain,'#74d8a4',.9,{'stroke-dasharray':'2 3'});
-  t(x,lowest+9*U,`– – –  DRENO NO TARDOZ (LINHA OCULTA)${notesSheet?' — VER DETALHE NA FAIXA TÉCNICA DA FOLHA '+String(notesSheet).padStart(2,'0'):''}`,'#74d8a4',8);
+  t(x,lowest+9*U,`– – –  DRENO NO TARDOZ (LINHA OCULTA)${technicalDiagram?' — VER DETALHE NA FAIXA TÉCNICA':''}`,'#74d8a4',8);
   t(x,lowest+15*U,'COMPRIMENTOS GEOMÉTRICOS PRELIMINARES — CONFERIR ANCORAGENS E EMENDAS',gold,8);
   stackY+=Math.max(380,lowest+30*U);
  }
@@ -1832,7 +1832,8 @@ function sheetDraw(sceneG){
     // FAIXA TÉCNICA (alinhada ao carimbo): notas executivas, detalhe genérico, resumo de aço e carimbo.
     let bottom=stampY-4*unit;const top=margin;
     if(rows.length){const rh=steelSummaryHeight(rows,unit);bottom-=rh;drawSteelSummary(g,stripX,bottom,stripW,rows,unit,steelRegistryFallback?'RESUMO DE AÇO · CONFERIR':'RESUMO DE AÇO');bottom-=4*unit}
-    const wantDetail=technicalDiagram&&dSheet&&sh.id===dSheet.id,dh=wantDetail?Math.min(158*unit,(bottom-top)*.55):0;
+    // Detalhe genérico repetido na faixa técnica de todas as pranchas.
+    const wantDetail=technicalDiagram,dh=wantDetail?Math.min(158*unit,(bottom-top)*.55):0;
     let used=0;if(bottom-top-dh>30*unit)used=drawTechnicalNotes(g,stripX,top,stripW,bottom-top-(dh?dh+4*unit:0),unit);
     // Detalhe genérico logo abaixo das notas; o espaço restante da faixa fica livre para outros detalhes.
     if(wantDetail)drawWaterproofDetail(g,stripX,top+used+4*unit,stripW,dh,unit);
