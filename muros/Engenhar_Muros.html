@@ -52,7 +52,7 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 <label>Pilar — lado B (cm) <input id="wallColY" type="number" min="10" value="40" style="width:44px"></label>
 <label>Altura muro (cm) <input id="wallHeight" type="number" min="30" value="250" style="width:52px"></label>
 <label>Declive (%) <input id="wallSlope" type="number" step="0.1" value="0" style="width:48px"></label>
-<label>Solo <select id="wallSoil"><option value="left">À esquerda do traçado</option><option value="right">À direita do traçado</option><option value="none">Não definido</option></select></label>
+<label title="Nível do aterro no tardoz, em cm, a partir do +0,00 (topo dos blocos). Vazio = topo do muro">Nível aterro (cm) <input id="wallSoilLevel" type="number" step="1" placeholder="topo" style="width:52px"></label><label title="Nível do terreno na face externa, em cm, a partir do +0,00. Vazio = topo da VB">Nível frente (cm) <input id="wallFrontLevel" type="number" step="1" placeholder="VB" style="width:52px"></label><label>Solo <select id="wallSoil"><option value="left">À esquerda do traçado</option><option value="right">À direita do traçado</option><option value="none">Não definido</option></select></label>
 <span style="font-size:10px;color:#48647a">Clique o início e depois o ponto final: confirme a medida ou digite um comprimento na caixa do CAD. Enter conclui; Esc cancela. Dimensões em planta, sem dimensionamento estrutural.</span>
 </div>
 <div id="sheetRibbon" hidden><strong>PRANCHAS NO CAD</strong><label>Formato <select id="sheetFormat"><option>A0</option><option selected>A1</option><option>A2</option><option>A3</option></select></label><label>Escala visual <select id="sheetScale"><option value="25">1:25</option><option value="50" selected>1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><label>Orientação <select id="sheetOrientation"><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label><button id="sheetCreate">+ Nova prancha</button><label>Ativa <select id="sheetActive"></select></label><button id="sheetFinish">Concluir prancha</button><button id="sheetReopen">Reabrir</button><button id="sheetDelete">Excluir prancha</button><button id="sheetClose">Ocultar faixa</button><span style="color:#4d667a">Clique na faixa superior da folha para mudar seu formato. Novas pranchas são adicionadas à direita; arraste a borda para mover.</span></div>
@@ -88,7 +88,7 @@ let view={x:0,y:0,k:1},initialized=false,scene={w:620,h:430};
 let activeEditor='tubulo';
 let elevationEnabled=false;let elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};
 let detailsPlaced=false;let wallPoints=[],wallFinished=false,wallPreview=null,wallStart={x:35,y:680},wallOffset={x:0,y:0},wallOrtho=false,wallAxis="x";
-let wallSegments=[],wallActive=0,wallAwaitNextClick=false,wallLengthDialogOpen=false;
+let wallTitleOffset=128,lastSheetRefs=new Map();let wallSegments=[],wallActive=0,wallAwaitNextClick=false,wallLengthDialogOpen=false;
 // Tipos de fundação são identificados por características; instâncias por coordenada.
 let foundationCopyMode=false,foundationCopySource=null;
 let foundationOverrides={};let foundationTypes={pile:{},block:{}};let foundationTypeCounter={pile:2,block:2};let foundationEditing=null;let extraDetailOffsets={};let renderingVariant=false;let foundationBaseModels={pile:null,block:null};
@@ -143,7 +143,7 @@ function foundationClose(){foundationEditing=null;$('foundationEditor').hidden=t
 $('foundationCancel').onclick=foundationClose;
 $('foundationApply').onclick=()=>{if(!foundationEditing)return;const {kind,key}=foundationEditing;const vals={};for(const input of $('foundationEditorFields').querySelectorAll('input')){if(!Number.isFinite(Number(input.value))||Number(input.value)<=0){input.focus();return}vals[input.dataset.foundationField]=String(Number(input.value))}const code=foundationAssign(kind,key,vals);if(kind==='block')$('blockEnabled').checked=true;foundationClose();draw();const revealed=(code!=='T1'&&code!=='B1')?revealFoundationDetail(code):false;status(`${code} aplicado SOMENTE nesta posição. ${Object.entries(foundationCounts(kind)).map(([c,n])=>c+': '+n+' un.').join(' | ')}. ${revealed?'Novo detalhamento enquadrado no CAD.':'Detalhamento atualizado.'}`)};
 
-const wallIds=['wallLength','wallPillars','wallBeamWidth','wallBeamHeight','wallColX','wallColY','wallHeight','wallSlope','wallSoil'];
+const wallIds=['wallLength','wallPillars','wallBeamWidth','wallBeamHeight','wallColX','wallColY','wallHeight','wallSlope','wallSoil','wallSoilLevel','wallFrontLevel'];
 function wallDefaults(){return Object.fromEntries(wallIds.map(id=>[id,$(id).value]))}
 function wallSyncOptions(){const sel=$('wallActive');sel.innerHTML='';wallSegments.forEach((seg,i)=>{const o=document.createElement('option');o.value=i;o.textContent='Arrimo '+(i+1);sel.appendChild(o)});if(wallSegments.length){wallActive=Math.max(0,Math.min(wallActive,wallSegments.length-1));sel.value=String(wallActive)}}
 function wallSelect(i){if(!wallSegments[i])return;wallActive=i;wallIds.forEach(id=>{if(wallSegments[i].parameters[id]!=null)$(id).value=wallSegments[i].parameters[id]});wallSyncOptions();draw()}
@@ -452,14 +452,16 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
  const titleMaxX=titlePts.length?Math.max(...titlePts.map(p=>p.x)):ox+360;
  const titleMinY=titlePts.length?Math.min(...titlePts.map(p=>p.y)):oy;
  const titleX=(titleMinX+titleMaxX)/2;
- const titleY=titleMinY-128;
+ wallTitleOffset=Math.max(128,(detailScale.PLANTA||50)*0.78/10*58);const titleY=titleMinY-wallTitleOffset;
  if(wallPoints.length>=2){
  // Área de captura independente para arrastar pelo título, mesmo sem muro lançado.
  // O retângulo invisível fica atrás do texto e não acompanha os demais desenhos.
  el('rect',{x:titleX-265,y:titleY-24,width:530,height:35,fill:'transparent','pointer-events':'all','data-wall-drag-handle':'1',style:'cursor:grab'},wg);
  text(titleX,titleY,'PLANTA DOS ARRIMOS — VIGAS DE BASE E PILARES',yellow,17,wg,{'font-weight':'bold','text-anchor':'middle','data-wall-drag-handle':'1',style:'cursor:grab','data-role':'title'});text(titleX,titleY+22,'ESC. 1:{s} · COTAS EM cm',yellow,9,wg,{'text-anchor':'middle','data-scale-label':'ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m'});
  }
- const junctionIds=new Map();const renderedFoundations=new Set();let nextP=1;
+ const junctionIds=new Map();const renderedFoundations=new Set();let nextP=1;const globalIds=pillarIds();
+ const PS=detailScale.PLANTA||50,mm=v=>v*unitFor(PS);
+ const ptext=(x,y,str,color,mmSize,attrs={})=>text(x,y,str,color,mmSize*unitFor(PS),wg,{'data-pt':'1',...attrs});
  function pId(point){const key=`${Math.round(point.x*100)/100}:${Math.round(point.y*100)/100}`;if(!junctionIds.has(key))junctionIds.set(key,'P'+nextP++);return junctionIds.get(key)}
  function drawSegment(a,b,idx,temporary=false){
   const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);if(len<1)return;
@@ -475,7 +477,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   const ids=[];
   for(let j=0;j<n;j++){
    const t=j/(n-1),cx=a.x+dx*t,cy=a.y+dy*t;
-   const id=pId({x:cx,y:cy});ids.push(id);
+   const id='P'+(globalIds[idx]?.[j]??pId({x:cx,y:cy}).slice(1));ids.push(id);
    // Pilar de canto e sua fundação aparecem uma única vez no encontro de arrimos.
    if(renderedFoundations.has(id))continue;
    renderedFoundations.add(id);
@@ -503,42 +505,56 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
    }
    circle(pcx,pcy,pileDiameter/2,'#65e7a1','transparent',1.6,wg,{'stroke-dasharray':'3 2','data-foundation-kind':'pile','data-foundation-key':fkey,style:'cursor:pointer;pointer-events:all'});
    el('rect',{x:-colA/2,y:-colB/2,width:colA,height:colB,fill:'#0c2030',stroke:pillar,'stroke-width':1.2,transform:`translate(${pcx} ${pcy}) rotate(${rot})`,'data-foundation-kind':'pile','data-foundation-key':fkey,style:'cursor:pointer'},wg);
-   // Etiqueta técnica por posição: tipos e dimensões reais, sem alterar a geometria.
-   // Deslocamento normal à viga, com linhas espaçadas e fundo discreto para leitura.
-   const labelOffset=Math.max(hw,colB/2,blockOn?blockDepth/2:0,pileDiameter/2)+25;
-   const labelSign=soilSign||1;
-   const lx=pcx+nx*labelOffset*labelSign,ly=pcy+ny*labelOffset*labelSign;
-   const fmt=v=>String(Number(v)||0).replace('.',',');
-   const pileText=`${pileCode} · Ø${fmt(pileProps.shaft)} cm · H ${fmt(pileProps.depth)} cm`;
-   const pillarText=`${id} · ${fmt(num('wallColX')||20)}×${fmt(num('wallColY')||40)} cm`;
-   const blockText=blockOn?`${blockCode} · ${fmt(blockProps.blockX)}×${fmt(blockProps.blockY)}×${fmt(blockProps.blockH)} cm`:null;
-   const lines=[pileText,pillarText,...(blockText?[blockText]:[])];
-   const fontSize=8.5,lineHeight=12,boxWidth=Math.max(125,...lines.map(t=>t.length*fontSize*.55))+14;
-   const boxHeight=lines.length*lineHeight+7;
-   // Rótulo acima/abaixo conforme o lado do solo; mantém espaço para as cotas.
-   const boxX=lx-boxWidth/2,boxY=ly-boxHeight/2;
-   el('rect',{x:boxX,y:boxY,width:boxWidth,height:boxHeight,rx:3,fill:'#0b1e2c','fill-opacity':'.92',stroke:'#476577','stroke-width':'.65','pointer-events':'none'},wg);
-   const colors=['#70e7ac','#f2c8d0','#86c9f4'];
-   lines.forEach((labelText,k)=>text(lx,boxY+12+k*lineHeight,labelText,colors[k],fontSize,wg,{'text-anchor':'middle','font-weight':k===1?'bold':'normal','pointer-events':'none'}));
+   // Chamada da fundação com linha de chamada, no lado do solo; o pilar é
+   // identificado no círculo do eixo (mesma numeração das elevações).
+   const reach=Math.max(hw,colB/2,blockOn?blockDepth/2:0,pileDiameter/2);
+   const labelSign=soilSign||1,lsx=nx*labelSign,lsy=ny*labelSign;
+   const lx=pcx+lsx*(reach+mm(8)),ly=pcy+lsy*(reach+mm(8));
+   line(pcx+lsx*pileDiameter/2,pcy+lsy*pileDiameter/2,lx,ly,'#d9e9f2',.55,wg,{'data-layer':'cotas'});
+   circle(pcx+lsx*pileDiameter/2,pcy+lsy*pileDiameter/2,mm(.45),'#d9e9f2','#d9e9f2',.4,wg);
+   const callText=blockOn?`${blockCode} · ${pileCode}`:pileCode;
+   if(Math.abs(lsy)>=Math.abs(lsx))ptext(lx,ly+(lsy>0?mm(3):-mm(1.2)),callText,'#70e7ac',2.2,{'text-anchor':'middle'});
+   else ptext(lx+(lsx>0?mm(1):-mm(1)),ly+mm(.8),callText,'#70e7ac',2.2,{'text-anchor':lsx>0?'start':'end'});
+   // Eixo do pilar até o círculo de identificação, no lado das cotas.
+   const axSign=-(soilSign||1),bub=hw+mm(25);
+   line(pcx,pcy,pcx+nx*axSign*(bub-mm(3.5)),pcy+ny*axSign*(bub-mm(3.5)),'#36cfc9',.55,wg,{'stroke-dasharray':'8 3 2 3'});
+   circle(pcx+nx*axSign*bub,pcy+ny*axSign*bub,mm(3.5),'#36cfc9','none',.8,wg,{'data-layer':'eixos'});
+   ptext(pcx+nx*axSign*bub,pcy+ny*axSign*bub+mm(.9),id,'#e5edf5',2.4,{'text-anchor':'middle','font-weight':'bold'});
   }
   const side=data.wallSoil,sgn=side==='left'?1:-1;
+  const ang0=Math.atan2(dy,dx)*180/Math.PI,ang=ang0>90||ang0<=-90?ang0+180:ang0;
+  const rad=ang*Math.PI/180,upx=Math.sin(rad),upy=-Math.cos(rad);
+  const rtext=(x,y,str,color,mmSize,attrs={})=>{const t=ptext(x+upx*mm(.9),y+upy*mm(.9),str,color,mmSize,{'text-anchor':'middle',...attrs});t.setAttribute('transform',`rotate(${ang} ${x+upx*mm(.9)} ${y+upy*mm(.9)})`);return t};
   if(side!=='none'){
-   const d=hw+14;line(a.x+dx*.15+nx*d*sgn,a.y+dy*.15+ny*d*sgn,a.x+dx*.85+nx*d*sgn,a.y+dy*.85+ny*d*sgn,'#eaa85d',1,wg);
-   for(let t=.2;t<=.8;t+=.15){const x=a.x+dx*t+nx*d*sgn,y=a.y+dy*t+ny*d*sgn;line(x,y,x+nx*9*sgn,y+ny*9*sgn,'#eaa85d',.8,wg)}
-   text((a.x+b.x)/2+nx*(d+13)*sgn,(a.y+b.y)/2+ny*(d+13)*sgn,'SOLO','#eaa85d',8,wg,{'text-anchor':'middle'});
+   // Solo contido: linha de terreno com hachura a 45° voltada para o aterro.
+   const d=hw+mm(1.5),x0=a.x+nx*d*sgn,y0=a.y+ny*d*sgn;
+   line(x0,y0,b.x+nx*d*sgn,b.y+ny*d*sgn,'#eaa85d',1,wg);
+   for(let s=mm(1.5);s<len-mm(1.5);s+=mm(3)){const x=x0+ux*s,y=y0+uy*s;line(x,y,x+(nx*sgn+ux)*mm(1.8),y+(ny*sgn+uy)*mm(1.8),'#eaa85d',.6,wg)}
+   const tm=.5/(n-1);rtext(a.x+dx*tm+nx*sgn*(hw+mm(6)),a.y+dy*tm+ny*sgn*(hw+mm(6)),'ATERRO','#eaa85d',2.0);
   }
-  // Cota total e cadeia de cotas eixo-a-eixo, deslocadas em lados opostos.
+  // Cotas em cm, ao longo do muro: cadeia eixo a eixo e total, no lado oposto ao solo.
   const dimSide=side==='left'?-1:1;
-  function ticks(x,y){line(x-ux*4-nx*4,y-uy*4-ny*4,x+ux*4+nx*4,y+uy*4+ny*4,'#d9e9f2',.8,wg)}
+  function ticks(x,y){line(x-ux*mm(1)-nx*mm(1),y-uy*mm(1)-ny*mm(1),x+ux*mm(1)+nx*mm(1),y+uy*mm(1)+ny*mm(1),'#d9e9f2',.8,wg,{'data-layer':'cotas'})}
   function dimension(t0,t1,offset,label){const x0=a.x+dx*t0+nx*offset*dimSide,y0=a.y+dy*t0+ny*offset*dimSide,x1=a.x+dx*t1+nx*offset*dimSide,y1=a.y+dy*t1+ny*offset*dimSide;
-   line(x0,y0,x1,y1,'#d9e9f2',.8,wg);ticks(x0,y0);ticks(x1,y1);
-   const mx=(x0+x1)/2+nx*8*dimSide,my=(y0+y1)/2+ny*8*dimSide;
-   text(mx,my,label,'#d9e9f2',8,wg,{'text-anchor':'middle'});
+   line(x0,y0,x1,y1,'#d9e9f2',.8,wg,{'data-layer':'cotas'});ticks(x0,y0);ticks(x1,y1);
+   const outward=(upx*nx+upy*ny)*dimSide>=0?0:mm(3.2);
+   rtext((x0+x1)/2-upx*outward,(y0+y1)/2-upy*outward,label,'#d9e9f2',2.0,{'data-layer':'cotas'});
   }
-  const metres=v=>(v/scaleW/100).toFixed(2).replace('.',',')+' m';
-  dimension(0,1,hw+63,metres(len));
-  for(let j=0;j<n-1;j++)dimension(j/(n-1),(j+1)/(n-1),hw+31,metres(len/(n-1)));
-  text((a.x+b.x)/2-nx*(hw+24)*dimSide,(a.y+b.y)/2-ny*(hw+24)*dimSide,`ARRIMO ${idx+1} · VB${idx+1} ${num('wallBeamWidth')}×${num('wallBeamHeight')} · PILAR ${num('wallColX')}×${num('wallColY')} cm`,yellow,8,wg,{'text-anchor':'middle','font-weight':'bold'});
+  const cmv=v=>String(Math.round(v/scaleW*10)/10).replace('.',',');
+  dimension(0,1,hw+mm(16),cmv(len));
+  for(let j=0;j<n-1;j++)dimension(j/(n-1),(j+1)/(n-1),hw+mm(9),cmv(len/(n-1)));
+  // Marca de elevação: indica a vista e a folha onde ela está desenhada.
+  if(elevationEnabled){
+   const mx=(a.x+b.x)/2-nx*dimSide*0+nx*dimSide*(hw+mm(37)),my=(a.y+b.y)/2+ny*dimSide*(hw+mm(37)),r=mm(4.5);
+   const sheetNo=lastSheetRefs.get('EL'+(idx+1));
+   circle(mx,my,r,'#f5c845','none',.9,wg,{'data-layer':'eixos'});
+   line(mx-r,my,mx+r,my,'#f5c845',.7,wg,{'data-layer':'eixos'});
+   const tip={x:mx-nx*dimSide*(r+mm(3)),y:my-ny*dimSide*(r+mm(3))},px=-ny,py=nx;
+   el('polygon',{points:[[tip.x,tip.y],[mx+px*r*.75-nx*dimSide*r*.6,my+py*r*.75-ny*dimSide*r*.6],[mx-px*r*.75-nx*dimSide*r*.6,my-py*r*.75-ny*dimSide*r*.6]].map(q=>q.join(',')).join(' '),fill:'#f5c845',stroke:'#f5c845','stroke-width':.5,'fill-opacity':.85},wg);
+   ptext(mx,my-mm(1),`E${idx+1}`,'#f5c845',2.2,{'text-anchor':'middle','font-weight':'bold'});
+   ptext(mx,my+mm(3),sheetNo?'F'+String(sheetNo).padStart(2,'0'):'—','#f5c845',2.0,{'text-anchor':'middle'});
+  }
+  rtext((a.x+b.x)/2+nx*sgn*(hw+Math.max(width/2,mm(8))+mm(16)),(a.y+b.y)/2+ny*sgn*(hw+Math.max(width/2,mm(8))+mm(16)),`ARRIMO ${idx+1} · VB${idx+1} ${num('wallBeamWidth')}×${num('wallBeamHeight')} · PILARES ${num('wallColX')}×${num('wallColY')} cm`,yellow,2.5,{'font-weight':'bold'});
  }
  for(let i=1;i<pts.length;i++)drawSegment(pts[i-1],pts[i],i-1);
  if(preview)drawSegment(pts[pts.length-1],preview,pts.length-1,true);
@@ -741,7 +757,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
    for(const wrapper of variants)mainSceneG.appendChild(wrapper);
   }
  }
-if(!renderingVariant){drawPillarDetails(sceneG);drawBeamDetails(sceneG);if(elevationEnabled&&elevationSettings.top)drawBeamDetails(sceneG,"VT");drawWallElevations(sceneG);normalizeDetailText(sceneG);buildSteelRegistry(sceneG);sheetDraw(sceneG);}
+if(!renderingVariant){drawPillarDetails(sceneG);drawBeamDetails(sceneG);if(elevationEnabled&&elevationSettings.top)drawBeamDetails(sceneG,"VT");drawWallElevations(sceneG);normalizeDetailText(sceneG);buildSteelRegistry(sceneG);sheetDraw(sceneG);lastSheetRefs=new Map(detailGroups(sceneG).map(g=>{const sh=groupOwner(g);return [groupCode(g),sh?sheets.indexOf(sh)+1:0]}));}
 if(restoreBaseFields)for(const [id,val] of Object.entries(restoreBaseFields))$(id).value=val;
 }
 // V207 — elevações de arrimos independentes e editáveis pelo diálogo.
@@ -1160,7 +1176,7 @@ svg.addEventListener('pointerdown',ev=>{
  const titleMinX=titlePts.length?Math.min(...titlePts.map(pt=>pt.x)):wallStart.x+wallOffset.x;
  const titleMaxX=titlePts.length?Math.max(...titlePts.map(pt=>pt.x)):wallStart.x+wallOffset.x+360;
  const titleMinY=titlePts.length?Math.min(...titlePts.map(pt=>pt.y)):wallStart.y+wallOffset.y;
- const titleCenterX=(titleMinX+titleMaxX)/2, titleCenterY=titleMinY-128;
+ const titleCenterX=(titleMinX+titleMaxX)/2, titleCenterY=titleMinY-wallTitleOffset;
  const onWallTitle=Math.abs(q[0]-titleCenterX)<=265 && Math.abs(q[1]-titleCenterY+5)<=27;
  const nearWallSegment=wallDrawPts.some((a,i)=>{if(i>=wallDrawPts.length-1)return false;
    const b=wallDrawPts[i+1],vx=b.x-a.x,vy=b.y-a.y,l2=vx*vx+vy*vy;
