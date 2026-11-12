@@ -161,7 +161,12 @@ td.wr{white-space:normal;min-width:220px}td.wr ul{margin:4px 0 0;padding-left:18
         <div class="f"><label for="g_zm">Cota da marquise (m)</label><input id="g_zm" type="number" step="0.05" value="4"></div>
         <div class="f"><label for="g_proj">Balanço (m)</label><input id="g_proj" type="number" step="0.1" value="2"></div>
         <div class="f"><label for="g_incM">Caimento para fora (%)</label><input id="g_incM" type="number" step="1" value="3"></div>
-        <div class="f w"><label for="g_pCon">Consoles</label><select id="g_pCon"></select></div>
+        <div class="f"><label for="g_mTipo">Console</label><select id="g_mTipo"><option value="trelica">Treliça em balanço</option><option value="w">Perfil W</option></select></div>
+        <div class="f" data-tre><label for="g_hS">Altura da treliça no pilar (m)</label><input id="g_hS" type="number" step="0.05" value="0.6"></div>
+        <div class="f" data-tre><label for="g_hT">Altura da treliça na ponta (m)</label><input id="g_hT" type="number" step="0.05" value="0.15"></div>
+        <div class="f w" data-tre><label for="g_pMB">Banzos da treliça</label><select id="g_pMB"></select></div>
+        <div class="f w" data-tre><label for="g_pMA">Montantes e diagonais da treliça</label><select id="g_pMA"></select></div>
+        <div class="f w" data-w hidden><label for="g_pCon">Perfil do console</label><select id="g_pCon"></select></div>
         <div class="f w"><label for="g_pTm">Terças e viga de borda</label><select id="g_pTm"></select></div>
       </fieldset>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="primary" type="button" id="g_run">Gerar estrutura metálica</button><button type="button" id="g_clear">Remover</button></div>
@@ -593,10 +598,10 @@ const STP={
  'Ue150x2.65':{label:'Ue 150x60x20x2,65',w:60,h:150,kgm:6.23},
  'Ue150x2.00':{label:'Ue 150x60x20x2,00',w:60,h:150,kgm:4.74},
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
-const TDESC={BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
-const TORD=['BI','BS','MO','DG','TC','PT','CM','TM','VB'];
+const TDESC={MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
+const TORD=['BI','BS','MO','DG','TC','PT','MBS','MBI','MMO','MDG','CM','TM','VB'];
 const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,pBanzo:'2L51x4.8',pAlma:'L38x3.2',pTerca:'Ue200x2.65',
-  mOn:true,side:'A',zm:4,proj:2,incM:3,pCon:'W150x13.0',pTm:'Ue150x2.00'};
+  mOn:true,side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'2L51x4.8',pMA:'L38x3.2',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 const nf1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 
 function genSteel(G){
@@ -680,31 +685,52 @@ function genSteel(G){
   // ================= MARQUISE =================
   if(G.mOn){
     const Co=STP[G.pCon],Tm=STP[G.pTm],zm=G.zm*1000,proj=G.proj*1000,im=G.incM/100,isA=G.side==='A',su=isA?-1:1;
+    const tre=G.mTipo==='trelica',MB=STP[G.pMB],MA=STP[G.pMA],hS=G.hS*1000,hT=Math.min(G.hT*1000,hS),need=tre?hS+MB.h:Co.h;
     const line=isA?uMin:uMax;
-    const mc=cols.filter(c=>Math.abs(U(ctr(c))-line)<600&&c.bb.z0<zm-Co.h-150&&c.bb.z1>zm+150).sort((a,b)=>Vv(ctr(a))-Vv(ctr(b)));
-    if(mc.length<2)out.warns.push(`Marquise: encontrei só ${mc.length} pilar(es) na lateral ${G.side} passando pela cota ${m2(zm)} m.`);
+    const mc=cols.filter(c=>Math.abs(U(ctr(c))-line)<600&&c.bb.z0<zm-need-150&&c.bb.z1>zm+150).sort((a,b)=>Vv(ctr(a))-Vv(ctr(b)));
+    if(mc.length<2)out.warns.push(`Marquise: encontrei só ${mc.length} pilar(es) na lateral ${G.side} passando pela cota ${m2(zm)} m${tre?` com altura para a treliça (${m2(hS)} m)`:''}.`);
     else{
       const sideEls=els.filter(e=>(e.cat==='Viga'||e.cat==='Pilar'||e.cat==='Parede')&&Uhi(e)-Ulo(e)<1000&&Math.abs((isA?Ulo(e):Uhi(e))-(isA?Ulo(mc[0]):Uhi(mc[0])))<300);
       const vS=Math.min(...sideEls.map(Vlo)),vE=Math.max(...sideEls.map(Vhi));
       const face=c=>isA?Ulo(c):Uhi(c);
-      mc.forEach(c=>{const f=face(c),v=Vv(ctr(c)),zc=zm-Co.h/2;
-        add('CM',Co,P3(f,v,zc),P3(f+su*proj,v,zc-im*proj));
-        const fw=Vhi(c)-Vlo(c),dc=Uhi(c)-Ulo(c),Wp=Math.min(300,fw-120),Hp=Co.h+180,d=16,hef=12*d;
-        out.plates.push({c:P3(f+su*9.5,v,zc),X:P3(0,1,0),Y:[0,0,1],dims:[Wp,Hp,19]});
-        out.nodes.push({kind:'AC',el:c,fw,dc,Wp,Hp,t:19,d,hef,pass:dc<hef+60,g:Wp-90,z:Co.h+90,prof:Co,pos:P3(f,v,zm)});});
+      // treliça em balanço: banzo superior com o caimento, banzo inferior subindo até a ponta
+      const nPn=Math.max(2,Math.ceil(proj/700)),ok=k=>k*proj/nPn;
+      const zTop=o=>zm-im*o-MB.h/2,hAt=o=>(hS-MB.h)+((hT-MB.h)-(hS-MB.h))*o/proj,zBot=o=>zTop(o)-Math.max(0,hAt(o));
+      mc.forEach(c=>{const f=face(c),v=Vv(ctr(c)),fw=Vhi(c)-Vlo(c),dc=Uhi(c)-Ulo(c),d=16,hef=12*d,pt=(o,z)=>P3(f+su*o,v,z);
+        if(tre){
+          add('MBS',MB,pt(0,zTop(0)),pt(proj,zTop(proj)));add('MBI',MB,pt(0,zBot(0)),pt(proj,zBot(proj)));
+          for(let k=1;k<=nPn;k++){const o=ok(k);if(zTop(o)-zBot(o)>40)add('MMO',MA,pt(o,zBot(o)),pt(o,zTop(o)));}
+          for(let k=0;k<nPn;k++){const o1=ok(k),o2=ok(k+1);if(zTop(o1)-zBot(o2)>40)add('MDG',MA,pt(o1,zTop(o1)),pt(o2,zBot(o2)));}
+          const Wp=Math.min(250,fw-120),Hp=180;
+          [['sup',zTop(0)],['inf',zBot(0)]].forEach(([role,z])=>{
+            out.plates.push({c:P3(f+su*8,v,z),X:P3(0,1,0),Y:[0,0,1],dims:[Wp,Hp,16]});
+            out.nodes.push({kind:'AC',role,el:c,fw,dc,Wp,Hp,t:16,d,hef,pass:dc<hef+60,g:Wp-90,prof:MB,pos:P3(f,v,z)});});
+        }else{
+          const zc=zm-Co.h/2;add('CM',Co,pt(0,zc),pt(proj,zc-im*proj));
+          const Wp=Math.min(300,fw-120),Hp=Co.h+180;
+          out.plates.push({c:P3(f+su*9.5,v,zc),X:P3(0,1,0),Y:[0,0,1],dims:[Wp,Hp,19]});
+          out.nodes.push({kind:'AC',el:c,fw,dc,Wp,Hp,t:19,d,hef,pass:dc<hef+60,g:Wp-90,z:Co.h+90,prof:Co,pos:P3(f,v,zm)});}});
       const vs=mc.map(c=>Vv(ctr(c))),bounds=[vS,...vs.slice(1,-1),vE];
-      const nP=Math.max(2,Math.ceil(proj/1000)+1),offs=Array.from({length:nP},(_,k)=>150+k*(proj-200-150)/(nP-1));
-      offs.forEach((o,k)=>{const last=k===nP-1,f0=face(mc[0]),z=zm-im*o+Tm.h/2;
+      const topAt=o=>tre?zTop(o)+MB.h/2:zm-im*o;
+      const offs=tre?[150,...Array.from({length:nPn-1},(_,k)=>ok(k+1)),proj-50]:Array.from({length:Math.max(2,Math.ceil(proj/1000)+1)},(_,k,a)=>150+k*(proj-200-150)/(Math.max(2,Math.ceil(proj/1000)+1)-1));
+      offs.forEach((o,k)=>{const last=k===offs.length-1,f0=face(mc[0]),z=topAt(o)+Tm.h/2;
         for(let s=0;s<bounds.length-1;s++)add(last?'VB':'TM',Tm,P3(f0+su*o,bounds[s],z),P3(f0+su*o,bounds[s+1],z));});
       // pré-verificação do console (estimativa)
       let amax=0;for(let k=0;k<vs.length-1;k++)amax=Math.max(amax,vs[k+1]-vs[k]);amax=Math.max(amax,vs[0]-vS,vE-vs.at(-1));
-      const wd=(1.25*.20+1.5*.25)*amax/1000,Md=wd*proj*proj/2/1e6,MRd=Co.Zx*34.5/1.1/100;
-      const wk=(.20+.25)*amax/1000,dl=wk*Math.pow(proj,4)/(8*200000*Co.Ix*1e4),dlim=2*proj/250;
-      const z=(Co.h+90)/10,T=Md*100/z/2,FtRd=.75*Math.PI*1.6*1.6/4*40/1.35;
-      out.pre.push({item:'Console da marquise (flexão)',sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MRd)} kN·m`,u:Md/MRd,obs:`${Co.label}, ASTM A572 Gr.50`});
-      out.pre.push({item:'Flecha na ponta do console',sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'limite 2L/250 para balanço'});
-      out.pre.push({item:'Chumbador mais tracionado',sol:`${nf1.format(T)} kN`,res:`${nf1.format(FtRd)} kN`,u:T/FtRd,obs:'barra ø16 ASTM A36, 2 por linha'});
-      out.preHypM=`Marquise: balanço ${m2(proj)} m, consoles a cada ${m2(amax)} m no máximo, mesmas cargas da cobertura.`;
+      const wd=(1.25*.20+1.5*.25)*amax/1000,Md=wd*proj*proj/2/1e6,wk=(.20+.25)*amax/1000,dlim=2*proj/250,FtRd=.75*Math.PI*1.6*1.6/4*40/1.35;
+      if(tre){
+        const hax=(hS-MB.h)/1000,N=Md/hax,fy=25,Nt=MB.A*fy/1.1,Lb=proj/nPn/10,lam=Lb/MB.r,l0=lam/Math.PI*Math.sqrt(fy/20000),chi=l0<=1.5?Math.pow(.658,l0*l0):.877/(l0*l0),Nc=chi*MB.A*fy/1.1;
+        const hm=((hS+hT)/2-MB.h),Ieq=MB.A*100*hm*hm/2,dl=wk*Math.pow(proj,4)/(8*200000*Ieq)*1.15;
+        out.pre.push({item:'Treliça da marquise: banzo superior (tração)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nt)} kN`,u:N/Nt,obs:`${MB.label}, ASTM A36`});
+        out.pre.push({item:'Treliça da marquise: banzo inferior (compressão)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nc)} kN`,u:N/Nc,obs:`painéis de ${m2(Lb*10)} m`});
+        out.pre.push({item:'Flecha na ponta da marquise',sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'limite 2L/250; inércia pelos banzos + 15% pela alma'});
+        out.pre.push({item:'Barra passante do banzo superior',sol:`${nf1.format(N/2)} kN`,res:`${nf1.format(FtRd)} kN`,u:N/2/FtRd,obs:'2 barras ø16 ASTM A36 tracionadas'});
+      }else{
+        const MRd=Co.Zx*34.5/1.1/100,dl=wk*Math.pow(proj,4)/(8*200000*Co.Ix*1e4),z=(Co.h+90)/10,T=Md*100/z/2;
+        out.pre.push({item:'Console da marquise (flexão)',sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MRd)} kN·m`,u:Md/MRd,obs:`${Co.label}, ASTM A572 Gr.50`});
+        out.pre.push({item:'Flecha na ponta do console',sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'limite 2L/250 para balanço'});
+        out.pre.push({item:'Chumbador mais tracionado',sol:`${nf1.format(T)} kN`,res:`${nf1.format(FtRd)} kN`,u:T/FtRd,obs:'barra ø16 ASTM A36, 2 por linha'});}
+      out.preHypM=`Marquise: ${tre?`treliça em balanço com ${m2(hS)} m no pilar e ${m2(hT)} m na ponta,`:'console em perfil W,'} balanço ${m2(proj)} m, consoles a cada ${m2(amax)} m no máximo, mesmas cargas da cobertura.`;
     }
   }
   // ================= agrupar ligações aço-concreto =================
@@ -719,10 +745,11 @@ function genSteel(G){
     else if(nd.kind==='AP'){key=`AP|${nd.wc}`;title='Montante de apoio de terça na viga de concreto';
       desc=`Placa ${nd.Lp} x ${nd.Wp} x ${nf1.format(nd.t)} mm · 2 chumbadores químicos ø12,5 no eixo da viga`;
       if(nd.wc/2<5*nd.d)checks.push(`Chumbador a ${nd.wc/2} mm da borda da viga: o mínimo recomendado é 5d = ${5*nd.d} mm.`);}
-    else{key=`AC|${nd.prof.label}|${nd.fw}|${nd.dc}`;title='Console da marquise na face do pilar';
-      desc=`Placa ${nd.Wp} x ${nd.Hp} x ${nd.t} mm · 4 ${nd.pass?`barras roscadas passantes ø16 com contraplaca na face oposta (o pilar tem ${nd.dc} mm, pouco para embutir ${nd.hef} mm de chumbador químico)`:'chumbadores químicos ø16'}`;
+    else{key=`AC|${nd.role||''}|${nd.prof.label}|${nd.fw}|${nd.dc}`;
+      title=nd.role==='sup'?'Treliça da marquise: banzo superior na face do pilar (tração)':nd.role==='inf'?'Treliça da marquise: banzo inferior na face do pilar (compressão)':'Console da marquise na face do pilar';
+      desc=`Placa ${nd.Wp} x ${nd.Hp} x ${nd.t} mm · ${nd.role?2:4} ${nd.pass?`barras roscadas passantes ø16 com contraplaca na face oposta (o pilar tem ${nd.dc} mm, pouco para embutir ${nd.hef} mm de chumbador químico)`:'chumbadores químicos ø16'}`;
       const ed=(nd.fw-nd.g)/2;if(ed<5*nd.d)checks.push(`Chumbador a ${ed} mm da borda do pilar: o mínimo recomendado é 5d = ${5*nd.d} mm.`);
-      if(nd.Wp<nd.prof.w+60)checks.push(`Face do pilar estreita: placa de ${nd.Wp} mm para console de ${nd.prof.w} mm.`);
+      if(nd.Wp<nd.prof.w+60)checks.push(`Face do pilar estreita: placa de ${nd.Wp} mm para peça de ${nd.prof.w} mm.`);
     }
     if(!cg.has(key))cg.set(key,{key,kind:nd.kind,title,desc,checks,count:0,els:new Set()});const g=cg.get(key);g.count++;if(nd.el)g.els.add(nd.el.name.split(' (')[0]);});
   const kc={};out.conns=[...cg.values()].sort((a,b)=>a.kind.localeCompare(b.kind));out.conns.forEach(c=>{kc[c.kind]=(kc[c.kind]||0)+1;c.mark=c.kind+kc[c.kind];});
@@ -809,7 +836,8 @@ $('#opArq').addEventListener('input',()=>{if(MATS.arq)MATS.arq.opacity=+$('#opAr
 $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.target.checked;});
 {const opt=(id,keys,def)=>{$('#'+id).innerHTML=keys.map(k=>`<option value="${k}"${k===def?' selected':''}>${esc(STP[k].label)} · ${nf2.format(STP[k].kgm)} kg/m</option>`).join('');};
  opt('g_pBanzo',['2L51x4.8','2L64x4.8'],GP.pBanzo);opt('g_pAlma',['L38x3.2','L51x3.2','L51x4.8'],GP.pAlma);opt('g_pTerca',['Ue200x2.65','Ue150x2.65','Ue150x2.00'],GP.pTerca);
- opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);opt('g_pTm',['Ue150x2.00','Ue150x2.65','Ue200x2.65'],GP.pTm);}
+ opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);opt('g_pMB',['2L51x4.8','L51x4.8','2L64x4.8'],GP.pMB);opt('g_pMA',['L38x3.2','L51x3.2','L51x4.8'],GP.pMA);
+ $('#g_mTipo').addEventListener('change',e=>{const t=e.target.value==='trelica';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);});opt('g_pTm',['Ue150x2.00','Ue150x2.65','Ue200x2.65'],GP.pTm);}
 $('#g_run').onclick=()=>{selectSteel(null);runSteel();};
 $('#g_clear').onclick=()=>{selectSteel(null);STEEL=null;renderSteel();renderSteelTables();};
 $('#bFit').onclick=()=>fit(false);$('#bTop').onclick=()=>fit(true);
