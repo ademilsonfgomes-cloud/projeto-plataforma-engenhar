@@ -55,8 +55,34 @@ button,.btn{font:500 13px var(--f-body);border:1px solid var(--line);background:
 button:hover{border-color:var(--muted)}
 button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;padding-block:16px;align-items:start}
-@media (max-width:920px){.wrap{grid-template-columns:minmax(0,1fr)}}
+.app{display:grid;grid-template-columns:88px 330px minmax(0,1fr);gap:12px;padding-block:12px;height:calc(100dvh - var(--hh,80px));min-height:540px}
+.app.nopanel{grid-template-columns:88px minmax(0,1fr)}
+.app.nopanel .panel{display:none}
+.rail{display:flex;flex-direction:column;gap:2px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px;min-height:0}
+.rail .grp{font:600 10px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 2px 3px;text-align:center}
+.rail button{display:grid;justify-items:center;gap:3px;border:0;background:none;padding:7px 2px;border-radius:6px;font:500 11px/1.15 var(--f-body);color:var(--muted);text-align:center}
+.rail button:hover{color:var(--ink);background:var(--bg)}
+.rail button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rail button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.panel{overflow-y:auto;display:grid;gap:12px;align-content:start;min-height:0}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel .card:not(.keep)>h2{display:none}
+.phead b{font:600 17px var(--f-disp);text-transform:uppercase;letter-spacing:.06em}
+.view{min-width:0;min-height:0;display:flex;flex-direction:column}
+.vw{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.vw[data-view="3d"]{overflow:hidden}
+.vw[data-view="3d"] .stage{flex:1;height:auto;min-height:280px}
+#dcard{flex:1;min-height:0;display:flex!important;flex-direction:column}
+#dcard .sheet{flex:1;height:auto;min-height:280px}
+#dcard #dtabs{display:none}
+@media (max-width:920px){
+  .app,.app.nopanel{grid-template-columns:minmax(0,1fr);height:auto;min-height:0}
+  .rail{flex-direction:row;overflow-x:auto;overflow-y:hidden}
+  .rail .grp{display:none}
+  .rail button{min-width:74px}
+  .vw{overflow:visible}
+  .vw[data-view="3d"] .stage{height:62vh;flex:none}
+  #dcard .sheet{height:64vh;flex:none}}
 aside{display:grid;gap:12px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:10px;min-width:0}
 .card h2{margin:0;font:600 15px var(--f-disp);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
@@ -129,16 +155,16 @@ svg text{font-family:var(--f-disp);font-weight:500}
 <body>
 <header class="top gutter">
   <div class="top-in">
-    <div class="brand"><small>Engenhar · V0.1 · etapa 1</small><h1>Integração Concreto + Aço</h1></div>
-    <div class="steps" aria-label="Etapas">
-      <span class="on">1 · Ler IFC</span><span>2 · Lançar aço</span><span>3 · Ligações aço-concreto</span><span>4 · Pré-dimensionamento</span>
-    </div>
+    <div class="brand"><small>Engenhar · V0.2</small><h1>Integração Concreto + Aço</h1></div>
+
   </div>
 </header>
 
-<div class="wrap gutter">
-  <aside>
-    <section class="card">
+<div class="app gutter" id="app">
+  <nav class="rail" id="rail" aria-label="Caixa de ferramentas"></nav>
+  <aside class="panel" id="panel">
+    <div class="phead"><b id="ptitle">Arquivos</b><button type="button" id="pclose" aria-label="Fechar painel">Fechar</button></div>
+    <section class="card" data-pane="arq">
       <h2>Arquivos IFC</h2>
       <div class="slot">
         <b>Estrutural (CypeCAD, TQS)</b>
@@ -155,7 +181,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <div style="display:flex;gap:6px;flex-wrap:wrap"><select id="exSel" aria-label="Exemplo"><option value="galpao">Exemplo: galpão de concreto</option><option value="garagem">Exemplo: garagem</option></select><button type="button" id="bEx">Abrir exemplo</button></div>
       <p class="note">O arquivo é lido no seu navegador e não é enviado para nenhum servidor.</p>
     </section>
-    <section class="card">
+    <section class="card" data-pane="aco">
       <h2>Estrutura metálica</h2>
       <p class="note">Lançamento automático sobre o concreto lido. Ajuste e clique em Gerar.</p>
       <fieldset><legend>Cobertura com tesouras</legend>
@@ -185,7 +211,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
       </fieldset>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="primary" type="button" id="g_run">Gerar estrutura metálica</button><button type="button" id="g_clear">Remover</button></div>
     </section>
-    <section class="card">
+    <section class="card" data-pane="exib">
       <h2>Exibição</h2>
       <label class="chk"><input type="checkbox" id="vAco" checked> Mostrar a estrutura metálica</label>
       <label class="chk"><input type="checkbox" id="vEst" checked> Mostrar o estrutural</label>
@@ -193,7 +219,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <label class="chk"><input type="checkbox" id="vEdge" checked> Arestas no estrutural</label>
       <label class="rng">Transparência do arquitetônico<input type="range" id="opArq" min="5" max="100" value="35"></label>
     </section>
-    <section class="card">
+    <section class="card keep" data-pane="arq">
       <h2>Próximas etapas</h2>
       <p class="note"><strong>2.</strong> Lançar vigas, pilares, tesouras e a grelha metálica, com encaixe nos pilares e nas faces de concreto.</p>
       <p class="note"><strong>3.</strong> Ligações aço-concreto automáticas (placa de base, chapa embutida, chumbadores), com verificação de bordas no concreto.</p>
@@ -201,7 +227,8 @@ svg text{font-family:var(--f-disp);font-weight:500}
     </section>
   </aside>
 
-  <main>
+  <main class="view" id="view">
+   <div class="vw" data-view="3d">
     <section class="summary" id="summary" aria-label="Elementos reconhecidos"></section>
     <div id="msgs" aria-live="polite"></div>
     <section class="stage" id="stage">
@@ -211,15 +238,22 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <div class="hint">Arraste para girar · botão direito ou dois dedos para mover · role para zoom · clique numa peça para ver os dados</div>
       <div class="loading" id="loading" hidden>Lendo o IFC…</div>
     </section>
+   </div>
+   <div class="vw" data-view="resumo" hidden>
+    <p class="note" id="acoNone">Gere a estrutura metálica no painel Estrutura para ver as peças, as ligações e a pré-verificação.</p>
     <section class="card" id="acoOut" hidden></section>
-    <section class="card" id="dcard" hidden>
-      <div class="tbar"><h3>Detalhamento</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" id="dDxf" class="primary">DXF desta folha</button><button type="button" id="dDxfAll">DXF completo</button><button type="button" id="dCopy">Copiar DXF</button><button type="button" id="dFit">Enquadrar</button></div></div>
+   </div>
+   <div class="vw" data-view="desenho" hidden>
+    <section class="card" id="dcard">
+      <div class="tbar"><h3 id="dtitle">Detalhamento</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" id="dDxf" class="primary">DXF desta folha</button><button type="button" id="dDxfAll">DXF completo</button><button type="button" id="dCopy">Copiar DXF</button><button type="button" id="dFit">Enquadrar</button></div></div>
       <nav class="tabs" id="dtabs" role="tablist"></nav>
       <div class="msg ok" id="dmsg" hidden></div>
       <div class="sheet" id="dstage"><svg id="dsvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div id="drom" class="rom" hidden></div>
       <p class="note">Arraste para mover, role ou use pinça para zoom, duplo clique para enquadrar. Desenho em mm; o DXF sai em escala 1:1.</p>
     </section>
+   </div>
+   <div class="vw" data-view="concreto" hidden>
     <section class="card">
       <div class="tbar"><h3>Elementos do estrutural</h3>
         <select id="filt" aria-label="Filtrar por tipo"><option value="">Todos os tipos</option></select></div>
@@ -228,6 +262,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <tbody id="tbody"></tbody></table></div>
       <p class="note">Seções em cm, comprimentos e cotas em m. Pilares mostram a altura; vigas, o comprimento; lajes, a espessura e a área.</p>
     </section>
+   </div>
   </main>
 </div>
 
@@ -806,7 +841,7 @@ function renderSteel(){
   steelGroup.visible=$('#vAco').checked;scene.add(steelGroup);
 }
 function renderSteelTables(){
-  const box=$('#acoOut');if(!STEEL||(!STEEL.mem.length&&!STEEL.warns.length)){box.hidden=true;return;}box.hidden=false;
+  const box=$('#acoOut'),none=!STEEL||(!STEEL.mem.length&&!STEEL.warns.length);$('#acoNone').hidden=!none;if(none){box.hidden=true;return;}box.hidden=false;
   const chip=u=>u<=1?`<span class="chip ok">${nf0.format(u*100)}%</span>`:`<span class="chip al">${nf0.format(u*100)}%</span>`;
   const msgs=[...STEEL.warns.map(w=>`<div class="msg al">${esc(w)}</div>`),...STEEL.notes.map(w=>`<div class="msg ok">${esc(w)}</div>`)].join('');
   const rows=STEEL.groups.map(g=>`<tr><td class="mk">${g.mark}</td><td>${TDESC[g.type]}</td><td>${esc(g.prof.label)}</td><td class="n">${g.qty}</td><td class="n">${m2(g.len)}</td><td class="n">${nf0.format(g.kg)}</td></tr>`).join('');
@@ -827,7 +862,7 @@ function renderSteelTables(){
 }
 function readG(){const g={};for(const k of Object.keys(GP)){const el=document.getElementById('g_'+k);if(!el){g[k]=GP[k];continue;}
   g[k]=el.type==='checkbox'?el.checked:(typeof GP[k]==='number'?(parseFloat(String(el.value).replace(',','.'))||GP[k]):el.value);}return g;}
-function runSteel(){const G=readG();STEEL=genSteel(G);detailSteel(STEEL,G);if(STEEL.det)STEEL.pre.push(...STEEL.det.pre);renderSteel();renderSteelTables();$('#dcard').hidden=!(STEEL&&STEEL.mem.length);renderSheet();}
+function runSteel(){const G=readG();STEEL=genSteel(G);detailSteel(STEEL,G);if(STEEL.det)STEEL.pre.push(...STEEL.det.pre);renderSteel();renderSteelTables();renderSheet();}
 
 /* ================= Desenhos 2D (mm, y para cima): SVG na tela e DXF ================= */
 const nint=v=>String(Math.round(v));
@@ -1187,7 +1222,8 @@ const LYR={ACO:5,CHAPA:30,CONCRETO:8,HACH:9,COTA:2,TEXTO:7,ANOT:9,EIXO:8,TERCA:3
 function renderSheet(){
   const isR=SHEET==='romaneio';$('#dsvg').toggleAttribute('hidden',isR);$('#dstage').hidden=isR;$('#drom').hidden=!isR;
   document.querySelectorAll('#dtabs .tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.s===SHEET));
-  if(!STEEL||!STEEL.mem.length){$('#dsvg').innerHTML='';$('#drom').innerHTML='<p class="note">Gere a estrutura metálica para ver os desenhos.</p>';return;}
+  const sh=SHEETS.find(x=>x.id===SHEET);if($('#dtitle'))$('#dtitle').textContent=sh?sh.label:'Detalhamento';
+  if(!STEEL||!STEEL.mem.length){$('#dsvg').innerHTML='';$('#dstage').hidden=true;$('#drom').hidden=false;$('#drom').innerHTML='<p class="note">Gere a estrutura metálica no painel Estrutura para ver os desenhos.</p>';return;}
   if(isR){renderRom();return;}
   const d=SHEETS.find(s=>s.id===SHEET).fn(STEEL);const svg=$('#dsvg');if(!d){svg.innerHTML='';return;}
   const r1=v=>Math.round(v*10)/10,paths={};let circ='',txt='';const dash=`${r1(d.ts*1.4)} ${r1(d.ts*.35)} ${r1(d.ts*.15)} ${r1(d.ts*.35)}`;
@@ -1296,7 +1332,7 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
  opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);opt('g_pMB',['2L51x4.8','L51x4.8','2L64x4.8'],GP.pMB);opt('g_pMA',['L38x3.2','L51x3.2','L51x4.8'],GP.pMA);
  $('#g_mTipo').addEventListener('change',e=>{const t=e.target.value==='trelica';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);});opt('g_pTm',['Ue150x2.00','Ue150x2.65','Ue200x2.65'],GP.pTm);}
 $('#g_run').onclick=()=>{selectSteel(null);runSteel();};
-$('#g_clear').onclick=()=>{selectSteel(null);STEEL=null;renderSteel();renderSteelTables();$('#dcard').hidden=true;};
+$('#g_clear').onclick=()=>{selectSteel(null);STEEL=null;renderSteel();renderSteelTables();renderSheet();};
 $('#bFit').onclick=()=>fit(false);$('#bTop').onclick=()=>fit(true);
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);}catch(e){}
 new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
@@ -1419,6 +1455,36 @@ function loadExample(){ORIGIN=null;select(null);selectSteel(null);const ex=$('#e
 $('#bEx').onclick=loadExample;
 
 if(!window.THREE||!THREE.OrbitControls){$('#msgs').innerHTML='<div class="msg al">Não consegui carregar a biblioteca 3D (three.js). Confira a conexão com a internet e recarregue a página.</div>';return;}
+/* ---- caixa de ferramentas ---- */
+const ICON={folder:'<path d="M3 7h6l2 2h10v10H3z"/>',sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',cube:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  check:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 9l2 2 4-4M8 15h8"/>',truss:'<path d="M2 16h20L12 6z"/><path d="M7 16l2.5-5M12 16V6M17 16l-2.5-5"/>',
+  cut:'<path d="M5 5h5v14H5zM14 5h5v4h-5z"/><path d="M14 13h5v6h-5z"/>',canopy:'<path d="M4 3v18"/><path d="M4 7h16l-1 3H4"/><path d="M8 10l4-3M12 10l4-3"/>',
+  grid:'<rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',anchor:'<rect x="5" y="9" width="14" height="4"/><path d="M9 13v8M15 13v8M3 21h18M8 9V5h8v4"/>',
+  node:'<circle cx="12" cy="12" r="3"/><path d="M2 18h20M12 15v-9M14 13l6-7M10 13L4 6"/>',purlin:'<path d="M6 6h12v3H9v6h9v3H6z"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',columns:'<path d="M5 21V5M12 21V5M19 21V5M3 5h18M3 21h18"/>'};
+const RAIL=[{g:'Painéis'},{id:'p:arq',lab:'Arquivos',ic:'folder'},{id:'p:aco',lab:'Estrutura',ic:'sliders'},{id:'p:exib',lab:'Exibição',ic:'eye'},
+  {g:'Vistas'},{id:'v:3d',lab:'Modelo 3D',ic:'cube'},{id:'v:resumo',lab:'Resumo',ic:'check'},
+  {id:'s:tesoura',lab:'Tesoura',ic:'truss'},{id:'s:cortes',lab:'Cortes',ic:'cut'},{id:'s:marquise',lab:'Marquise',ic:'canopy'},{id:'s:planta',lab:'Planta',ic:'grid'},
+  {id:'s:ligacoes',lab:'Lig. concreto',ic:'anchor'},{id:'s:nos',lab:'Nós',ic:'node'},{id:'s:tercas',lab:'Terças',ic:'purlin'},{id:'s:romaneio',lab:'Romaneio',ic:'list'},
+  {id:'v:concreto',lab:'Concreto',ic:'columns'}];
+const PTIT={arq:'Arquivos',aco:'Estrutura metálica',exib:'Exibição'};
+let PANE='aco',VIEW='3d';
+try{const st=JSON.parse(localStorage.getItem('eng-int-ui')||'{}');if(st.view)VIEW=st.view;if(st.sheet)SHEET=st.sheet;if('pane' in st)PANE=st.pane;}catch(e){}
+function saveUI(){try{localStorage.setItem('eng-int-ui',JSON.stringify({view:VIEW,sheet:SHEET,pane:PANE}));}catch(e){}}
+function railState(){document.querySelectorAll('#rail button').forEach(b=>{const [k,v]=b.dataset.t.split(':');
+  b.setAttribute('aria-pressed',k==='p'?String(PANE===v):k==='v'?String(VIEW===v):String(VIEW==='desenho'&&SHEET===v));});}
+function setPane(p){PANE=PANE===p?null:p;$('#app').classList.toggle('nopanel',!PANE);
+  document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=x.dataset.pane!==PANE);if(PANE)$('#ptitle').textContent=PTIT[PANE];railState();saveUI();}
+function setView(v,sheet){VIEW=v;if(sheet)SHEET=sheet;document.querySelectorAll('#view .vw').forEach(x=>x.hidden=x.dataset.view!==v);
+  if(v==='desenho')renderSheet();if(v==='3d')setTimeout(resize,0);railState();saveUI();}
+$('#rail').innerHTML=RAIL.map(r=>r.g?`<div class="grp">${r.g}</div>`:`<button type="button" data-t="${r.id}" title="${r.lab}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[r.ic]}</svg><span>${r.lab}</span></button>`).join('');
+$('#rail').addEventListener('click',e=>{const b=e.target.closest('button[data-t]');if(!b)return;const [k,v]=b.dataset.t.split(':');
+  if(k==='p')setPane(v);else if(k==='v')setView(v);else setView('desenho',v);});
+$('#pclose').onclick=()=>{if(PANE)setPane(PANE);};
+const hdr=document.querySelector('header.top');new ResizeObserver(()=>document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px')).observe(hdr);
+{const p=PANE;PANE=null;if(p)setPane(p);else{$('#app').classList.add('nopanel');document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=true);}}
+setView(VIEW);
 initScene();bindSheets();renderAll();loadExample();
 window.__eng={MODELS,IFC,sampleEst,sampleArq,select,get STEEL(){return STEEL;},runSteel};
 })();
