@@ -113,6 +113,8 @@ main{min-width:0;display:grid;gap:12px}
 .msg{border-radius:6px;padding:7px 11px;font-size:13px}
 .msg.ok{background:var(--ok-bg);color:var(--ok-ink)}.msg.al{background:var(--warn-bg);color:var(--warn-ink)}
 .table-wrap{overflow:auto;max-height:420px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.zones{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}.zones button{padding:4px 10px;font:600 13px var(--f-disp);letter-spacing:.04em;min-height:30px}
+.zones button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}
 .tbar h3{margin:0;font:600 16px var(--f-disp);text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
 select{font:13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink)}
@@ -143,10 +145,11 @@ td.wr{white-space:normal;min-width:220px}td.wr ul{margin:4px 0 0;padding-left:18
   background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
 .sheet svg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
 svg text{font-family:var(--f-disp);font-weight:500}
-.ly{fill:none;stroke-width:1.1px;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
-.ly-ACO{stroke:var(--c-aco);stroke-width:1.5px}.ly-TERCA{stroke:var(--d-terca)}.ly-CHAPA{stroke:var(--c-placa);stroke-width:1.4px}
-.ly-CONCRETO{stroke:var(--muted);stroke-width:1.2px}.ly-HACH{stroke:var(--line);stroke-width:.7px}.ly-COTA{stroke:var(--d-cota);stroke-width:.8px}
-.ly-EIXO{stroke:var(--muted);stroke-width:.6px}.ly-ANOT{stroke:var(--muted);stroke-width:.9px}.ly-TEXTO{stroke:var(--ink)}
+.ly{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.ly-ACO{stroke:var(--c-aco);stroke-width:max(1.8px,calc(var(--pm,2px)*.5))}.ly-CHAPA{stroke:var(--c-placa);stroke-width:max(1.5px,calc(var(--pm,2px)*.4))}
+.ly-TERCA{stroke:var(--d-terca);stroke-width:max(1.3px,calc(var(--pm,2px)*.35))}.ly-CONCRETO{stroke:var(--edge);stroke-width:max(1.3px,calc(var(--pm,2px)*.35))}
+.ly-COTA{stroke:var(--d-cota);stroke-width:max(.6px,calc(var(--pm,2px)*.18))}.ly-ANOT{stroke:var(--muted);stroke-width:max(.6px,calc(var(--pm,2px)*.18))}
+.ly-EIXO{stroke:var(--muted);stroke-width:max(.5px,calc(var(--pm)*.13))}.ly-HACH{stroke:var(--line);stroke-width:max(.4px,calc(var(--pm)*.09))}.ly-TEXTO{stroke:var(--ink);stroke-width:1px}
 .tx-TEXTO{fill:var(--ink)}.tx-COTA{fill:var(--d-cota)}.tx-ANOT{fill:var(--muted)}
 .dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:baseline}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -250,9 +253,10 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <div class="tbar"><h3 id="dtitle">Detalhamento</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" id="dDxf" class="primary">DXF desta folha</button><button type="button" id="dDxfAll">DXF completo</button><button type="button" id="dCopy">Copiar DXF</button><button type="button" id="dFit">Enquadrar</button></div></div>
       <nav class="tabs" id="dtabs" role="tablist"></nav>
       <div class="msg ok" id="dmsg" hidden></div>
+      <div class="zones" id="dzones" hidden></div>
       <div class="sheet" id="dstage"><svg id="dsvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div id="drom" class="rom" hidden></div>
-      <p class="note">Arraste para mover, role ou use pinça para zoom, duplo clique para enquadrar. Desenho em mm; o DXF sai em escala 1:1.</p>
+      <p class="note">Arraste para mover, role ou use pinça para zoom, duplo clique para enquadrar. Cada desenho tem a escala indicada no título (texto de 2,5 mm). O DXF sai em milímetros de papel: plotar em 1:1, penas pela cor da camada.</p>
     </section>
    </div>
    <div class="vw" data-view="concreto" hidden>
@@ -893,7 +897,12 @@ function runSteel(){const G=readG();STEEL=genSteel(G);detailSteel(STEEL,G);if(ST
 /* ================= Desenhos 2D (mm, y para cima): SVG na tela e DXF ================= */
 const nint=v=>String(Math.round(v));
 class Dwg{
-  constructor(ts){this.ts=ts;this.e=[];}
+  constructor(ts,esc){this.ts=ts;this.esc=esc||0;this.e=[];this.z=[];}
+  // junta um detalhe na folha e guarda a área dele para abrir ampliado
+  put(sd,dx,dy){const bb=sd.bbox();sd.e.forEach(e=>{const q={...e};if(e.t==='l'){q.x1+=dx;q.x2+=dx;q.y1+=dy;q.y2+=dy;}else{q.x+=dx;q.y+=dy;}this.e.push(q);});
+    if(sd.title)this.z.push({name:sd.title.split(' · ')[0],x0:bb.x0+dx,y0:bb.y0+dy,x1:bb.x1+dx,y1:bb.y1+dy});}
+  // desenho em escala: texto padrão de 2,5 mm no papel
+  static at(esc){return new Dwg(2.5*esc,esc);}
   L(x1,y1,x2,y2,ly){this.e.push({t:'l',x1,y1,x2,y2,ly});}
   T(x,y,s,ly='TEXTO',o={}){this.e.push({t:'t',x,y,s:String(s),h:o.h||this.ts,ly,an:o.an||'start',rot:o.rot||0});}
   C(x,y,r,ly){this.e.push({t:'c',x,y,r,ly});}
@@ -914,8 +923,9 @@ class Dwg{
     this.T((ax+bx)/2-Math.sin(ar)*ts*.25,(ay+by)/2+Math.cos(ar)*ts*.25,txt??nint(len),'COTA',{an:'middle',rot:ang,h:ts*.8});}
   chain(vals,fixed,off,vert){for(let k=0;k<vals.length-1;k++){if(Math.abs(vals[k+1]-vals[k])<1)continue;vert?this.D(fixed,vals[k],fixed,vals[k+1],off):this.D(vals[k],fixed,vals[k+1],fixed,off);}}
   tag(px,py,tx,ty,s){const h=this.ts*.75,w=s.length*h*.55+h,y0=ty-h*.55,y1=ty+h*1.05;this.L(px,py,tx,py<ty?y0:y1,'ANOT');this.R(tx-w/2,y0,w,y1-y0,'ANOT');this.T(tx,ty-h*.1,s,'TEXTO',{an:'middle',h});}
-  notes(x,y,lines,title,sub){let yy=y;lines.forEach(s=>{this.T(x,yy,s,'ANOT',{h:this.ts*.7});yy-=this.ts*1.1;});yy-=this.ts*1.6;
-    this.T(x,yy,title,'TEXTO',{h:this.ts*1.4});if(sub)this.T(x,yy-this.ts*1.5,sub,'ANOT',{h:this.ts*.75});return yy;}
+  notes(x,y,lines,title,sub){this.title=this.title||title;let yy=y;lines.forEach(s=>{this.T(x,yy,s,'ANOT',{h:this.ts*.8});yy-=this.ts*1.3;});yy-=this.ts*1.6;
+    this.T(x,yy,title,'TEXTO',{h:this.ts*1.4});const es=this.esc?`ESC. 1:${String(this.esc).replace('.',',')}`:'';
+    if(sub||es)this.T(x,yy-this.ts*1.6,[sub,es].filter(Boolean).join(' · '),'ANOT',{h:this.ts*.8});return yy;}
   bbox(){let x0=1e18,y0=1e18,x1=-1e18,y1=-1e18;const u=(x,y)=>{if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;};
     for(const e of this.e){if(e.t==='l'){u(e.x1,e.y1);u(e.x2,e.y2);}else if(e.t==='c'){u(e.x-e.r,e.y-e.r);u(e.x+e.r,e.y+e.r);}
       else{const w=e.s.length*e.h*.5,a=e.an==='middle'?w/2:e.an==='end'?w:0;if(Math.abs(e.rot)<1){u(e.x-a,e.y);u(e.x-a+w,e.y+e.h);}else{u(e.x-w,e.y-w);u(e.x+w,e.y+w);}}}
@@ -924,17 +934,21 @@ class Dwg{
 // tubo e cantoneira dupla em corte, centrados em (x,y)
 function secBox(d,cx,cy,w,h,ly){d.R(cx-w/2,cy-h/2,w,h,ly);}
 function sec2L(d,cx,cy,b,t,gap,ly,up){[-1,1].forEach(s=>{const x0=cx+s*gap/2,k=up?-1:1;d.P([[x0,cy+k*b/2],[x0+s*t,cy+k*b/2],[x0+s*t,cy-k*(b/2-t)],[x0+s*b,cy-k*(b/2-t)],[x0+s*b,cy-k*b/2],[x0,cy-k*b/2]],ly);});}
+const ESCS=[1,2,5,10,20,25,50,75,100,125,200,250,500];const escN=v=>ESCS.find(e=>e>=v)||500;
+// passa o desenho para milímetros de papel (escala aplicada)
+function paper(d){if(!d||!d.esc)return d;
+  if(d.pn&&!d.z.length){const bb=d.bbox(),P=[...d.pn].sort((a,b)=>a.x-b.x);P.forEach((q,i)=>d.z.push({name:q.name,x0:q.x-d.ts*2,x1:i<P.length-1?P[i+1].x-d.ts*2:bb.x1,y0:q.y-d.ts*3,y1:bb.y1}));}const k=1/d.esc,p=new Dwg(d.ts*k,d.esc);p.z=d.z.map(z=>({name:z.name,x0:z.x0*k,y0:z.y0*k,x1:z.x1*k,y1:z.y1*k}));p.e=d.e.map(e=>e.t==='l'?{...e,x1:e.x1*k,y1:e.y1*k,x2:e.x2*k,y2:e.y2*k}:e.t==='c'?{...e,x:e.x*k,y:e.y*k,r:e.r*k}:{...e,x:e.x*k,y:e.y*k,h:Math.max(2,e.h*k)});return p;}
 const sub=()=>{const m=MODELS.est;return `${m?m.name.replace(/\.ifc$/i,''):''} · cotas em mm`;};
 
 function drawTesoura(S){
-  const T=S.trusses[0];if(!T)return null;const d=new Dwg(T.L/70),ts=d.ts,Bz=T.Bz;
+  const T=S.trusses[0];if(!T)return null;const d=Dwg.at(escN(T.L/350)),ts=d.ts,Bz=T.Bz;
   const pr=p=>T.proj(p),ms=S.mem.filter(m=>m.truss===0);
   ms.forEach(m=>{const [x1,y1]=pr(m.a),[x2,y2]=pr(m.b);
     if(m.type==='BI'||m.type==='BS'){const L=Math.hypot(x2-x1,y2-y1),nx=-(y2-y1)/L,ny=(x2-x1)/L,h=Bz.h/2;d.L(x1+nx*h,y1+ny*h,x2+nx*h,y2+ny*h,'ACO');d.L(x1-nx*h,y1-ny*h,x2-nx*h,y2-ny*h,'ACO');d.L(x1,y1,x2,y2,'EIXO');}
     else d.L(x1,y1,x2,y2,'ACO');});
   // marcas das peças da 1ª metade
   ms.filter(m=>m.type==='MO'||m.type==='DG').forEach(m=>{const [x1,y1]=pr(m.a),[x2,y2]=pr(m.b);if((x1+x2)/2>T.L/2)return;
-    d.T((x1+x2)/2+ts*.2,(y1+y2)/2,m.mark,'TEXTO',{h:ts*.55});});
+    d.T((x1+x2)/2+ts*.2,(y1+y2)/2,m.mark,'TEXTO',{h:ts*.8});});
   const bi=ms.find(m=>m.type==='BI'),bs=ms.find(m=>m.type==='BS');
   d.T(T.L*.25,pr(bi.a)[1]-Bz.h/2-ts*1.1,`${bi.mark} · ${Bz.label}`,'TEXTO',{an:'middle',h:ts*.7});
   d.T(T.L*.1,pr(bs.a)[1]+T.L*.1*T.i+Bz.h/2+ts*.9,`${bs.mark} · ${Bz.label}`,'TEXTO',{an:'middle',h:ts*.7,rot:Math.atan(T.i)*180/Math.PI});
@@ -959,7 +973,7 @@ function drawTesoura(S){
   return d;}
 
 function drawMarquise(S){
-  const C=S.canopy;if(!C)return null;const d=new Dwg(C.proj/40),ts=d.ts,pr=C.proj2,ms=S.mem.filter(m=>m.mq===0);
+  const C=S.canopy;if(!C)return null;const d=Dwg.at(escN(C.proj/150)),ts=d.ts,pr=C.proj2,ms=S.mem.filter(m=>m.mq===0);
   const nds=S.nodes.filter(n=>n.kind==='AC'),dc=C.dc,ytop=(C.tre?C.zTop(0)-C.zm:0)+500,ybot=(C.tre?C.zBot(0)-C.zm:-C.Co.h)-500;
   d.hatch(-dc,ybot,dc,ytop-ybot);d.T(-dc/2,ytop+ts*.6,`${C.cols[0]} (pilar ${nint(dc)} mm)`,'TEXTO',{an:'middle',h:ts*.7});
   ms.forEach(m=>{const [x1,y1]=pr(m.a),[x2,y2]=pr(m.b);
@@ -991,7 +1005,7 @@ function Vv2(){return 0;}
 function drawPlanta(S){
   const M=MODELS.est;if(!M)return null;const zs=S.zs;
   const pts=S.mem.flatMap(m=>[m.a,m.b]);let x0=Math.min(...pts.map(p=>p[0])),x1=Math.max(...pts.map(p=>p[0])),y0=Math.min(...pts.map(p=>p[1])),y1=Math.max(...pts.map(p=>p[1]));
-  const d=new Dwg(Math.max(x1-x0,y1-y0)/80),ts=d.ts;
+  const d=Dwg.at(escN(Math.max(x1-x0,y1-y0)/350)),ts=d.ts;
   M.els.filter(e=>e.cat==='Pilar'&&Math.abs(e.bb.z1-zs)<40).forEach(e=>d.R(e.bb.x0,e.bb.y0,e.bb.x1-e.bb.x0,e.bb.y1-e.bb.y0,'CONCRETO'));
   M.els.filter(e=>e.cat==='Viga'&&e.ex[0]&&Math.abs(e.bb.z1-zs)<40).forEach(e=>{const a=e.ex[0].start,b=e.ex[0].end,L=Math.hypot(b[0]-a[0],b[1]-a[1]),nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L,w=(e.ex[0].prof.b||200)/2;
     d.L(a[0]+nx*w,a[1]+ny*w,b[0]+nx*w,b[1]+ny*w,'CONCRETO');d.L(a[0]-nx*w,a[1]-ny*w,b[0]-nx*w,b[1]-ny*w,'CONCRETO');});
@@ -1010,8 +1024,8 @@ function drawPlanta(S){
 
 const holeOfAP=d=>d+1.5;
 function drawLigacoes(S){
-  const d=new Dwg(22),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*10;
-  S.conns.forEach(c=>{const n=c.nd,sd=new Dwg(ts);
+  const d=Dwg.at(10),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*10;
+  S.conns.forEach(c=>{const n=c.nd,sd=new Dwg(ts,d.esc);
     if(c.kind==='AT'){const Bz=n.chord,hc=Math.min(n.hc,500);
       sd.hatch(-n.wc/2,-hc,n.wc,hc);sd.R(-n.Wp/2,0,n.Wp,n.t,'CHAPA');sd.R(-n.Wp/2,n.t,n.Wp,8,'CHAPA');if(Bz.enc)secUeH(sd,0,n.t+8,Bz.base,false,'ACO');else if(Bz.t)secUe(sd,-Bz.b/2,n.t+8+Bz.h/2,Bz,1,'ACO');else sec2L(sd,0,n.t+8+Bz.h/2,Bz.h,4.8,8,'ACO');
       sd.L(-n.d/2,n.t+8+30,-n.d/2,-12*n.d,'ANOT');sd.L(n.d/2,n.t+8+30,n.d/2,-12*n.d,'ANOT');sd.R(-n.d*.9,n.t+8,n.d*1.8,n.d*.8,'ANOT');
@@ -1049,7 +1063,7 @@ function drawLigacoes(S){
         `2 chumbadores químicos ø12,5 no eixo da viga, a 90 mm do centro do montante, embutimento 150 mm; distância à borda da viga ${n.wc/2} mm (mínimo 5d = 63 mm).`,
         'Altura de cada montante na tabela de peças (PT).'],`${c.mark} · ${c.title.toUpperCase()}`,`${c.count} unidades · ${[...c.els].slice(0,8).join(', ')}`);}
     const bb=sd.bbox();if(col===3){col=0;x=0;y-=rowH+gap;rowH=0;}const dx=x-bb.x0,dy=y-bb.y1;
-    sd.e.forEach(e=>{const q={...e};if(e.t==='l'){q.x1+=dx;q.x2+=dx;q.y1+=dy;q.y2+=dy;}else{q.x+=dx;q.y+=dy;}d.e.push(q);});x+=bb.x1-bb.x0+gap;rowH=Math.max(rowH,bb.y1-bb.y0);col++;});
+    d.put(sd,dx,dy);x+=bb.x1-bb.x0+gap;rowH=Math.max(rowH,bb.y1-bb.y0);col++;});
   return d;}
 
 /* ================= Nós das treliças e ligações das terças (aço-aço) ================= */
@@ -1250,19 +1264,19 @@ function encDraw(sd,o,s,ns,ts){
     sd.L(-q[0]*h*sg,-q[1]*h*sg,b[0]-q[0]*h*sg,b[1]-q[1]*h*sg,'ACO');sd.L(q[0]*h*sg,q[1]*h*sg,b[0]+q[0]*h*sg,b[1]+q[1]*h*sg,'ACO');
     sd.L(-q[0]*(h-bp.t)*sg,-q[1]*(h-bp.t)*sg,b[0]-q[0]*(h-bp.t)*sg,b[1]-q[1]*(h-bp.t)*sg,'ANOT');sd.L(q[0]*lipN*sg,q[1]*lipN*sg,b[0]+q[0]*lipN*sg,b[1]+q[1]*lipN*sg,'EIXO');
     sd.L(0,0,b[0],b[1],'EIXO');sd.T(b[0]*.8-nn[0]*(h+ts*1.3),b[1]*.8-nn[1]*(h+ts*1.3),`${c.m.mark} · ${bp.label} (alma por fora)`,'TEXTO',{an:'middle',h:ts*.75});});
-  if(o.rec){const a=v2.add(v2.mul(D,o.rec.a),v2.mul(nn,h+ts*.6)),b=v2.add(v2.mul(D,o.rec.b),v2.mul(nn,h+ts*.6));sd.D(a[0]-nn[0]*ts*.6,a[1]-nn[1]*ts*.6,b[0]-nn[0]*ts*.6,b[1]-nn[1]*ts*.6,(v2.dot([-D[1],D[0]],nn)>0?1:-1)*(ts*1.2),`recorte dos enrijecedores ${o.rec.b-o.rec.a}`);}
+  if(o.rec){const a=v2.add(v2.mul(D,o.rec.a),v2.mul(nn,h+ts*.6)),b=v2.add(v2.mul(D,o.rec.b),v2.mul(nn,h+ts*.6));sd.D(a[0]-nn[0]*ts*.6,a[1]-nn[1]*ts*.6,b[0]-nn[0]*ts*.6,b[1]-nn[1]*ts*.6,(v2.dot([-D[1],D[0]],nn)>0?1:-1)*(ts*2.4),`recorte dos enrijecedores ${o.rec.b-o.rec.a}`);}
   o.webs.forEach(w=>{const O=v2.mul(D,w.sh),q=w.q,hw=w.W/2,pt=(sg,nu)=>v2.add(O,v2.add(v2.mul(w.u,w.tAt(sg,nu)),v2.mul(q,sg*hw)));
     const e1=pt(1,o.nEnd),e2=pt(-1,o.nEnd),Lout=Math.max(w.tAt(1,h),w.tAt(-1,h))+140,f1=v2.add(O,v2.add(v2.mul(w.u,Lout),v2.mul(q,hw))),f2=v2.add(O,v2.add(v2.mul(w.u,Lout),v2.mul(q,-hw)));
     sd.L(e1[0],e1[1],f1[0],f1[1],'ACO');sd.L(e2[0],e2[1],f2[0],f2[1],'ACO');sd.L(e1[0],e1[1],e2[0],e2[1],'ACO');
     const ax=v2.add(O,v2.mul(w.u,Lout));sd.L(O[0],O[1],ax[0],ax[1],'EIXO');
     const w1=pt(1,h),w2=pt(-1,h);sd.L(w1[0],w1[1],w2[0],w2[1],'CHAPA');const wo=v2.mul(nn,2.5);sd.L(w1[0]+wo[0],w1[1]+wo[1],w2[0]+wo[0],w2[1]+wo[1],'CHAPA');
     const wm=v2.add(v2.mul(v2.add(w1,w2),.5),v2.mul(nn,ts*.9));sd.T(wm[0],wm[1],`▲ ${w.Lc} (2 lados)`,'COTA',{an:'middle',h:ts*.6});
-    if(Math.abs(w.sh)>0)sd.D(0,0,O[0],O[1],-(h+ts*1.6)*(o.top?-1:1),`exc. ${Math.abs(w.sh)}`);
+    if(Math.abs(w.sh)>0)sd.D(0,0,O[0],O[1],-(h+ts*(o.tala?6.4:3.2))*(v2.dot([-O[1],O[0]],nn)>0?1:-1),`exc. ${Math.abs(w.sh)}`);
     sd.T(f1[0]+w.u[0]*ts*.6,f1[1]+w.u[1]*ts*.6,`${w.m.mark} · ${w.m.prof.label} · ${nf0.format(w.ang)}°`,'TEXTO',{h:ts*.7,an:w.u[0]<0?'end':'start'});});
   if(o.tala){const c0=v2.add(v2.mul(D,-o.tala.L/2),v2.mul(nn,-o.tala.H/2)),pts=[[0,0],[o.tala.L,0],[o.tala.L,o.tala.H],[0,o.tala.H]].map(([a,b])=>v2.add(c0,v2.add(v2.mul(D,a),v2.mul(nn,b))));
     sd.P(pts,'CHAPA');o.bolts.forEach(b=>{const q=v2.sub(b,o.p);sd.C(q[0],q[1],9,'CHAPA');});
     const xs=o.bolts.map(b=>Math.round(v2.dot(v2.sub(b,o.p),D))).sort((a,b)=>a-b),pp=xs.map(x=>v2.add(v2.mul(D,x),v2.mul(nn,-o.tala.H/2)));
-    for(let k=0;k<pp.length-1;k++)sd.D(pp[k][0],pp[k][1],pp[k+1][0],pp[k+1][1],-ts*1.4);sd.D(pts[0][0],pts[0][1],pts[1][0],pts[1][1],-ts*3,String(o.tala.L));}
+    for(let k=0;k<pp.length-1;k++)sd.D(pp[k][0],pp[k][1],pp[k+1][0],pp[k+1][1],-ts*2.8);sd.D(pts[0][0],pts[0][1],pts[1][0],pts[1][1],-ts*4.4,String(o.tala.L));}
   const bb=sd.bbox(),inner=bp.h-2*bp.t,lines=[`Banzo ${bp.label} com a alma por fora (perpendicular ao plano da tesoura) e as abas para dentro; vão interno de ${nf1.format(inner)} mm.`,
     `Montantes e diagonais ${o.webs[0]?o.webs[0].m.prof.label:''} encaixados entre as abas até ${nf1.format(bp.t+3)} mm da alma do banzo; ponta cortada paralela ao banzo.`,
     `Solda de filete na borda das duas abas do banzo, onde a peça entra: ${o.webs.map(w=>`${w.m.mark} 2 x ${w.Lc} mm`).join(', ')}.`,
@@ -1273,8 +1287,8 @@ function encDraw(sd,o,s,ns,ts){
   sd.notes(bb.x0,bb.y0-ts*2.2,lines,`${s.mark} · ${ns.name.toUpperCase()} · ${o.top?'NÓ DO BANZO SUPERIOR':'NÓ DO BANZO INFERIOR'}${o.sp?' COM EMENDA':''} · Ue ENCAIXADO`,`${s.count} unidades`);
 }
 function drawNos(S){
-  const D=S.det;if(!D||!D.nodeSets.length)return null;const d=new Dwg(11),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*9;
-  D.nodeSets.forEach(ns=>ns.sets.forEach(s=>{const o=s.rep,sd=new Dwg(ts),P=o.p,tr=q=>v2.sub(q,P);
+  const D=S.det;if(!D||!D.nodeSets.length)return null;const d=Dwg.at(10),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*9;
+  D.nodeSets.forEach(ns=>ns.sets.forEach(s=>{const o=s.rep,sd=new Dwg(ts,d.esc),P=o.p,tr=q=>v2.sub(q,P);
     if(o.enc)encDraw(sd,o,s,ns,ts);else if(o.ue)ueDraw(sd,o,s,ns,ts);else{
     // banzo(s)
     o.ch.forEach(c=>{const L=Math.max(o.Lg*.7,180),a=[0,0],b=v2.mul(c.u,L),nn=[-c.u[1],c.u[0]],h=o.hC/2;
@@ -1304,11 +1318,11 @@ function drawNos(S){
     sd.notes(bb.x0,bb.y0-ts*2.2,lines,`${s.mark} · ${ns.name.toUpperCase()} · ${o.top?'NÓ DO BANZO SUPERIOR':'NÓ DO BANZO INFERIOR'}${o.sp?' COM EMENDA':''}`,`${s.count} unidades`);
     }
     const b2=sd.bbox();if(col===3){col=0;x=0;y-=rowH+gap;rowH=0;}const dx=x-b2.x0,dy=y-b2.y1;
-    sd.e.forEach(e=>{const q={...e};if(e.t==='l'){q.x1+=dx;q.x2+=dx;q.y1+=dy;q.y2+=dy;}else{q.x+=dx;q.y+=dy;}d.e.push(q);});x+=b2.x1-b2.x0+gap;rowH=Math.max(rowH,b2.y1-b2.y0);col++;}));
+    d.put(sd,dx,dy);x+=b2.x1-b2.x0+gap;rowH=Math.max(rowH,b2.y1-b2.y0);col++;}));
   return d;}
 function drawTercas(S){
-  const D=S.det;if(!D||!D.cleats.length)return null;const d=new Dwg(11),ts=d.ts;let x=0;const gap=ts*10;
-  D.cleats.forEach(c=>{const sd=new Dwg(ts),cl=c.cl,T=c.prof,len=Math.max(260,T.h*1.5);
+  const D=S.det;if(!D||!D.cleats.length)return null;const d=Dwg.at(5),ts=d.ts;let x=0;const gap=ts*10;
+  D.cleats.forEach(c=>{const sd=new Dwg(ts,d.esc),cl=c.cl,T=c.prof,len=Math.max(260,T.h*1.5);
     if(c.kind==='LTP'){sd.R(-50,-300,100,300,'ACO');sd.R(-75,0-8,150,8,'CHAPA');sd.T(0,-300-ts*1.2,'montante □100x100x3 + chapa de topo 150 x 150 x 8','TEXTO',{an:'middle',h:ts*.75});}
     else{const B=c.kind==='LTM'?STP[S.canopy?S.canopy.MB.key||'2L51x4.8':'2L51x4.8']:STP[S.trusses[0]?Object.keys(STP).find(k=>STP[k]===S.trusses[0].Bz):'2L51x4.8'];
       const BB=c.kind==='LTM'?(S.canopy&&S.canopy.MB):(S.trusses[0]&&S.trusses[0].Bz);const b=(BB||STP['2L51x4.8']).h;
@@ -1324,7 +1338,7 @@ function drawTercas(S){
       `${2*c.sides} parafusos ASTM A307 ø12,5, furos ø14, a ${cl.e} mm da ponta da terça, espaçados ${cl.s} mm na alma (${T.label}).`,
       c.sides===2?`Folga de ${cl.gap} mm entre as pontas das terças.`:'Apoio de extremidade: uma terça.',
       'Suporte perpendicular ao banzo; alma da terça perpendicular ao plano do telhado.'],`${c.mark} · ${c.title.toUpperCase()}`,`${c.count} unidades${c.checks.length?' · ALERTA: '+c.checks.join(' '):''}`);
-    const b2=sd.bbox();sd.e.forEach(e=>{const q={...e};if(e.t==='l'){q.x1+=x-b2.x0;q.x2+=x-b2.x0;}else q.x+=x-b2.x0;d.e.push(q);});x+=b2.x1-b2.x0+gap;});
+    const b2=sd.bbox();d.put(sd,x-b2.x0,0);x+=b2.x1-b2.x0+gap;});
   return d;}
 
 /* ---- cortes das peças da tesoura (cantoneiras laminadas) ---- */
@@ -1338,8 +1352,8 @@ function secUe(d,cx,cy,P,dir,ly){ // Ue com alma vertical em cx; abas para o lad
   const h=P.h,b=P.b,c=P.c,t=P.t,X=x=>cx+dir*x;
   d.P([[X(0),cy-h/2],[X(b),cy-h/2],[X(b),cy-h/2+c],[X(b-t),cy-h/2+c],[X(b-t),cy-h/2+t],[X(t),cy-h/2+t],[X(t),cy+h/2-t],[X(b-t),cy+h/2-t],[X(b-t),cy+h/2-c],[X(b),cy+h/2-c],[X(b),cy+h/2],[X(0),cy+h/2]],ly);}
 function drawCortesUe(S){
-  const T=S.trusses[0];const d=new Dwg(6),ts=d.ts,B=T.Bz,A=T.Al,gap=ts*24;let ox=0;
-  const panel=(x,title,sub,y)=>{d.T(x,y,title,'TEXTO',{h:ts*1.3});d.T(x,y-ts*1.6,sub,'ANOT',{h:ts*.7});};
+  const T=S.trusses[0];const d=Dwg.at(2),ts=d.ts,B=T.Bz,A=T.Al,gap=ts*14;let ox=0;
+  const panel=(x,title,sub,y)=>{(d.pn??=[]).push({name:title.split(' · ')[0].replace('CORTE ',''),x,y});d.T(x,y,title,'TEXTO',{h:ts*1.3});d.T(x,y-ts*1.6,sub,'ANOT',{h:ts*.7});};
   const lab=(x,y,s2,an='start')=>d.T(x,y,s2,'TEXTO',{h:ts*.75,an});
   // A-A banzo superior: alma vertical, abas para fora (direita); peças encostadas pela esquerda; suporte da terça na aba de cima
   secUe(d,ox,-B.h/2,B,1,'ACO');d.R(ox+B.b/2-50,0,100,6.3,'CHAPA');d.T(ox+B.b/2,6.3+ts*.6,'suporte da terça (ver LTT)','ANOT',{an:'middle',h:ts*.6});
@@ -1365,8 +1379,8 @@ function drawCortesUe(S){
     'Limpeza e proteção da solda após a execução (pintura com fundo anticorrosivo nas áreas soldadas).'],'CORTES DAS PEÇAS DA TESOURA · PERFIL Ue',sub());
   return d;}
 function drawCortesEnc(S){
-  const T=S.trusses[0],B=T.Bz.base,A=T.Al.base,d=new Dwg(6),ts=d.ts,gap=ts*26;let ox=0;
-  const panel=(x,title,sub2,y)=>{d.T(x,y,title,'TEXTO',{h:ts*1.3});d.T(x,y-ts*1.6,sub2,'ANOT',{h:ts*.7});};
+  const T=S.trusses[0],B=T.Bz.base,A=T.Al.base,d=Dwg.at(2),ts=d.ts,gap=ts*14;let ox=0;
+  const panel=(x,title,sub2,y)=>{(d.pn??=[]).push({name:title.split(' · ')[0].replace('CORTE ',''),x,y});d.T(x,y,title,'TEXTO',{h:ts*1.3});d.T(x,y-ts*1.6,sub2,'ANOT',{h:ts*.7});};
   const lab=(x,y,s2,an='start')=>d.T(x,y,s2,'TEXTO',{h:ts*.75,an});const yb=-B.b-ts*6;
   // A-A banzo superior: alma em cima (apoio do suporte da terça), abas para baixo
   secUeH(d,ox,0,B,true,'ACO');d.R(ox-50,0,100,6.3,'CHAPA');d.T(ox,6.3+ts*.6,'suporte da terça (ver LTT), soldado na alma','ANOT',{an:'middle',h:ts*.6});
@@ -1394,11 +1408,11 @@ function drawCortesEnc(S){
 function drawCortes(S){
   if(S.det&&S.det.enc)return drawCortesEnc(S);
   if(S.det&&S.det.ue)return drawCortesUe(S);
-  const T=S.trusses[0];if(!T)return null;const D=S.det||{};const d=new Dwg(7),ts=d.ts;
+  const T=S.trusses[0];if(!T)return null;const D=S.det||{};const d=Dwg.at(2),ts=d.ts;
   const Bz=T.Bz,Al=T.Al,b=Bz.h===51?50.8:Bz.h===64?63.5:Bz.h,t=tOf(Bz)===4.8?4.76:tOf(Bz),ba=Al.h===51?50.8:Al.h===38?38.1:Al.h===64?63.5:Al.h,ta=tOf(Al)===4.8?4.76:tOf(Al)===3.2?3.18:tOf(Al);
   const tg=(D.nodeSets&&D.nodeSets[0]&&D.nodeSets[0].sets[0]&&D.nodeSets[0].sets[0].rep.tg)||6.3,af=3,ac=filete(tg,t).a,gap=tg,W=2*b+gap,hg=140;
   const lab=(x,y,s,an='start')=>d.T(x,y,s,'TEXTO',{h:ts*.75,an});
-  const panel=(ox,title,sub)=>{d.T(ox,-hg-ts*5,title,'TEXTO',{h:ts*1.3});d.T(ox,-hg-ts*6.6,sub,'ANOT',{h:ts*.7});};
+  const panel=(ox,title,sub)=>{(d.pn??=[]).push({name:title.split(' · ')[0].replace('CORTE ',''),x:ox,y:-hg-ts*5});d.T(ox,-hg-ts*5,title,'TEXTO',{h:ts*1.3});d.T(ox,-hg-ts*6.6,sub,'ANOT',{h:ts*.7});};
   const twoL=(ox,up)=>{[-1,1].forEach(s=>{const x0=ox+s*gap/2;const pts=up?[[x0,0],[x0+s*b,0],[x0+s*b,-t],[x0+s*t,-t],[x0+s*t,-b],[x0,-b]]:[[x0,-hg+0],[x0,-hg+b],[x0+s*t,-hg+b],[x0+s*t,-hg+t],[x0+s*b,-hg+t],[x0+s*b,-hg]];d.P(pts,'ACO');});};
   // A-A banzo superior: abas horizontais para cima, gusset descendo entre as cantoneiras
   let ox=0;twoL(ox,true);d.R(ox-gap/2,-hg,gap,hg,'CHAPA');[-1,1].forEach(s=>fillet(d,ox+s*gap/2,-b,ac,s,-1));
@@ -1436,26 +1450,33 @@ function drawCortes(S){
 
 const SHEETS=[{id:'tesoura',label:'Tesoura',fn:drawTesoura},{id:'cortes',label:'Cortes da tesoura',fn:drawCortes},{id:'marquise',label:'Marquise',fn:drawMarquise},{id:'planta',label:'Planta da cobertura',fn:drawPlanta},{id:'ligacoes',label:'Ligações aço-concreto',fn:drawLigacoes},{id:'nos',label:'Nós das treliças',fn:drawNos},{id:'tercas',label:'Ligações das terças',fn:drawTercas},{id:'romaneio',label:'Romaneio'}];
 let SHEET='tesoura',DVB=null,DFIT=null;
-const LYR={ACO:5,CHAPA:30,CONCRETO:8,HACH:9,COTA:2,TEXTO:7,ANOT:9,EIXO:8,TERCA:3};
+const PENAS=[['ACO',5,'0,50'],['CHAPA',30,'0,40'],['TERCA',3,'0,35'],['CONCRETO',252,'0,35'],['TEXTO',7,'0,25'],['COTA',2,'0,18'],['ANOT',251,'0,18'],['EIXO',8,'0,13'],['HACH',9,'0,09']];
+const LYR=Object.fromEntries(PENAS.map(([l,c])=>[l,c]));
+// espessura das penas acompanha o zoom (mm de papel x pixels por mm), com mínimo legível
+function penW(){const svg=$('#dsvg');if(!svg||!DVB)return;const pm=Math.min((svg.clientWidth||1000)/DVB.w,(svg.clientHeight||700)/DVB.h);svg.style.setProperty('--pm',pm+'px');}
 function renderSheet(){
   const isR=SHEET==='romaneio';$('#dsvg').toggleAttribute('hidden',isR);$('#dstage').hidden=isR;$('#drom').hidden=!isR;
   document.querySelectorAll('#dtabs .tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.s===SHEET));
   const sh=SHEETS.find(x=>x.id===SHEET);if($('#dtitle'))$('#dtitle').textContent=sh?sh.label:'Detalhamento';
   if(!STEEL||!STEEL.mem.length){$('#dsvg').innerHTML='';$('#dstage').hidden=true;$('#drom').hidden=false;$('#drom').innerHTML='<p class="note">Gere a estrutura metálica no painel Estrutura para ver os desenhos.</p>';return;}
   if(isR){renderRom();return;}
-  const d=SHEETS.find(s=>s.id===SHEET).fn(STEEL);const svg=$('#dsvg');if(!d){svg.innerHTML='';return;}
-  const r1=v=>Math.round(v*10)/10,paths={};let circ='',txt='';const dash=`${r1(d.ts*1.4)} ${r1(d.ts*.35)} ${r1(d.ts*.15)} ${r1(d.ts*.35)}`;
+  const d=paper(SHEETS.find(s=>s.id===SHEET).fn(STEEL));const svg=$('#dsvg');if(!d){svg.innerHTML='';return;}
+  const r1=v=>Math.round(v*10)/10,paths={};let circ='',txt='';const dash='12 3 2 3';
   for(const e of d.e){if(e.t==='l')(paths[e.ly]??=[]).push(`M${r1(e.x1)} ${r1(-e.y1)}L${r1(e.x2)} ${r1(-e.y2)}`);
     else if(e.t==='c')circ+=`<circle class="ly ly-${e.ly}" cx="${r1(e.x)}" cy="${r1(-e.y)}" r="${r1(e.r)}"/>`;
     else if(e.s){const x=r1(e.x),y=r1(-e.y);txt+=`<text class="tx tx-${e.ly}" x="${x}" y="${y}" font-size="${r1(e.h)}" text-anchor="${e.an}"${e.rot?` transform="rotate(${r1(-e.rot)} ${x} ${y})"`:''}>${esc(e.s)}</text>`;}}
   svg.innerHTML=Object.entries(paths).map(([ly,a])=>`<path class="ly ly-${ly}"${ly==='EIXO'?` stroke-dasharray="${dash}"`:''} d="${a.join('')}"/>`).join('')+circ+txt;
-  const bb=d.bbox(),pad=d.ts*2;DFIT={x:bb.x0-pad,y:-bb.y1-pad,w:bb.x1-bb.x0+2*pad,h:bb.y1-bb.y0+2*pad};DVB={...DFIT};svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);
+  const zs=$('#dzones');zs.hidden=!(d.z&&d.z.length>1);
+  if(!zs.hidden){zs.innerHTML=`<button type="button" aria-pressed="true" data-z="-1">Folha inteira</button>`+d.z.map((z,k)=>`<button type="button" aria-pressed="false" data-z="${k}">${esc(z.name)}</button>`).join('');
+    zs.querySelectorAll('button').forEach(b=>b.onclick=()=>{zs.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));const k=+b.dataset.z,z=d.z[k],p=d.ts*2;
+      DVB=k<0?{...DFIT}:{x:z.x0-p,y:-z.y1-p,w:z.x1-z.x0+2*p,h:z.y1-z.y0+2*p};svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();});}
+  const bb=d.bbox(),pad=d.ts*2;DFIT={x:bb.x0-pad,y:-bb.y1-pad,w:bb.x1-bb.x0+2*pad,h:bb.y1-bb.y0+2*pad};DVB={...DFIT};svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();
 }
 function dxfOf(list){
   const o=[],w=(c,v)=>o.push(String(c),String(v)),f=v=>(Math.round(v*1000)/1000).toFixed(3),st=s=>s.replace(/[^\x20-\x7e]/g,c=>'\\U+'+c.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0'));
   w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(0,'ENDSEC');w(0,'SECTION');w(2,'TABLES');
   w(0,'TABLE');w(2,'LTYPE');w(70,2);w(0,'LTYPE');w(2,'CONTINUOUS');w(70,0);w(3,'Solid line');w(72,65);w(73,0);w(40,'0.0');
-  w(0,'LTYPE');w(2,'CENTER');w(70,0);w(3,'Center');w(72,65);w(73,4);w(40,'200.0');w(49,'125.0');w(49,'-25.0');w(49,'25.0');w(49,'-25.0');w(0,'ENDTAB');
+  w(0,'LTYPE');w(2,'CENTER');w(70,0);w(3,'Center');w(72,65);w(73,4);w(40,'20.0');w(49,'12.0');w(49,'-3.0');w(49,'2.0');w(49,'-3.0');w(0,'ENDTAB');
   w(0,'TABLE');w(2,'LAYER');w(70,Object.keys(LYR).length);for(const [n,c] of Object.entries(LYR)){w(0,'LAYER');w(2,n);w(70,0);w(62,c);w(6,n==='EIXO'?'CENTER':'CONTINUOUS');}w(0,'ENDTAB');w(0,'ENDSEC');
   w(0,'SECTION');w(2,'ENTITIES');
   for(const {d,ox,oy} of list)for(const e of d.e){
@@ -1463,7 +1484,8 @@ function dxfOf(list){
     else if(e.t==='c'){w(0,'CIRCLE');w(8,e.ly);w(10,f(e.x+ox));w(20,f(e.y+oy));w(30,'0.0');w(40,f(e.r));}
     else if(e.s){w(0,'TEXT');w(8,e.ly);w(10,f(e.x+ox));w(20,f(e.y+oy));w(30,'0.0');w(40,f(e.h));w(1,st(e.s));if(e.rot)w(50,f(e.rot));if(e.an!=='start'){w(72,e.an==='middle'?1:2);w(11,f(e.x+ox));w(21,f(e.y+oy));w(31,'0.0');}}}
   w(0,'ENDSEC');w(0,'EOF');return o.join('\r\n')+'\r\n';}
-function dxfAll(){const L=[];let cur=0;SHEETS.filter(s=>s.fn).forEach(s=>{const d=s.fn(STEEL);if(!d)return;const bb=d.bbox();L.push({d,ox:cur-bb.x0,oy:-bb.y0});cur+=bb.x1-bb.x0+Math.max(3000,(bb.x1-bb.x0)*.15);});return dxfOf(L);}
+function dxfAll(){const L=[];let cur=0;SHEETS.filter(s=>s.fn).forEach(s=>{const d=paper(s.fn(STEEL));if(!d)return;const bb=d.bbox();L.push({d,ox:cur-bb.x0,oy:-bb.y0});cur+=bb.x1-bb.x0+60;});
+  const g=new Dwg(2.5);g.notes(0,-20,PENAS.map(([l,c,w])=>`${l}: cor ${c} · pena ${w} mm`),'PENAS POR CAMADA (CTB)','desenhos em milímetros de papel, cada um na escala indicada; plotar em 1:1');L.push({d:g,ox:0,oy:0});return dxfOf(L);}
 function romRows(){
   const P=STEEL.groups.map(g=>({mark:g.mark,desc:TDESC[g.type],perfil:g.prof.label,qty:g.qty,len:g.len,kg:g.kg}));
   const C=STEEL.conns.map(c=>{const n=c.nd,pl=n.kind==='AC'?2:1,kg=n.Wp*(n.Lp||n.Hp)*n.t*7.85e-6*pl;
@@ -1500,7 +1522,7 @@ function bindSheets(){
   $('#dtabs').innerHTML=SHEETS.map(s=>`<button type="button" class="tab" role="tab" data-s="${s.id}">${s.label}</button>`).join('');
   $('#dtabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;SHEET=b.dataset.s;renderSheet();});
   const svg=$('#dsvg');let last=null,pts=new Map(),pd=0;
-  const ap2=()=>svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);
+  const ap2=()=>{svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();};
   const zoom=(cx,cy,f)=>{if(!DVB)return;const pt=svg.createSVGPoint();pt.x=cx;pt.y=cy;const p=pt.matrixTransform(svg.getScreenCTM().inverse());DVB={x:p.x-(p.x-DVB.x)*f,y:p.y-(p.y-DVB.y)*f,w:DVB.w*f,h:DVB.h*f};ap2();};
   svg.addEventListener('wheel',e=>{e.preventDefault();zoom(e.clientX,e.clientY,Math.exp(e.deltaY*.0015));},{passive:false});
   svg.addEventListener('pointerdown',e=>{svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});last={x:e.clientX,y:e.clientY};pd=0;});
@@ -1510,9 +1532,9 @@ function bindSheets(){
   const up=e=>{pts.delete(e.pointerId);pd=0;};svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   svg.addEventListener('dblclick',()=>{if(DFIT){DVB={...DFIT};ap2();}});
   $('#dFit').onclick=()=>{if(DFIT){DVB={...DFIT};ap2();}};
-  $('#dDxf').onclick=()=>{const s=SHEETS.find(x=>x.id===SHEET);if(!s.fn||!STEEL)return;const d=s.fn(STEEL);if(d)saveFile(`${SHEET}.dxf`,dxfOf([{d,ox:0,oy:0}]),'application/dxf');};
+  $('#dDxf').onclick=()=>{const s=SHEETS.find(x=>x.id===SHEET);if(!s.fn||!STEEL)return;const d=paper(s.fn(STEEL));if(d)saveFile(`${SHEET}.dxf`,dxfOf([{d,ox:0,oy:0}]),'application/dxf');};
   $('#dDxfAll').onclick=()=>{if(STEEL&&STEEL.mem.length)saveFile('estrutura_metalica_completo.dxf',dxfAll(),'application/dxf');};
-  $('#dCopy').onclick=()=>{if(!STEEL||!STEEL.mem.length)return;const s=SHEETS.find(x=>x.id===SHEET),t=s.fn?dxfOf([{d:s.fn(STEEL),ox:0,oy:0}]):dxfAll();
+  $('#dCopy').onclick=()=>{if(!STEEL||!STEEL.mem.length)return;const s=SHEETS.find(x=>x.id===SHEET),t=s.fn?dxfOf([{d:paper(s.fn(STEEL)),ox:0,oy:0}]):dxfAll();
     try{navigator.clipboard.writeText(t).then(()=>note('DXF copiado. Cole num arquivo de texto e salve com a extensão .dxf.'),()=>note('A cópia foi bloqueada neste navegador.'));}catch(e){note('A cópia foi bloqueada neste navegador.');}};
 }
 
