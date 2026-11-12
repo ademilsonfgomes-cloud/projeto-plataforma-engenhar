@@ -15,7 +15,7 @@ body.foundation-brush #drawing,body.foundation-brush #drawing *,body.foundation-
 body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:#b18416!important}
 </style></head><body>
 <header><strong>ENGENHAR | MUROS <small>V219 · CAD NATIVO</small></strong><div class="nav"><button>Arquivo</button><button>Planta</button><button>Cálculo</button><button>Resultados</button><button id="navSheets">Pranchas</button></div></header>
-<div class="toolbar"><button id="new">Novo projeto</button><button id="open">Abrir JSON</button><button id="save">Salvar JSON</button><button id="copyFoundation" type="button" title="Pincel de características: clique na origem e depois nos destinos; Esc para sair" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold">🖌 Copiar características</button><button id="refreshNear" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Gerar novamente os detalhamentos completos dos tipos de fundação">↻ Atualizar detalhes</button><button id="refresh">Atualizar desenhos</button><button id="layerSettings" type="button" style="background:#d4e5f5;border:1px solid #78a5c5;font-weight:bold">◫ Layers e Penas</button><button id="refreshSteel" type="button" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold" title="Recalcular as tabelas de aço das pranchas">↻ Atualizar aço</button><button id="editStamp" type="button">▤ Editar carimbo</button><button id="fit">Ajustar</button><button id="sheetOpen" title="Abrir editor de pranchas">▤ Pranchas no CAD</button><button id="quickNewSheet" title="Escolher formato e adicionar prancha à direita">＋ Adicionar prancha</button><span class="sep"></span><label>Escala de prancha <select id="printScale" style="height:28px"><option value="20">1:20</option><option value="25" selected>1:25</option><option value="50">1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><span class="sep"></span><b>Planta e Geometria</b><div class="swatches" id="colors"><button class="swatch active" style="background:#0c1b29" data-color="#0c1b29" title="Fundo preto azulado"></button><button class="swatch" style="background:#38434b" data-color="#38434b" title="Fundo cinza escuro"></button><button class="swatch" style="background:#859098" data-color="#859098" title="Fundo cinza"></button><button class="swatch" style="background:#ffffff" data-color="#ffffff" title="Fundo branco"></button><button class="swatch" style="background:#1b3852" data-color="#1b3852" title="Fundo azul marinho"></button></div><label><input id="grade" type="checkbox" checked> Grade</label></div>
+<div class="toolbar"><button id="new">Novo projeto</button><button id="open">Abrir JSON</button><button id="save">Salvar JSON</button><button id="copyFoundation" type="button" title="Pincel de características: clique na origem e depois nos destinos; Esc para sair" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold">🖌 Copiar características</button><button id="refreshNear" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Gerar novamente os detalhamentos completos dos tipos de fundação">↻ Atualizar detalhes</button><button id="refresh">Atualizar desenhos</button><button id="layerSettings" type="button" style="background:#d4e5f5;border:1px solid #78a5c5;font-weight:bold">◫ Layers e Penas</button><button id="refreshSteel" type="button" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold" title="Recalcular as tabelas de aço das pranchas">↻ Atualizar aço</button><button id="organizeSheets" type="button" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Monta o conjunto padrão de pranchas e distribui os detalhes sem sobreposição">▦ Organizar pranchas</button><button id="editStamp" type="button">▤ Editar carimbo</button><button id="fit">Ajustar</button><button id="sheetOpen" title="Abrir editor de pranchas">▤ Pranchas no CAD</button><button id="quickNewSheet" title="Escolher formato e adicionar prancha à direita">＋ Adicionar prancha</button><span class="sep"></span><label>Escala de prancha <select id="printScale" style="height:28px"><option value="20">1:20</option><option value="25" selected>1:25</option><option value="50">1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><span class="sep"></span><b>Planta e Geometria</b><div class="swatches" id="colors"><button class="swatch active" style="background:#0c1b29" data-color="#0c1b29" title="Fundo preto azulado"></button><button class="swatch" style="background:#38434b" data-color="#38434b" title="Fundo cinza escuro"></button><button class="swatch" style="background:#859098" data-color="#859098" title="Fundo cinza"></button><button class="swatch" style="background:#ffffff" data-color="#ffffff" title="Fundo branco"></button><button class="swatch" style="background:#1b3852" data-color="#1b3852" title="Fundo azul marinho"></button></div><label><input id="grade" type="checkbox" checked> Grade</label></div>
 <div class="shell"><aside><button id="sidePlanta" type="button">▦<br>Planta</button><button id="editMuro" class="edit-mode side-tool" title="Lançar e editar muro na planta">▰<br>Arrimos</button><button id="editTubulo" class="edit-mode side-tool" title="Mostrar parâmetros do tubulão">♙<br>Tubulões</button><button id="editBloco" class="edit-mode side-tool" title="Mostrar parâmetros do bloco">▣<br>Blocos</button><button id="sidePilares" type="button">▥<br>Pilares</button><button id="sideVigas" type="button">▤<br>Vigas</button><button id="quickElevations" type="button" class="side-tool">▦<br>Elevações</button><button id="sideSheets">▤<br>Pranchas</button><button id="sideSteel" type="button" title="Localizar relação e resumo de aço">▤<br>Aço</button></aside><main>
 <div class="ribbon" id="tubuloRibbon"><h3>TUBULÕES — GEOMETRIA E ARMADURAS <small style="float:right;font-size:10px;font-weight:normal">Prévia gráfica em centímetros · cálculo não validado</small></h3>
 <label>Identificação<input id="id" value="T1"></label><label>Ø fuste (cm)<input id="shaft" type="number" min="20" value="60"></label><label>Ø base (cm)<input id="base" type="number" min="20" value="120"></label><label>Profundidade (cm)<input id="depth" type="number" min="50" value="330"></label><label>Altura base (cm)<input id="baseHeight" type="number" min="10" value="50"></label><label>Altura saia (cm)<input id="skirt" type="number" min="0" value="35"></label><label>Cobrimento (cm)<input id="cover" type="number" min="2" value="5"></label><label>Nº barras<input id="bars" type="number" min="2" value="8"></label><label>Ø barras (mm)<input id="barDia" type="number" min="5" value="16"></label><label>Compr. barras (cm)<input id="barLen" type="number" min="10" value="260"></label><label>Ø estribos (mm)<input id="stDia" type="number" min="4" value="8"></label><label>Compr. circular N2 (cm)<input id="ringLen" type="number" min="20" step="0.1" value="154.6" title="Comprimento do arco circular na linha média, sem os ganchos"></label><label>Estribos c/ (cm)<input id="spacing" type="number" min="1" value="15"></label>
@@ -202,7 +202,7 @@ if(wallPoints.length>=2 && !detailsPlaced){
  blockOffset={x:right+125-150,y:detailTop};
  detailsPlaced=true;
 }
-setMode('select');setActiveEditor('muro');status('Muro lançado em planta. Edite os parâmetros na faixa superior.');draw()}
+setMode('select');setActiveEditor('muro');draw();organizeSheets(true);status('Muro lançado em planta e pranchas organizadas automaticamente. Edite os parâmetros na faixa superior e use ▦ Organizar pranchas para refazer a distribuição.')}
 function focusWall(){const w=cad.clientWidth,h=cad.clientHeight;let pts=wallPoints.length?wallPoints:[{x:0,y:0},{x:900,y:0}];let xs=pts.map(p=>wallStart.x+wallOffset.x+.78*p.x),ys=pts.map(p=>wallStart.y+wallOffset.y+.78*p.y);let x0=Math.min(...xs)-65,x1=Math.max(...xs)+65,y0=Math.min(...ys)-85,y1=Math.max(...ys)+85;view.k=clamp(Math.min((w-60)/(x1-x0),(h-60)/(y1-y0)),.22,2);view.x=w/2-(x0+x1)*view.k/2;view.y=h/2-(y0+y1)*view.k/2;draw()}
 
 function setActiveEditor(target){
@@ -233,11 +233,10 @@ $('sideVigas').onclick=()=>focusStructuralDetail('VB');
 
 
 
-$('sideSteel').onclick=()=>{draw();const sh=sheets[0];if(!sh)return;const d=sheetDims(sh),unit=d.unit,stripW=Math.min(180*unit,d.w*.42),stripX=d.w-10*unit-stripW;
- const x=sh.x+stripX-70*unit,y=sh.y+Math.min(95*unit,d.h*.32);
- view.k=clamp(Math.min(cad.clientWidth/(245*unit),cad.clientHeight/(210*unit)),.22,2.2);
+$('sideSteel').onclick=()=>{draw();const sh=sheets.find(s=>(steelBySheet.get(s.id)||[]).length)||sheets[0];if(!sh)return;const d=sheetDims(sh),stripW=Math.min(180*d.unit,d.w*.42),x=sh.x+d.w-10*d.unit-stripW/2,y=sh.y+d.h/2;
+ view.k=clamp(Math.min(cad.clientWidth/(stripW*1.15),cad.clientHeight/(d.h*1.05)),.02,2.2);
  view.x=cad.clientWidth/2-x*view.k;view.y=cad.clientHeight/2-y*view.k;draw();
- const n=(steelBySheet.get(sh.id)||[]).length;status(n?`Relação de aço: ${n} posições encontradas. Confira os comprimentos e quantidades.`:'Relação de aço sem posições reconhecidas. Verifique se os detalhes estão gerados e clique em Atualizar aço.');};
+ const n=(steelBySheet.get(sh.id)||[]).length;status(n?`Relação de aço: ${n} posições na prancha ${String(sheets.indexOf(sh)+1).padStart(2,'0')}. Confira os comprimentos e quantidades.`:'Relação de aço sem posições reconhecidas. Verifique se os detalhes estão gerados e clique em Atualizar aço.');};
 
 // Layers Engenhar: preferências persistentes e classificação de primitivas SVG.
 const layerDefaults={
@@ -385,7 +384,7 @@ if(!renderingVariant && wallPoints.length>=2){
  for(const kind of ['pile','block'])for(const [id,val] of Object.entries(foundationDefaults(kind))){restoreBaseFields[id]=$(id).value;$(id).value=val}
 }
 let bg=el('rect',{x:0,y:0,width:w,height:h,fill:'transparent'});bg.dataset.background='1';
-let sceneG=el('g',{transform:`translate(${view.x} ${view.y}) scale(${view.k})`});let g=el('g',{transform:`translate(${tubuloOffset.x} ${tubuloOffset.y})`,'data-tubulo-group':'1',style:wallPoints.length>=2?'':'display:none'},sceneG);
+let sceneG=el('g',{transform:`translate(${view.x} ${view.y}) scale(${view.k})`,'data-scene':'1'});let g=el('g',{transform:`translate(${tubuloOffset.x} ${tubuloOffset.y})`,'data-tubulo-group':'1',style:wallPoints.length>=2?'':'display:none'},sceneG);
 let shaft=clamp(numeric('shaft')||60,20,300),base=Math.max(shaft,numeric('base')||120),depth=clamp(numeric('depth')||330,50,2000),bh=clamp(numeric('baseHeight')||50,10,depth*.8),sk=clamp(numeric('skirt')||35,0,bh),cover=clamp(numeric('cover')||5,2,shaft/3),barLen=clamp(numeric('barLen')||260,10,depth),qty=clamp(Math.round(numeric('bars')||8),2,32),spacing=Math.max(1,numeric('spacing')||15),dia=Math.max(4,numeric('barDia')||16),stDia=Math.max(4,numeric('stDia')||8);
 let scale=0.78,top=94,x=145,shaftW=shaft*scale,baseW=base*scale,bodyH=depth*scale,shoulder=top+bodyH-bh*scale,skirtEnd=shoulder+sk*scale,bottom=top+bodyH;
 scene={w:$('blockEnabled').checked?1050:555,h:Math.max(490,bottom+207)};
@@ -748,19 +747,10 @@ if(restoreBaseFields)for(const [id,val] of Object.entries(restoreBaseFields))$(i
 // V207 — elevações de arrimos independentes e editáveis pelo diálogo.
 function focusFirstElevation(){
  if(!wallFinished||wallPoints.length<2)return;
- const sc=.78,pts=wallPoints.map(p=>({x:wallStart.x+wallOffset.x+p.x*sc,y:wallStart.y+wallOffset.y+p.y*sc}));
- const bottom=Math.max(...pts.map(p=>p.y)),left=Math.min(...pts.map(p=>p.x));
- const maxBeamH=Math.max(...wallSegments.map(v=>Number(v.parameters?.wallBeamHeight)||40),40);
- const maxSheetRight=sheets.length?Math.max(...sheets.map(sh=>sh.x+sheetDims(sh).w)):0;
- const y=sheets.length?Math.min(...sheets.map(sh=>sh.y))+85:bottom+300;
- const a=wallPoints[0],b=wallPoints[1],d=wallSegments[0]?.parameters||{};
- const W=Math.hypot(b.x-a.x,b.y-a.y)*sc+140,H=Math.max(30,Number(d.wallHeight)||250)*sc+Math.max(10,Number(d.wallBeamHeight)||40)*sc+(elevationSettings.found?Math.max(50,Number($('depth')?.value)||330)*sc+110:90);
- const pos=extraDetailOffsets.EL1||{x:Math.max(maxSheetRight+260,Math.max(...pts.map(p=>p.x))+250),y};
+ draw();const b=sceneBox(findGroup('EL1'));if(!b)return;
  const cw=cad.clientWidth,ch=cad.clientHeight;
- view.k=clamp(Math.min((cw-70)/Math.max(W,150),(ch-70)/Math.max(H,200)),.15,2);
- view.x=cw/2-(pos.x+W/2)*view.k;
- view.y=ch/2-(pos.y+95+H/2)*view.k;
- draw();
+ view.k=clamp(Math.min((cw-70)/b.w,(ch-70)/b.h),.05,2);
+ view.x=cw/2-b.cx*view.k;view.y=ch/2-b.cy*view.k;draw();
 }
 function drawWallElevations(parent){
  if(!elevationEnabled||!wallFinished||wallPoints.length<2)return;
@@ -1137,7 +1127,7 @@ $('libraryBtn').onclick=()=>{$('editPanel').hidden=true;$('libraryPanel').hidden
 $('closeLibrary').onclick=()=>{$('libraryPanel').hidden=true};$('closeEdit').onclick=()=>{$('editPanel').hidden=true;selected=null;draw()};
 $('moveBlock').onclick=()=>{setMode(mode==='moveBlock'?'select':'moveBlock');$('moveBlock').classList.toggle('active',mode==='moveBlock');status(mode==='moveBlock'?'Arraste o detalhamento B1 para movê-lo independentemente do tubulão.':'Modo de seleção.');};
 $('freeBtn').onclick=()=>{closePanels();setMode('free')};$('selectBtn').onclick=()=>setMode('select');
-$('undoBtn').onclick=()=>{freePoints.pop();draw()};$('fit').onclick=fit;$('fit2').onclick=fit;
+$('undoBtn').onclick=()=>{freePoints.pop();draw()};$('fit').onclick=()=>fitSheets();$('fit2').onclick=()=>fitSheets();
 $('applyEdit').onclick=()=>{if(!selected)return;
  if(selected.startsWith('block:')){
   const which=selected.slice(6),suffix=which==='x'?'X':which==='y'?'Y':'C';
@@ -1220,8 +1210,8 @@ $('wallOrtho').onclick=wallToggleOrtho;
 $('quickElevations').onclick=()=>{$('elevationBtn').click()};
 $('elevationBtn').onclick=()=>{if(!wallFinished||wallPoints.length<2){status('Conclua primeiro o lançamento do muro para gerar as elevações.');return}const S=elevationSettings;for(const [id,v] of Object.entries({elevTop:S.top,elevMid:S.mid,elevCourse:S.course,elevHDia:S.hDia,elevVDia:S.vDia,elevVSpace:S.vSpace,elevFound:S.found})){const e=$(id);if(e.type==='checkbox')e.checked=v;else e.value=v}$('elevationDialog').showModal()};
 $('elevCancel').onclick=()=>$('elevationDialog').close();
-$('elevApply').onclick=()=>{const n=id=>Number($(id).value);if(n('elevCourse')<10||n('elevHDia')<4||n('elevVDia')<4||n('elevVSpace')<5||n('elevMid')<0||n('elevMid')>5){alert('Confira os valores de elevação.');return}elevationSettings={top:$('elevTop').checked,mid:Math.round(n('elevMid')),course:n('elevCourse'),hDia:n('elevHDia'),vDia:n('elevVDia'),vSpace:n('elevVSpace'),found:$('elevFound').checked};if(!elevationEnabled){draw();if([...steelBySheet.values()].some(rows=>rows.length))lastValidSteelBySheet=new Map([...steelBySheet].map(([id,rows])=>[id,rows.map(r=>({...r}))]));}elevationEnabled=true;$('elevationDialog').close();draw();focusFirstElevation();status((steelRegistryFallback?'ATENÇÃO: relação de aço anterior preservada, mas pendente de recálculo. ':'')+'Elevações geradas. Conferir comprimentos, ancoragens e emendas antes do uso executivo.')};
-$('wallDraw').onclick=()=>{setActiveEditor('muro');if(wallFinished){wallPoints=[];wallSegments=[];foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};elevationEnabled=false;topBeamArms=null;wallActive=0;wallSyncOptions();wallFinished=false;detailsPlaced=false}wallPreview=null;wallAwaitNextClick=false;wallHideMeasure();setMode('wallDraw');focusWall();status('Clique o início e o fim do trecho; confirme a medida ou digite o comprimento na caixa do CAD. F8 alterna ORTO.')};
+$('elevApply').onclick=()=>{const n=id=>Number($(id).value);if(n('elevCourse')<10||n('elevHDia')<4||n('elevVDia')<4||n('elevVSpace')<5||n('elevMid')<0||n('elevMid')>5){alert('Confira os valores de elevação.');return}elevationSettings={top:$('elevTop').checked,mid:Math.round(n('elevMid')),course:n('elevCourse'),hDia:n('elevHDia'),vDia:n('elevVDia'),vSpace:n('elevVSpace'),found:$('elevFound').checked};if(!elevationEnabled){draw();if([...steelBySheet.values()].some(rows=>rows.length))lastValidSteelBySheet=new Map([...steelBySheet].map(([id,rows])=>[id,rows.map(r=>({...r}))]));}elevationEnabled=true;$('elevationDialog').close();draw();organizeSheets(true);focusFirstElevation();status((steelRegistryFallback?'ATENÇÃO: relação de aço anterior preservada, mas pendente de recálculo. ':'')+'Elevações geradas. Conferir comprimentos, ancoragens e emendas antes do uso executivo.')};
+$('wallDraw').onclick=()=>{setActiveEditor('muro');if(wallFinished){wallPoints=[];wallSegments=[];foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;wallActive=0;wallSyncOptions();wallFinished=false;detailsPlaced=false}wallPreview=null;wallAwaitNextClick=false;wallHideMeasure();setMode('wallDraw');focusWall();status('Clique o início e o fim do trecho; confirme a medida ou digite o comprimento na caixa do CAD. F8 alterna ORTO.')};
 $('wallFinish').onclick=wallEnd;
 $('wallExact').onclick=()=>{setActiveEditor('muro');wallCommitExact();wallAwaitNextClick=true;status('Trecho exato adicionado. Mova o cursor para escolher a direção do próximo trecho ou conclua.');};
 $('wallUndo').onclick=()=>{wallPoints.pop();wallSegments.pop();wallActive=Math.max(0,wallSegments.length-1);wallSyncOptions();wallFinished=false;draw()};
@@ -1229,10 +1219,10 @@ $('wallClear').onclick=()=>{if(wallPoints.length&&!confirm('Apagar o traçado do
 $('wallFocus').onclick=focusWall;
 wallIds.forEach(id=>$(id).addEventListener('input',wallUpdateActive));
 const refreshAllDetails=()=>{foundationFreezeDefaults();const existingBlockVariants=Object.keys(foundationCounts('block')).some(c=>c!=='B1');if(existingBlockVariants)$('blockEnabled').checked=true;draw();const t=foundationCounts('pile'),b=foundationCounts('block');const codes=Object.keys(t).concat(Object.keys(b)).filter(c=>c!=='T1'&&c!=='B1');const rendered=visibleFoundationCodes();const missing=codes.filter(c=>!rendered.includes(c));const last=codes.filter(c=>rendered.includes(c)).at(-1);if(last)revealFoundationDetail(last);status((missing.length?'ATENÇÃO: desenho não gerado: '+missing.join(', ')+' | ':'')+'Detalhamentos: '+Object.entries(t).map(([k,v])=>k+' '+v+' un.').concat(Object.entries(b).map(([k,v])=>k+' '+v+' un.')).join(' | ')+' · Novos desenhos no CAD: '+rendered.join(', ')+(last?' · Exibindo '+last:''));};$('refresh').onclick=refreshAllDetails;$('refreshSteel').onclick=()=>{draw();status('V205: numeração única por prancha e tabelas atualizadas. Conferir quantitativos e comprimentos preliminares antes do uso executivo.');};$('refreshNear').onclick=refreshAllDetails;$('foundationRefresh').onclick=refreshAllDetails;
-$('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};elevationEnabled=false;topBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15};$(id).value=defaults[id]});closePanels();fit()};
+$('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3},N3:{dia:10,qty:6,lapFactor:60,bend:21}};foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15};$(id).value=defaults[id]});closePanels();fit()};
 function download(name,content,mime){let blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
-$('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,elevationEnabled,elevationSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
-$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object')for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
+$('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,elevationEnabled,elevationSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,detailScale,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
+$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object')for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
 $('exportBtn').onclick=()=>{
 const denom=Number($('printScale').value),factor=10/(denom*.78),margin=8;
 const w=scene.w*factor+2*margin,h=scene.h*factor+2*margin;
@@ -1252,7 +1242,78 @@ let sheets=[],sheetCurrent=null,sheetSeq=1;
 // A folha em milímetros de papel é convertida pela escala 1:N:
 // 1 mm no papel corresponde a N/10 cm reais.
 const sheetModelUnit=.78;
-function sheetDims(sh){let [w,h]=sheetSizes[sh.format];if(sh.orientation==='portrait')[w,h]=[h,w];const ratio=[25,50,75,100].includes(Number(sh.scale))?Number(sh.scale):50;const unit=sheetModelUnit*ratio/10;return {w:w*unit,h:h*unit,wmm:w,hmm:h,unit,ratio}}
+function sheetDims(sh){let [w,h]=sheetSizes[sh.format];if(sh.orientation==='portrait')[w,h]=[h,w];const ratio=[20,25,50,75,100].includes(Number(sh.scale))?Number(sh.scale):50;const unit=sheetModelUnit*ratio/10;return {w:w*unit,h:h*unit,wmm:w,hmm:h,unit,ratio}}
+// V231 — Organização automática do conjunto de pranchas.
+// Cada desenho (planta, tubulão, bloco, pilar, viga, elevação) é um grupo
+// independente; a organização mede o grupo, escolhe a escala da categoria e o
+// posiciona em faixas dentro da área útil da folha, sem sobreposição.
+let detailScale={};
+const unitFor=s=>sheetModelUnit*s/10;
+const SHEET_KIND_TITLES={planta:'PLANTA DE LOCAÇÃO DOS ARRIMOS',fundacoes:'FUNDAÇÕES — TUBULÕES E BLOCOS',pilares:'PILARES',vigas:'VIGAS BALDRAME E CINTAS DE TOPO',elevacoes:'ELEVAÇÕES DOS ARRIMOS',notas:'NOTAS GERAIS · DRENAGEM E IMPERMEABILIZAÇÃO'};
+const SHEET_PLAN=[
+ {kind:'planta',scales:[25,50,75,100],newSheet:true,match:c=>c==='PLANTA'},
+ {kind:'fundacoes',scales:[25,50,75],newSheet:true,match:c=>/^[TB]\d+$/.test(c)},
+ {kind:'pilares',scales:[25,50,75],newSheet:false,match:c=>/^P\d+$/.test(c)},
+ {kind:'vigas',scales:[50,75,100],newSheet:true,match:c=>/^V[BT]\d+$/.test(c)},
+ {kind:'elevacoes',scales:[50,75,100],newSheet:true,match:c=>/^EL\d+$/.test(c)}
+];
+function sceneRoot(){return svg.querySelector('[data-scene]')}
+function groupCode(g){if(!g||!g.getAttribute)return null;if(g.hasAttribute('data-wall-group'))return 'PLANTA';if(g.hasAttribute('data-tubulo-group'))return 'T1';if(g.hasAttribute('data-block-group'))return 'B1';return g.getAttribute('data-extra-code')}
+function groupVisible(g){return g.style.display!=='none'&&g.getAttribute('display')!=='none'}
+function detailGroups(root=sceneRoot()){if(!root)return [];return [...root.children].filter(g=>groupCode(g)&&groupVisible(g))}
+function findGroup(code,root){return detailGroups(root).find(g=>groupCode(g)===code)||null}
+function sceneBox(g){if(!g)return null;let bb;try{bb=g.getBBox()}catch(e){return null}if(!bb||!(bb.width>0)||!(bb.height>0))return null;const t=steelXY(g);return {x:t.x+bb.x,y:t.y+bb.y,w:bb.width,h:bb.height,cx:t.x+bb.x+bb.width/2,cy:t.y+bb.y+bb.height/2}}
+function groupOwner(g){const b=sceneBox(g);return b?steelOwner(b.cx,b.cy):null}
+function sheetIndexOf(code){const g=findGroup(code);const sh=g?groupOwner(g):null;return sh?sheets.indexOf(sh)+1:0}
+function layoutArea(format='A1',orientation='landscape'){let [w,h]=sheetSizes[format];if(orientation==='portrait')[w,h]=[h,w];const stripW=Math.min(180,w*.42),x0=28,y0=16,x1=w-10-stripW-10,y1=h-14;return {x0,y0,x1,y1,w:x1-x0,h:y1-y0}}
+function shiftGroup(code,g,dx,dy){
+ if(g.hasAttribute('data-wall-group')){wallOffset={x:wallOffset.x+dx,y:wallOffset.y+dy};return}
+ if(g.hasAttribute('data-tubulo-group')){tubuloOffset={x:tubuloOffset.x+dx,y:tubuloOffset.y+dy};return}
+ if(g.hasAttribute('data-block-group')){blockOffset={x:blockOffset.x+dx,y:blockOffset.y+dy};return}
+ const t=steelXY(g);extraDetailOffsets[code]={x:t.x+dx,y:t.y+dy};
+}
+function organizeSheets(quiet=false){
+ if(!wallFinished||wallPoints.length<2){if(!quiet)status('Conclua o lançamento do muro antes de organizar as pranchas.');return false}
+ const format='A1',orientation='landscape',area=layoutArea(format,orientation),gap=16;
+ const specs=[];let cur=null;
+ const newSpec=(kind,scale)=>{cur={kinds:[kind],scale,items:[],cx:0,cy:0,rowH:0};specs.push(cur);return cur};
+ const place=(sp,it)=>{
+  if(sp.cx>0&&sp.cx+it.w>area.w){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}
+  if(sp.items.length&&sp.cy+it.h>area.h)return false;
+  sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+sp.cy});
+  sp.cx+=it.w+gap;sp.rowH=Math.max(sp.rowH,it.h);return true;
+ };
+ for(const cat of SHEET_PLAN){
+  draw();
+  const codes=detailGroups().map(groupCode).filter(c=>cat.match(c)).sort((a,b)=>{const k=c=>/^T\d/.test(c)?0:/^B\d/.test(c)?1:/^VB/.test(c)?2:/^VT/.test(c)?3:4;return k(a)-k(b)||a.localeCompare(b,undefined,{numeric:true})});
+  if(!codes.length)continue;
+  let chosen=null;
+  for(const s of cat.scales){
+   for(const c of codes)detailScale[c]=s;
+   draw();
+   const u=unitFor(s);
+   const sized=codes.map(c=>{const b=sceneBox(findGroup(c));return b?{code:c,w:b.w/u,h:b.h/u}:null}).filter(Boolean);
+   chosen={scale:s,sized};
+   if(sized.every(i=>i.w<=area.w&&i.h<=area.h))break;
+  }
+  if(cur&&!cat.newSheet&&cur.scale===chosen.scale){cur.kinds.push(cat.kind);if(cur.items.length){cur.cx=0;cur.cy+=cur.rowH+gap;cur.rowH=0}}
+  else newSpec(cat.kind,chosen.scale);
+  for(const it of chosen.sized){if(!place(cur,it)){newSpec(cat.kind,chosen.scale);place(cur,it)}}
+ }
+ specs.push({kinds:['notas'],scale:50,items:[]});
+ let x=0;lastValidSteelBySheet=new Map();
+ sheets=specs.map((sp,i)=>{const sh={id:i+1,format,orientation,scale:sp.scale,x,y:0,done:false,kind:sp.kinds[0],kinds:[...sp.kinds],title:sp.kinds.map(k=>SHEET_KIND_TITLES[k]).join(' · ')};x+=sheetDims(sh).w+300;return sh});
+ sheetSeq=sheets.length+1;sheetCurrent=1;sheetSync();
+ draw();
+ specs.forEach((sp,i)=>{const sh=sheets[i],u=sheetDims(sh).unit;for(const it of sp.items){const g=findGroup(it.code);const b=sceneBox(g);if(!b)continue;shiftGroup(it.code,g,sh.x+it.x*u-b.x,sh.y+it.y*u-b.y)}});
+ draw();
+ if(typeof managerRefresh==='function')managerRefresh();
+ fitSheets();
+ if(!quiet)status(`Pranchas organizadas: ${sheets.length} folhas A1 (${sheets.map(s=>String(s.id).padStart(2,'0')+' '+(SHEET_KIND_TITLES[s.kind]||'').split(' ')[0]).join(' · ')}). Arraste qualquer desenho para ajustes finos; o botão refaz a organização.`);
+ return true;
+}
+function fitSheets(){if(!sheets.length){fit();return}const w=cad.clientWidth,h=cad.clientHeight;const x0=Math.min(...sheets.map(s=>s.x)),y0=Math.min(...sheets.map(s=>s.y))-30,x1=Math.max(...sheets.map(s=>s.x+sheetDims(s).w)),y1=Math.max(...sheets.map(s=>s.y+sheetDims(s).h));view.k=clamp(Math.min((w-60)/(x1-x0),(h-60)/(y1-y0)),.01,2);view.x=(w-(x1-x0)*view.k)/2-x0*view.k;view.y=(h-(y1-y0)*view.k)/2-y0*view.k;draw()}
+$('organizeSheets').onclick=()=>organizeSheets();
 // V205: cadastro único por folha. Coleta armaduras explicitamente anotadas nos desenhos.
 // Quantidades e comprimentos de corte permanecem PRELIMINARES até conferência técnica.
 let steelBySheet=new Map();
@@ -1315,7 +1376,7 @@ function buildSteelRegistry(sceneG){
   // Referência próxima à geometria principal do detalhamento, não ao texto/cota.
   const ax=xy.x+(src.kind==='block'&&src.code==='B1'?650:src.kind==='pile'?145:src.kind==='beam'?70:src.kind==='elevation'?80:300);
   const ay=xy.y+(src.kind==='beam'?150:src.kind==='block'?145:src.kind==='pile'?140:src.kind==='elevation'?140:160);
-  const sh=steelOwner(ax,ay);if(!sh)continue;
+  const sh=groupOwner(src.g)||steelOwner(ax,ay);if(!sh)continue;
   if(!signatures.has(sh.id))signatures.set(sh.id,new Map());
   const local=signatures.get(sh.id),rows=steelBySheet.get(sh.id);
   const textNodes=[...src.g.querySelectorAll('text')];
@@ -1346,7 +1407,7 @@ function buildSteelRegistry(sceneG){
    const course=Math.max(10,Number(elevationSettings.course)||20),space=Math.max(5,Number(elevationSettings.vSpace)||20);
    const nHorizontal=Math.max(1,Math.floor(h/course)),nVertical=Math.max(1,Math.floor(L/space)+1);
    const code='EL'+(i+1),grp=sceneG.querySelector('[data-extra-code="'+code+'"]');if(!grp)continue;
-   const xy=steelXY(grp),sh=steelOwner(xy.x+80,xy.y+140);if(!sh)continue;
+   const sh=groupOwner(grp);if(!sh)continue;
    const rows=steelBySheet.get(sh.id);if(!rows)continue;
    const defs=[{dia:Number(elevationSettings.hDia)||8,len:Math.max(1,L-6),qty:nHorizontal,shape:'reta',old:'N1'},
                {dia:Number(elevationSettings.vDia)||8,len:Math.max(1,h+bh-6),qty:nVertical,shape:'reta',old:'N2'}];
@@ -1368,10 +1429,7 @@ function buildSteelRegistry(sceneG){
  if(freshCount>0){
   // A regeneração não deve zerar uma prancha que já possuía aço.
   // Dados antigos mantidos nessa condição são explicitamente sinalizados.
-  for(const sh of sheets){
-   const rows=steelBySheet.get(sh.id)||[],old=previousValid.get(sh.id)||[];
-   if(!rows.length&&old.length){steelBySheet.set(sh.id,old.map(r=>({...r})));steelRegistryFallback=true;}
-  }
+  // Folhas sem armaduras (planta, notas) são legítimas: não restaurar dados antigos nelas.
   lastValidSteelBySheet=new Map([...steelBySheet].map(([id,rows])=>[id,rows.map(r=>({...r}))]));
  }else if(previousValid.size && [...previousValid.values()].some(rows=>rows.length)){
   steelRegistryFallback=true;
@@ -1399,7 +1457,7 @@ function stampContents(sceneG,sh){
   if(kind==='pile'&&!(foundationCounts('pile')[code]||0))continue;
   if(kind==='block'&&!(foundationCounts('block')[code]||0))continue;
   const xy=steelXY(group),ax=xy.x+(kind==='block'&&code==='B1'?650:kind==='pile'?145:kind==='beam'?70:300),ay=xy.y+(kind==='beam'?150:kind==='block'?145:kind==='pile'?140:160);
-  if(steelOwner(ax,ay)?.id===sh.id&&!codes[kind].includes(code))codes[kind].push(code);
+  if((groupOwner(group)||steelOwner(ax,ay))?.id===sh.id&&!codes[kind].includes(code))codes[kind].push(code);
  }
  for(const [kind,label] of [['pile','TUBULÕES'],['block','BLOCOS'],['pillar','PILARES'],['beam','VIGAS'],['elevation','ELEVAÇÕES']])if(codes[kind].length)results.push('DETALHAMENTO '+label+' '+codes[kind].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).join(', '));
  return results.length?results:['CONTEÚDO A DEFINIR'];
@@ -1444,64 +1502,109 @@ function drawEngenharStamp(g,sh,d,x,y,w,h,u){
  txt('DATA: '+(stampData.date||''),X(147),Y(65),1.75);
  txt('FOLHA: '+String(sheets.indexOf(sh)+1).padStart(2,'0')+'/'+String(sheets.length).padStart(2,'0'),X(147),Y(68.5),1.8);
 }
+function sheetBox(g,x,y,w,h,title,u,stroke='#8fb6c9'){
+ el('rect',{x,y,width:w,height:Math.max(0,h),fill:'none',stroke,'stroke-width':1.2,'pointer-events':'none'},g);
+ if(title){const t=el('text',{x:x+4*u,y:y+7*u,fill:'#7ce3fa','font-size':3.5*u,'font-weight':'bold','pointer-events':'none','data-pt':'1'},g);t.textContent=title}
+}
+function sheetText(g,x,y,str,u,mm=2.3,attrs={}){const t=el('text',{x,y,fill:'#e5edf5','font-size':mm*u,'pointer-events':'none','data-pt':'1',...attrs},g);t.textContent=String(str);return t}
+// Relação de aço da folha. Retorna a altura ocupada (unidades CAD).
+function drawSteelTable(g,x,y,w,rows,u,title,maxH){
+ const rowH=6*u,top=y+11*u,headH=8*u;
+ const fitRows=Math.max(0,Math.floor((maxH-11*u-headH-3*u)/rowH));
+ const shown=rows.slice(0,fitRows),h=11*u+headH+shown.length*rowH+3*u+(rows.length>shown.length?6*u:0);
+ sheetBox(g,x,y,w,h,title,u);
+ const cols=[0,13,29,53,79,112].map(v=>x+v/112*w);
+ for(const xx of cols.slice(1,-1))el('line',{x1:xx,y1:top,x2:xx,y2:top+headH+shown.length*rowH,stroke:'#8198a8','stroke-width':.6,'pointer-events':'none'},g);
+ el('line',{x1:x,x2:x+w,y1:top,y2:top,stroke:'#8198a8','stroke-width':.6,'pointer-events':'none'},g);
+ ['N','Ø (mm)','QTD','UNIT. (cm)','TOTAL (m)'].forEach((v,j)=>sheetText(g,(cols[j]+cols[j+1])/2,top+5.6*u,v,u,2.3,{'text-anchor':'middle',fill:'#7ce3fa'}));
+ shown.forEach((r,i)=>{const yy=top+headH+i*rowH;el('line',{x1:x,x2:x+w,y1:yy,y2:yy,stroke:'#8198a8','stroke-width':.5,'pointer-events':'none'},g);
+  [r.pos.replace('N',''),steelNumber(r.dia,1),String(r.qty),steelNumber(r.len,0),steelNumber(r.qty*r.len/100)].forEach((v,j)=>sheetText(g,(cols[j]+cols[j+1])/2,yy+4.3*u,v,u,2.3,{'text-anchor':'middle'}))});
+ if(rows.length>shown.length)sheetText(g,x+4*u,y+h-3*u,`+${rows.length-shown.length} POSIÇÕES NÃO EXIBIDAS — USE FOLHA MAIOR OU DIVIDA OS DETALHES`,u,2.1,{fill:'#ff8a8a'});
+ return h;
+}
+function steelSummaryRows(rows){const summary=new Map();for(const r of rows){const steel=r.dia<=5?'CA60':'CA50',key=steel+'|'+r.dia;const e=summary.get(key)||{steel,dia:r.dia,meters:0};e.meters+=r.qty*r.len/100;summary.set(key,e)}return [...summary.values()].sort((a,b)=>a.steel.localeCompare(b.steel)||a.dia-b.dia)}
+function steelSummaryHeight(rows,u){return (24+Math.max(1,steelSummaryRows(rows).length)*6+8)*u}
+function drawSteelSummary(g,x,y,w,rows,u,title){
+ const sum=steelSummaryRows(rows),h=steelSummaryHeight(rows,u);
+ sheetBox(g,x,y,w,h,title,u);
+ const c=[x+4*u,x+w*.22,x+w*.42,x+w*.64,x+w*.84];
+ ['AÇO','Ø (mm)','COMPR. (m)','PESO (kg)','BARRAS 12 m'].forEach((v,j)=>sheetText(g,c[j],y+16*u,v,u,2.2,{fill:'#7ce3fa'}));
+ const weights={CA50:0,CA60:0};
+ if(!sum.length)sheetText(g,x+4*u,y+23*u,'Sem armaduras nesta prancha',u,2.4,{fill:'#a7b7c4'});
+ sum.forEach((r,i)=>{const kg=r.meters*r.dia*r.dia*.006165;weights[r.steel]+=kg;[r.steel,steelNumber(r.dia,1),steelNumber(r.meters,1),steelNumber(kg*1.1,1),String(Math.ceil(r.meters*1.1/12))].forEach((v,j)=>sheetText(g,c[j],y+(23+i*6)*u,v,u,2.3))});
+ sheetText(g,x+4*u,y+h-4*u,`PESO TOTAL (+10%): CA50 ${steelNumber(weights.CA50*1.1,1)} kg · CA60 ${steelNumber(weights.CA60*1.1,1)} kg`,u,2.3,{fill:'#f5cb69'});
+ return h;
+}
+function drawSheetIndex(g,x,y,w,u){
+ const rowH=5.6*u,h=(15+sheets.length*5.6+4)*u;
+ sheetBox(g,x,y,w,h,'ÍNDICE DE PRANCHAS',u);
+ sheets.forEach((sh,i)=>{const yy=y+(17+i*5.6)*u;sheetText(g,x+4*u,yy,String(i+1).padStart(2,'0'),u,2.4,{'font-weight':'bold'});sheetText(g,x+14*u,yy,(sh.title||'PRANCHA '+String(sh.id).padStart(2,'0')).slice(0,62),u,2.2);sheetText(g,x+w-4*u,yy,'1:'+sheetDims(sh).ratio,u,2.2,{'text-anchor':'end'})});
+ return h;
+}
+function drawFoundationTable(g,x,y,w,u){
+ const pile=Object.entries(foundationCounts('pile')).filter(([,n])=>n>0),block=$('blockEnabled').checked?Object.entries(foundationCounts('block')).filter(([,n])=>n>0):[];
+ const rows=[...pile.map(([c,n])=>{const v=foundationValues('pile',c);return [c,n,`TUBULÃO Ø${v.shaft} · BASE Ø${v.base} · PROF. ${v.depth} cm`]}),...block.map(([c,n])=>{const v=foundationValues('block',c);return [c,n,`BLOCO ${v.blockX}×${v.blockY}×${v.blockH} cm`]})];
+ const h=(21+Math.max(1,rows.length)*5.6+4)*u;
+ sheetBox(g,x,y,w,h,'QUADRO DE FUNDAÇÕES',u);
+ ['TIPO','QTD','CARACTERÍSTICAS (cm)'].forEach((v,j)=>sheetText(g,x+[4,22,38][j]*u,y+15*u,v,u,2.2,{fill:'#7ce3fa'}));
+ rows.forEach((r,i)=>{const yy=y+(21+i*5.6)*u;sheetText(g,x+4*u,yy,r[0],u,2.4,{'font-weight':'bold'});sheetText(g,x+22*u,yy,String(r[1]),u,2.3);sheetText(g,x+38*u,yy,r[2],u,2.2)});
+ return h;
+}
+function drawNotesSheet(g,d,u,stripX){
+ // Folha de notas: coluna de notas gerais e, ao lado, o detalhe de impermeabilização e drenagem.
+ const x0=28*u,y0=16*u,x1=stripX-10*u,y1=d.h-14*u;
+ const colW=(x1-x0-12*u)*.48;
+ sheetBox(g,x0,y0,colW,y1-y0,'NOTAS GERAIS',u);
+ const selected=technicalNoteSelection.map(i=>TECHNICAL_NOTES[i]).filter(Boolean);
+ const font=3.0,lineH=5.2*u,maxChars=Math.max(20,Math.floor((colW-10*u)/(font*u*.55)));
+ let yy=y0+17*u,group='';
+ selected.forEach(([grp,msg],i)=>{
+  if(grp!==group){group=grp;yy+=2*u;sheetText(g,x0+5*u,yy,grp.toUpperCase(),u,3.2,{fill:'#f5cb69','font-weight':'bold'});yy+=lineH}
+  notesWrap(`${String(i+1).padStart(2,'0')}. ${noteText(msg)}`,maxChars).forEach(t=>{if(yy<y1-4*u)sheetText(g,x0+5*u,yy,t,u,font,{fill:/\[VALOR\]/.test(t)?'#ff8a8a':'#dbe7ef'});yy+=lineH});
+ });
+ if(technicalDiagram){const dx=x0+colW+12*u,dw=x1-dx,dh=Math.min(y1-y0,dw*.95);drawWaterproofDetail(g,dx,y0,dw,dh,u)}
+}
+function noteText(msg){return msg}
+function drawWaterproofDetail(g,x,y,w,h,u){
+ sheetBox(g,x,y,w,h,'DETALHE — IMPERMEABILIZAÇÃO E DRENAGEM DO TARDOZ',u);
+ el('image',{x:x+3*u,y:y+11*u,width:w-6*u,height:h-14*u,preserveAspectRatio:'xMidYMid meet',href:ENGENHAR_WATERPROOF_IMAGE,'pointer-events':'none'},g);
+}
 function sheetDraw(sceneG){
+  const hasNotesSheet=sheets.some(s=>s.kind==='notas');
   sheets.forEach(sh=>{
     const d=sheetDims(sh),g=el('g',{'data-sheet-id':sh.id,transform:`translate(${sh.x} ${sh.y})`},sceneG);
     // Folha sem preenchimento para não cobrir desenhos ou bloquear seus arrastes.
     el('rect',{x:0,y:0,width:d.w,height:d.h,fill:'none',stroke:sh.id===sheetCurrent?'#7ce3fa':'#e6edf4','stroke-width':2,'data-sheet-frame':sh.id},g);
-    el('rect',{x:20*d.unit,y:10*d.unit,width:d.w-30*d.unit,height:d.h-20*d.unit,fill:'none',stroke:'#a7b7c4','stroke-width':.9,'stroke-dasharray':'4 3','pointer-events':'none'},g);
+    el('rect',{x:20*d.unit,y:10*d.unit,width:d.w-30*d.unit,height:d.h-20*d.unit,fill:'none',stroke:'#a7b7c4','stroke-width':.9,'pointer-events':'none','data-layer':'carimbo'},g);
     // faixa superior serve como alça independente de movimentação da folha.
     el('rect',{x:0,y:-25,width:d.w,height:23,fill:sh.done?'#3b7767':'#335d78',stroke:'#8fb6c9','stroke-width':.7,'data-sheet-frame':sh.id,'data-sheet-header':sh.id,style:'cursor:pointer'},g);
-    const t=el('text',{x:8,y:-9,fill:'#fff','font-size':12,'font-weight':'bold','pointer-events':'none'},g);
-    t.textContent=`PRANCHA ${String(sh.id).padStart(2,'0')} · ${sh.format} · ${d.wmm}×${d.hmm} mm · 1:${d.ratio}${sh.done?' · CONCLUÍDA':''}`;
-    // V203: faixa técnica fixa, dimensionada em milímetros de papel, independente do zoom.
-    const unit=d.unit, margin=10*unit, right=10*unit;
+    const t=el('text',{x:8,y:-9,fill:'#fff','font-size':12,'font-weight':'bold','pointer-events':'none','data-sheet-header':sh.id},g);
+    t.textContent=`PRANCHA ${String(sheets.indexOf(sh)+1).padStart(2,'0')} · ${sh.format} · ${d.wmm}×${d.hmm} mm · 1:${d.ratio}${sh.title?' · '+sh.title:''}${sh.done?' · CONCLUÍDA':''}`;
+    // Faixa técnica à direita, em milímetros de papel: tabelas empilhadas acima do carimbo.
+    const unit=d.unit,margin=10*unit,right=10*unit;
     const stripW=Math.min(180*unit,d.w*.42),stripX=d.w-right-stripW;
     const stampH=Math.min(70*unit,d.h*.23),stampY=d.h-margin-stampH;
-    const sumH=Math.min(72*unit,d.h*.23),sumY=stampY-sumH-4*unit;
-    const notesY=margin,notesBottom=sumY-4*unit;
-    const box=(x,y,w,h,title,stroke='#8fb6c9')=>{
-      el('rect',{x,y,width:w,height:Math.max(0,h),fill:'none',stroke,'stroke-width':1.2,'pointer-events':'none'},g);
-      const t=el('text',{x:x+4*unit,y:y+7*unit,fill:'#7ce3fa','font-size':Math.max(9,3.7*unit),'font-weight':'bold','pointer-events':'none'},g);t.textContent=title;
-    };
-    box(stripX,notesY,stripW,notesBottom-notesY,'NOTAS EXECUTIVAS');
-    drawTechnicalNotes(g,stripX,notesY,stripW,notesBottom-notesY,unit);
-    box(stripX,sumY,stripW,sumH,steelRegistryFallback?'RESUMO DE AÇO · CONFERIR':'RESUMO DE AÇO');
-    drawEngenharStamp(g,sh,d,stripX,stampY,stripW,stampH,unit);
-    // A relação de aço é estreita e só ocupa a altura necessária; não reserva uma coluna inteira.
-    // Identificação de peças representadas em detalhes VB desta prancha.
+    let cursor=stampY-4*unit;const top=margin;
     const rows=sheetSteelRows(sh);
-    if(rows.length){
-      const relW=Math.min(112*unit,Math.max(60*unit,stripX-margin*2));
-      const relX=stripX-4*unit-relW, rowH=6*unit;
-      const relH=Math.min(d.h-2*margin,(Math.max(rows.length,1)+3)*rowH+7*unit);
-      box(relX,margin,relW,relH,rows.length?(steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO'):'RELAÇÃO DE AÇO · SEM DADOS');
-      const cols=[0,13,29,53,79,112].map(v=>relX+v/112*relW);
-      const top=margin+11*unit,headH=13*unit;
-      for(const xx of cols.slice(1,-1))el('line',{x1:xx,y1:top,x2:xx,y2:Math.min(margin+relH,top+headH+rows.length*rowH),stroke:'#8198a8','stroke-width':.6,'pointer-events':'none'},g);
-      const header=['N','Ø','QTD','UNIT. cm','TOTAL m'];
-      header.forEach((v,j)=>{const t=el('text',{x:(cols[j]+cols[j+1])/2,y:top+8*unit,fill:'#dce9f5','font-size':Math.max(6,2.35*unit),'text-anchor':'middle','pointer-events':'none'},g);t.textContent=v});
-      rows.slice(0,Math.max(0,Math.floor((relH-24*unit)/rowH))).forEach((r,i)=>{
-       const y=top+headH+i*rowH;
-       el('line',{x1:relX,x2:relX+relW,y1:y,y2:y,stroke:'#8198a8','stroke-width':.5,'pointer-events':'none'},g);
-       const vals=[r.pos.replace('N',''),steelNumber(r.dia,1),String(r.qty),steelNumber(r.len),steelNumber(r.qty*r.len/100)];
-       vals.forEach((v,j)=>{const t=el('text',{x:(cols[j]+cols[j+1])/2,y:y+4.4*unit,fill:'#e5edf5','font-size':Math.max(6,2.3*unit),'text-anchor':'middle','pointer-events':'none'},g);t.textContent=v});
-      });
-      const summary=new Map();for(const r of rows){const dia=r.dia,meters=r.qty*r.len/100,steel=dia<=5?'CA60':'CA50';const key=steel+'|'+dia;const entry=summary.get(key)||{steel,dia,meters:0};entry.meters+=meters;summary.set(key,entry)}
-      const sumRows=[...summary.values()].sort((a,b)=>a.steel.localeCompare(b.steel)||a.dia-b.dia);
-      const c=[stripX+3*unit,stripX+stripW*.25,stripX+stripW*.48,stripX+stripW*.73];
-      ['AÇO','Ø','C.TOTAL','+10% /12m'].forEach((v,j)=>{const t=el('text',{x:c[j],y:sumY+16*unit,fill:'#7ce3fa','font-size':Math.max(6,2.25*unit),'pointer-events':'none'},g);t.textContent=v});
-      const weights={CA50:0,CA60:0};
-      sumRows.forEach((r,i)=>{weights[r.steel]+=r.meters*r.dia*r.dia*.006165;if(i>=6)return;const vals=[r.steel,steelNumber(r.dia,1),steelNumber(r.meters,1),String(Math.ceil(r.meters*1.1/12))];vals.forEach((v,j)=>{const t=el('text',{x:c[j],y:sumY+(23+i*6)*unit,fill:'#e5edf5','font-size':Math.max(6,2.2*unit),'pointer-events':'none'},g);t.textContent=v})});
-      const foot=el('text',{x:stripX+4*unit,y:sumY+sumH-5*unit,fill:'#f5cb69','font-size':Math.max(7,2.2*unit),'pointer-events':'none'},g);
-      foot.textContent=`PESO CA50 ${steelNumber(weights.CA50,1)} kg  ·  CA60 ${steelNumber(weights.CA60,1)} kg`;
+    const stack=(h,fn)=>{const hh=Math.min(h,cursor-top);if(hh<=12*unit)return;cursor-=hh;fn(cursor,hh);cursor-=4*unit};
+    if(sh.kind==='notas'){
+      const all=[...steelBySheet.values()].flat();
+      stack(steelSummaryHeight(all,unit),yy=>drawSteelSummary(g,stripX,yy,stripW,all,unit,steelRegistryFallback?'RESUMO GERAL DE AÇO · CONFERIR':'RESUMO GERAL DE AÇO'));
+      stack((15+sheets.length*5.6+4)*unit,yy=>drawSheetIndex(g,stripX,yy,stripW,unit));
+      drawNotesSheet(g,d,unit,stripX);
+    }else if(sh.kind==='planta'){
+      const ft=(21+Math.max(1,Object.keys(foundationCounts('pile')).length+($('blockEnabled').checked?Object.keys(foundationCounts('block')).length:0))*5.6+4)*unit;
+      stack(ft,yy=>drawFoundationTable(g,stripX,yy,stripW,unit));
+      stack((15+sheets.length*5.6+4)*unit,yy=>drawSheetIndex(g,stripX,yy,stripW,unit));
+      if(rows.length)stack(steelSummaryHeight(rows,unit),yy=>drawSteelSummary(g,stripX,yy,stripW,rows,unit,'RESUMO DE AÇO'));
     }else{
-      const empty=el('text',{x:stripX+4*unit,y:sumY+18*unit,fill:'#a7b7c4','font-size':Math.max(8,2.6*unit),'pointer-events':'none'},g);
-      empty.textContent='Sem armaduras nesta prancha';
-      const relW=Math.min(112*unit,Math.max(60*unit,stripX-margin*2));
-      box(stripX-4*unit-relW,margin,relW,25*unit,'RELAÇÃO DE AÇO · SEM ITENS');
+      stack(steelSummaryHeight(rows,unit),yy=>drawSteelSummary(g,stripX,yy,stripW,rows,unit,steelRegistryFallback?'RESUMO DE AÇO · CONFERIR':'RESUMO DE AÇO'));
+      const want=(11+8+Math.max(1,rows.length)*6+4)*unit;
+      const avail=hasNotesSheet?cursor-top:Math.min(cursor-top,Math.max(want,(cursor-top)*.45));
+      if(rows.length){const relH=Math.min(want,avail);cursor-=relH;drawSteelTable(g,stripX,cursor,stripW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',relH);cursor-=4*unit}
+      if(!hasNotesSheet&&cursor-top>40*unit){sheetBox(g,stripX,top,stripW,cursor-top,'NOTAS EXECUTIVAS',unit);drawTechnicalNotes(g,stripX,top,stripW,cursor-top,unit)}
     }
-
+    drawEngenharStamp(g,sh,d,stripX,stampY,stripW,stampH,unit);
   });
   // Molduras abaixo dos detalhamentos para não interceptar clique nas armaduras.
   sheets.forEach(sh=>{const n=sceneG.querySelector(`[data-sheet-id="${sh.id}"]`);if(n)sceneG.insertBefore(n,sceneG.firstChild)});
@@ -1555,7 +1658,7 @@ if(!sheets.length){sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:
 new ResizeObserver(()=>{if(!initialized){initialized=true;draw();fit()}else draw()}).observe(cad);
 
 // V225 — Editor lateral de pranchas, visualização e saídas independentes.
-function managerSheetLabel(sh){const d=sheetDims(sh);return `Prancha ${String(sh.id).padStart(2,'0')} · ${sh.format} ${sh.orientation==='portrait'?'vertical':'horizontal'} · ${d.wmm}×${d.hmm} mm · 1:${d.ratio}`;}
+function managerSheetLabel(sh){const d=sheetDims(sh);return `Prancha ${String(sheets.indexOf(sh)+1).padStart(2,'0')}${sh.title?' — '+sh.title:''} · ${sh.format} ${sh.orientation==='portrait'?'vertical':'horizontal'} · ${d.wmm}×${d.hmm} mm · 1:${d.ratio}`;}
 function managerFocus(sh){sheetCurrent=sh.id;sheetSync();const d=sheetDims(sh),cw=cad.clientWidth,ch=cad.clientHeight;view.k=Math.max(.07,Math.min(2,(cw-85)/d.w,(ch-85)/d.h));view.x=cw/2-(sh.x+d.w/2)*view.k;view.y=ch/2-(sh.y+d.h/2)*view.k;draw();}
 function managerOpen(){sheetSync();managerRefresh();const dlg=$('sheetManager');if(!dlg.open)dlg.showModal();}
 function managerRefresh(){
