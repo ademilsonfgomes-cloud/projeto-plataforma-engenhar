@@ -682,6 +682,8 @@ function encWeb(C,Wb,gap){const h=Math.round((C.h-2*C.t-2*gap)*10)/10,b=Wb.b,c=W
   const base={h,b,c,t,kgm};return {...base,base,w:h,h:b,enc:true,kgm,label:`Ue ${String(h).replace('.',',')}x${b}x${c}x${t.toFixed(2).replace('.',',')} (sob medida)`};}
 const FU_CF=36,FY_CF=25;   // aço de perfil formado a frio (ex.: ZAR 250): fu 360 MPa, fy 250 MPa
 // solda longitudinal em chapa fina, NBR 14762: por linha de solda de comprimento L (mm) em chapa t (mm), kN
+// solda transversal em chapa fina (NBR 14762): t·L·fu/1,65
+const wTr=(t,L)=>L<=0?0:t*L*FU_CF*10/1.65/1000;
 const wThin=(t,L)=>L<=0?0:(L/t<25?(1-.01*L/t):.75)*t*L*FU_CF*10/1.65/1000;
 const nf1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 
@@ -1077,7 +1079,7 @@ function hull(P){const p=P.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]),cr=(o,a,b)=
   for(const q of p.reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q);}lo.pop();up.pop();return lo.concat(up);}
 // nó com encaixe: banzo Ue com a alma fora do plano e as abas para dentro da treliça; a peça entra entre as abas e é soldada na borda das abas
 function encNode(nd,ch,wb,top,d,n,hC,opt){
-  const P=nd.p,base=ch[0].m.prof.base||ch[0].m.prof,tc=base.t,c=10,lim=hC/2,nEnd=-hC/2+tc+3;
+  const P=nd.p,base=ch[0].m.prof.base||ch[0].m.prof,tc=base.t,c=10,lim=hC/2,nEnd=-hC/2+tc;
   const webs=wb.map(w=>{const q=[-w.u[1],w.u[0]],un=Math.max(v2.dot(w.u,n),.15),qn=v2.dot(q,n),W=w.m.prof.h,cs=Math.abs(v2.dot(w.u,d));
     const ang=Math.round(Math.acos(Math.min(1,cs))*180/Math.PI),o={m:w.m,u:w.u,q,qn,un,ud:v2.dot(w.u,d),qd:v2.dot(q,d),W,ang,tw:(w.m.prof.base||w.m.prof).t||2,sh:0};
     o.F=opt.force(o,nd);o.tAt=(sg,nu)=>(nu-sg*(W/2)*qn)/un;return o;});
@@ -1088,9 +1090,9 @@ function encNode(nd,ch,wb,top,d,n,hC,opt){
   if(webs.length>1){const all=webs.map(w=>foot(w,w.sh)),cen=(Math.min(...all.map(f=>f[0]))+Math.max(...all.map(f=>f[1])))/2,cen0=webs.reduce((a,w)=>{const f=foot(w,0);return a+(f[0]+f[1])/2;},0)/webs.length;
     webs.forEach(w=>w.sh=Math.round((w.sh-(cen-cen0))/5)*5);}
   const alerts=[];
-  webs.forEach(w=>{w.Lc=Math.round(Math.abs(dAt(w,w.sh,1,lim)-dAt(w,w.sh,-1,lim)));const tm=Math.min(tc,w.tw);w.cap=2*wThin(tm,w.Lc);w.u2=w.F/Math.max(w.cap,1e-6);
+  webs.forEach(w=>{w.Lc=Math.round(Math.abs(dAt(w,w.sh,1,lim)-dAt(w,w.sh,-1,lim)));const tm=Math.min(tc,w.tw);w.Lt=Math.round((w.m.prof.base||w.m.prof).h);w.cap=2*wThin(tm,w.Lc)+wTr(tm,w.Lt);w.u2=w.F/Math.max(w.cap,1e-6);
     w.e=Math.round(w.tAt(0,nEnd));
-    if(w.u2>1)alerts.push(`${w.m.mark}: solda na borda das abas (2 x ${w.Lc} mm) não resiste a ${nf1.format(w.F)} kN (${nf0.format(w.u2*100)}%); completar com solda nas quinas da peça ou chapa de nó.`);
+    if(w.u2>1)alerts.push(`${w.m.mark}: solda completa (2 x ${w.Lc} mm nas abas + ${w.Lt} mm na alma do banzo) não resiste a ${nf1.format(w.F)} kN (${nf0.format(w.u2*100)}%); completar com solda nas quinas da peça ou chapa de nó.`);
     if(Math.abs(w.sh)>hC)alerts.push(`${w.m.mark}: excentricidade de ${Math.abs(w.sh)} mm no nó; considerar no cálculo.`);
     if(/DG/.test(w.m.type)&&Math.min(w.ang,180-w.ang)<25)alerts.push(`Diagonal ${w.m.mark} a ${w.ang}° do banzo, muito abatida (recomendado ≥ 30°).`);});
   const fs=webs.map(w=>foot(w,w.sh)),rec=webs.length?{a:Math.floor(Math.min(...fs.map(f=>f[0]))-10),b:Math.ceil(Math.max(...fs.map(f=>f[1]))+10)}:null;
@@ -1192,7 +1194,7 @@ function detailSteel(S,G){
     D.pre.push({item:'Emenda de campo do banzo (parafusos)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(nb*FvRd)} kN`,u:N/(nb*FvRd),obs:enc?`${nb} parafusos ø16 por lado atravessando o banzo, com talas externas nas duas abas; corte duplo e esmagamento das abas de ${nf1.format(T.Bz.t)} mm (${nf1.format(Rb)} kN por parafuso)`:ue?`${nb} parafusos ø16 por lado, com tala; limitado pelo esmagamento da alma de ${nf1.format(T.Bz.t)} mm (${nf1.format(Rb)} kN por parafuso)`:`${nb} parafusos A325 ø16 na metade direita, corte duplo`});
     let web=null;sets.forEach(s=>s.rep.webs.forEach(w=>{if(!web||(ue?w.u2>web.u2:w.F>web.F))web=w;}));
     if(web&&enc){const ex=Math.max(0,...sets.flatMap(s=>s.rep.webs.map(w=>Math.abs(w.sh||0))));if(ex>0)D.notesUe=`Maior excentricidade de nó: ${ex} mm (peças lado a lado dentro do banzo); considerar no cálculo do banzo.`;
-      D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`2 x ${web.Lc} mm na borda das abas do banzo, chapa fina (NBR 14762)`});
+      D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`solda completa: 2 x ${web.Lc} mm na borda das abas + ${web.Lt} mm da ponta da peça na alma do banzo, chapa fina (NBR 14762)`});
       const Al=T.Al;D.fit=`Montantes e diagonais dobrados sob medida: ${Al.label}, para o vão interno de ${nf1.format(T.Bz.base.h-2*T.Bz.t)} mm do banzo (folga de ${nf1.format(+G.fEnc||1)} mm por lado).`;}
     else if(web&&ue){const ex=Math.max(0,...sets.flatMap(s=>s.rep.webs.map(w=>Math.abs(w.sh||0))));if(ex>0)D.notesUe=`Maior excentricidade de nó: ${ex} mm (peças lado a lado na alma do banzo); considerar no cálculo do banzo.`;
       D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`${web.L1} + ${web.L2} mm de solda nas quinas, chapa fina (NBR 14762)`});}
@@ -1269,6 +1271,7 @@ function encDraw(sd,o,s,ns,ts){
     const e1=pt(1,o.nEnd),e2=pt(-1,o.nEnd),Lout=Math.max(w.tAt(1,h),w.tAt(-1,h))+140,f1=v2.add(O,v2.add(v2.mul(w.u,Lout),v2.mul(q,hw))),f2=v2.add(O,v2.add(v2.mul(w.u,Lout),v2.mul(q,-hw)));
     sd.L(e1[0],e1[1],f1[0],f1[1],'ACO');sd.L(e2[0],e2[1],f2[0],f2[1],'ACO');sd.L(e1[0],e1[1],e2[0],e2[1],'ACO');
     const ax=v2.add(O,v2.mul(w.u,Lout));sd.L(O[0],O[1],ax[0],ax[1],'EIXO');
+    {const eo=v2.mul(nn,2.5);sd.L(e1[0],e1[1],e2[0],e2[1],'CHAPA');sd.L(e1[0]+eo[0],e1[1]+eo[1],e2[0]+eo[0],e2[1]+eo[1],'CHAPA');}
     const w1=pt(1,h),w2=pt(-1,h);sd.L(w1[0],w1[1],w2[0],w2[1],'CHAPA');const wo=v2.mul(nn,2.5);sd.L(w1[0]+wo[0],w1[1]+wo[1],w2[0]+wo[0],w2[1]+wo[1],'CHAPA');
     const wm=v2.add(v2.mul(v2.add(w1,w2),.5),v2.mul(nn,ts*.9));sd.T(wm[0],wm[1],`▲ ${w.Lc} (2 lados)`,'COTA',{an:'middle',h:ts*.6});
     if(Math.abs(w.sh)>0)sd.D(0,0,O[0],O[1],-(h+ts*(o.tala?6.4:3.2))*(v2.dot([-O[1],O[0]],nn)>0?1:-1),`exc. ${Math.abs(w.sh)}`);
@@ -1278,8 +1281,8 @@ function encDraw(sd,o,s,ns,ts){
     const xs=o.bolts.map(b=>Math.round(v2.dot(v2.sub(b,o.p),D))).sort((a,b)=>a-b),pp=xs.map(x=>v2.add(v2.mul(D,x),v2.mul(nn,-o.tala.H/2)));
     for(let k=0;k<pp.length-1;k++)sd.D(pp[k][0],pp[k][1],pp[k+1][0],pp[k+1][1],-ts*2.8);sd.D(pts[0][0],pts[0][1],pts[1][0],pts[1][1],-ts*4.4,String(o.tala.L));}
   const bb=sd.bbox(),inner=bp.h-2*bp.t,lines=[`Banzo ${bp.label} com a alma por fora (perpendicular ao plano da tesoura) e as abas para dentro; vão interno de ${nf1.format(inner)} mm.`,
-    `Montantes e diagonais ${o.webs[0]?o.webs[0].m.prof.label:''} encaixados entre as abas até ${nf1.format(bp.t+3)} mm da alma do banzo; ponta cortada paralela ao banzo.`,
-    `Solda de filete na borda das duas abas do banzo, onde a peça entra: ${o.webs.map(w=>`${w.m.mark} 2 x ${w.Lc} mm`).join(', ')}.`,
+    `Montantes e diagonais ${o.webs[0]?o.webs[0].m.prof.label:''} encaixados entre as abas, com a ponta cortada paralela ao banzo e encostada na alma do banzo.`,
+    `SOLDA COMPLETA (filete, E70XX): na borda das duas abas do banzo e na ponta da peça contra a alma do banzo: ${o.webs.map(w=>`${w.m.mark} 2 x ${w.Lc} + ${w.Lt} mm`).join(', ')}.`,
     o.rec?`Recortar os enrijecedores do banzo em ${o.rec.b-o.rec.a} mm no trecho do nó para a peça entrar.`:'',
     o.webs.some(w=>w.sh)?`Nó excêntrico: peças lado a lado dentro do banzo com 10 mm de folga; excentricidades de ${o.webs.map(w=>`${w.m.mark} ${w.sh>0?'+':''}${w.sh}`).join(', ')} mm.`:'Eixos concorrentes no nó.'].filter(Boolean);
   if(o.tala)lines.push(`EMENDA DE CAMPO: talas externas ${o.tala.L} x ${o.tala.H} x 4,75 mm nas duas abas, ${o.bolts.length} parafusos A325 ø16 (${o.bolts.length/2} por metade) atravessando o banzo, furos ø18, espaçamento 50 mm, borda 30 mm; parafusos fora do trecho das peças.`);
@@ -1390,9 +1393,9 @@ function drawCortesEnc(S){
   ox+=B.h+gap;secUeH(d,ox,-B.b,B,false,'ACO');d.D(ox-B.h/2+B.t,-B.b+B.t+ts*.2,ox+B.h/2-B.t,-B.b+B.t+ts*.2,ts*1.6,nf1.format(B.h-2*B.t));
   lab(ox,-B.b+B.t+ts*3,'vão interno','end');panel(ox-B.h/2,'CORTE B-B · BANZO INFERIOR','alma embaixo, abas para cima',yb);
   // C-C peça encaixada no banzo inferior
-  ox+=B.h+gap;secUeH(d,ox,-B.b,B,false,'ACO');const yw=-B.b+B.t+3;secUeH(d,ox,yw,{h:A.h,b:Math.min(A.b,B.b+20),c:A.c,t:A.t},false,'ACO');
+  ox+=B.h+gap;secUeH(d,ox,-B.b,B,false,'ACO');const yw=-B.b+B.t;secUeH(d,ox,yw,{h:A.h,b:Math.min(A.b,B.b+20),c:A.c,t:A.t},false,'ACO');
   [-1,1].forEach(sg=>{const x=ox+sg*(B.h/2-B.t);d.P([[x,0],[x-sg*3,0],[x,3]].map(([a,b])=>[a,b]),'CHAPA');});
-  d.D(ox-A.h/2,yw+A.b,ox+A.h/2,yw+A.b,ts*1.6,nf1.format(A.h));lab(ox+B.h/2+ts*.8,ts*.2,'solda de filete na borda das abas, nos dois lados');
+  d.D(ox-A.h/2,yw+A.b,ox+A.h/2,yw+A.b,ts*1.6,nf1.format(A.h));lab(ox+B.h/2+ts*.8,ts*.2,'solda completa: borda das abas nos dois lados');lab(ox+B.h/2+ts*.8,-B.b+B.t+ts*.2,'e ponta da peça na alma do banzo');
   lab(ox+B.h/2+ts*.8,-ts*1.2,`folga de ${nf1.format((B.h-2*B.t-A.h)/2)} mm por lado`);
   panel(ox-B.h/2,'CORTE C-C · MONTANTE OU DIAGONAL ENCAIXADO',`${T.Al.label}: entra justo entre as abas do banzo`,yb);
   // D-D emenda: talas externas nas duas abas, parafuso atravessando
@@ -1402,7 +1405,7 @@ function drawCortesEnc(S){
   panel(ox-B.h/2,'CORTE D-D · EMENDA DE CAMPO','talas externas de 4,75 mm nas duas abas; corte duplo',yb);
   d.notes(0,yb-ts*7,['Perfis formados a frio Ue, aço ZAR 250 ou CF-26, conforme NBR 14762 e NBR 6355.',
     `Banzos com a alma por fora e as abas para dentro da tesoura. Montantes e diagonais dobrados sob medida para entrar justos no vão interno do banzo (${nf1.format(B.h-2*B.t)} mm), com ${nf1.format(+(S.det&&S.det.fit?(B.h-2*B.t-A.h)/2:1))} mm de folga por lado.`,
-    'Recortar os enrijecedores do banzo no trecho de cada nó (comprimentos na folha de nós). Soldas de filete na borda das abas, eletrodo E70XX.',
+    'Recortar os enrijecedores do banzo no trecho de cada nó (comprimentos na folha de nós). Solda completa de filete, eletrodo E70XX: borda das abas do banzo nos dois lados e ponta de cada peça contra a alma do banzo.',
     'Proteção anticorrosiva nas áreas soldadas.'],'CORTES DAS PEÇAS DA TESOURA · Ue ENCAIXADO',sub());
   return d;}
 function drawCortes(S){
