@@ -197,7 +197,8 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f"><label for="g_pT">Espaçamento máximo das terças (m)</label><input id="g_pT" type="number" step="0.1" value="1.5"></div>
         <div class="f"><label for="g_nP">Painéis por tesoura (0 = pelo espaçamento das terças)</label><input id="g_nP" type="number" step="2" min="0" value="0"></div>
         <div class="f"><label for="g_tTipo">Perfis das treliças</label><select id="g_tTipo"><option value="enc">U simples encaixado</option><option value="ue">Ue (almas sobrepostas)</option><option value="L">Cantoneira + gusset</option></select></div>
-        <div class="f" data-tEnc><label for="g_lBar">Comprimento da barra do banzo (m), 0 = sem limite</label><input id="g_lBar" type="number" step="0.5" min="0" value="6"></div>
+        <div class="f" data-tEnc><label for="g_fab">Fabricação da tesoura</label><select id="g_fab"><option value="obra">Na obra (toda soldada)</option><option value="fabrica">Em fábrica (2 metades, emenda parafusada)</option></select></div>
+        <div class="f"><label for="g_lBar">Comprimento da barra comprada (m), 0 = sem limite</label><input id="g_lBar" type="number" step="0.5" min="0" value="6"></div>
         <div class="f" data-tEnc><label for="g_fEnc">Folga do encaixe, por lado (mm)</label><input id="g_fEnc" type="number" step="0.5" min="0" value="1"></div>
         <div class="f w"><label for="g_pBanzo">Banzos</label><select id="g_pBanzo"></select></div>
         <div class="f w"><label for="g_pAlma">Montantes</label><select id="g_pAlma"></select></div>
@@ -697,7 +698,7 @@ const STP={
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 const TDESC={MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
 const TORD=['BI','BS','MO','DG','TC','PT','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
+const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
   tg:6.3,mOn:true,side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
@@ -716,7 +717,7 @@ const wThin=(t,L)=>L<=0?0:(L/t<25?(1-.01*L/t):.75)*t*L*FU_CF*10/1.65/1000;
 const nf1=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 
 function genSteel(G){
-  const M=MODELS.est,out={mem:[],plates:[],nodes:[],warns:[],notes:[],pre:[],trusses:[],edits:[],shop:[]};if(!M)return out;
+  const M=MODELS.est,out={mem:[],plates:[],nodes:[],warns:[],notes:[],pre:[],trusses:[],edits:[],shop:[],tcSp:[]};if(!M)return out;
   const els=M.els,cols=els.filter(e=>e.cat==='Pilar'),beams=els.filter(e=>e.cat==='Viga'&&e.ex[0]);
   const ctr=e=>[(e.bb.x0+e.bb.x1)/2,(e.bb.y0+e.bb.y1)/2];
   // ---- cota de apoio
@@ -769,7 +770,13 @@ function genSteel(G){
             const m=dir>0?Math.max(...cand):Math.min(...cand);cuts.push(m);st=m;}}
         const pts=[s0,...cuts,s1].sort((a,b)=>a-b);for(let k=0;k<pts.length-1;k++)add(type,Bz,at(pts[k],zf(pts[k])),at(pts[k+1],zf(pts[k+1])),{truss:j});
         cuts.forEach(c=>out.shop.push({j,type,s:c,z:zf(c),p:at(c,zf(c))}));};
-      piece('BI',()=>zb,0,L/2);piece('BI',()=>zb,L,L/2);piece('BS',zt,0,L/2);piece('BS',zt,L,L/2);
+      const obra=G.tTipo==='enc'&&G.fab!=='fabrica';
+      if(obra){const mids=[];for(let k=0;k<n;k++)mids.push((k+.5)*L/n);let st=0;const cuts=[];
+        while(lb&&L-2*st>lb){const cand=mids.filter(m=>m>st+1&&m<L/2&&m-st<=lb);if(!cand.length){out.warns.push(`Tesoura ${j+1}: não consegui limitar o banzo inferior a ${m2(lb)} m com emenda no meio do painel.`);break;}const m=Math.max(...cand);cuts.push(m,L-m);st=m;}
+        const pts=[0,...cuts,L].sort((a,b)=>a-b);for(let k=0;k<pts.length-1;k++)add('BI',Bz,at(pts[k],zb),at(pts[k+1],zb),{truss:j});
+        cuts.forEach(c=>out.shop.push({j,type:'BI',s:c,z:zb,p:at(c,zb)}));}
+      else{piece('BI',()=>zb,0,L/2);piece('BI',()=>zb,L,L/2);}
+      piece('BS',zt,0,L/2);piece('BS',zt,L,L/2);
       for(let k=0;k<=n;k++)add('MO',Al,at(sk(k),zb),at(sk(k),zt(sk(k))),{truss:j});
       for(let k=0;k<n;k++){const s1=sk(k),s2=sk(k+1);if(k<nh)add('DG',Dg,at(s1,zt(s1)),at(s2,zb),{truss:j});else add('DG',Dg,at(s1,zb),at(s2,zt(s2)),{truss:j});}
       [[sA,ua,va,'fixo'],[sB,ub,vb,'deslizante']].forEach(([se,u,v,mode])=>{
@@ -779,9 +786,14 @@ function genSteel(G){
         out.nodes.push({kind:'AT',mode,el:se,wc,hc,Wp,Lp,t:tpl,d:16,chord:Bz,pos:P3(u,v,zs)});});
     });
     // terças: entre tesouras vizinhas, no nó de cada painel do banzo superior
+    const lbT=+G.lBar>0?Math.floor(+G.lBar*1000/50)*50:0;
+    const addTC=(prof,a,b,x)=>{const len=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),u=[(b[0]-a[0])/len,(b[1]-a[1])/len,(b[2]-a[2])/len],P=t=>[a[0]+u[0]*t,a[1]+u[1]*t,a[2]+u[2]*t];
+      let cuts=[];if(lbT&&len>lbT){const k=Math.ceil(len/lbT)-1;if(k===1)cuts=[Math.max(300,Math.round((len-lbT)/10)*10)];else{const e=Math.round((len-(k-1)*lbT)/2/10)*10;for(let q=0;q<k;q++)cuts.push(e+q*lbT);}}
+      const pts=[0,...cuts,len];for(let q=0;q<pts.length-1;q++)add('TC',prof,P(pts[q]),P(pts[q+1]),{...x,span:len});
+      cuts.forEach(t=>out.tcSp.push({p:P(t),u,prof,span:len,t:Math.min(t,len-t)}));};
     const tr=out.trusses,TeK=k=>STP[OV.tc[k]]||Te,up=(p,k)=>[p[0],p[1],p[2]+(TeK(k).h-Te.h)/2];
     Object.entries(OV.tc).forEach(([k,v])=>{if(STP[v]&&v!==G.pTerca)out.edits.push(`terça da linha ${+k+1} em ${STP[v].label}`);});
-    for(let j=0;j<tr.length-1;j++){const a=tr[j],b=tr[j+1],n=Math.min(a.n,b.n);for(let k=0;k<=n;k++)add('TC',TeK(k),up(a.top(Math.round(k*a.n/n)),k),up(b.top(Math.round(k*b.n/n)),k),{line:k});}
+    for(let j=0;j<tr.length-1;j++){const a=tr[j],b=tr[j+1],n=Math.min(a.n,b.n);for(let k=0;k<=n;k++)addTC(TeK(k),up(a.top(Math.round(k*a.n/n)),k),up(b.top(Math.round(k*b.n/n)),k),{line:k});}
     // prolongamento das terças até as vigas de concreto da frente e do fundo, com montantes de apoio
     const roofBeams=beams.filter(b=>Math.abs(b.bb.z1-zs)<40);
     const ray=(o,d)=>{let best=null;for(const bm of roofBeams){const s=bm.ex[0].start,t=bm.ex[0].end,p=[U(s),Vv(s)],q=[U(t),Vv(t)],r=[q[0]-p[0],q[1]-p[1]];
@@ -791,7 +803,7 @@ function genSteel(G){
     [[tr[0],-1],[tr[tr.length-1],1]].forEach(([T,sg])=>{if(!T)return;
       for(let k=0;k<=T.n;k++){const p=up(T.top(k),k),o=[U(p),Vv(p)],h=ray(o,[0,sg]);if(!h)continue;
         const hp=[o[0],o[1]+sg*h.t],zp=p[2],zBot=zp-TeK(k).h/2;
-        add('TC',TeK(k),p,P3(hp[0],hp[1],zp),{line:k});
+        addTC(TeK(k),p,P3(hp[0],hp[1],zp),{line:k});
         if(zBot-zs>150){add('PT',TQ,P3(hp[0],hp[1],zs+12.5),P3(hp[0],hp[1],zBot),{th:TeK(k).h});
           const bw=(h.bm.sec.split('×')[0]||'20').trim(),wc=+bw.replace(/\D/g,'')*10||200;const ax=h.bm.ex[0],dir=V.norm(V.sub(ax.end,ax.start));
           out.plates.push({c:P3(hp[0],hp[1],zs+6),X:dir,Y:[-dir[1],dir[0],0],dims:[260,Math.min(160,wc-20),12.5]});
@@ -809,7 +821,7 @@ function genSteel(G){
       out.pre.push({item:'Banzo superior (compressão)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(Nc)} kN`,u:N/Nc,obs:`travado pelas terças a cada ${m2(Lb*10)} m${isUe?(BB0.c>0?'; NBR 14762 com área efetiva da alma, sem flambagem distorcional':'; NBR 14762 com área efetiva da alma e das abas livres (U simples)'):''}`});
       // terças: viga biapoiada no maior vão de cada perfil (carga do telhado na faixa de influência)
       const sp=Lmax/tr[0].n/Math.cos(Math.atan(i))/1000,byP=new Map();
-      out.mem.filter(m=>m.type==='TC').forEach(m=>{const k=m.prof.label;if(!byP.has(k)||m.len>byP.get(k).len)byP.set(k,m);});
+      out.mem.filter(m=>m.type==='TC').forEach(m=>{const k=m.prof.label,sl=m.span||m.len;if(!byP.has(k)||sl>byP.get(k).len)byP.set(k,{prof:m.prof,len:sl});});
       byP.forEach(m=>{const P=m.prof,pp=P.t?ueProps(P.base||P):null;if(!pp)return;const Ix=pp.A*pp.rx*pp.rx,W=Ix/(P.h/20),L=m.len/1000;
         const qd=(1.25*.20+1.5*.25)*sp,qs=(.20+.25)*sp,Md=qd*L*L/8,MR=W*25/1.1/100,f=5*qs*Math.pow(m.len,4)/(384*200000*Ix*1e4),fl=m.len/180;
         out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flexão`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`faixa de ${m2(sp*1000)} m; biapoiada, sem vento e sem flambagem lateral (telha travando)`});
@@ -1009,7 +1021,7 @@ function drawTesoura(S){
   ms.filter(m=>m.type==='MO'||m.type==='DG').forEach(m=>{const [x1,y1]=pr(m.a),[x2,y2]=pr(m.b);if((x1+x2)/2>T.L/2)return;
     d.T((x1+x2)/2+ts*.2,(y1+y2)/2,m.mark,'TEXTO',{h:ts*.8});});
   const bi=ms.find(m=>m.type==='BI'),bs=ms.find(m=>m.type==='BS');
-  S.shop.filter(e=>e.j===0).forEach(e=>{const [x,y]=pr(e.p),up=e.type==='BS';d.L(x,y-Bz.h*.9,x,y+Bz.h*.9,'CHAPA');d.tag(x,y,x,y+ts*3.2,'EF');});
+  S.shop.filter(e=>e.j===0).forEach(e=>{const [x,y]=pr(e.p),up=e.type==='BS';d.L(x,y-Bz.h*.9,x,y+Bz.h*.9,'CHAPA');d.tag(x,y,up?x:x+ts*3.5,y+ts*3.2,'ES');});
   const barras=t=>ms.filter(m=>m.type===t).map(m=>nint(m.len)).join(' + ');
   d.T(T.L*.25,pr(bi.a)[1]-Bz.h/2-ts*1.1,`${bi.mark} · ${Bz.label}`,'TEXTO',{an:'middle',h:ts*.7});
   d.T(T.L*.1,pr(bs.a)[1]+T.L*.1*T.i+Bz.h/2+ts*.9,`${bs.mark} · ${Bz.label}`,'TEXTO',{an:'middle',h:ts*.7,rot:Math.atan(T.i)*180/Math.PI});
@@ -1023,13 +1035,13 @@ function drawTesoura(S){
   d.T(T.L*.72,ztop(Math.round(n*.72))+Bz.h/2+ts*1.2,`i = ${nf0.format(T.i*100)}%`,'TEXTO',{an:'middle',rot:-Math.atan(T.i)*180/Math.PI});
   {const cL=ts*1.1,k2=Math.min(2,T.nh-1);
    const sA=T.sk(k2)+T.L/T.n*.5,pA=[sA,zb+(T.zt(sA)-T.zb)],uA=v2.norm([1,T.i]);cutMark(d,pA,uA,'A',cL,1);
-   cutMark(d,[T.sk(k2+1)+T.L/T.n*.5,zb],[1,0],'B',cL,-1);
+   cutMark(d,[T.sk(k2+1)+T.L/T.n*.25,zb],[1,0],'B',cL,-1);
    const dg=ms.filter(m=>m.type==='DG')[1];if(dg){const a=pr(dg.a),b=pr(dg.b),mid=v2.mul(v2.add(a,b),.5);cutMark(d,mid,v2.norm(v2.sub(b,a)),'C',cL*.8,1);}
-   cutMark(d,[T.L/2+70,zb],[1,0],'D',cL,-1);}
+   const esD=S.det&&S.det.obra&&S.shop.find(e=>e.j===0&&e.type==='BI');cutMark(d,[esD?esD.s+40:T.L/2+70,zb],[1,0],'D',cL,-1);}
   const spans=S.trusses.map((t,j)=>`TS${j+1} = ${nint(t.L)}`).join(' · ');
   d.notes(0,-ts*9,[`Vãos entre apoios: ${spans} mm. Geometria igual; conferir o vão de cada uma.`,
     Bz.enc?`Banzos ${Bz.label} com a alma por fora e as abas para dentro; montantes ${T.Al.label}${T.Dg&&T.Dg.label!==T.Al.label?` e diagonais ${T.Dg.label}`:' e diagonais iguais'}, encaixados entre as abas. Cortes A a D na folha de cortes; nós na folha de nós.`:Bz.t?`Banzos ${Bz.label}; montantes e diagonais ${T.Al.label} (perfis formados a frio, almas sobrepostas, sem chapa gusset). Cortes A a D na folha de cortes; nós na folha de nós.`:`Banzos ${Bz.label} (cantoneiras laminadas costas com costas); montantes e diagonais ${T.Al.label}. Cortes A a D na folha de cortes; nós com chapa gusset na folha de nós.`,
-    ...(S.shop.length?[`Barras do banzo inferior: ${barras('BI')} mm; banzo superior: ${barras('BS')} mm. EF = emenda de fábrica (detalhe na folha de nós).`]:[]),
+    ...(S.shop.length?[`Barras do banzo inferior: ${barras('BI')} mm; banzo superior: ${barras('BS')} mm. ES = emenda soldada${S.det&&S.det.obra?' na obra':''} (detalhe na folha de nós).${S.det&&S.det.obra?' Banzo superior com corte em meia-esquadria na cumeeira, solda de topo; tesoura montada inteira na obra.':''}`]:[]),
     `Apoio AT1 fixo e AT2 deslizante (furo oblongo). Cotas de altura a partir do topo da viga de concreto (z = ${m2(S.zs)} m).`],
     `TESOURA TS1 · ${S.trusses.length} UNIDADES`,sub());
   return d;}
@@ -1079,8 +1091,9 @@ function drawPlanta(S){
   for(let j=0;j<S.trusses.length-1;j++){const a=S.trusses[j].at(0,0),b=S.trusses[j+1].at(0,0);d.D(a[0],a[1],b[0],b[1],ts*3.5);}
   const t0=S.trusses[0];if(t0){const a=t0.at(0,0),b=t0.at(t0.L,0);d.D(a[0],a[1],b[0],b[1],-ts*3);}
   S.nodes.forEach(n=>{if(n.kind==='AT'||n.kind==='AP'){const p=n.pos;d.C(p[0],p[1],ts*.25,'CHAPA');}});
+  (S.tcSp||[]).forEach(e=>{const q=[-e.u[1],e.u[0]];d.L(e.p[0]-q[0]*ts*.6,e.p[1]-q[1]*ts*.6,e.p[0]+q[0]*ts*.6,e.p[1]+q[1]*ts*.6,'CHAPA');});
   if(S.canopy)d.T((x0+x1)/2,y0-ts*1.5,'','ANOT');
-  d.notes(x0,y0-ts*7,['Tesouras (TS), terças (TC), montantes de apoio (□100) e marquise sobre o concreto da cota de apoio.','Pontos laranja: ligações aço-concreto (ver folha de ligações).'],
+  d.notes(x0,y0-ts*7,['Tesouras (TS), terças (TC), montantes de apoio (□100) e marquise sobre o concreto da cota de apoio.','Pontos laranja: ligações aço-concreto (ver folha de ligações).',...((S.tcSp||[]).length?['Traços laranja nas terças: emendas soldadas ET (detalhe na folha das terças).']:[])],
     `PLANTA DA COBERTURA · COTA DE APOIO ${m2(zs)} m`,sub());
   return d;}
 
@@ -1242,23 +1255,27 @@ function detailSteel(S,G){
   // ---- tesoura: emenda de campo no centro (a tesoura viaja em duas metades)
   const T=S.trusses[0];
   if(T){const mems=S.mem.filter(m=>m.truss===0&&/BI|BS|MO|DG/.test(m.type)).map(m=>({m,a:T.proj(m.a),b:T.proj(m.b)}));
-    const ue=G.tTipo==='ue'&&!!T.Bz.t,enc=G.tTipo==='enc'&&!!T.Bz.t,N=S.trussN||0;let FvRd=2*48.4,nb=Math.max(2,Math.ceil(N/FvRd)),cols=0,Rb=0;
+    const ue=G.tTipo==='ue'&&!!T.Bz.t,enc=G.tTipo==='enc'&&!!T.Bz.t,N=S.trussN||0,obra=enc&&G.fab!=='fabrica';D.obra=obra;let FvRd=2*48.4,nb=Math.max(2,Math.ceil(N/FvRd)),cols=0,Rb=0;
     if(enc){Rb=Math.min(2*48.4,2*2.4*16*T.Bz.t*FU_CF*10/1.55/1000);nb=Math.max(2,Math.ceil(N/Rb));cols=nb;FvRd=Rb;}
     if(ue){Rb=Math.min(48.4,2.4*16*T.Bz.t*FU_CF*10/1.55/1000);nb=Math.max(4,Math.ceil(N/Rb/2)*2);cols=nb/2;FvRd=Rb;}
     const wd=S.trussWd||0,Vs=s0=>wd*Math.abs(T.L/2-s0)/1000;
     // esforço estimado na peça pela cortante da treliça biapoiada no nó (diagonal: V / seno do ângulo)
     const force=(w,nd)=>{const V=Vs(nd.p[0]);return w.m.type==='DG'?V/Math.max(Math.sin(w.ang*Math.PI/180),.2):V;};
-    const sets=trussNodes(mems,['BI','BS'],'BS',{Lmin:60,tg,force,ue,enc,splice:nd=>Math.abs(nd.p[0]-T.L/2)<3&&nd.inc.filter(i=>i.chord).length===2?{n:nb,cols}:null});D.ue=ue;D.enc=enc;
+    const sets=trussNodes(mems,['BI','BS'],'BS',{Lmin:60,tg,force,ue,enc,splice:nd=>!obra&&Math.abs(nd.p[0]-T.L/2)<3&&nd.inc.filter(i=>i.chord).length===2?{n:nb,cols}:null});D.ue=ue;D.enc=enc;
     sets.forEach(s=>s.count*=S.trusses.length);D.nodeSets.push({name:'Tesoura',sets,prefix:'N'});
-    D.splice={n:nb,N,FvRd};
+    D.splice=obra?null:{n:nb,N,FvRd};
     const nShop=S.shop.filter(e=>e.j===0).length;
     if(enc&&nShop){const B0=T.Bz.base,H=Math.floor((T.Bz.h-10)/5)*5,tt=4.75,tm=Math.min(B0.t,tt),capF=Lw=>2*(2*wThin(tm,Lw)+wTr(tm,H));let Lw=40;while(capF(Lw)<N&&Lw<400)Lw+=5;
       const Lt=Math.max(150,Math.ceil((2*(Lw+15))/10)*10),qty=nShop*S.trusses.length;
       D.shopSp={L:Lt,H,t:tt,Lw,N,cap:capF(Lw),nT:nShop,qty,lb:+G.lBar*1000};
-      D.pre.push({item:'Emenda de fábrica do banzo (solda das talas)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(capF(Lw))} kN`,u:N/capF(Lw),obs:`2 talas ${Lt} x ${H} x 4,75 mm, filete nas bordas e nas pontas, ${Lw} mm de cada lado da junta; chapa fina (NBR 14762)`});
-      D.plates.push({mark:'TF1',desc:'Tala da emenda de fábrica do banzo (EF), uma em cada aba',dims:`${Lt} x ${H} x 4,75`,qty:qty*2,kg:Lt*H*tt*7.85e-6*qty*2});
-      D.notesShop=`Banzos em barras de até ${m2(+G.lBar*1000)} m: ${nShop} emendas de fábrica (EF) por tesoura, no meio dos painéis, com talas soldadas nas duas abas.`;}
-    D.pre.push({item:'Emenda de campo do banzo (parafusos)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(nb*FvRd)} kN`,u:N/(nb*FvRd),obs:enc?`${nb} parafusos ø16 por lado atravessando o banzo, com talas externas nas duas abas; corte duplo e esmagamento das abas de ${nf1.format(T.Bz.t)} mm (${nf1.format(Rb)} kN por parafuso)`:ue?`${nb} parafusos ø16 por lado, com tala; limitado pelo esmagamento da alma de ${nf1.format(T.Bz.t)} mm (${nf1.format(Rb)} kN por parafuso)`:`${nb} parafusos A325 ø16 na metade direita, corte duplo`});
+      D.pre.push({item:`Emenda soldada do banzo${obra?' na obra':''} (talas)`,sol:`${nf1.format(N)} kN`,res:`${nf1.format(capF(Lw))} kN`,u:N/capF(Lw),obs:`2 talas ${Lt} x ${H} x 4,75 mm, filete nas bordas e nas pontas, ${Lw} mm de cada lado da junta; chapa fina (NBR 14762)`});
+      D.plates.push({mark:'TF1',desc:'Tala da emenda soldada do banzo (ES), uma em cada aba',dims:`${Lt} x ${H} x 4,75`,qty:qty*2,kg:Lt*H*tt*7.85e-6*qty*2});
+      D.notesShop=`Banzos em barras de até ${m2(+G.lBar*1000)} m: ${nShop} emendas soldadas (ES) por tesoura${obra?', feitas na obra':''}, no meio dos painéis, com talas nas duas abas.${obra?' Tesoura montada inteira na obra, sem emenda parafusada.':''}`;}
+    if(S.tcSp.length){const g=new Map();S.tcSp.forEach(e=>{const k=e.prof.label;if(!g.has(k))g.set(k,{prof:e.prof,n:0,t:1e9,span:0});const o=g.get(k);o.n++;o.t=Math.min(o.t,e.t);o.span=Math.max(o.span,e.span);});
+      D.tcSp=[...g.values()].map((o,i)=>{const P=o.prof,H=Math.floor((P.h-2*P.t-10)/5)*5;return {...o,mark:'ET'+(i+1),H,Lt:300};});
+      D.tcSp.forEach(o=>D.plates.push({mark:'T'+o.mark,desc:`Tala da emenda soldada da terça ${o.prof.label} (${o.mark}), na alma`,dims:`${o.Lt} x ${o.H} x 4,75`,qty:o.n,kg:o.Lt*o.H*4.75*7.85e-6*o.n}));
+      S.notes.push(`Terças em barras de até ${m2(+G.lBar*1000)} m: ${S.tcSp.length} emendas soldadas (ET), a ${m2(D.tcSp.reduce((a,o)=>Math.min(a,o.t),1e9))} m ou mais do apoio, perto da tesoura, onde o momento é baixo.`);}
+    if(D.splice)D.pre.push({item:'Emenda de campo do banzo (parafusos)',sol:`${nf1.format(N)} kN`,res:`${nf1.format(nb*FvRd)} kN`,u:N/(nb*FvRd),obs:enc?`${nb} parafusos ø16 por lado atravessando o banzo, com talas externas nas duas abas; corte duplo e esmagamento das abas de ${nf1.format(T.Bz.t)} mm (${nf1.format(Rb)} kN por parafuso)`:ue?`${nb} parafusos ø16 por lado, com tala; limitado pelo esmagamento da alma de ${nf1.format(T.Bz.t)} mm (${nf1.format(Rb)} kN por parafuso)`:`${nb} parafusos A325 ø16 na metade direita, corte duplo`});
     let web=null;sets.forEach(s=>s.rep.webs.forEach(w=>{if(!web||(ue?w.u2>web.u2:w.F>web.F))web=w;}));
     if(web&&enc){const ex=Math.max(0,...sets.flatMap(s=>s.rep.webs.map(w=>Math.abs(w.sh||0))));if(ex>0)D.notesUe=`Maior excentricidade de nó: ${ex} mm (peças lado a lado dentro do banzo); considerar no cálculo do banzo.`;
       D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`solda completa: 2 x ${web.Lc} mm na borda das abas + ${web.Lt} mm da ponta da peça na alma do banzo, chapa fina (NBR 14762)`});
@@ -1278,7 +1295,8 @@ function detailSteel(S,G){
     if(s.rep.ue||s.rep.enc)return;D.plates.push({mark:'G'+(++k),desc:`Chapa gusset do nó ${s.mark}`,dims:`${s.rep.Lg} x ${s.rep.Hg} x ${nf1.format(tg)}`,qty:s.count,kg:s.kgUn*s.count,node:s.mark});}));
   // ---- ligações das terças: conta quantas pontas de terça chegam em cada suporte
   const ends=new Map(),key=p=>`${Math.round(p[0]/20)}|${Math.round(p[1]/20)}|${Math.round(p[2]/20)}`;
-  S.mem.filter(m=>/TC|TM|VB/.test(m.type)).forEach(m=>[m.a,m.b].forEach(p=>{const k2=key(p);if(!ends.has(k2))ends.set(k2,{p,n:0,type:m.type,prof:m.prof});ends.get(k2).n++;}));
+  const spk=new Set((S.tcSp||[]).map(e=>key(e.p)));
+  S.mem.filter(m=>/TC|TM|VB/.test(m.type)).forEach(m=>[m.a,m.b].forEach(p=>{const k2=key(p);if(spk.has(k2))return;if(!ends.has(k2))ends.set(k2,{p,n:0,type:m.type,prof:m.prof});ends.get(k2).n++;}));
   const posts=S.mem.filter(m=>m.type==='PT').map(m=>key([m.b[0],m.b[1],m.b[2]+(m.th||STP[G.pTerca].h)/2]));
   const cg=new Map();ends.forEach((e,k2)=>{const onPost=posts.includes(k2),kind=e.type==='TC'?(onPost?'LTP':'LTT'):'LTM',sides=Math.min(2,e.n);
     const ck=`${kind}|${sides}|${e.prof.label}`;if(!cg.has(ck))cg.set(ck,{kind,sides,prof:e.prof,count:0});cg.get(ck).count++;});
@@ -1404,11 +1422,11 @@ function shopDraw(sd,S,ts){const E=S.det.shopSp,T=S.trusses[0],B=T.Bz.base,h=T.B
   const cx=Lx+ts*16;secUeH(sd,cx,h,{...B},true,'ACO');[-1,1].forEach(k=>sd.R(cx+k*B.h/2+(k>0?0:-E.t),h-B.b+5,E.t,B.b-10,'CHAPA'));
   sd.T(cx,h+ts*1.2,'CORTE','TEXTO',{an:'middle',h:ts*.9});sd.T(cx+B.h/2+ts*1.4,h-B.b/2,'talas nas duas abas','ANOT',{h:ts*.7});
   const bb=sd.bbox();sd.notes(bb.x0,bb.y0-ts*2.2,[
-    `Banzos em barras de até ${m2(E.lb)} m. ${E.nT} emendas de fábrica por tesoura, nos pontos EF da folha da tesoura, sempre no meio do painel (fora da região dos nós).`,
+    `Banzos em barras de até ${m2(E.lb)} m. ${E.nT} emendas soldadas por tesoura${S.det.obra?', feitas na obra':''}, nos pontos ES da folha da tesoura, sempre no meio do painel (fora da região dos nós).`,
     'Peças cortadas em esquadro e encostadas topo a topo; solda de penetração total na alma e nas abas, esmerilhada na face externa da alma (apoio das terças e da telha).',
     `Talas ${E.L} x ${E.H} x 4,75 mm ASTM A36 por fora das duas abas, centradas na junta, soldadas com filete de 3 mm em toda a volta (${E.Lw} mm de cada lado da junta). Eletrodo E70XX.`,
     `Resistência das talas: ${nf1.format(E.cap)} kN para ${nf1.format(E.N)} kN no banzo, sem contar a solda de topo.`],
-    'EF · EMENDA DE FÁBRICA DO BANZO',`${E.qty} unidades`);}
+    `ES · EMENDA SOLDADA DO BANZO${S.det.obra?' (NA OBRA)':''}`,`${E.qty} unidades`);}
 function drawTercas(S){
   const D=S.det;if(!D||!D.cleats.length)return null;const d=Dwg.at(5),ts=d.ts;let x=0;const gap=ts*10;
   D.cleats.forEach(c=>{const sd=new Dwg(ts,d.esc),cl=c.cl,T=c.prof,len=Math.max(260,T.h*1.5);
@@ -1427,6 +1445,16 @@ function drawTercas(S){
       `${2*c.sides} parafusos ASTM A307 ø12,5, furos ø14, a ${cl.e} mm da ponta da terça, espaçados ${cl.s} mm na alma (${T.label}).`,
       c.sides===2?`Folga de ${cl.gap} mm entre as pontas das terças.`:'Apoio de extremidade: uma terça.',
       'Suporte perpendicular ao banzo; alma da terça perpendicular ao plano do telhado.'],`${c.mark} · ${c.title.toUpperCase()}`,`${c.count} unidades${c.checks.length?' · ALERTA: '+c.checks.join(' '):''}`);
+    const b2=sd.bbox();d.put(sd,x-b2.x0,0);x+=b2.x1-b2.x0+gap;});
+  ((S.det&&S.det.tcSp)||[]).forEach(o=>{const sd=new Dwg(ts,d.esc),P=o.prof,h=P.h/2,Lx=o.Lt*1.4,tl=o.Lt/2,th=o.H/2;
+    [-1,1].forEach(k=>sd.L(-Lx,k*h,Lx,k*h,'TERCA'));[-1,1].forEach(k=>sd.L(-Lx,k*(h-P.t),Lx,k*(h-P.t),'ANOT'));sd.L(0,-h-ts*.8,0,h+ts*.8,'ANOT');sd.T(ts*.3,h+ts*1.0,'junta de topo','ANOT',{h:ts*.7});
+    sd.R(-tl,-th,o.Lt,o.H,'CHAPA');sd.D(-tl,-th,tl,-th,-(h-th)-ts*1.6,String(o.Lt));sd.D(tl,-th,tl,th,-ts*1.4,String(o.H));
+    sd.T(-Lx,h+ts*2.6,'▲ 3 mm em toda a volta da tala','COTA',{h:ts*.75});sd.T(Lx+ts,0,`${P.label} (vista da alma)`,'TEXTO',{h:ts*.75});
+    const bb=sd.bbox();sd.notes(bb.x0,bb.y0-ts*2,[
+      `Terças vencem até ${m2(o.span)} m e a barra comprada tem ${m2(+$('#g_lBar').value*1000||6000)} m: emenda soldada na obra, a ${m2(o.t)} m ou mais da tesoura (ver traços na planta), onde o momento é baixo.`,
+      'Peças cortadas em esquadro, topo a topo, solda de penetração total na alma, nas abas e nos enrijecedores.',
+      `Tala ${o.Lt} x ${o.H} x 4,75 mm ASTM A36 por dentro da alma, centrada na junta, filete de 3 mm em toda a volta. Eletrodo E70XX.`,
+      'Alternar o lado da emenda entre terças vizinhas quando possível.'],`${o.mark} · EMENDA SOLDADA DA TERÇA`,`${o.n} unidades`);
     const b2=sd.bbox();d.put(sd,x-b2.x0,0);x+=b2.x1-b2.x0+gap;});
   return d;}
 
@@ -1486,9 +1514,11 @@ function drawCortesEnc(S){
   panel(ox-B.h/2,'CORTE C-C · MONTANTE OU DIAGONAL ENCAIXADO',`${T.Al.label}${T.Dg&&T.Dg.label!==T.Al.label?' e '+T.Dg.label:''}: entra justo entre as abas do banzo`,yb);
   // D-D emenda: talas externas nas duas abas, parafuso atravessando
   ox+=B.h+gap;secUeH(d,ox,-B.b,B,false,'ACO');[-1,1].forEach(sg=>d.R(ox+sg*B.h/2+(sg>0?0:-4.75),-B.b+5,4.75,B.b-10,'CHAPA'));
-  const yb2=-B.b/2;d.L(ox-B.h/2-4.75-14,yb2,ox+B.h/2+4.75+18,yb2,'CHAPA');d.R(ox-B.h/2-4.75-12,yb2-12,12,24,'CHAPA');d.R(ox+B.h/2+4.75,yb2-12,14,24,'CHAPA');
+  const yb2=-B.b/2,ob=S.det&&S.det.obra;
+  if(ob){lab(ox+B.h/2+ts*3,yb2,'talas soldadas com filete de 3 mm em toda a volta');panel(ox-B.h/2,'CORTE D-D · EMENDA SOLDADA (ES)','junta de topo com solda de penetração e talas de 4,75 mm nas duas abas',yb);}
+  else{d.L(ox-B.h/2-4.75-14,yb2,ox+B.h/2+4.75+18,yb2,'CHAPA');d.R(ox-B.h/2-4.75-12,yb2-12,12,24,'CHAPA');d.R(ox+B.h/2+4.75,yb2-12,14,24,'CHAPA');
   lab(ox+B.h/2+ts*3,yb2,`parafuso A325 ø16, L ≈ ${Math.ceil((B.h+2*4.75+30)/10)*10} mm`);
-  panel(ox-B.h/2,'CORTE D-D · EMENDA DE CAMPO','talas externas de 4,75 mm nas duas abas; corte duplo',yb);
+  panel(ox-B.h/2,'CORTE D-D · EMENDA DE CAMPO','talas externas de 4,75 mm nas duas abas; corte duplo',yb);}
   d.notes(0,yb-ts*7,[`Perfis formados a frio ${B.c>0?'Ue':'U simples (sem enrijecedor de borda)'}, aço ZAR 250 ou CF-26, conforme NBR 14762 e NBR 6355.`,
     `Banzos com a alma por fora e as abas para dentro da tesoura. Montantes e diagonais dobrados sob medida para entrar justos no vão interno do banzo (${nf1.format(B.h-2*B.t)} mm), com ${nf1.format(+(S.det&&S.det.fit?(B.h-2*B.t-A.h)/2:1))} mm de folga por lado.`,
     (B.c>0?'Recortar os enrijecedores do banzo no trecho de cada nó (comprimentos na folha de nós). ':'Banzo em U simples: a peça entra pela boca do banzo sem recorte. ')+'Solda completa de filete, eletrodo E70XX: borda das abas do banzo nos dois lados e ponta de cada peça contra a alma do banzo.',
