@@ -226,9 +226,10 @@ const GROUPS=[
  {t:'Mão-francesa',f:[
   {id:'mfViga',label:'Nas vigas (apoiada nas terças)',kind:'chk',def:true},
   {id:'mfPil',label:'Nos pilares (apoiada nas travessas)',kind:'chk',def:false},
-  {id:'mfN',label:'Colocar a cada',unit:'peças',def:2,kind:'opt',opts:[1,2,3]},
+  {id:'mfN',label:'Colocar a cada',unit:'peças',def:0,kind:'opt',opts:[0,1,2,3],zero:'auto (≤ 2,5 m)'},
   {id:'pMF',label:'Perfil da mão-francesa',kind:'prof',def:'L38x3.2',opts:OPT_ANG}]},
  {t:'Ligações',f:[
+  {id:'baseEng',label:'Base engastada (4 chumbadores fora das mesas)',kind:'chk',def:true},
   {id:'tBase',label:'Placa de base (espessura)',unit:'mm',def:19,kind:'opt',opts:[12.5,16,19,22.4,25,31.5]},
   {id:'dCh',label:'Chumbadores (diâmetro)',unit:'mm',def:19,kind:'opt',opts:[16,19,22,25,32]},
   {id:'tTopo',label:'Chapas de topo (espessura)',unit:'mm',def:16,kind:'opt',opts:[12.5,16,19,22.4,25]},
@@ -257,12 +258,16 @@ const PRE={pilar:'P',viga:'V',pilarete:'PL',terca:'T',travessa:'TL',mf:'MF',cb:'
 const DESC={pilar:'Pilar',viga:'Viga de cobertura',pilarete:'Pilarete de oitão',terca:'Terça',travessa:'Travessa',mf:'Mão-francesa',cb:'Contraventamento da cobertura',cl:'Contraventamento lateral'};
 
 /* ---------------- Regras de detalhamento de ligações ---------------- */
-// Bordas mínimas (centro do furo à borda) conforme NBR 8800:2008, Tabela 14: [borda cortada, borda laminada]
-const EDGE_T={12.5:[22,19],16:[29,22],19:[32,26],20:[35,27],22:[38,29],25:[44,32]};
+// Bordas (centro do furo à borda): [borda cortada, borda laminada].
+// Mínimos da NBR 8800:2008, Tabela 14, elevados ao padrão do Manual de Ligações Gerdau/CBCA
+// (30 mm para 5/8" e 40 mm para os demais, em chapas).
+const EDGE_T={12.5:[22,19],16:[30,22],19:[40,26],20:[40,27],22:[40,29],25:[44,32]};
+const HOLE_T={12.5:14,16:18,19:21,22:24,25:27};   // furos padrão do Manual de Ligações Gerdau
 const R5up=v=>Math.ceil(v/5-1e-9)*5;
 const edgeOf=d=>EDGE_T[d]||[R5up(1.75*d),R5up(1.25*d)];
+const spcOf=d=>d>=16?(d<=16?60:75):R5up(3*d);    // espaçamento padrão entre furos (Gerdau: 60 mm para 5/8", 75 mm para os demais)
 const clrOf=d=>R5(1.5*d+8);          // folga para aperto: face da mesa/alma ao centro do furo
-const holeOf=d=>d+1.5;               // furo padrão
+const holeOf=d=>HOLE_T[d]||Math.ceil(d+2);
 const deg1=v=>nf1.format(v);
 
 // Chapa de topo: linhas de parafusos medidas na vertical a partir do eixo da viga
@@ -274,7 +279,7 @@ function endPlate(V,cs,nb,d,t,side,gab){
   rows=rows.map(r=>Math.round(r)).sort((a,b)=>b-a);
   const extTop=nb===8||side==='top',extBot=nb===8||side==='bot';
   const yTop=Math.round(extTop?top+C+e:top+10),H=R5up(yTop-(extBot?bot-C-e:bot-10)),yBot=yTop-H;
-  const g=gab>0?gab:R5up(Math.max(3*d,V.tw+2*C)),W=R5up(Math.max(V.bf+20,g+2*e));
+  const g=gab>0?gab:R5up(Math.max(spcOf(d),V.tw+2*C)),W=R5up(Math.max(V.bf+20,g+2*e));
   return {nb,d,t,hole:holeOf(d),e,C,g,W,H,yTop,yBot,rows,dz,tfz};
 }
 function checkEndPlate(L,V,colP){
@@ -288,7 +293,7 @@ function checkEndPlate(L,V,colP){
 }
 // Suporte (chapa soldada) para terça ou travessa: 2 parafusos por ponta de peça
 function cleat(T,d,gap){
-  const [e]=edgeOf(d),s=R5(Math.max(3*d,T.d*.4)),xh=gap/2+e;
+  const [e]=edgeOf(d),s=R5(Math.max(spcOf(d),T.d*.4)),xh=gap/2+e;
   return {d,hole:holeOf(d),e,s,xh,gap,t:6.3,W:R5up(Math.max(100,2*(xh+e))),H:R5up(T.d/2+s/2+e)};
 }
 function checkCleat(c,T){
@@ -332,8 +337,13 @@ function build(p){
   const cMF=40,yMF=35,eMF=edgeOf(p.dParT)[0];
   const mfG=Sd=>{const dz=cMF+Sd+40,a=yMF+dz,L0=Math.hypot(dz,a-yMF);return {dz,a,L0,cut:Math.round(L0+2*eMF)};};
   const mfV=mfG(Vp.d),mfP=mfG(Pp.d);
-  const pick=(arr)=>arr.filter((_,k)=>k>0&&k<arr.length-1&&k%p.mfN===0);
-  const mfS=p.mfViga?pick(purS):[],mfZ=p.mfPil?pick(girtZ):[];
+  // Manual de Galpões Gerdau: mesa comprimida da viga contida a cada 2,5 m no máximo
+  const LB_MAX=2500,stepOf=a=>a.length>1?a[1]-a[0]:1e9;
+  const nOf=a=>p.mfN||Math.max(1,Math.floor(LB_MAX/stepOf(a)+1e-6));
+  const mfNv=nOf(purS),mfNp=nOf(girtZ);
+  const pick=(arr,N)=>arr.filter((_,k)=>k>0&&k<arr.length-1&&k%N===0);
+  const mfS=p.mfViga?pick(purS,mfNv):[],mfZ=p.mfPil?pick(girtZ,mfNp):[];
+  const mfLbV=mfNv*stepOf(purS);
   const CM={mark:'CM1',desc:'Chapa da mão-francesa',t:6.3,W:R5up(2*(yMF+eMF)),L:R5up(40+eMF),qty:0};
   const dist=(a,b)=>Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);
   ys.forEach(y=>{
@@ -369,8 +379,14 @@ function build(p){
   mem.forEach(m=>m.mark=gmap.get(m.gk).mark);
   // chapas
   const dCh=p.dCh,eCh=edgeOf(dCh)[0],aF=Math.max(R5(2*dCh),clrOf(dCh)),ed=R5up(Math.max(eCh,1.75*dCh));
-  const basePlate=(pr,mark,desc,qty)=>{const g=Math.max(pr.bf,R5(3*dCh));return {mark,desc,prof:pr,t:p.tBase,W:g+2*ed,L:pr.d+2*(aF+ed),qty,hole:dCh+6,a:aF,ed,g,
-    holes:[[-g/2,-(pr.d/2+aF)],[g/2,-(pr.d/2+aF)],[-g/2,pr.d/2+aF],[g/2,pr.d/2+aF]]};};
+  // chumbador: comprimento e rosca conforme a tabela de bases do Manual de Galpões Gerdau (ø25: 750 mm, rosca 175 mm)
+  const Lch=Math.ceil(Math.max(600,30*dCh)/50)*50,rosca=Math.ceil(Math.max(100,7*dCh)/25)*25;
+  const basePlate=(pr,mark,desc,qty)=>{
+    if(p.baseEng){const g=Math.max(pr.bf,R5(3*dCh));return {mark,desc,prof:pr,eng:true,t:p.tBase,W:g+2*ed,L:pr.d+2*(aF+ed),qty,hole:dCh+6,a:aF,ed,g,Lch,rosca,
+      holes:[[-g/2,-(pr.d/2+aF)],[g/2,-(pr.d/2+aF)],[-g/2,pr.d/2+aF],[g/2,pr.d/2+aF]]};}
+    // rotulada (Manual de Ligações Gerdau, base PBR): 2 chumbadores entre as mesas, um de cada lado da alma
+    const g=R5up(Math.max(pr.tw+2*clrOf(dCh),3*dCh));
+    return {mark,desc,prof:pr,eng:false,t:p.tBase,W:R5up(Math.max(pr.bf+50,g+2*ed)),L:R5up(pr.d+50),qty,hole:dCh+6,a:0,ed,g,Lch,rosca,holes:[[-g/2,0],[g/2,0]]};};
   const PB=basePlate(Pp,'PB1','Placa de base do pilar',2*nF),PB2=basePlate(PLp,'PB2','Placa de base do pilarete',2*pilX.length),g=PB.g;
   const CT={mark:'CT1',desc:'Chapa de topo viga-pilar',t:p.tTopo,W:Lvp.W,L:Lvp.H,qty:2*nF};
   const CC={mark:'CC1',desc:'Chapa de emenda da cumeeira',t:p.tTopo,W:Lc.W,L:Lc.H,qty:2*nF};
@@ -408,9 +424,12 @@ function build(p){
   const A325='Parafuso ASTM A325 com porca e arruela',A307='Parafuso ASTM A307 com porca e arruela';
   conns.forEach(c=>{c.checks=[];
     if(c.kind==='LB'){const pb=c.rank?PB2:PB;c.pb=pb;c.title=c.rank?'Base de pilarete':'Base de pilar';c.desc=`${pb.prof.label} soldado na ${pb.mark} · 4 chumbadores ø${numBR(dCh)}`;
-      c.bolts=[['Chumbador com porca e arruela, L = 600 mm',dCh,4]];
-      if(ed<eCh)c.checks.push(`Borda da placa de ${ed} mm, menor que ${eCh} mm.`);
-      if(pb.g<3*dCh)c.checks.push(`Distância entre chumbadores de ${pb.g} mm, menor que 3d.`);}
+      c.bolts=[[`Chumbador com porca de nivelamento, porca e arruela, L = ${Lch} mm`,dCh,pb.holes.length]];
+      c.desc=`${pb.prof.label} soldado na ${pb.mark} · ${pb.eng?'engastada, 4':'rotulada, 2'} chumbadores ø${numBR(dCh)}`;
+      if(pb.eng&&ed<eCh)c.checks.push(`Borda da placa de ${ed} mm, menor que ${eCh} mm.`);
+      if(pb.g<3*dCh)c.checks.push(`Distância entre chumbadores de ${pb.g} mm, menor que 3d.`);
+      if(!pb.eng&&pb.g>pb.prof.bf)c.checks.push(`Chumbadores afastados ${pb.g} mm, mais que a largura da mesa (${pb.prof.bf} mm).`);
+      if(!pb.eng&&pb.prof.d/2-pb.prof.tf<clrOf(dCh))c.checks.push('Perfil baixo demais para chumbadores entre as mesas.');}
     else if(c.kind==='LPT'){c.title='Topo do pilarete na viga';c.desc=`CP1 com furos oblongos verticais · 2 parafusos ø${numBR(dpt)}`;
       c.bolts=[[A325,dpt,2]];const livre=PLp.d-2*PLp.tf-10;
       if(CP.W>livre)c.checks.push(`A chapa CP1 (${CP.W} mm) não cabe entre as mesas do pilarete ${PLp.label} (${nf0.format(livre)} mm livres).`);
@@ -420,7 +439,8 @@ function build(p){
       c.title=(col?'Mão-francesa no pilar':'Mão-francesa na viga')+(c.sides===2?', dos dois lados':', de um lado');
       c.desc=`${c.sides} ${MFp.label} · ${2*c.sides} parafusos ø${numBR(p.dParT)} · chapa CM1`;c.bolts=[[A307,p.dParT,2*c.sides]];
       if(MFp.bf/2<er)c.checks.push(`Aba de ${MFp.bf} mm pequena para parafuso ø${numBR(p.dParT)}: furo no meio da aba fica a ${numBR(MFp.bf/2)} mm da borda (mínimo ${er} mm).`);
-      const T2=col?TRp:Tp;if(cMF-(T2.t||T2.tf)<clrOf(p.dParT))c.checks.push(`Furo na ${col?'travessa':'terça'} muito perto da mesa.`);}
+      const T2=col?TRp:Tp;if(cMF-(T2.t||T2.tf)<clrOf(p.dParT))c.checks.push(`Furo na ${col?'travessa':'terça'} muito perto da mesa.`);
+      if(!col&&mfLbV>LB_MAX+1)c.checks.push(`Mão-francesa a cada ${nf2.format(mfLbV/1000)} m: o Manual de Galpões Gerdau recomenda conter a mesa comprimida da viga a cada 2,5 m no máximo.`);}
     else if(c.kind==='LVP'){c.title='Viga-pilar (beiral)';c.desc=`Chapa de topo CT1 estendida · ${p.nbVP} parafusos ø${numBR(p.dPar)}`;
       c.bolts=[[A325,p.dPar,p.nbVP]];c.checks=checkEndPlate(Lvp,Vp,Pp);
       if(Pp.kind!=='W'||Vp.kind!=='W')c.checks.push('Pórtico com perfil Ue: este detalhe foi pensado para perfil W.');}
@@ -449,7 +469,7 @@ function build(p){
   if(p.mureta*1000>=H-300)warns.push('Alvenaria chega ao beiral: nenhuma travessa lateral foi gerada.');
   if(nAlert)warns.push(`${nAlert} alerta(s) nas ligações. Veja a aba Ligações.`);
   if(rafCut<500)warns.push('Viga muito curta: revise o vão e o perfil do pilar.');
-  return {p,B,L,H,i,th,cs,sn,nV,nF,e,Zr,ys,hv,zFace,Lvp,Lc,clT,clG,conns,nAlert,pilX,pilTop,zBotAt,CP,PB2,PL:PLp,MF:MFp,mfV,mfP,mfS,mfZ,cMF,yMF,CM,colCut,rafCut,Ls,purS,purX,girtZ,mur,mem,groups,plates,pl:{PB,CT,CC,ST,STL},bolts,
+  return {p,B,L,H,i,th,cs,sn,nV,nF,e,Zr,ys,hv,zFace,Lvp,Lc,clT,clG,conns,nAlert,pilX,pilTop,zBotAt,CP,PB2,PL:PLp,MF:MFp,mfV,mfP,mfS,mfZ,cMF,yMF,CM,mfLbV,colCut,rafCut,Ls,purS,purX,girtZ,mur,mem,groups,plates,pl:{PB,CT,CC,ST,STL},bolts,
     P:Pp,V:Vp,T:Tp,TR:TRp,kgPerf,kgCh,kgTot:kgPerf+kgCh,area,warns,
     markOf:t=>groups.filter(g=>g.type===t),conn:(k,sd,rk=0)=>conns.find(c=>c.kind===k&&(!sd||c.sides===sd)&&(c.rank||0)===rk)};
 }
@@ -697,27 +717,28 @@ function plateFront(d,ox,oz,L,V,mark){
 
 function detLB(m,c,ts){
   const pb=c.pb,P=pb.prof,dCh=m.p.dCh,d=new Dwg('LB','',ts);
-  const W=pb.W,L=pb.L,hy=P.d/2+pb.a,g=pb.g;
+  const W=pb.W,L=pb.L,g=pb.g,vs=[...new Set(pb.holes.map(h=>h[1]))],hy=Math.max(...vs);
   d.R(-W/2,-L/2,W,L,'CHAPA');d.P(sectionPts(P),'PILAR');
   pb.holes.forEach(([x,y])=>d.C(x,y,pb.hole/2,'CHAPA'));
-  [-hy,hy].forEach(y=>d.L(-W/2-ts*.6,y,W/2+ts*.6,y,'EIXO'));[-g/2,g/2].forEach(x=>d.L(x,-L/2-ts*.6,x,L/2+ts*.6,'EIXO'));
+  vs.forEach(y=>d.L(-W/2-ts*.6,y,W/2+ts*.6,y,'EIXO'));[-g/2,g/2].forEach(x=>d.L(x,-L/2-ts*.6,x,L/2+ts*.6,'EIXO'));
   d.chain([-W/2,-g/2,g/2,W/2],-L/2,-ts*1.4,false);d.D(-W/2,-L/2,W/2,-L/2,-ts*3);
-  d.chain([-L/2,-hy,-P.d/2,P.d/2,hy,L/2],-W/2,ts*1.4,true);d.D(-W/2,-L/2,-W/2,L/2,ts*3);
+  d.chain(pb.eng?[-L/2,-hy,-P.d/2,P.d/2,hy,L/2]:[-L/2,-P.d/2,0,P.d/2,L/2],-W/2,ts*1.4,true);d.D(-W/2,-L/2,-W/2,L/2,ts*3);
   d.T(0,L/2+ts*1.4,'PLANTA','TEXTO',{an:'middle',h:ts*.9});
   const ox=W/2+ts*6,t=pb.t,u=y=>ox+y+L/2,hc=Math.max(250,L*.6);
   d.R(u(-L/2),0,L,t,'CHAPA');d.R(u(-P.d/2),t,P.d,hc,'PILAR');breakH(d,u(-P.d/2)-ts*.4,u(P.d/2)+ts*.4,t+hc);
   d.L(u(-L/2)-ts,-30,u(L/2)+ts,-30,'ANOT');d.T(u(L/2)+ts*1.2,-30-ts*.3,'graute 30 mm','ANOT',{h:ts*.6});
-  const la=Math.min(600,L*.45);
-  [-hy,hy].forEach(y=>{d.L(u(y)-dCh/2,t+dCh*1.2,u(y)-dCh/2,-la,'ANOT');d.L(u(y)+dCh/2,t+dCh*1.2,u(y)+dCh/2,-la,'ANOT');d.R(u(y)-dCh*.9,t,dCh*1.8,dCh*.8,'ANOT');});
+  const la=Math.min(pb.Lch,L*.45);
+  vs.forEach(y=>{d.L(u(y)-dCh/2,t+dCh*1.2,u(y)-dCh/2,-la,'ANOT');d.L(u(y)+dCh/2,t+dCh*1.2,u(y)+dCh/2,-la,'ANOT');d.R(u(y)-dCh*.9,t,dCh*1.8,dCh*.8,'ANOT');});
   d.D(u(-L/2),0,u(L/2),0,-ts*2.2-30);
-  d.T(u(hy)+dCh+ts*.3,-la+ts*.2,'chumbador L = 600','ANOT',{h:ts*.6});
+  d.T(u(hy)+dCh+ts*.3,-la+ts*.2,`chumbador L = ${pb.Lch}, rosca ${pb.rosca}`,'ANOT',{h:ts*.6});
   d.D(u(L/2),0,u(L/2),t,-ts*1.2,numBR(t));
   d.T(u(0),t+hc+ts*.9,'CORTE','TEXTO',{an:'middle',h:ts*.9});
   return finishDet(d,c,[
     `${pb.mark} · chapa ${numBR(t)} mm · ${W} x ${L} mm · ${pb.qty} un · ${nf1.format(pb.kgUn)} kg/un`,
-    `4 furos ø${pb.hole} para chumbadores ø${numBR(dCh)}, L = 600 mm (confirmar com o projeto de fundações)`,
+    `${pb.holes.length} furos ø${pb.hole} para chumbadores ø${numBR(dCh)} ASTM A36, L = ${pb.Lch} mm, rosca ${pb.rosca} mm, ${pb.eng?'fora das mesas (base engastada)':'entre as mesas (base rotulada)'}`,
+    `Embutimento mínimo 12d = ${12*dCh} mm e distância à borda do bloco ≥ 5d = ${5*dCh} mm (confirmar com o projeto de fundações)`,
     `${c.rank?'Pilarete':'Pilar'} ${P.label} soldado à placa com filete contínuo (dimensão conforme cálculo)`,
-    'Graute não retrátil de 30 mm, aplicado após o nivelamento']);}
+    'Porca de nivelamento abaixo da placa · graute não retrátil de 25 a 50 mm (adotado 30 mm)']);}
 
 function detVP(m,c,ts){
   const d=new Dwg('LVP','',ts),P=m.P,V=m.V,L=m.Lvp,t=m.p.tTopo,i=m.i,hv=m.hv,tfz=V.tf/m.cs;
@@ -944,7 +965,7 @@ function renderLigacoes(m){
   const rows=m.conns.map(c=>`<tr><td class="mk">${c.mark}</td><td>${esc(c.title)}</td><td class="n">${c.count}</td><td>${esc(c.desc)}</td>
     <td class="chk">${c.checks.length?`<span class="chip al">${c.checks.length} alerta(s)</span><ul>${c.checks.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span class="chip ok">OK</span>'}</td></tr>`).join('');
   $('#lig').innerHTML=`<div class="table-wrap"><h3>Ligações reconhecidas no modelo</h3><table><thead><tr><th>Marca</th><th>Ligação</th><th class="n">Ocorr.</th><th>Composição</th><th>Verificação geométrica</th></tr></thead><tbody>${rows}</tbody></table></div>
-  <p class="note">Regras verificadas: furo = d + 1,5 mm; distância mínima entre furos = 3d; bordas mínimas da NBR 8800:2008, Tabela 14 (borda cortada na chapa, laminada na mesa do perfil); folga para aperto de 1,5d + 8 mm entre o furo e a face da alma ou mesa; tirantes entre 30° e 60°. A quantidade de parafusos, as espessuras e as soldas vêm do cálculo e não são verificadas aqui.</p>`;}
+  <p class="note">Regras usadas: furos padrão do Manual de Ligações Gerdau (18 mm para 5/8", 21 para 3/4", 24 para 7/8", 27 para 1"); espaçamento entre furos de pelo menos 3d, com padrão de 60 mm (5/8") e 75 mm (demais); bordas mínimas da NBR 8800:2008, Tabela 14, elevadas ao padrão Gerdau de 30 mm (5/8") e 40 mm (demais) nas chapas; folga para aperto de 1,5d + 8 mm entre o furo e a face da alma ou mesa; mesa comprimida da viga contida a cada 2,5 m no máximo (Manual de Galpões Gerdau); chumbadores com embutimento ≥ 12d; tirantes entre 30° e 60°. A quantidade de parafusos, as espessuras e as soldas vêm do cálculo e não são verificadas aqui.</p>`;}
 function romaneioCSV(m){const n=v=>String(Math.round(v*100)/100).replace('.',',');const L=[];
   L.push(['Obra',m.p.obra].join(';'));L.push('');
   L.push('Marca;Descrição;Perfil;Qtd;Comprimento (mm);kg/m;kg/un;kg total');
@@ -1001,7 +1022,7 @@ function buildForm(){
   for(const g of GROUPS){h+=`<details${g.open?' open':''}><summary>${g.t}</summary><div class="fields">`;
     for(const f of g.f){const id='f_'+f.id;
       if(f.kind==='num')h+=`<div class="f"><label for="${id}">${f.label}</label><span class="in"><input id="${id}" type="number" inputmode="decimal" step="${f.step}" min="${f.min}" max="${f.max}"><span class="unit">${f.unit}</span></span></div>`;
-      else if(f.kind==='opt')h+=`<div class="f"><label for="${id}">${f.label}</label><span class="in"><select id="${id}">${f.opts.map(o=>`<option value="${o}">${numBR(o)}</option>`).join('')}</select><span class="unit">${f.unit}</span></span></div>`;
+      else if(f.kind==='opt')h+=`<div class="f"><label for="${id}">${f.label}</label><span class="in"><select id="${id}">${f.opts.map(o=>`<option value="${o}">${o===0&&f.zero?f.zero:numBR(o)}</option>`).join('')}</select><span class="unit">${f.unit}</span></span></div>`;
       else if(f.kind==='chk')h+=`<div class="f ck"><label for="${id}">${f.label}</label><input id="${id}" type="checkbox"></div>`;
       else if(f.kind==='prof')h+=`<div class="f wide"><label for="${id}">${f.label}</label><select id="${id}">${f.opts().map(([gl,arr])=>`<optgroup label="${gl}">${arr.map(c=>`<option value="${c.key}">${esc(c.label)} · ${nf2.format(c.kgm)} kg/m</option>`).join('')}</optgroup>`).join('')}</select></div>`;
       else h+=`<div class="f wide"><label for="${id}">${f.label}</label><input id="${id}" type="text" maxlength="120"></div>`;}
