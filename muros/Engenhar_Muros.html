@@ -614,11 +614,12 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  const waitIn=pCover+stD+A2.cornerDia/20,waitBend=pillarArms.N3.bend;
  // Geometria das armaduras (cm).
  const c=B.cover,dX=arm.x.dia/10,dY=arm.y.dia/10,dC=arm.c.dia/10;
- const shp={x:{w:B.x-2*c,h:B.h-2*c},y:{w:B.y-2*c,h:B.h-2*c-2*dX},c:{w:B.x-2*c-2*dX,h:B.y-2*c-2*dY}};
+ // Costela (estribos horizontais) POR FORA, no cobrimento; estribos verticais por dentro dela.
+ const shp={c:{w:B.x-2*c,h:B.y-2*c},x:{w:B.x-2*c-2*dC,h:B.h-2*c},y:{w:B.y-2*c-2*dC,h:B.h-2*c-2*dX}};
  for(const k of ['x','y','c']){shp[k].w=Math.round(shp[k].w);shp[k].h=Math.round(shp[k].h)}
  const cut=k=>Math.round(2*(shp[k].w+shp[k].h)+2*CLOSE*arm[k].dia/10);
  const spacing=(k,span)=>Math.floor(span/(q(k)-1)*2)/2;
- const sp={x:spacing('x',B.y-2*c-2*dY),y:spacing('y',B.x-2*c-2*dX),c:spacing('c',B.h-2*c-2*dX)};
+ const sp={x:spacing('x',B.y-2*c-2*dC),y:spacing('y',B.x-2*c-2*dC),c:spacing('c',B.h-2*c-2*dX)};
  const fmt=v=>String(v).replace('.',',');
  label(bx,23,`B1 — BLOCO DE COROAMENTO · ${foundationCounts('block').B1||0} UN.`,blockG,{'data-role':'title'});
  text(bx,37,'PLANTA • CORTES A–A / B–B • FORMATOS DAS ARMADURAS','white',8,blockG);
@@ -639,9 +640,10 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  for(const sx of [-1,1])for(const sy of [-1,1])circle(cxp+sx*(pa/2-waitIn)*sc,cyp+sy*(pb/2-waitIn)*sc,Math.max(1.2,waitDia/2*sc),'#f06b76','#f06b76',.5,blockG);
  // Armaduras em planta: N_X (paralelas a X), N_Y (paralelas a Y) e costela (contorno).
  const ci=c*sc;
- el('rect',{x:px+ci+dX*sc,y:py+ci+dY*sc,width:shp.c.w*sc,height:shp.c.h*sc,stroke:col.c,'stroke-width':1,fill:'none'},blockG);
- for(let i=0;i<q('x');i++){const yy=py+ci+(hh-2*ci)*i/(q('x')-1);line(px+ci,yy,px+ww-ci,yy,col.x,.9,blockG)}
- for(let i=0;i<q('y');i++){const xx=px+ci+(ww-2*ci)*i/(q('y')-1);line(xx,py+ci,xx,py+hh-ci,col.y,.9,blockG)}
+ el('rect',{x:px+ci,y:py+ci,width:shp.c.w*sc,height:shp.c.h*sc,stroke:col.c,'stroke-width':1.2,fill:'none'},blockG);
+ const ii=ci+dC*sc+.8;
+ for(let i=0;i<q('x');i++){const yy=py+ii+(hh-2*ii)*i/(q('x')-1);line(px+ii,yy,px+ww-ii,yy,col.x,.9,blockG)}
+ for(let i=0;i<q('y');i++){const xx=px+ii+(ww-2*ii)*i/(q('y')-1);line(xx,py+ii,xx,py+hh-ii,col.y,.9,blockG)}
  // Marcas de corte.
  text(px-7*U,cyp-1*U,'A',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});text(px+ww+7*U,cyp-1*U,'A',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
  text(cxp,py+hh+28*U,'B',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});text(cxp,py-11*U,'B',yellow,10,blockG,{'font-weight':'bold','text-anchor':'middle'});
@@ -679,7 +681,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   const lx0=cx-sh.w*sc/2,ly0=oy,lw=sh.w*sc,lh=sh.h*sc;
   el('path',{d:`M${lx0} ${ly0} H${lx0+lw} V${ly0+lh} H${lx0} Z`,fill:'none',stroke:col[dirKey],'stroke-width':1.2},blockG);
   const nC=q(crossKey);for(let i=0;i<nC;i++){const xx=lx0+3+(lw-6)*i/(nC-1);circle(xx,ly0+2.2,1.5,col[crossKey],col[crossKey],.5,blockG);circle(xx,ly0+lh-2.2,1.5,col[crossKey],col[crossKey],.5,blockG)}
-  const nCost=q('c');for(let i=0;i<nCost;i++){const yy=ly0+6+(lh-12)*i/Math.max(1,nCost-1);circle(lx0+2.4,yy,1.4,col.c,col.c,.5,blockG);circle(lx0+lw-2.4,yy,1.4,col.c,col.c,.5,blockG)}
+  const nCost=q('c');for(let i=0;i<nCost;i++){const yy=ly0+6+(lh-12)*i/Math.max(1,nCost-1);circle(lx0-dC*sc/2-.6,yy,1.4,col.c,col.c,.5,blockG);circle(lx0+lw+dC*sc/2+.6,yy,1.4,col.c,col.c,.5,blockG)}
   // Esperas do pilar: descem até o fundo das armaduras com dobra para fora.
   const wx=(pillarW/2-waitIn)*sc,wBot=ly0+lh-4;
   for(const sgn of [-1,1])path(`M${cx+sgn*wx} ${blockTop-stub+3*U} V${wBot} H${cx+sgn*(wx+waitBend*sc)}`,'#f06b76','none',1.6,blockG);
@@ -687,7 +689,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   const L=(x0,y0,x1,y1,t,colr)=>{path(`M${x0} ${y0} L${x1} ${y1} H${x1+3*U}`,ink,'none',.55,blockG,{'data-layer':'cotas'});text(x1+3.5*U,y1+1.25*U,t,colr,10,blockG,{'font-weight':'bold'})};
   const rx=sx0+W+LASTRO*sc+4*U;
   L(lx0+lw,ly0+lh*.35,rx,ly0+lh*.2,`${q(dirKey)} ${arm[dirKey].pos}`,col[dirKey]);
-  L(lx0+lw-2.4,ly0+6+(lh-12)*.6,rx,ly0+lh*.55,`${q('c')} ${arm.c.pos}`,col.c);
+  L(lx0+lw+dC*sc/2+.6,ly0+6+(lh-12)*.6,rx,ly0+lh*.55,`${q('c')} ${arm.c.pos}`,col.c);
   L(lx0+lw*.75,ly0+lh-2.2,rx,ly0+lh*.9,`${q(crossKey)} ${arm[crossKey].pos}`,col[crossKey]);
   if(dirKey==='y')L(cx+wx,blockTop-stub*.5,rx,blockTop-stub*.6,'ESPERAS (VER PILAR)','#f06b76');
   // Cotas.
@@ -722,7 +724,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   text(fx,fTop+maxH+23.5*U,bp.same&&k==='x'?`(${q('x')} EM X + ${q('y')} EM Y)`:tag,ink,8,blockG);
   const labW=String(t.textContent).length*(3.5/CAP)*U*.6;fx+=Math.max(w+20*U,labW)+12*U;
  }
- text(bx,fTop+maxH+31*U,`COBRIMENTO ${B.cover} cm · LASTRO ${LASTRO} cm · TUBULÃO EMBUTIDO ${EMB} cm`,'#a9c7da',8,blockG);
+ text(bx,fTop+maxH+31*U,`COBRIMENTO ${B.cover} cm · COSTELAS POR FORA DOS ESTRIBOS VERTICAIS · LASTRO ${LASTRO} cm · TUBULÃO EMBUTIDO ${EMB} cm`,'#a9c7da',8,blockG);
  el('rect',{x:bx-12,y:12,width:Math.max(fx-bx,lvX+24*U-bx),height:fTop+maxH+34*U-12,fill:'transparent','pointer-events':'all','data-block-hit':'1'},blockG);
 }
 
