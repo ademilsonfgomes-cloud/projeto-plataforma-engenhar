@@ -432,7 +432,7 @@ path(`M${cx-ringRadius*.71} ${cy+ringRadius*.71} L${cx-r-14} ${cy+r-2} H${cx-r-2
 let bcx=x,bcy=bottom+125,brad=baseW/2;
 line(bl,bottom,bl,bcy,'#7995a6',.8,g,{'stroke-dasharray':'5 5'});
 line(br,bottom,br,bcy,'#7995a6',.8,g,{'stroke-dasharray':'5 5'});
-line(x,bottom,x,bcy+brad+15,'#54758a',.65,g,{'stroke-dasharray':'5 5'});
+line(x,bottom+40,x,bcy+brad+15,'#54758a',.65,g,{'stroke-dasharray':'5 5'});
 label(bcx-brad,bcy-brad-16,'SEÇÃO DA BASE',g);
 circle(bcx,bcy,brad,'#f5c845','none',.95,g);
 circle(bcx,bcy,r,'#37637c','none',.8,g,{'stroke-dasharray':'3 3'});
@@ -553,7 +553,8 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
    circle(mx,my,r,'#f5c845','none',.9,wg,{'data-layer':'eixos'});
    line(mx-r,my,mx+r,my,'#f5c845',.7,wg,{'data-layer':'eixos'});
    const tip={x:mx-nx*dimSide*(r+mm(3)),y:my-ny*dimSide*(r+mm(3))},px=-ny,py=nx;
-   el('polygon',{points:[[tip.x,tip.y],[mx+px*r*.75-nx*dimSide*r*.6,my+py*r*.75-ny*dimSide*r*.6],[mx-px*r*.75-nx*dimSide*r*.6,my-py*r*.75-ny*dimSide*r*.6]].map(q=>q.join(',')).join(' '),fill:'#f5c845',stroke:'#f5c845','stroke-width':.5,'fill-opacity':.85},wg);
+   const tip2={x:mx-nx*dimSide*(r+mm(3.2)),y:my-ny*dimSide*(r+mm(3.2))},bx=mx-nx*dimSide*(r+mm(.3)),by=my-ny*dimSide*(r+mm(.3));
+   el('polygon',{points:[[tip2.x,tip2.y],[bx+px*mm(1.8),by+py*mm(1.8)],[bx-px*mm(1.8),by-py*mm(1.8)]].map(q=>q.join(',')).join(' '),fill:'#f5c845',stroke:'#f5c845','stroke-width':.5,'fill-opacity':.85},wg);
    ptext(mx,my-mm(1),`E${idx+1}`,'#f5c845',2.2,{'text-anchor':'middle','font-weight':'bold'});
    ptext(mx,my+mm(3),sheetNo?'F'+String(sheetNo).padStart(2,'0'):'—','#f5c845',2.0,{'text-anchor':'middle'});
   }
@@ -960,8 +961,7 @@ function drawBeamDetails(parent,kind="VB"){
    if(!signatures.has(signature))signatures.set(signature,`N${nextCode++}`);
    return signatures.get(signature);
   }
-  txt(12,25,`${code} — ${kind==="VT"?"DETALHAMENTO DA VIGA DE TOPO":"DETALHAMENTO DA VIGA DE BASE"} · 1 UN.`,16,gold,{'font-weight':'bold','data-role':'title'});txt(12,45,'ESC. 1:{s} · COTAS EM cm',10,'#a9c7da',{'data-scale-label':'VISTA E CORTE ESC. 1:{s} · COTAS EM cm'});
-  txt(25,119,`VISTA LONGITUDINAL · ${width}×${height} cm`,10,blue);
+  txt(12,25,`${code} — ${kind==="VT"?"DETALHAMENTO DA VIGA DE TOPO":"DETALHAMENTO DA VIGA DE BASE"} · 1 UN.`,16,gold,{'font-weight':'bold','data-role':'title'});txt(12,45,'ESC. 1:{s} · COTAS EM cm',10,'#a9c7da',{'data-scale-label':`VISTA LONGITUDINAL E CORTE A–A · SEÇÃO ${width}×${height} cm · ESC. 1:{s} · COTAS EM cm`});
   el('rect',{x,y,width:L,height:H,fill:'#9ab5c4','fill-opacity':.12,stroke:ink,'stroke-width':1.2},g);
   for(const [position,barY,sign,pieces] of [['N2',topY,1,upper],['N3',bottomY,-1,lower]]){
    const arm=arms[position],bend=Math.min(H*.7,arm.bend*sc);
