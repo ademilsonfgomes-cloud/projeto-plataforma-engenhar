@@ -1792,14 +1792,17 @@ function organizeSheets(quiet=false){
     if(out.length>start)splits++}}
   const fills=out.map(sp=>sp.items.reduce((t,i)=>t+i.w*i.h,0)/(area.w*area.h));
   return {specs:out,splits,n:out.length,minFill:Math.min(...fills)}};
- const partitions=list=>{const res=[];const rec=(i,blocks)=>{if(i===list.length){res.push(blocks.map(b=>[...b]));return}
-  for(const b of blocks){b.push(list[i]);rec(i+1,blocks);b.pop()}blocks.push([list[i]]);rec(i+1,blocks);blocks.pop()};rec(0,[]);return res};
- for(const scale of [...new Set(cats.map(c=>c.scale))]){
-  const group=cats.filter(c=>c.scale===scale);let best=null;
-  for(const blocks of partitions(group)){const r=simulate(blocks);
-   if(!best||r.splits<best.splits||(r.splits===best.splits&&(r.n<best.n||(r.n===best.n&&r.minFill>best.minFill+1e-9))))best=r}
-  specs.push(...best.specs);
+ // Sequência construtiva: locação → estacas/tubulões → blocos → pilares e esperas → vigas → elevações.
+ // As folhas seguem essa ordem; só etapas VIZINHAS (e de mesma escala) podem dividir uma folha.
+ let best=null;
+ if(cats.length)for(let mask=0;mask<(1<<Math.max(0,cats.length-1));mask++){
+  const blocks=[];let curB=[cats[0]];
+  for(let i=1;i<cats.length;i++){if(mask&(1<<(i-1))&&cats[i].scale===curB[0].scale)curB.push(cats[i]);else if(mask&(1<<(i-1)))curB=null;else{blocks.push(curB);curB=[cats[i]]}if(!curB)break}
+  if(!curB)continue;blocks.push(curB);
+  const r=simulate(blocks);
+  if(!best||r.splits<best.splits||(r.splits===best.splits&&(r.n<best.n||(r.n===best.n&&r.minFill>best.minFill+1e-9))))best=r;
  }
+ if(best)specs.push(...best.specs);
  specs.sort((p,q)=>p.first-q.first);
  let x=0;lastValidSteelBySheet=new Map();
  // Título e categorias da folha a partir dos desenhos que ela realmente contém.
