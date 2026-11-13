@@ -2235,7 +2235,7 @@ function printify(root,unit){
 }
 function managerSvg(sh,mode='mono'){
  draw();layerApply();
- const d=sheetDims(sh),source=svg.cloneNode(true);
+ const d=sheetDims(sh),source=svg.cloneNode(true);source.querySelectorAll('[data-screen-only]').forEach(n=>n.remove());
  // Usar o próprio desenho vetorial; o viewBox delimita a folha selecionada.
  source.removeAttribute('style');source.removeAttribute('width');source.removeAttribute('height');
  source.setAttribute('xmlns','http://www.w3.org/2000/svg');
@@ -2253,6 +2253,7 @@ function managerSvg(sh,mode='mono'){
 }
 function managerPdf(selected){
  if(!selected.length)return;
+ if(calcSettings.useCalc){let f;try{f=calcFailures()}catch(e){f=new Map()}if(f.size&&!confirm(`Há elementos que NÃO PASSAM no cálculo do programa:\n\n${[...f].map(([c,m])=>c+' — '+[...m].join('; ')).join('\n')}\n\nGerar o PDF mesmo assim?`))return}
  if(notesPending()&&!confirm('Há notas com [VALOR] sem preencher (fck / cobrimento). Preencha em ▤ Editar carimbo. Gerar o PDF mesmo assim?'))return;
  // Pré-visualização sequencial: uma prancha por linha e uma página por folha na impressão.
  const ordered=[...selected].sort((a,b)=>a.id-b.id);
@@ -3200,6 +3201,36 @@ function calcUserPresets(){try{return JSON.parse(localStorage.getItem('engenharC
 function calcPresetOptions(){const u=calcUserPresets();return '<option value="">— escolher modelo —</option>'+Object.keys(CALC_PRESETS).map(k=>`<option value="b:${k}">${k}</option>`).join('')+(Object.keys(u).length?'<optgroup label="Meus modelos">'+Object.keys(u).map(k=>`<option value="u:${k}">${k}</option>`).join('')+'</optgroup>':'')}
 function calcPresetApply(v){if(!v)return;const src=v.startsWith('b:')?CALC_PRESETS[v.slice(2)]:calcUserPresets()[v.slice(2)];if(!src)return;Object.assign(calcSettings,src);calcSettings.sel=null;calcOpen();status(`Premissas: modelo "${v.slice(2)}" aplicado.`)}
 function calcPresetSave(){const name=prompt('Nome do modelo de premissas (ex.: Obra padrão Uberlândia):');if(!name)return;const u=calcUserPresets();u[name.trim()]=Object.fromEntries(CALC_PRESET_KEYS.map(k=>[k,calcSettings[k]]));try{localStorage.setItem('engenharCalcPresets',JSON.stringify(u))}catch(e){alert('Não foi possível salvar o modelo neste navegador.');return}$('cPreset').innerHTML=calcPresetOptions();status(`Modelo "${name}" salvo neste navegador.`)}
+// ---------- Avisos de "não passa" no detalhamento (V253) ----------
+// Selo vermelho sobre cada desenho cujo elemento não atende ao cálculo do programa. Só na tela:
+// não entra no PDF nem no DXF (é removido na exportação e desenhado depois do draw).
+let calcMarkT=null;
+function calcFailures(){
+ const out=new Map(),add=(code,txt)=>{if(!out.has(code))out.set(code,new Set());out.get(code).add(txt)};
+ if(!wallFinished||wallPoints.length<2)return out;
+ const sv=calcSettings.wall;calcSettings.wall='all';
+ try{
+  const P=calcPillar(),badP=P.filter(r=>!r.okM||!r.okV);
+  if(badP.length){const ids=[...new Set(badP.map(r=>r.id))].join(', '),what=[badP.some(r=>!r.okM)&&'flexão',badP.some(r=>!r.okV)&&'cisalhamento'].filter(Boolean).join(' e ');
+   for(const c of detailGroups().map(groupCode).filter(c=>/^P\d+$/.test(c)))add(c,`${ids}: ${what}`)}
+  for(const f of calcFoundation()){const w=[f.FSt<calcSettings.fsTomb&&'tombamento',f.FSd<calcSettings.fsDesl&&'deslizamento',f.depth<f.depthReq-1e-6&&'profundidade',!f.okVert&&'carga vertical',f.MRdF<f.Mdmax&&'flexão do fuste',!f.okMin&&'armadura mínima'].filter(Boolean);if(w.length)add(f.code,`${f.id}: ${w.join(', ')}`)}
+  for(const r of calcBeams()){if(r.okM&&r.okV)continue;if(r.kind==='ALV')add(`EL${r.wall+1}`,`alvenaria vão ${r.span+1}`);else add(r.name,`${r.check==='vertical'?'flexão vertical':'flexão horizontal'} vão ${r.span+1}`)}
+ }finally{calcSettings.wall=sv}
+ return out;
+}
+function calcMarkFailures(){
+ const root=sceneRoot();if(!root)return;root.querySelectorAll('[data-screen-only]').forEach(n=>n.remove());
+ let fails;try{fails=calcFailures()}catch(e){return}
+ for(const [code,msgs] of fails){const g=findGroup(code);if(!g)continue;const b=sceneBox(g);if(!b)continue;
+  const u=unitFor(detailScale[code]||25),fs=4.2*u,list=[...msgs],txt=`⚠ NÃO PASSA NO CÁLCULO${calcSettings.useCalc?'':' (conferência)'} — ${list.slice(0,3).join(' · ')}${list.length>3?` · +${list.length-3}`:''}`;
+  const w=Math.max(60*u,txt.length*fs*.56),x=b.x,y=b.y-fs*2.4;
+  const mk=el('g',{'data-screen-only':'1',style:'cursor:pointer'},root);mk.onclick=()=>{calcSettings.tab=/^P/.test(code)?'pilar':/^[TE]\d/.test(code)?'fundacao':'viga';calcOpen()};
+  el('rect',{x,y,width:w,height:fs*1.8,rx:fs*.4,fill:'#c0392b','fill-opacity':.92},mk);
+  el('text',{x:x+fs*.5,y:y+fs*1.25,fill:'#fff','font-size':fs,'font-weight':'bold','font-family':'Arial'},mk).textContent=txt;
+  el('rect',{x:b.x-fs*.4,y:b.y-fs*.4,width:b.w+fs*.8,height:b.h+fs*.8,fill:'none',stroke:'#e74c3c','stroke-width':fs*.18,'stroke-dasharray':`${fs} ${fs*.6}`},mk);
+ }
+}
+(()=>{const d0=draw;draw=function(){const r=d0.apply(this,arguments);if(!renderingVariant){clearTimeout(calcMarkT);calcMarkT=setTimeout(calcMarkFailures,300)}return r}})();
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
