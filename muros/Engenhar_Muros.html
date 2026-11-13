@@ -358,6 +358,18 @@ function hookedRing(cx,cy,r,dia,parent,interactive){
  if(interactive){for(const e of [main,overlap,h0,h1])selectable(e,'N2')}
  return main
 }
+// V240 — Estribo fechado no padrão de desenho: contorno contínuo com as duas pontas se
+// encontrando no canto superior direito e dobradas para dentro a 135° (duas pontas
+// paralelas de comprimento "hook"). Usado no pilar, nas vigas e no bloco.
+function drawStirrupShape(parent,x,y,w,h,color,hook,sw=1.4,attrs={}){
+ const o=Math.max(1.2,Math.min(w,h)*.05),k=Math.max(2,Math.min(hook,Math.min(w,h)*.45))*.7071;
+ const pth=el('path',{d:`M${x+w-o} ${y} H${x} V${y+h} H${x+w} V${y+o}`,fill:'none',stroke:color,'stroke-width':sw,'stroke-linejoin':'round',...attrs},parent);
+ el('path',{d:`M${x+w-o} ${y} L${x+w-o-k} ${y+k}`,fill:'none',stroke:color,'stroke-width':sw,'stroke-linecap':'round',...attrs},parent);
+ el('path',{d:`M${x+w} ${y+o} L${x+w-k} ${y+o+k}`,fill:'none',stroke:color,'stroke-width':sw,'stroke-linecap':'round',...attrs},parent);
+ // Arco do canto onde as pontas se encontram.
+ el('path',{d:`M${x+w-o} ${y} Q${x+w} ${y} ${x+w} ${y+o}`,fill:'none',stroke:color,'stroke-width':sw,...attrs},parent);
+ return pth;
+}
 function selectable(e,key){
  // Elementos gráficos são apenas representações; edição exclusivamente pelo rótulo N.
  e.setAttribute('pointer-events','none');
@@ -677,7 +689,8 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   line(lgx,lgy-1.2*U,lgx+5*U,lgy-1.2*U,k==='p'?'#f06b76':col[k],1.4,blockG);text(lgx+7*U,lgy,txt,ink,8,blockG);lgy+=6*U}
  text(lgx,lgy,`TUBULÃO Ø${B.pile} (TRACEJADO)`,grey,8,blockG);
  // ---------- CORTES ----------
- const stub=24*sc,cutTop=py+hh+33*U,blockTop=cutTop+9*U+stub,blockBot=blockTop+H,lastroBot=blockBot+LASTRO*sc,pileBot=lastroBot+18*U;
+ // Esperas mostradas no comprimento real acima do bloco (transpasse adotado × Ø).
+ const waitLap=Math.round(pillarArms.N3.lapFactor*waitDia),stub=(waitLap+14)*sc,cutTop=py+hh+33*U,blockTop=cutTop+9*U+stub,blockBot=blockTop+H,lastroBot=blockBot+LASTRO*sc,pileBot=lastroBot+18*U;
  function section(sx0,title,widthCm,dirKey,crossKey,pillarW){
   const W=widthCm*sc,cx=sx0+W/2;
   text(sx0,cutTop,title,yellow,11,blockG,{'font-weight':'bold'});
@@ -704,7 +717,8 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   {const vbw=Math.max(10,Number(wp.wallBeamWidth)||20),vbh=Math.max(10,Number(wp.wallBeamHeight)||40)*sc;if(dirKey==='x'){el('rect',{x:sx0,y:blockTop,width:W,height:vbh,fill:'none',stroke:'#f5cb69','stroke-width':.7,'stroke-dasharray':'5 3'},blockG)}else{const bw=vbw*sc;el('rect',{x:cx-bw/2,y:blockTop,width:bw,height:vbh,fill:'none',stroke:'#f5cb69','stroke-width':.7,'stroke-dasharray':'5 3'},blockG)}text(sx0-1.5*U,blockTop+vbh/2+1.2*U,'VB',yellow,8,blockG,{'text-anchor':'end','font-weight':'bold'})}
   // Esperas do pilar: descem até o fundo das armaduras com dobra para fora.
   const wx=(pillarW/2-waitIn)*sc,wBot=ly0+lh-4;
-  for(const sgn of [-1,1])path(`M${cx+sgn*wx} ${blockTop-stub+3*U} V${wBot} H${cx+sgn*(wx+waitBend*sc)}`,'#f06b76','none',1.6,blockG);
+  for(const sgn of [-1,1])path(`M${cx+sgn*wx} ${blockTop-waitLap*sc} V${wBot} H${cx+sgn*(wx+waitBend*sc)}`,'#f06b76','none',1.6,blockG);
+  if(dirKey==='x'){dimV(blockTop-waitLap*sc,blockTop,cx-pw/2-5*U,cx-wx,String(waitLap),blockG);text(cx-pw/2-12*U,blockTop-waitLap*sc/2,`TRANSP. ${pillarArms.N3.lapFactor}Ø`,'#f06b76',8,blockG,{'text-anchor':'end'})}
   // Chamadas.
   const L=(x0,y0,x1,y1,t,colr)=>{path(`M${x0} ${y0} L${x1} ${y1} H${x1+3*U}`,ink,'none',.55,blockG,{'data-layer':'cotas'});text(x1+3.5*U,y1+1.25*U,t,colr,10,blockG,{'font-weight':'bold'})};
   const rx=sx0+W+LASTRO*sc+4*U;
@@ -733,9 +747,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  for(const [k,tag] of kinds){
   const w=shp[k].w*sc,h=shp[k].h*sc,hook=CLOSE*arm[k].dia/10*sc,color=col[k];
   // Contorno fechado com as duas pontas dobradas para dentro (10Ø) no canto superior direito.
-  path(`M${fx+w-hook} ${fTop} H${fx} V${fTop+h} H${fx+w} V${fTop}`,color,'none',1.4,blockG);
-  path(`M${fx+w} ${fTop} L${fx+w-hook*.7} ${fTop+hook*.7}`,color,'none',1.4,blockG);
-  path(`M${fx+w-hook} ${fTop} L${fx+w-hook-hook*.7*0} ${fTop+hook}`,color,'none',1.4,blockG);
+  drawStirrupShape(blockG,fx,fTop,w,h,color,hook,1.4);
   dimH(fx,fx+w,fTop+h+8*U,fTop+h,String(shp[k].w),blockG);
   dimV(fTop,fTop+h,fx-7*U,fx,String(shp[k].h),blockG);
   text(fx+w+2*U,fTop+hook+2.5*U,`10Ø=${Math.round(CLOSE*arm[k].dia/10)}`,ink,8,blockG);
@@ -1118,7 +1130,7 @@ function drawBeamDetails(parent,kind="VB"){
   path(`M${cx+iw-Math.min(4,iw*.2)} ${cy+ih-3} L${lx} ${sy+sh+3.5*U} H${lx+3*U}`,ink,'none',.6,g,{'data-layer':'cotas'});txt(lx+3.5*U,sy+sh+5.2*U,`${arms.N3.qty} ${botCode}`,9,orange,{'font-weight':'bold','data-beam-arm':'N3',style:'cursor:pointer'});
   const esX=sectionX+sw+32*U,esY=y,ew=Math.max(12,(width-2*cover)*sc),eh=Math.max(16,(height-2*cover)*sc);
   txt(esX-4*U,y-8*U,'ESTRIBO N1',11,blue,{'font-weight':'bold','data-beam-arm':'N1',style:'cursor:pointer'});
-  el('path',{d:`M${esX} ${esY} H${esX+ew} V${esY+eh} H${esX} Z M${esX+ew} ${esY} l${-Math.min(9,ew*.35)} ${Math.min(9,eh*.3)} M${esX+ew} ${esY} l${-Math.min(5,ew*.2)} ${Math.min(12,eh*.4)}`,fill:'none',stroke:blue,'stroke-width':1.6,'data-beam-arm':'N1',style:'cursor:pointer'},g);
+  drawStirrupShape(g,esX,esY,ew,eh,blue,arms.N1.hook*sc,1.6,{'data-beam-arm':'N1',style:'cursor:pointer'});
   txt(esX+ew/2,esY+eh+4.5*U,`${width-2*cover}`,9,ink,{'text-anchor':'middle'});txt(esX-1.5*U,esY+eh/2+1.25*U,`${height-2*cover}`,9,ink,{'text-anchor':'end'});
   const stirrupCut=Math.round((2*(width+height-4*cover)+2*arms.N1.hook)*100)/100;
   txt(esX-4*U,esY+eh+11*U,`${n} N1 Ø${fmtDia(arms.N1.dia)} — C=${stirrupCut} cm · c/${arms.N1.spacing} cm`,10,blue,{'data-beam-arm':'N1',style:'cursor:pointer'});
@@ -1236,9 +1248,7 @@ function drawPillarDetails(parent){
   txt(sx-12,ey-22,'ESTRIBO N1',12,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
   const ew=Math.max(20,(v.a-2*cover)*factor),eh=Math.max(28,(v.b-2*cover)*factor);
   const hook=Math.min(Math.max(5,pillarArms.N1.hook*factor*.5),Math.min(ew,eh)*.35),hx=ex+ew,hy=ey;
-  path(`M ${ex} ${hy} L ${hx} ${hy} L ${hx} ${hy+eh} L ${ex} ${hy+eh} Z`,blue,'none',1.7,g);
-  path(`M ${hx} ${hy+1} L ${hx-hook*.70} ${hy+hook*.85}`,blue,'none',1.7,g);
-  path(`M ${hx-3.5} ${hy} L ${hx-hook*.70-3.5} ${hy+hook*.85}`,blue,'none',1.7,g);
+  drawStirrupShape(g,ex,hy,ew,eh,blue,pillarArms.N1.hook*factor,1.7);
   txt(ex-8,ey+eh/2+3,String(Math.max(0,v.b-2*cover)),10,ink,{'text-anchor':'end'});
   txt(ex+ew/2,ey+eh+14,String(Math.max(0,v.a-2*cover)),10,ink,{'text-anchor':'middle'});
   const stirrupSpacing=pillarArms.N1.spacing,stirrupDiameter=pillarArms.N1.dia;
