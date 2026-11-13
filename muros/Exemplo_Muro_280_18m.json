@@ -4,14 +4,14 @@
   "module": "tubuloes",
   "parameters": {
     "id": "E1",
-    "shaft": "50",
-    "base": "50",
-    "depth": "340",
+    "shaft": "60",
+    "base": "60",
+    "depth": "280",
     "baseHeight": "10",
     "skirt": "0",
     "cover": "5",
-    "bars": "10",
-    "barDia": "16",
+    "bars": "9",
+    "barDia": "12.5",
     "barLen": "260",
     "stDia": "8",
     "ringLen": "154.6",
@@ -41,7 +41,7 @@
           "wallBeamWidth": "20",
           "wallBeamHeight": "40",
           "wallColX": "20",
-          "wallColY": "35",
+          "wallColY": "40",
           "wallHeight": "280",
           "wallSlope": "0",
           "wallSoil": "left",
@@ -58,7 +58,7 @@
       "wallBeamWidth": "20",
       "wallBeamHeight": "40",
       "wallColX": "20",
-      "wallColY": "35",
+      "wallColY": "40",
       "wallHeight": "280",
       "wallSlope": "0",
       "wallSoil": "left",
@@ -67,11 +67,11 @@
     }
   },
   "blockOffset": {
-    "x": 3466.970629882813,
+    "x": 3472.2933532714846,
     "y": 19.452877235412597
   },
   "tubuloOffset": {
-    "x": 3604.5,
+    "x": 3608.011447906494,
     "y": 19.452877235412597
   },
   "wallOffset": {
@@ -88,7 +88,7 @@
   "pillarArms": {
     "N1": {
       "dia": 5,
-      "spacing": 12.5,
+      "spacing": 15,
       "cover": 3,
       "hook": 10
     },
@@ -97,10 +97,10 @@
       "qty": 6,
       "topCover": 3,
       "bottomCover": 3,
-      "cornerDia": 20,
+      "cornerDia": 12.5,
       "cornerExtDia": 10,
-      "soloN": 1,
-      "soloDia": 20,
+      "soloN": 2,
+      "soloDia": 12.5,
       "extN": 0,
       "extDia": 10,
       "latN": 1,
@@ -158,12 +158,12 @@
       "hook": 10
     },
     "N2": {
-      "dia": 12.5,
+      "dia": 10,
       "qty": 2,
       "bend": 15
     },
     "N3": {
-      "dia": 12.5,
+      "dia": 10,
       "qty": 2,
       "bend": 15
     }
@@ -180,7 +180,7 @@
   },
   "calcSettings": {
     "gamma": 18,
-    "phi": 30,
+    "phi": 33,
     "c": 0,
     "q": 10,
     "mode": "coulomb",
@@ -197,7 +197,7 @@
     "gs": 1.15,
     "qDist": 1.5,
     "useFront": true,
-    "maxDia": 20,
+    "maxDia": 16,
     "gAlv": 3,
     "alvModel": "cintas"
   },
@@ -205,13 +205,13 @@
     "pile": {
       "pileKind": "1",
       "noBlock": "0",
-      "shaft": "50",
-      "base": "50",
-      "depth": "340",
+      "shaft": "60",
+      "base": "60",
+      "depth": "280",
       "baseHeight": "10",
       "skirt": "0",
-      "bars": "10",
-      "barDia": "16",
+      "bars": "9",
+      "barDia": "12.5",
       "barLen": "260",
       "stDia": "8",
       "spacing": "15",
@@ -235,7 +235,7 @@
   },
   "extraDetailOffsets": {
     "P1": {
-      "x": 3623.6114349365234,
+      "x": 3623.6114501953125,
       "y": 625.2757419586181
     },
     "VB1": {

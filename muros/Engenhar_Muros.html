@@ -2546,7 +2546,12 @@ function calcSetPile(code,field,val){
 function calcApplyFoundation(){
  const need=new Map();for(const r of calcFoundation()){const cm=Math.max(100,Math.ceil(r.depthReq*10)*10);need.set(r.code,Math.max(need.get(r.code)||0,cm))}
  const msg=[];for(const [code,cm] of need){const cur=Number(foundationValues('pile',code).depth);if(cur!==cm){calcSetPile(code,'depth',cm);msg.push(`${code}: ${cur} → ${cm} cm`)}}
- draw();calcRender();status(msg.length?'Profundidades aplicadas: '+msg.join(' · '):'Profundidades já atendem ao cálculo.');
+ // Armadura do fuste: a combinação de menor área (mín. 6 barras) com MRd ≥ Md máximo das estacas do tipo.
+ const mreq=new Map();for(const r of calcFoundation())mreq.set(r.code,Math.max(mreq.get(r.code)||0,r.Mdmax));
+ for(const [code,Md] of mreq){const v=foundationValues('pile',code),D=Number(v.shaft)||60,cov=Number(v.cover)||5,st=Number(v.stDia)||8;let best=null;
+  for(const dia of [12.5,16,20])for(let n=6;n<=16;n++){const As=n*calcBar(dia);if(best&&As>=best.As)continue;if(calcCircleMRd(D,cov,n,dia,st)>=Md)best={n,dia,As}}
+  if(best&&(best.n!==Number(v.bars)||best.dia!==Number(v.barDia))){msg.push(`${code} fuste: ${v.bars}Ø${v.barDia} → ${best.n}Ø${String(best.dia).replace('.',',')}`);calcSetPile(code,'bars',best.n);calcSetPile(code,'barDia',best.dia)}}
+ draw();calcRender();status(msg.length?'Fundação: '+msg.join(' · '):'Fundação já atende ao cálculo.');
 }
 function calcApplyPillar(depth=0,prev=[]){
  const rs=calcPillar();if(!rs.length)return;const a=pillarN2(),N1=pillarArms.N1,cover=Number(N1.cover)||3;
