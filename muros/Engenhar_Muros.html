@@ -1012,14 +1012,14 @@ function drawWallElevations(parent){
 // Edição compartilhada do modelo P1; individualização P2/P3 será etapa posterior.
 // V234 — Armadura longitudinal do pilar por faces: 4 barras de canto + barras adicionais
 // em cada face (tardoz/solo, externa, laterais), cada grupo com quantidade e bitola próprias.
-const pillarArmsDefault=()=>({N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3,cornerDia:10,soloN:0,soloDia:10,extN:0,extDia:10,latN:1,latDia:10},N3:{dia:10,qty:6,lapFactor:60,bend:21,follow:1}});
+const pillarArmsDefault=()=>({N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3,cornerDia:10,cornerExtDia:10,soloN:0,soloDia:10,extN:0,extDia:10,latN:1,latDia:10},N3:{dia:10,qty:6,lapFactor:60,bend:21,follow:1}});
 let pillarArms=pillarArmsDefault();
 // Compatibilidade com projetos antigos (quantidade única de barras).
-function pillarN2(){const a=pillarArms.N2;if(a.cornerDia==null){const extra=Math.max(0,Math.round(a.qty||4)-4);a.cornerDia=a.dia||10;a.latN=Math.ceil(extra/2);a.latDia=a.dia||10;a.soloN=0;a.soloDia=a.dia||10;a.extN=0;a.extDia=a.dia||10}if(pillarArms.N3.follow==null)pillarArms.N3.follow=0;return a}
+function pillarN2(){const a=pillarArms.N2;if(a.cornerDia==null){const extra=Math.max(0,Math.round(a.qty||4)-4);a.cornerDia=a.dia||10;a.latN=Math.ceil(extra/2);a.latDia=a.dia||10;a.soloN=0;a.soloDia=a.dia||10;a.extN=0;a.extDia=a.dia||10}if(a.cornerExtDia==null)a.cornerExtDia=a.cornerDia;if(pillarArms.N3.follow==null)pillarArms.N3.follow=0;return a}
 // Grupos de barras por bitola (uma posição N por bitola) e composição por face.
-function pillarBarGroups(){const a=pillarN2(),faces=[['CANTOS',4,a.cornerDia],['TARDOZ',a.soloN,a.soloDia],['EXTERNA',a.extN,a.extDia],['LATERAIS',2*a.latN,a.latDia]].filter(f=>f[1]>0);const map=new Map();for(const [name,n,dia] of faces){const k=Number(dia);if(!map.has(k))map.set(k,{dia:k,qty:0,parts:[]});const gr=map.get(k);gr.qty+=n;gr.parts.push(name==='LATERAIS'?`${a.latN}+${a.latN} LATERAIS`:`${n} ${name}`)}const tokens=['N2','N4','N5','N6'],wt=['N3','N7','N8','N9'];return [...map.values()].map((gr,i)=>({...gr,token:tokens[i]||'N2',waitToken:wt[i]||'N3'}))}
+function pillarBarGroups(){const a=pillarN2(),faces=[...(Number(a.cornerExtDia)===Number(a.cornerDia)?[['CANTOS',4,a.cornerDia]]:[['CANTOS TARDOZ',2,a.cornerDia],['CANTOS EXTERNA',2,a.cornerExtDia]]),['TARDOZ',a.soloN,a.soloDia],['EXTERNA',a.extN,a.extDia],['LATERAIS',2*a.latN,a.latDia]].filter(f=>f[1]>0);const map=new Map();for(const [name,n,dia] of faces){const k=Number(dia);if(!map.has(k))map.set(k,{dia:k,qty:0,parts:[]});const gr=map.get(k);gr.qty+=n;gr.parts.push(name==='LATERAIS'?`${a.latN}+${a.latN} LATERAIS`:`${n} ${name}`)}const tokens=['N2','N4','N5','N6'],wt=['N3','N7','N8','N9'];return [...map.values()].map((gr,i)=>({...gr,token:tokens[i]||'N2',waitToken:wt[i]||'N3'}))}
 let pillarArmEditing=null;
-const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento (cm)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['cornerDia','Cantos (4 barras) — Ø (mm)'],['soloN','Face do TARDOZ (solo): barras além dos cantos'],['soloDia','Face do tardoz — Ø (mm)'],['extN','Face EXTERNA: barras além dos cantos'],['extDia','Face externa — Ø (mm)'],['latN','CADA face LATERAL: barras além dos cantos'],['latDia','Faces laterais — Ø (mm)'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['follow','Esperas iguais às barras do pilar (1 = sim, 0 = não)'],['dia','Ø se independentes (mm)'],['qty','Quantidade se independentes'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
+const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento (cm)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['cornerDia','Cantos do TARDOZ (2 barras, lado do solo) — Ø (mm)'],['cornerExtDia','Cantos da face EXTERNA (2 barras) — Ø (mm)'],['soloN','Face do TARDOZ (solo): barras além dos cantos'],['soloDia','Face do tardoz — Ø (mm)'],['extN','Face EXTERNA: barras além dos cantos'],['extDia','Face externa — Ø (mm)'],['latN','CADA face LATERAL: barras além dos cantos'],['latDia','Faces laterais — Ø (mm)'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['follow','Esperas iguais às barras do pilar (1 = sim, 0 = não)'],['dia','Ø se independentes (mm)'],['qty','Quantidade se independentes'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
 const pillarZeroOk=['soloN','extN','latN','follow'];
 function openPillarArm(pos){if(!pillarArmFields[pos])return;pillarN2();pillarArmEditing=pos;const titles={N1:'ESTRIBO DO PILAR',N2:'BARRAS LONGITUDINAIS',N3:'ESPERAS DO PILAR'};$('pillarArmTitle').textContent=`${pos} — ${titles[pos]}`;$('pillarArmHelp').textContent=pos==='N2'?'Barras longitudinais por face. A face do TARDOZ é a voltada para o solo (lado superior da seção no desenho). Barras de mesma bitola formam uma única posição N.':pos==='N3'?'Com 1, as esperas acompanham as barras do pilar (mesma quantidade e bitola, transpasse pela bitola de cada uma). Com 0, use Ø e quantidade independentes.':'Clique nas posições N do desenho para editar a armadura.';$('pillarArmFields').replaceChildren();for(const [id,label] of pillarArmFields[pos]){const lab=document.createElement('label');lab.textContent=label;lab.style.display='flex';lab.style.flexDirection='column';lab.style.gap='4px';const input=document.createElement('input');input.type='number';input.step='any';input.min='0';input.value=pillarArms[pos][id];input.dataset.pillarField=id;input.style.width='120px';lab.append(input);$('pillarArmFields').append(lab)}$('pillarArmEditor').hidden=false;}
 $('pillarArmCancel').onclick=()=>{$('pillarArmEditor').hidden=true;pillarArmEditing=null};
@@ -1226,11 +1226,13 @@ function drawPillarDetails(parent){
   const A2=pillarN2(),groups=pillarBarGroups(),qty=groups.reduce((t,gr)=>t+gr.qty,0);
   const inset=dia=>ci+pillarArms.N1.dia/10*factor+dia/20*factor,rad=dia=>Math.max(1.4,dia/20*factor);
   const bc=inset(A2.cornerDia),bars=[];
-  for(const [cx,cy] of [[sx+bc,sy+bc],[sx+sw-bc,sy+bc],[sx+bc,sy+sh-bc],[sx+sw-bc,sy+sh-bc]])bars.push({x:cx,y:cy,dia:A2.cornerDia,face:'CANTOS'});
+  const bcE=inset(A2.cornerExtDia);
+  for(const [cx,cy] of [[sx+bc,sy+bc],[sx+sw-bc,sy+bc]])bars.push({x:cx,y:cy,dia:A2.cornerDia,face:'CANTOS'});
+  for(const [cx,cy] of [[sx+bcE,sy+sh-bcE],[sx+sw-bcE,sy+sh-bcE]])bars.push({x:cx,y:cy,dia:A2.cornerExtDia,face:'CANTOS'});
   const faceBars=(n,dia,face,p0,p1)=>{for(let m=1;m<=n;m++){const f=m/(n+1);bars.push({x:p0[0]+(p1[0]-p0[0])*f,y:p0[1]+(p1[1]-p0[1])*f,dia,face})}};
   const bs=inset(A2.soloDia),be=inset(A2.extDia),bl=inset(A2.latDia);
   faceBars(A2.soloN,A2.soloDia,'TARDOZ',[sx+bc,sy+bs],[sx+sw-bc,sy+bs]);
-  faceBars(A2.extN,A2.extDia,'EXTERNA',[sx+bc,sy+sh-be],[sx+sw-bc,sy+sh-be]);
+  faceBars(A2.extN,A2.extDia,'EXTERNA',[sx+bcE,sy+sh-be],[sx+sw-bcE,sy+sh-be]);
   faceBars(A2.latN,A2.latDia,'LATERAIS',[sx+bl,sy+bc],[sx+bl,sy+sh-bc]);
   faceBars(A2.latN,A2.latDia,'LATERAIS',[sx+sw-bl,sy+bc],[sx+sw-bl,sy+sh-bc]);
   for(const bar of bars)circle(bar.x,bar.y,rad(bar.dia),blue,blue,1,g);
@@ -2540,7 +2542,7 @@ function calcApplyPillar(depth=0,prev=[]){
   const n=Math.max(2,Math.ceil(As/calcBar(dia)-1e-9));if(n<=nMax){pick={dia,n};break}}
  if(!pick){status('Pilar: a armadura necessária não cabe na face do tardoz — aumente a seção do pilar.');calcRender();return}
  const corner=Math.max(Number(a.cornerDia),pick.dia),soloN=Math.max(0,Math.ceil((As-2*calcBar(corner))/calcBar(pick.dia)-1e-9));
- if(corner!==Number(a.cornerDia)){msg.push(`cantos Ø${a.cornerDia} → Ø${corner}`);a.cornerDia=corner}
+ if(corner!==Number(a.cornerDia)){msg.push(`cantos do tardoz Ø${a.cornerDia} → Ø${corner} (cantos externos mantidos Ø${a.cornerExtDia})`);a.cornerDia=corner}
  if(soloN!==Number(a.soloN)||(soloN&&pick.dia!==Number(a.soloDia))){msg.push(`tardoz: ${a.soloN} Ø${a.soloDia} → ${soloN} Ø${pick.dia}`);a.soloN=soloN;a.soloDia=pick.dia}
  // Estribos: mantém espaçamento ≥ 10 cm aumentando a bitola quando preciso.
  const cur=Number(N1.spacing)||15;let st=null;
