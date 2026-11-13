@@ -16,7 +16,7 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 #ribbonToggle{align-self:flex-end;margin:0;border:0;border-radius:0 0 0 6px;background:#173a55;color:#dcebf7;font-size:10px;padding:2px 10px;height:auto;cursor:pointer;position:relative;z-index:5}
 main.ribbons-min #tubuloRibbon,main.ribbons-min #blockRibbon,main.ribbons-min #wallRibbon,main.ribbons-min #sheetRibbon{display:none!important}
 </style></head><body>
-<header><strong>ENGENHAR | MUROS <small>V231 · CAD NATIVO</small></strong><div class="nav"><button>Arquivo</button><button>Planta</button><button>Cálculo</button><button>Resultados</button><button id="navSheets">Pranchas</button></div></header>
+<header><strong>ENGENHAR | MUROS <small>V242 · CAD NATIVO</small></strong><div class="nav"><button>Arquivo</button><button>Planta</button><button>Cálculo</button><button>Resultados</button><button id="navSheets">Pranchas</button></div></header>
 <div class="toolbar"><button id="new">Novo projeto</button><button id="open">Abrir JSON</button><button id="save">Salvar JSON</button><button id="copyFoundation" type="button" title="Pincel de características: clique na origem e depois nos destinos; Esc para sair" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold">🖌 Copiar características</button><button id="refreshNear" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Gerar novamente os detalhamentos completos dos tipos de fundação">↻ Atualizar detalhes</button><button id="refresh">Atualizar desenhos</button><button id="layerSettings" type="button" style="background:#d4e5f5;border:1px solid #78a5c5;font-weight:bold">◫ Layers e Penas</button><button id="refreshSteel" type="button" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold" title="Recalcular as tabelas de aço das pranchas">↻ Atualizar aço</button><button id="organizeSheets" type="button" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Monta o conjunto padrão de pranchas e distribui os detalhes sem sobreposição">▦ Organizar pranchas</button><button id="editStamp" type="button">▤ Editar carimbo</button><button id="fit">Ajustar</button><button id="sheetOpen" title="Abrir editor de pranchas">▤ Pranchas no CAD</button><button id="quickNewSheet" title="Escolher formato e adicionar prancha à direita">＋ Adicionar prancha</button><span class="sep"></span><label>Escala de prancha <select id="printScale" style="height:28px"><option value="20">1:20</option><option value="25" selected>1:25</option><option value="50">1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><span class="sep"></span><b>Planta e Geometria</b><div class="swatches" id="colors"><button class="swatch active" style="background:#0c1b29" data-color="#0c1b29" title="Fundo preto azulado"></button><button class="swatch" style="background:#38434b" data-color="#38434b" title="Fundo cinza escuro"></button><button class="swatch" style="background:#859098" data-color="#859098" title="Fundo cinza"></button><button class="swatch" style="background:#ffffff" data-color="#ffffff" title="Fundo branco"></button><button class="swatch" style="background:#1b3852" data-color="#1b3852" title="Fundo azul marinho"></button></div><label><input id="grade" type="checkbox" checked> Grade</label></div>
 <div class="shell"><aside><button id="sidePlanta" type="button">▦<br>Planta</button><button id="editMuro" class="edit-mode side-tool" title="Lançar e editar muro na planta">▰<br>Arrimos</button><button id="editTubulo" class="edit-mode side-tool" title="Mostrar parâmetros do tubulão">♙<br>Tubulões</button><button id="editBloco" class="edit-mode side-tool" title="Mostrar parâmetros do bloco">▣<br>Blocos</button><button id="sidePilares" type="button">▥<br>Pilares</button><button id="sideVigas" type="button">▤<br>Vigas</button><button id="quickElevations" type="button" class="side-tool">▦<br>Elevações</button><button id="sideSheets">▤<br>Pranchas</button><button id="sideSteel" type="button" title="Localizar relação e resumo de aço">▤<br>Aço</button></aside><main>
 <button id="ribbonToggle" type="button" title="Minimizar / mostrar o painel de parâmetros">▲ Ocultar painel</button>
@@ -1532,8 +1532,8 @@ wallIds.forEach(id=>$(id).addEventListener('input',wallUpdateActive));
 const refreshAllDetails=()=>{foundationFreezeDefaults();const existingBlockVariants=Object.keys(foundationCounts('block')).some(c=>c!=='B1');if(existingBlockVariants)$('blockEnabled').checked=true;draw();const t=foundationCounts('pile'),b=foundationCounts('block');const codes=Object.keys(t).concat(Object.keys(b)).filter(c=>c!=='T1'&&c!=='B1');const rendered=visibleFoundationCodes();const missing=codes.filter(c=>!rendered.includes(c));const last=codes.filter(c=>rendered.includes(c)).at(-1);if(last)revealFoundationDetail(last);status((missing.length?'ATENÇÃO: desenho não gerado: '+missing.join(', ')+' | ':'')+'Detalhamentos: '+Object.entries(t).map(([k,v])=>k+' '+v+' un.').concat(Object.entries(b).map(([k,v])=>k+' '+v+' un.')).join(' | ')+' · Novos desenhos no CAD: '+rendered.join(', ')+(last?' · Exibindo '+last:''));};$('refresh').onclick=refreshAllDetails;$('refreshSteel').onclick=()=>{draw();status('V205: numeração única por prancha e tabelas atualizadas. Conferir quantitativos e comprimentos preliminares antes do uso executivo.');};$('refreshNear').onclick=refreshAllDetails;$('foundationRefresh').onclick=refreshAllDetails;
 $('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms=pillarArmsDefault();foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;midBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15,pileKind:0,noBlock:0,topZone:70,topSpacing:10};$(id).value=defaults[id]});closePanels();fit()};
 function download(name,content,mime){let blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
-$('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,midBeamArms,elevationEnabled,elevationSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,detailScale,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
-$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;midBeamArms=(d.midBeamArms&&typeof d.midBeamArms==='object')?d.midBeamArms:null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object'){pillarArms=pillarArmsDefault();for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.pillarArms.N2&&d.pillarArms.N2.cornerDia==null){delete pillarArms.N2.cornerDia;pillarN2()}if(d.pillarArms.N3&&d.pillarArms.N3.follow==null)pillarArms.N3.follow=0}if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
+$('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,midBeamArms,elevationEnabled,elevationSettings,calcSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,detailScale,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
+$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(d.calcSettings&&typeof d.calcSettings==='object')for(const k of ['gamma','phi','c','q','gf'])if(Number.isFinite(Number(d.calcSettings[k])))calcSettings[k]=Number(d.calcSettings[k]);if(d.calcSettings&&['ka','k0'].includes(d.calcSettings.mode))calcSettings.mode=d.calcSettings.mode;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;midBeamArms=(d.midBeamArms&&typeof d.midBeamArms==='object')?d.midBeamArms:null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object'){pillarArms=pillarArmsDefault();for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.pillarArms.N2&&d.pillarArms.N2.cornerDia==null){delete pillarArms.N2.cornerDia;pillarN2()}if(d.pillarArms.N3&&d.pillarArms.N3.follow==null)pillarArms.N3.follow=0}if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
 $('exportBtn').onclick=()=>{
 const denom=Number($('printScale').value),factor=10/(denom*.78),margin=8;
 const w=scene.w*factor+2*margin,h=scene.h*factor+2*margin;
@@ -2440,4 +2440,143 @@ $('notesApply').onclick=()=>{bendTableOn=$('notesBendTable').checked;technicalNo
 (()=>{const b=$('ribbonToggle'),m=b.parentElement;let min=false;try{min=localStorage.getItem('engenharRibbonMin')==='1'}catch(e){}
  const apply=()=>{m.classList.toggle('ribbons-min',min);b.textContent=min?'▼ Mostrar painel':'▲ Ocultar painel';try{localStorage.setItem('engenharRibbonMin',min?'1':'0')}catch(e){}requestAnimationFrame(()=>{try{draw()}catch(e){}})};
  b.addEventListener('click',()=>{min=!min;apply()});apply()})();
+
+// V242 — Painel de cálculo (abas). Primeira aba: EMPUXO sobre os pilares do arrimo.
+// Rankine (ativo Ka) ou repouso (K0 = 1 − sen φ), coesão opcional com trinca de tração,
+// sobrecarga uniforme. Integração numérica ao longo da faixa de influência de cada pilar
+// (topo/aterro variável) e da altura. Engaste considerado no topo da VB (início do pilar);
+// empuxo passivo da face externa desprezado (a favor da segurança).
+let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null};
+const calcFmt=(v,d=2)=>Number.isFinite(v)?v.toFixed(d).replace('.',','):'—';
+function calcK(S){const f=S.phi*Math.PI/180;return S.mode==='k0'?1-Math.sin(f):Math.tan(Math.PI/4-f/2)**2}
+// Empuxo por metro para altura H (m): {E kN/m, M kN·m/m em relação à base, z0 trinca, pTop, pBase}.
+function calcStrip(H,S,K){
+ const sk=Math.sqrt(K),pz=z=>Math.max(0,K*(S.gamma*z+S.q)-2*S.c*sk);
+ if(H<=0)return {E:0,M:0,z0:0,pTop:0,pBase:0};
+ const N=120,dz=H/N;let E=0,M=0;
+ for(let k=0;k<N;k++){const z=(k+.5)*dz,p=pz(z);E+=p*dz;M+=p*dz*(H-z)}
+ const z0=S.c>0?Math.max(0,(2*S.c*sk-K*S.q)/(K*S.gamma)):0;
+ return {E,M,z0:Math.min(z0,H),pTop:pz(0),pBase:pz(H)};
+}
+function calcEarth(){
+ const S=calcSettings,K=calcK(S),ids=pillarIds(),rows=[];
+ if(!wallFinished||wallPoints.length<2)return {K,rows};
+ for(let i=0;i<wallPoints.length-1;i++){
+  if(S.wall!=='all'&&String(i)!==String(S.wall))continue;
+  const P=wallProfile(i);if(!P)continue;
+  const soilV=profileNum(P.d.wallSoilLevel),soil=x=>soilV==null?P.T(x):soilV;
+  for(let j=0;j<P.n;j++){
+   const xa=j>0?(P.xs[j-1]+P.xs[j])/2:0,xb=j<P.n-1?(P.xs[j]+P.xs[j+1])/2:P.L;
+   const zb=P.foundTop[j]+P.bh; // topo da VB/fundação = início do pilar (cm)
+   const steps=Math.max(4,Math.ceil((xb-xa)/5)),dx=(xb-xa)/steps;let E=0,M=0,Hmax=0;
+   for(let k=0;k<steps;k++){const x=xa+(k+.5)*dx,H=Math.max(0,soil(x)-zb)/100,r=calcStrip(H,S,K);E+=r.E*dx/100;M+=r.M*dx/100;Hmax=Math.max(Hmax,H)}
+   const Hp=Math.max(0,soil(P.xs[j])-zb)/100,strip=calcStrip(Hp,S,K);
+   rows.push({key:`${i}-${j}`,wall:i,j,id:'P'+(ids[i]?.[j]??(j+1)),b:(xb-xa)/100,H:Hp,Hmax,zb,E,M,y:E>0?M/E:0,Vd:S.gf*E,Md:S.gf*M,strip,corner:(j===0&&i>0)||(j===P.n-1&&i<wallPoints.length-2)});
+  }
+ }
+ return {K,rows};
+}
+function calcDiagramSVG(r,K){
+ const S=calcSettings,W=330,Hpx=300,m=40,H=Math.max(.01,r.H),sc=(Hpx-2*m)/H;
+ const st=r.strip,pq=Math.max(0,K*S.q-2*S.c*Math.sqrt(K)),pmax=Math.max(st.pBase,1e-6),ps=120/pmax;
+ const x0=110,yT=m,yB=m+H*sc,Y=z=>yT+z*sc;
+ const pts=[];for(let k=0;k<=40;k++){const z=H*k/40,p=Math.max(0,K*(S.gamma*z+S.q)-2*S.c*Math.sqrt(K));pts.push(`${x0+p*ps},${Y(z)}`)}
+ const qx=x0+Math.min(pq,K*S.q)*ps;
+ const yR=yB-r.strip.M/Math.max(1e-9,r.strip.E)*sc;
+ return `<svg viewBox="0 0 ${W} ${Hpx}" width="100%" style="max-width:${W}px;background:#fff;border:1px solid #b5c9da;border-radius:6px">
+ <defs><pattern id="cHat" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#b08850" stroke-width="1"/></pattern><marker id="cArr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#c0392b"/></marker></defs>
+ <rect x="${x0-22}" y="${yT}" width="22" height="${yB-yT}" fill="#d9dee3" stroke="#173a55"/>
+ <rect x="${x0-60}" y="${yB}" width="${120}" height="14" fill="url(#cHat)" stroke="none"/><line x1="${x0-60}" y1="${yB}" x2="${x0+180}" y2="${yB}" stroke="#173a55"/>
+ <polygon points="${x0},${yT} ${pts.join(' ')} ${x0},${yB}" fill="#f6c9a8" stroke="#c0392b" stroke-width="1.2"/>
+ ${S.q>0?`<polyline points="${qx},${yT} ${qx},${yB}" fill="none" stroke="#c0392b" stroke-dasharray="4 3"/>`:''}
+ <line x1="${x0+150}" y1="${yR}" x2="${x0+3}" y2="${yR}" stroke="#c0392b" stroke-width="2" marker-end="url(#cArr)"/>
+ <text x="${W-6}" y="${yR-17}" text-anchor="end" font-size="11" fill="#c0392b" font-weight="bold">E=${calcFmt(r.strip.E)} kN/m</text>
+ <text x="${W-6}" y="${yR-5}" text-anchor="end" font-size="10" fill="#c0392b">y=${calcFmt(r.strip.M/Math.max(1e-9,r.strip.E))} m</text>
+ <text x="${x0+4}" y="${yT-6}" font-size="10" fill="#173a55">${calcFmt(st.pTop)} kPa</text>
+ <text x="${x0+st.pBase*ps+4}" y="${yB-4}" font-size="10" fill="#173a55">${calcFmt(st.pBase)} kPa</text>
+ <line x1="${x0-34}" y1="${yT}" x2="${x0-34}" y2="${yB}" stroke="#2d6a9a"/><text x="${x0-38}" y="${(yT+yB)/2}" font-size="11" fill="#2d6a9a" text-anchor="middle" transform="rotate(-90 ${x0-38} ${(yT+yB)/2})">H = ${calcFmt(H)} m</text>
+ <text x="${x0-22}" y="${yT-18}" font-size="11" fill="#173a55" font-weight="bold">${r.id} · seção no eixo do pilar</text>
+ <text x="${x0-60}" y="${yB+28}" font-size="9" fill="#4c6271">Engaste no topo da VB · passivo desprezado</text>
+ </svg>`;
+}
+function calcRender(){
+ const S=calcSettings,{K,rows}=calcEarth(),body=$('calcBody');if(!body)return;
+ if(!rows.length){body.querySelector('#calcResults').innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular o empuxo.</p>';return}
+ let crit=rows.reduce((a,b)=>b.Md>a.Md?b:a,rows[0]);
+ const sel=rows.find(r=>r.key===S.sel)||crit;
+ const ka=S.mode==='k0'?`K0 = 1 − sen φ = 1 − sen ${calcFmt(S.phi,1)}° = ${calcFmt(K,3)}`:`Ka = tg²(45° − φ/2) = tg²(${calcFmt(45-S.phi/2,1)}°) = ${calcFmt(K,3)}`;
+ const tr=rows.map(r=>`<tr data-key="${r.key}" class="${r.key===sel.key?'sel':''}${r.key===crit.key?' crit':''}"><td>${r.id}${r.corner?' <small title="Pilar de canto: recebe empuxo das duas direções">↱</small>':''}</td><td>${r.wall+1}</td><td>${calcFmt(r.b)}</td><td>${calcFmt(r.H)}</td><td>${calcFmt(r.strip.pTop)}</td><td>${calcFmt(r.strip.pBase)}</td><td>${calcFmt(r.E)}</td><td>${calcFmt(r.y)}</td><td>${calcFmt(r.M)}</td><td><b>${calcFmt(r.Vd)}</b></td><td><b>${calcFmt(r.Md)}</b></td></tr>`).join('');
+ const st=sel.strip,es=st.E,ms=st.M;
+ const mem=`<b>Memória de cálculo — ${sel.id} (Arrimo ${sel.wall+1})</b>
+1) Coeficiente de empuxo (${S.mode==='k0'?'repouso':'ativo, Rankine'}): ${ka}
+2) Altura de solo contida no eixo do pilar: H = ${calcFmt(sel.H)} m (do aterro até o topo da VB, ${levelFmtSafe(sel.zb)})
+3) Pressões: p(z) = K·(γ·z + q)${S.c>0?' − 2·c·√K':''}
+   topo:  p = ${calcFmt(K,3)}·(0 + ${calcFmt(S.q,1)})${S.c>0?` − 2·${calcFmt(S.c,1)}·${calcFmt(Math.sqrt(K),3)}`:''} = ${calcFmt(st.pTop)} kPa${S.c>0&&st.z0>0?`   (trinca de tração até z0 = ${calcFmt(st.z0)} m)`:''}
+   base:  p = ${calcFmt(K,3)}·(${calcFmt(S.gamma,1)}·${calcFmt(sel.H)} + ${calcFmt(S.q,1)})${S.c>0?` − 2·${calcFmt(S.c,1)}·${calcFmt(Math.sqrt(K),3)}`:''} = ${calcFmt(st.pBase)} kPa
+4) Empuxo por metro de muro (seção do pilar):${S.c>0?'':`
+   solo:       E1 = K·γ·H²/2 = ${calcFmt(K,3)}·${calcFmt(S.gamma,1)}·${calcFmt(sel.H)}²/2 = ${calcFmt(K*S.gamma*sel.H**2/2)} kN/m  (a H/3 = ${calcFmt(sel.H/3)} m)
+   sobrecarga: E2 = K·q·H = ${calcFmt(K,3)}·${calcFmt(S.q,1)}·${calcFmt(sel.H)} = ${calcFmt(K*S.q*sel.H)} kN/m  (a H/2 = ${calcFmt(sel.H/2)} m)`}
+   E = ${calcFmt(es)} kN/m · M = ${calcFmt(ms)} kN·m/m · y = M/E = ${calcFmt(ms/Math.max(1e-9,es))} m
+5) Faixa de influência do pilar: b = ${calcFmt(sel.b)} m (metade de cada vão adjacente)
+   Integração ao longo da faixa (considera topo/aterro variável): Ek = ${calcFmt(sel.E)} kN · Mk = ${calcFmt(sel.M)} kN·m
+6) Esforços de cálculo na base do pilar (γf = ${calcFmt(S.gf,2)}):
+   Vd = ${calcFmt(S.gf,2)}·${calcFmt(sel.E)} = <b>${calcFmt(sel.Vd)} kN</b>
+   Md = ${calcFmt(S.gf,2)}·${calcFmt(sel.M)} = <b>${calcFmt(sel.Md)} kN·m</b>
+Hipóteses: tardoz vertical e liso (δ = 0), aterro horizontal, sem água; empuxo passivo da face externa desprezado.`;
+ body.querySelector('#calcResults').innerHTML=`
+ <div class="calc-k">K = <b>${calcFmt(K,3)}</b> · ${S.mode==='k0'?'repouso':'ativo (Rankine)'} · pilar crítico: <b>${crit.id}</b> — Md = <b>${calcFmt(crit.Md)} kN·m</b>, Vd = <b>${calcFmt(crit.Vd)} kN</b></div>
+ <div class="calc-grid"><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>b (m)</th><th>H (m)</th><th>p topo (kPa)</th><th>p base (kPa)</th><th>Ek (kN)</th><th>y (m)</th><th>Mk (kN·m)</th><th>Vd (kN)</th><th>Md (kN·m)</th></tr></thead><tbody>${tr}</tbody></table>
+ <p class="calc-hint">Clique em uma linha para ver o diagrama e a memória. Linha vermelha = pilar crítico. Valores por pilar = integração na faixa de influência.</p></div>
+ <div>${calcDiagramSVG(sel,K)}</div></div>
+ <pre class="calc-mem">${mem}</pre>`;
+ body.querySelectorAll('#calcResults tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
+}
+function levelFmtSafe(z){try{return levelFmt(z)}catch(e){return calcFmt(z/100)+' m'}}
+function calcOpen(){
+ let dlg=$('calcDialog');
+ if(!dlg){
+  dlg=document.createElement('dialog');dlg.id='calcDialog';
+  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button class="on" data-tab="empuxo">Empuxo</button><button disabled title="Próxima etapa">Pilar</button><button disabled title="Próxima etapa">Viga</button><button disabled title="Próxima etapa">Fundação</button><button disabled title="Próxima etapa">Resumo</button></nav><button id="calcClose" title="Fechar">✕</button></div>
+  <div id="calcBody"><div class="calc-in">
+   <label>Arrimo<select id="cWall"></select></label>
+   <label>γ solo (kN/m³)<input id="cGamma" type="number" step="0.5" min="10" max="25"></label>
+   <label>φ (graus)<input id="cPhi" type="number" step="1" min="0" max="45"></label>
+   <label>c (kPa)<input id="cC" type="number" step="1" min="0"></label>
+   <label>Sobrecarga q (kN/m²)<input id="cQ" type="number" step="1" min="0"></label>
+   <label>Empuxo<select id="cMode"><option value="ka">Ativo (Ka · Rankine)</option><option value="k0">Repouso (K0)</option></select></label>
+   <label>γf<input id="cGf" type="number" step="0.05" min="1" max="2"></label>
+  </div><div id="calcResults"></div></div>`;
+  document.body.appendChild(dlg);
+  $('calcClose').onclick=()=>dlg.close();
+  const map={cGamma:'gamma',cPhi:'phi',cC:'c',cQ:'q',cGf:'gf'};
+  for(const [id,k] of Object.entries(map))$(id).oninput=()=>{const v=Number($(id).value);if(Number.isFinite(v)&&$(id).value!==''){calcSettings[k]=v;calcRender()}};
+  $('cMode').onchange=()=>{calcSettings.mode=$('cMode').value;calcRender()};
+  $('cWall').onchange=()=>{calcSettings.wall=$('cWall').value;calcSettings.sel=null;calcRender()};
+ }
+ const S=calcSettings;
+ $('cWall').innerHTML='<option value="all">Todos</option>'+wallSegments.map((_,i)=>`<option value="${i}">Arrimo ${i+1}</option>`).join('');
+ if(S.wall!=='all'&&!(Number(S.wall)<wallSegments.length))S.wall='all';
+ $('cWall').value=S.wall;$('cGamma').value=S.gamma;$('cPhi').value=S.phi;$('cC').value=S.c;$('cQ').value=S.q;$('cMode').value=S.mode;$('cGf').value=S.gf;
+ calcRender();if(!dlg.open)dlg.showModal();
+}
+(()=>{const css=document.createElement('style');css.textContent=`
+#calcDialog{width:min(1240px,96vw);height:min(860px,92vh);padding:0;border:1px solid #6a9aba;border-radius:10px;background:#eaf3fa;color:#173a55;font:12px Arial}
+#calcDialog::backdrop{background:#0008}
+.calc-head{display:flex;align-items:center;gap:16px;background:#173a55;color:#fff;padding:8px 14px;position:sticky;top:0}
+.calc-tabs{display:flex;gap:4px;flex:1}.calc-tabs button{background:#24506f;color:#dcebf7;border:0;border-radius:5px 5px 0 0;padding:6px 14px;font-size:12px;cursor:pointer}
+.calc-tabs button.on{background:#eaf3fa;color:#173a55;font-weight:bold}.calc-tabs button:disabled{opacity:.45;cursor:default}
+#calcClose{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
+#calcBody{padding:12px 14px}.calc-in{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.calc-in label{display:flex;flex-direction:column;gap:3px;font-size:10px;min-width:110px}.calc-in input,.calc-in select{height:28px;border:1px solid #b5c9da;border-radius:4px;padding:3px 6px;font-size:12px}
+.calc-k{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:7px 10px;margin-bottom:10px}
+.calc-grid{display:grid;grid-template-columns:1fr 340px;gap:12px;align-items:start}
+@media(max-width:900px){.calc-grid{grid-template-columns:1fr}}
+.calc-t{border-collapse:collapse;width:100%;background:#fff}.calc-t th,.calc-t td{border:1px solid #c7d7e4;padding:4px 6px;text-align:right;white-space:nowrap}
+.calc-t th{background:#dcebf7;text-align:center;font-size:11px}.calc-t td:first-child,.calc-t td:nth-child(2){text-align:center}
+.calc-t tr[data-key]{cursor:pointer}.calc-t tr[data-key]:hover{background:#f2f8fc}.calc-t tr.sel{background:#fff3c4}.calc-t tr.crit td:first-child{color:#c0392b;font-weight:bold}
+.calc-hint{font-size:10px;color:#4c6271;margin:4px 0}
+.calc-mem{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:10px;font:12px/1.55 Consolas,monospace;white-space:pre-wrap;margin-top:12px}`;document.head.appendChild(css);
+ const aside=document.querySelector('aside'),b=document.createElement('button');b.id='sideCalc';b.type='button';b.title='Painel de cálculo';b.innerHTML='Σ<br>Cálculo';b.onclick=calcOpen;aside.insertBefore(b,$('sideSteel').nextSibling);
+ const nav=[...document.querySelectorAll('header .nav button')].find(x=>x.textContent.trim()==='Cálculo');if(nav)nav.onclick=calcOpen;
+})();
 </script></body></html>
