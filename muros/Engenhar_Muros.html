@@ -1533,7 +1533,7 @@ const refreshAllDetails=()=>{foundationFreezeDefaults();const existingBlockVaria
 $('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms=pillarArmsDefault();foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;midBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15,pileKind:0,noBlock:0,topZone:70,topSpacing:10};$(id).value=defaults[id]});closePanels();fit()};
 function download(name,content,mime){let blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
 $('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,midBeamArms,elevationEnabled,elevationSettings,calcSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,detailScale,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
-$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(d.calcSettings&&typeof d.calcSettings==='object')for(const k of ['gamma','phi','c','q','gf'])if(Number.isFinite(Number(d.calcSettings[k])))calcSettings[k]=Number(d.calcSettings[k]);if(d.calcSettings&&['ka','k0'].includes(d.calcSettings.mode))calcSettings.mode=d.calcSettings.mode;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;midBeamArms=(d.midBeamArms&&typeof d.midBeamArms==='object')?d.midBeamArms:null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object'){pillarArms=pillarArmsDefault();for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.pillarArms.N2&&d.pillarArms.N2.cornerDia==null){delete pillarArms.N2.cornerDia;pillarN2()}if(d.pillarArms.N3&&d.pillarArms.N3.follow==null)pillarArms.N3.follow=0}if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
+$('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(d.calcSettings&&typeof d.calcSettings==='object')for(const k of ['gamma','phi','c','q','gf','fsTomb','fsDesl','fck'])if(Number.isFinite(Number(d.calcSettings[k])))calcSettings[k]=Number(d.calcSettings[k]);if(d.calcSettings&&['ka','k0'].includes(d.calcSettings.mode))calcSettings.mode=d.calcSettings.mode;if(d.calcSettings&&typeof d.calcSettings.useCalc==='boolean')calcSettings.useCalc=d.calcSettings.useCalc;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;midBeamArms=(d.midBeamArms&&typeof d.midBeamArms==='object')?d.midBeamArms:null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object'){pillarArms=pillarArmsDefault();for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.pillarArms.N2&&d.pillarArms.N2.cornerDia==null){delete pillarArms.N2.cornerDia;pillarN2()}if(d.pillarArms.N3&&d.pillarArms.N3.follow==null)pillarArms.N3.follow=0}if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
 $('exportBtn').onclick=()=>{
 const denom=Number($('printScale').value),factor=10/(denom*.78),margin=8;
 const w=scene.w*factor+2*margin,h=scene.h*factor+2*margin;
@@ -2441,15 +2441,19 @@ $('notesApply').onclick=()=>{bendTableOn=$('notesBendTable').checked;technicalNo
  const apply=()=>{m.classList.toggle('ribbons-min',min);b.textContent=min?'▼ Mostrar painel':'▲ Ocultar painel';try{localStorage.setItem('engenharRibbonMin',min?'1':'0')}catch(e){}requestAnimationFrame(()=>{try{draw()}catch(e){}})};
  b.addEventListener('click',()=>{min=!min;apply()});apply()})();
 
-// V242 — Painel de cálculo (abas). Primeira aba: EMPUXO sobre os pilares do arrimo.
-// Rankine (ativo Ka) ou repouso (K0 = 1 − sen φ), coesão opcional com trinca de tração,
-// sobrecarga uniforme. Integração numérica ao longo da faixa de influência de cada pilar
-// (topo/aterro variável) e da altura. Engaste considerado no topo da VB (início do pilar);
-// empuxo passivo da face externa desprezado (a favor da segurança).
-let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null};
+// V242 — Painel de cálculo (abas): EMPUXO · FUNDAÇÃO · PILAR · RESUMO.
+// Empuxo: Rankine (Ka) ou repouso (K0 = 1 − sen φ), coesão opcional com trinca de tração,
+// sobrecarga uniforme; integração ao longo da faixa de influência de cada pilar (topo/aterro
+// variável). Engaste do pilar no topo da VB; empuxo passivo da face externa desprezado.
+// Fundação: Broms (solo não coesivo, cabeça livre) — tombamento, deslizamento, engaste mínimo
+// e momento máximo no fuste. Pilar: flexão simples e cisalhamento (NBR 6118, modelo I).
+// Modo "Só detalhamento": o cálculo é só conferência e nunca altera o desenho.
+// Modo "Com cálculo do programa": botões "Aplicar ao detalhamento" ficam disponíveis.
+let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null,useCalc:false,tab:'empuxo',fsTomb:2,fsDesl:1.5,fck:25,fyk:500,gc:1.4,gs:1.15};
 const calcFmt=(v,d=2)=>Number.isFinite(v)?v.toFixed(d).replace('.',','):'—';
+const calcBar=dia=>Math.PI*(Number(dia)||0)**2/400; // cm² de uma barra (Ø em mm)
 function calcK(S){const f=S.phi*Math.PI/180;return S.mode==='k0'?1-Math.sin(f):Math.tan(Math.PI/4-f/2)**2}
-// Empuxo por metro para altura H (m): {E kN/m, M kN·m/m em relação à base, z0 trinca, pTop, pBase}.
+function calcKp(S){const f=S.phi*Math.PI/180;return Math.tan(Math.PI/4+f/2)**2}
 function calcStrip(H,S,K){
  const sk=Math.sqrt(K),pz=z=>Math.max(0,K*(S.gamma*z+S.q)-2*S.c*sk);
  if(H<=0)return {E:0,M:0,z0:0,pTop:0,pBase:0};
@@ -2464,49 +2468,138 @@ function calcEarth(){
  for(let i=0;i<wallPoints.length-1;i++){
   if(S.wall!=='all'&&String(i)!==String(S.wall))continue;
   const P=wallProfile(i);if(!P)continue;
-  const soilV=profileNum(P.d.wallSoilLevel),soil=x=>soilV==null?P.T(x):soilV;
+  const soilV=profileNum(P.d.wallSoilLevel),frontV=profileNum(P.d.wallFrontLevel),soil=x=>soilV==null?P.T(x):soilV;
+  const dx0=P.b.x-P.a.x,dy0=P.b.y-P.a.y,sgn=P.d.wallSoil==='right'?-1:1,nx=-dy0/P.L*sgn,ny=dx0/P.L*sgn;
   for(let j=0;j<P.n;j++){
    const xa=j>0?(P.xs[j-1]+P.xs[j])/2:0,xb=j<P.n-1?(P.xs[j]+P.xs[j+1])/2:P.L;
-   const zb=P.foundTop[j]+P.bh; // topo da VB/fundação = início do pilar (cm)
+   const zb=P.foundTop[j]+P.bh;
    const steps=Math.max(4,Math.ceil((xb-xa)/5)),dx=(xb-xa)/steps;let E=0,M=0,Hmax=0;
    for(let k=0;k<steps;k++){const x=xa+(k+.5)*dx,H=Math.max(0,soil(x)-zb)/100,r=calcStrip(H,S,K);E+=r.E*dx/100;M+=r.M*dx/100;Hmax=Math.max(Hmax,H)}
-   const Hp=Math.max(0,soil(P.xs[j])-zb)/100,strip=calcStrip(Hp,S,K);
-   rows.push({key:`${i}-${j}`,wall:i,j,id:'P'+(ids[i]?.[j]??(j+1)),b:(xb-xa)/100,H:Hp,Hmax,zb,E,M,y:E>0?M/E:0,Vd:S.gf*E,Md:S.gf*M,strip,corner:(j===0&&i>0)||(j===P.n-1&&i<wallPoints.length-2)});
+   const Hp=Math.max(0,soil(P.xs[j])-zb)/100,strip=calcStrip(Hp,S,K),t=j/(P.n-1);
+   const pt={x:wallStart.x+(P.a.x+dx0*t)*.78,y:wallStart.y+(P.a.y+dy0*t)*.78};
+   rows.push({key:`${i}-${j}`,wall:i,j,pid:ids[i]?.[j]??(j+1),id:'P'+(ids[i]?.[j]??(j+1)),b:(xb-xa)/100,H:Hp,Hmax,zb,zFront:frontV==null?zb:frontV,E,M,y:E>0?M/E:0,Vd:S.gf*E,Md:S.gf*M,strip,nx,ny,fkey:foundationKey(pt),
+    colB:Math.max(10,Number(P.d.wallColX)||20),colH:Math.max(10,Number(P.d.wallColY)||40),corner:(j===0&&i>0)||(j===P.n-1&&i<wallPoints.length-2)});
   }
  }
  return {K,rows};
 }
+// ---------- Fundação (Broms, solo não coesivo, estaca curta/rígida de cabeça livre) ----------
+function calcFoundation(){
+ const S=calcSettings,{rows}=calcEarth(),Kp=calcKp(S),out=new Map();
+ for(const r of rows){ // pilares de canto: soma vetorial das duas direções
+  if(!out.has(r.pid))out.set(r.pid,{id:r.id,pid:r.pid,fkey:r.fkey,fx:0,fy:0,mx:0,my:0,zb:r.zb,zFront:r.zFront,parts:[]});
+  const o=out.get(r.pid);o.fx+=r.E*r.nx;o.fy+=r.E*r.ny;o.mx+=r.M*r.nx;o.my+=r.M*r.ny;o.parts.push(r);o.zb=Math.min(o.zb,r.zb);o.zFront=Math.min(o.zFront,r.zFront);
+ }
+ const res=[];
+ for(const o of out.values()){
+  const code=foundationEnsure('pile',o.fkey),v=foundationValues('pile',code);
+  const D=Math.max(.2,(Number(v.shaft)||60)/100),depth=(Number(v.depth)||330)/100,kind=Number(v.pileKind)===1?'Estaca':'Tubulão';
+  const H=Math.hypot(o.fx,o.fy),Mb=Math.hypot(o.mx,o.my),drop=Math.max(0,o.zb-o.zFront)/100;
+  const L=Math.max(0,depth-drop),e=(H>0?Mb/H:0)+drop,g=S.gamma;
+  const Hu=L>0?.5*g*D*L**3*Kp/(e+L):0,Fp=1.5*Kp*g*D*L**2;
+  const FSt=H>0?Hu/H:Infinity,FSd=H>0?Fp/H:Infinity;
+  let Lmin=0;if(H>0){for(let x=.5;x<=30;x+=.05){const hu=.5*g*D*x**3*Kp/(e+x),fp=1.5*Kp*g*D*x**2;if(hu/H>=S.fsTomb&&fp/H>=S.fsDesl){Lmin=x;break}}}
+  const f=H>0?.816*Math.sqrt(H/(g*D*Kp)):0,Mmax=H*(e+.667*Math.min(f,L)),depthReq=Lmin+drop;
+  res.push({...o,code,kind,D,depth,L,e,H,Mb,Hu,Fp,FSt,FSd,Lmin,depthReq,f,Mmax,Mdmax:S.gf*Mmax,Kp,ok:FSt>=S.fsTomb&&FSd>=S.fsDesl});
+ }
+ return res.sort((a,b)=>a.pid-b.pid);
+}
+// ---------- Pilar (flexão simples + cisalhamento, seção retangular) ----------
+function calcPillar(){
+ const S=calcSettings,{rows}=calcEarth(),a=pillarN2(),N1=pillarArms.N1,cover=Number(N1.cover)||3;
+ const fcd=S.fck/S.gc/10,fyd=S.fyk/S.gs/10,fctm=.3*S.fck**(2/3),fctd=.7*fctm/S.gc/10,fywd=Math.min(fyd,43.5);
+ const AsDet=2*calcBar(a.cornerDia)+(Number(a.soloN)||0)*calcBar(a.soloDia),AswDet=2*calcBar(N1.dia)/Math.max(1,Number(N1.spacing)||15);
+ return rows.map(r=>{
+  const b=r.colB,h=r.colH,d=h-cover-(Number(N1.dia)||5)/10-(Number(a.cornerDia)||10)/20,Md=r.Md*100; // kN·cm
+  const disc=1-Md/(.425*b*d*d*fcd),x=disc>0?1.25*d*(1-Math.sqrt(disc)):NaN,xd=x/d;
+  const AsCalc=disc>0?Md/(fyd*(d-.4*x)):NaN,AsMin=.0015*b*h,AsReq=Math.max(AsCalc,AsMin);
+  const Vd=r.Vd,VRd2=.27*(1-S.fck/250)*fcd*b*d,Vc=.6*fctd*b*d,AswMin=.2*fctm/S.fyk*b,AswCalc=Math.max(0,(Vd-Vc)/(.9*d*fywd)),AswReq=Math.max(AswCalc,AswMin);
+  const okM=disc>0&&xd<=.45&&AsDet>=AsReq-1e-6,okV=Vd<=VRd2&&AswDet>=AswReq-1e-6;
+  return {...r,b,h,d,x,xd,AsCalc,AsMin,AsReq,AsDet,VRd2,Vc,AswReq,AswDet,okM,okV,fcd,fyd,fctd,fywd,fctm,disc};
+ });
+}
+// ---------- Aplicar ao detalhamento (somente no modo "com cálculo do programa") ----------
+function calcSetPile(code,field,val){
+ foundationFreezeDefaults();
+ if(code==='T1'){if(foundationBaseModels.pile)foundationBaseModels.pile[field]=String(val);if($(field))$(field).value=String(val)}
+ else if(foundationTypes.pile[code])foundationTypes.pile[code][field]=String(val);
+}
+function calcApplyFoundation(){
+ const need=new Map();for(const r of calcFoundation()){const cm=Math.max(100,Math.ceil(r.depthReq*10)*10);need.set(r.code,Math.max(need.get(r.code)||0,cm))}
+ const msg=[];for(const [code,cm] of need){const cur=Number(foundationValues('pile',code).depth);if(cur!==cm){calcSetPile(code,'depth',cm);msg.push(`${code}: ${cur} → ${cm} cm`)}}
+ draw();calcRender();status(msg.length?'Profundidades aplicadas: '+msg.join(' · '):'Profundidades já atendem ao cálculo.');
+}
+function calcApplyPillar(depth=0,prev=[]){
+ const rs=calcPillar();if(!rs.length)return;const a=pillarN2(),N1=pillarArms.N1,cover=Number(N1.cover)||3;
+ if(rs.some(r=>!(r.disc>0)||r.xd>.45)){status('Pilar: seção insuficiente para o momento (x/d > 0,45) — aumente a seção do pilar.');calcRender();return}
+ const As=Math.max(...rs.map(r=>r.AsReq)),Asw=Math.max(...rs.map(r=>r.AswReq)),bMin=Math.min(...rs.map(r=>r.b));
+ // Bitola da face tracionada (tardoz): menor bitola cujas barras cabem na face (cantos + intermediárias).
+ const msg=prev;let pick=null;
+ for(const dia of [10,12.5,16,20,25].filter(x=>x>=Number(a.soloDia)||x>=Number(a.cornerDia))){
+  const sMin=Math.max(2,dia/10,1.2*1.9),bw=bMin-2*cover-2*(Number(N1.dia)||5)/10,nMax=Math.floor((bw+sMin)/(dia/10+sMin));
+  const n=Math.max(2,Math.ceil(As/calcBar(dia)-1e-9));if(n<=nMax){pick={dia,n};break}}
+ if(!pick){status('Pilar: a armadura necessária não cabe na face do tardoz — aumente a seção do pilar.');calcRender();return}
+ const corner=Math.max(Number(a.cornerDia),pick.dia),soloN=Math.max(0,Math.ceil((As-2*calcBar(corner))/calcBar(pick.dia)-1e-9));
+ if(corner!==Number(a.cornerDia)){msg.push(`cantos Ø${a.cornerDia} → Ø${corner}`);a.cornerDia=corner}
+ if(soloN!==Number(a.soloN)||(soloN&&pick.dia!==Number(a.soloDia))){msg.push(`tardoz: ${a.soloN} Ø${a.soloDia} → ${soloN} Ø${pick.dia}`);a.soloN=soloN;a.soloDia=pick.dia}
+ // Estribos: mantém espaçamento ≥ 10 cm aumentando a bitola quando preciso.
+ const cur=Number(N1.spacing)||15;let st=null;
+ for(const dia of [5,6.3,8,10].filter(x=>x>=Number(N1.dia))){const sp=Math.min(cur,Math.floor(2*calcBar(dia)/Asw/2.5)*2.5);if(sp>=10){st={dia,sp};break}}
+ if(!st){const sp=Math.max(5,Math.min(cur,Math.floor(2*calcBar(10)/Asw/2.5)*2.5));st={dia:Math.max(10,Number(N1.dia)),sp}}
+ if(st.dia!==Number(N1.dia)||st.sp!==cur){msg.push(`estribos Ø${N1.dia} c/${cur} → Ø${st.dia} c/${st.sp}`);N1.dia=st.dia;N1.spacing=st.sp}
+ draw();
+ // A troca de bitola altera d: repete até estabilizar.
+ if(depth<3&&calcPillar().some(r=>!r.okM||!r.okV))return calcApplyPillar(depth+1,msg);
+ calcRender();status(msg.length?'Pilar: '+msg.join(' · '):'Armadura do pilar já atende ao cálculo.');
+}
+// ---------- Desenhos ----------
 function calcDiagramSVG(r,K){
  const S=calcSettings,W=330,Hpx=300,m=40,H=Math.max(.01,r.H),sc=(Hpx-2*m)/H;
- const st=r.strip,pq=Math.max(0,K*S.q-2*S.c*Math.sqrt(K)),pmax=Math.max(st.pBase,1e-6),ps=120/pmax;
- const x0=110,yT=m,yB=m+H*sc,Y=z=>yT+z*sc;
+ const st=r.strip,pmax=Math.max(st.pBase,1e-6),ps=120/pmax,x0=110,yT=m,yB=m+H*sc,Y=z=>yT+z*sc;
  const pts=[];for(let k=0;k<=40;k++){const z=H*k/40,p=Math.max(0,K*(S.gamma*z+S.q)-2*S.c*Math.sqrt(K));pts.push(`${x0+p*ps},${Y(z)}`)}
- const qx=x0+Math.min(pq,K*S.q)*ps;
- const yR=yB-r.strip.M/Math.max(1e-9,r.strip.E)*sc;
+ const qx=x0+Math.max(0,K*S.q)*ps,yR=yB-st.M/Math.max(1e-9,st.E)*sc;
  return `<svg viewBox="0 0 ${W} ${Hpx}" width="100%" style="max-width:${W}px;background:#fff;border:1px solid #b5c9da;border-radius:6px">
- <defs><pattern id="cHat" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#b08850" stroke-width="1"/></pattern><marker id="cArr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#c0392b"/></marker></defs>
+ <defs><pattern id="cHat" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#b08850"/></pattern><marker id="cArr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#c0392b"/></marker></defs>
  <rect x="${x0-22}" y="${yT}" width="22" height="${yB-yT}" fill="#d9dee3" stroke="#173a55"/>
- <rect x="${x0-60}" y="${yB}" width="${120}" height="14" fill="url(#cHat)" stroke="none"/><line x1="${x0-60}" y1="${yB}" x2="${x0+180}" y2="${yB}" stroke="#173a55"/>
+ <rect x="${x0-60}" y="${yB}" width="120" height="14" fill="url(#cHat)"/><line x1="${x0-60}" y1="${yB}" x2="${x0+180}" y2="${yB}" stroke="#173a55"/>
  <polygon points="${x0},${yT} ${pts.join(' ')} ${x0},${yB}" fill="#f6c9a8" stroke="#c0392b" stroke-width="1.2"/>
  ${S.q>0?`<polyline points="${qx},${yT} ${qx},${yB}" fill="none" stroke="#c0392b" stroke-dasharray="4 3"/>`:''}
  <line x1="${x0+150}" y1="${yR}" x2="${x0+3}" y2="${yR}" stroke="#c0392b" stroke-width="2" marker-end="url(#cArr)"/>
- <text x="${W-6}" y="${yR-17}" text-anchor="end" font-size="11" fill="#c0392b" font-weight="bold">E=${calcFmt(r.strip.E)} kN/m</text>
- <text x="${W-6}" y="${yR-5}" text-anchor="end" font-size="10" fill="#c0392b">y=${calcFmt(r.strip.M/Math.max(1e-9,r.strip.E))} m</text>
+ <text x="${W-6}" y="${yR-17}" text-anchor="end" font-size="11" fill="#c0392b" font-weight="bold">E=${calcFmt(st.E)} kN/m</text>
+ <text x="${W-6}" y="${yR-5}" text-anchor="end" font-size="10" fill="#c0392b">y=${calcFmt(st.M/Math.max(1e-9,st.E))} m</text>
  <text x="${x0+4}" y="${yT-6}" font-size="10" fill="#173a55">${calcFmt(st.pTop)} kPa</text>
  <text x="${x0+st.pBase*ps+4}" y="${yB-4}" font-size="10" fill="#173a55">${calcFmt(st.pBase)} kPa</text>
  <line x1="${x0-34}" y1="${yT}" x2="${x0-34}" y2="${yB}" stroke="#2d6a9a"/><text x="${x0-38}" y="${(yT+yB)/2}" font-size="11" fill="#2d6a9a" text-anchor="middle" transform="rotate(-90 ${x0-38} ${(yT+yB)/2})">H = ${calcFmt(H)} m</text>
  <text x="${x0-22}" y="${yT-18}" font-size="11" fill="#173a55" font-weight="bold">${r.id} · seção no eixo do pilar</text>
- <text x="${x0-60}" y="${yB+28}" font-size="9" fill="#4c6271">Engaste no topo da VB · passivo desprezado</text>
- </svg>`;
+ <text x="${x0-60}" y="${yB+28}" font-size="9" fill="#4c6271">Engaste no topo da VB · passivo desprezado</text></svg>`;
 }
-function calcRender(){
- const S=calcSettings,{K,rows}=calcEarth(),body=$('calcBody');if(!body)return;
- if(!rows.length){body.querySelector('#calcResults').innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular o empuxo.</p>';return}
- let crit=rows.reduce((a,b)=>b.Md>a.Md?b:a,rows[0]);
- const sel=rows.find(r=>r.key===S.sel)||crit;
+function calcPileSVG(r){
+ const S=calcSettings,W=330,Hpx=380,tot=r.e+Math.max(r.L,r.Lmin)+.3,sc=(Hpx-70)/Math.max(1,tot),x0=150,yG=30+r.e*sc+10,Y=z=>yG+z*sc,w=Math.max(10,r.D*sc);
+ const pm=3*r.Kp*S.gamma*r.D*r.L,ps=pm>0?90/pm:0;
+ return `<svg viewBox="0 0 ${W} ${Hpx}" width="100%" style="max-width:${W}px;background:#fff;border:1px solid #b5c9da;border-radius:6px">
+ <defs><marker id="cArr2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#c0392b"/></marker></defs>
+ <text x="10" y="16" font-size="11" fill="#173a55" font-weight="bold">${r.id} · ${r.kind} ${r.code} · Ø${calcFmt(r.D*100,0)}</text>
+ <rect x="${x0-8}" y="${yG-r.e*sc-14}" width="16" height="${r.e*sc+14}" fill="#d9dee3" stroke="#173a55"/>
+ <rect x="${x0-w/2}" y="${yG}" width="${w}" height="${r.L*sc}" fill="#e7e2d6" stroke="#173a55"/>
+ <line x1="10" y1="${yG}" x2="${W-10}" y2="${yG}" stroke="#7a5a2a" stroke-width="1.5"/><text x="12" y="${yG-4}" font-size="9" fill="#7a5a2a">terreno (face externa)</text>
+ <polygon points="${x0+w/2},${yG} ${x0+w/2+pm*ps},${Y(r.L)} ${x0+w/2},${Y(r.L)}" fill="#cfe6c5" stroke="#3c8a3c"/>
+ <text x="${W-6}" y="${Y(r.L)+13}" text-anchor="end" font-size="9" fill="#3c8a3c">3·Kp·γ·D·L = ${calcFmt(pm,1)} kN/m</text>
+ <line x1="${x0-110}" y1="${yG-r.e*sc}" x2="${x0-10}" y2="${yG-r.e*sc}" stroke="#c0392b" stroke-width="2" marker-end="url(#cArr2)"/>
+ <text x="${x0-110}" y="${yG-r.e*sc-5}" font-size="10" fill="#c0392b" font-weight="bold">Hk=${calcFmt(r.H)} kN</text>
+ <text x="${x0-110}" y="${yG-r.e*sc+12}" font-size="9" fill="#c0392b">e=${calcFmt(r.e)} m</text>
+ <line x1="${x0+w/2+6}" y1="${yG}" x2="${x0+w/2+6}" y2="${Y(r.L)}" stroke="#2d6a9a"/><text x="${x0-w/2-6}" y="${Y(r.L/2)}" font-size="10" fill="#2d6a9a" text-anchor="end">L=${calcFmt(r.L)} m</text>
+ ${r.Lmin>0?`<line x1="${x0-60}" y1="${Y(r.Lmin)}" x2="${x0+60}" y2="${Y(r.Lmin)}" stroke="${r.Lmin<=r.L?'#3c8a3c':'#c0392b'}" stroke-dasharray="5 3"/><text x="${x0-62}" y="${Y(r.Lmin)+3}" font-size="9" text-anchor="end" fill="${r.Lmin<=r.L?'#3c8a3c':'#c0392b'}">Lmín=${calcFmt(r.Lmin)} m</text>`:''}
+ <text x="10" y="${Hpx-10}" font-size="9" fill="#4c6271">Broms · solo não coesivo · cabeça livre · estaca rígida</text></svg>`;
+}
+const calcOk=ok=>ok?'<span class="c-ok">✓ OK</span>':'<span class="c-no">✗ NÃO</span>';
+function levelFmtSafe(z){try{return levelFmt(z)}catch(e){return calcFmt(z/100)+' m'}}
+// ---------- Abas ----------
+function calcTabEmpuxo(){
+ const S=calcSettings,{K,rows}=calcEarth();
+ const crit=rows.reduce((a,b)=>b.Md>a.Md?b:a,rows[0]),sel=rows.find(r=>r.key===S.sel)||crit;
  const ka=S.mode==='k0'?`K0 = 1 − sen φ = 1 − sen ${calcFmt(S.phi,1)}° = ${calcFmt(K,3)}`:`Ka = tg²(45° − φ/2) = tg²(${calcFmt(45-S.phi/2,1)}°) = ${calcFmt(K,3)}`;
  const tr=rows.map(r=>`<tr data-key="${r.key}" class="${r.key===sel.key?'sel':''}${r.key===crit.key?' crit':''}"><td>${r.id}${r.corner?' <small title="Pilar de canto: recebe empuxo das duas direções">↱</small>':''}</td><td>${r.wall+1}</td><td>${calcFmt(r.b)}</td><td>${calcFmt(r.H)}</td><td>${calcFmt(r.strip.pTop)}</td><td>${calcFmt(r.strip.pBase)}</td><td>${calcFmt(r.E)}</td><td>${calcFmt(r.y)}</td><td>${calcFmt(r.M)}</td><td><b>${calcFmt(r.Vd)}</b></td><td><b>${calcFmt(r.Md)}</b></td></tr>`).join('');
- const st=sel.strip,es=st.E,ms=st.M;
+ const st=sel.strip;
  const mem=`<b>Memória de cálculo — ${sel.id} (Arrimo ${sel.wall+1})</b>
 1) Coeficiente de empuxo (${S.mode==='k0'?'repouso':'ativo, Rankine'}): ${ka}
 2) Altura de solo contida no eixo do pilar: H = ${calcFmt(sel.H)} m (do aterro até o topo da VB, ${levelFmtSafe(sel.zb)})
@@ -2516,67 +2609,134 @@ function calcRender(){
 4) Empuxo por metro de muro (seção do pilar):${S.c>0?'':`
    solo:       E1 = K·γ·H²/2 = ${calcFmt(K,3)}·${calcFmt(S.gamma,1)}·${calcFmt(sel.H)}²/2 = ${calcFmt(K*S.gamma*sel.H**2/2)} kN/m  (a H/3 = ${calcFmt(sel.H/3)} m)
    sobrecarga: E2 = K·q·H = ${calcFmt(K,3)}·${calcFmt(S.q,1)}·${calcFmt(sel.H)} = ${calcFmt(K*S.q*sel.H)} kN/m  (a H/2 = ${calcFmt(sel.H/2)} m)`}
-   E = ${calcFmt(es)} kN/m · M = ${calcFmt(ms)} kN·m/m · y = M/E = ${calcFmt(ms/Math.max(1e-9,es))} m
+   E = ${calcFmt(st.E)} kN/m · M = ${calcFmt(st.M)} kN·m/m · y = M/E = ${calcFmt(st.M/Math.max(1e-9,st.E))} m
 5) Faixa de influência do pilar: b = ${calcFmt(sel.b)} m (metade de cada vão adjacente)
    Integração ao longo da faixa (considera topo/aterro variável): Ek = ${calcFmt(sel.E)} kN · Mk = ${calcFmt(sel.M)} kN·m
 6) Esforços de cálculo na base do pilar (γf = ${calcFmt(S.gf,2)}):
    Vd = ${calcFmt(S.gf,2)}·${calcFmt(sel.E)} = <b>${calcFmt(sel.Vd)} kN</b>
    Md = ${calcFmt(S.gf,2)}·${calcFmt(sel.M)} = <b>${calcFmt(sel.Md)} kN·m</b>
 Hipóteses: tardoz vertical e liso (δ = 0), aterro horizontal, sem água; empuxo passivo da face externa desprezado.`;
- body.querySelector('#calcResults').innerHTML=`
- <div class="calc-k">K = <b>${calcFmt(K,3)}</b> · ${S.mode==='k0'?'repouso':'ativo (Rankine)'} · pilar crítico: <b>${crit.id}</b> — Md = <b>${calcFmt(crit.Md)} kN·m</b>, Vd = <b>${calcFmt(crit.Vd)} kN</b></div>
+ return `<div class="calc-k">K = <b>${calcFmt(K,3)}</b> · ${S.mode==='k0'?'repouso':'ativo (Rankine)'} · pilar crítico: <b>${crit.id}</b> — Md = <b>${calcFmt(crit.Md)} kN·m</b>, Vd = <b>${calcFmt(crit.Vd)} kN</b></div>
  <div class="calc-grid"><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>b (m)</th><th>H (m)</th><th>p topo (kPa)</th><th>p base (kPa)</th><th>Ek (kN)</th><th>y (m)</th><th>Mk (kN·m)</th><th>Vd (kN)</th><th>Md (kN·m)</th></tr></thead><tbody>${tr}</tbody></table>
- <p class="calc-hint">Clique em uma linha para ver o diagrama e a memória. Linha vermelha = pilar crítico. Valores por pilar = integração na faixa de influência.</p></div>
- <div>${calcDiagramSVG(sel,K)}</div></div>
- <pre class="calc-mem">${mem}</pre>`;
- body.querySelectorAll('#calcResults tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
+ <p class="calc-hint">Clique em uma linha para ver o diagrama e a memória. Vermelho = pilar crítico. Valores por pilar = integração na faixa de influência.</p></div>
+ <div>${calcDiagramSVG(sel,K)}</div></div><pre class="calc-mem">${mem}</pre>`;
 }
-function levelFmtSafe(z){try{return levelFmt(z)}catch(e){return calcFmt(z/100)+' m'}}
+function calcTabFundacao(){
+ const S=calcSettings,rs=calcFoundation();if(!rs.length)return '';
+ const crit=rs.reduce((a,b)=>b.FSt<a.FSt?b:a,rs[0]),sel=rs.find(r=>'f'+r.pid===S.sel)||crit;
+ const tr=rs.map(r=>`<tr data-key="f${r.pid}" class="${r===sel?'sel':''}${r===crit?' crit':''}"><td>${r.id}${r.parts.length>1?' <small title="Pilar de canto: soma vetorial das duas direções">↱</small>':''}</td><td>${r.code} · ${r.kind}</td><td>${calcFmt(r.D*100,0)}</td><td>${calcFmt(r.L)}</td><td>${calcFmt(r.H)}</td><td>${calcFmt(r.e)}</td><td>${calcFmt(r.Hu)}</td><td><b>${calcFmt(r.FSt)}</b> ${calcOk(r.FSt>=S.fsTomb)}</td><td><b>${calcFmt(r.FSd)}</b> ${calcOk(r.FSd>=S.fsDesl)}</td><td>${calcFmt(r.depthReq)} ${calcOk(r.depth>=r.depthReq-1e-6)}</td><td>${calcFmt(r.Mdmax)}</td></tr>`).join('');
+ const r=sel,mem=`<b>Memória de cálculo — fundação do ${r.id} (${r.kind} ${r.code})</b>
+1) Kp = tg²(45° + φ/2) = tg²(${calcFmt(45+S.phi/2,1)}°) = ${calcFmt(r.Kp,3)}
+2) Carga horizontal no topo da fundação: Hk = ${calcFmt(r.H)} kN${r.parts.length>1?' (soma vetorial dos dois arrimos do canto)':''}
+   Momento no topo: Mk = ${calcFmt(r.Mb)} kN·m → excentricidade e = Mk/Hk${r.e-r.Mb/Math.max(1e-9,r.H)>.001?' + desnível até o terreno':''} = ${calcFmt(r.e)} m
+3) Comprimento resistente: L = ${calcFmt(r.L)} m (profundidade ${calcFmt(r.depth)} m a partir do topo da VB) · D = ${calcFmt(r.D)} m
+4) Broms (solo não coesivo, estaca rígida, cabeça livre) — reação passiva 3·Kp·γ·z·D:
+   Hu = 0,5·γ·D·L³·Kp/(e + L) = 0,5·${calcFmt(S.gamma,1)}·${calcFmt(r.D)}·${calcFmt(r.L)}³·${calcFmt(r.Kp,3)}/(${calcFmt(r.e)} + ${calcFmt(r.L)}) = <b>${calcFmt(r.Hu)} kN</b>
+5) Tombamento (rotação da estaca): FS = Hu/Hk = ${calcFmt(r.Hu)}/${calcFmt(r.H)} = <b>${calcFmt(r.FSt)}</b>  (mínimo ${calcFmt(S.fsTomb,1)}) ${r.FSt>=S.fsTomb?'✓':'✗'}
+6) Deslizamento: Fp = 1,5·Kp·γ·D·L² = ${calcFmt(r.Fp)} kN → FS = Fp/Hk = <b>${calcFmt(r.FSd)}</b>  (mínimo ${calcFmt(S.fsDesl,1)}) ${r.FSd>=S.fsDesl?'✓':'✗'}
+7) Engaste mínimo para atender aos dois FS: Lmín = ${calcFmt(r.Lmin)} m → profundidade mínima ${calcFmt(r.depthReq)} m (adotada ${calcFmt(r.depth)} m) ${r.depth>=r.depthReq-1e-6?'✓':'✗'}
+8) Momento máximo no fuste: f = 0,82·√(Hk/(γ·D·Kp)) = ${calcFmt(r.f)} m → Mk,máx = Hk·(e + 0,67·f) = ${calcFmt(r.Mmax)} kN·m · Md = <b>${calcFmt(r.Mdmax)} kN·m</b>
+Hipóteses: solo homogêneo não coesivo (c desprezado na fundação), sem água, base alargada e bloco não considerados na resistência lateral (a favor da segurança).`;
+ return `<div class="calc-k">Broms · Kp = <b>${calcFmt(calcKp(S),3)}</b> · menor FS tombamento: <b>${crit.id}</b> = <b>${calcFmt(crit.FSt)}</b> · ${rs.every(x=>x.ok&&x.depth>=x.depthReq-1e-6)?'<span class="c-ok">todas as fundações passam</span>':'<span class="c-no">há fundação que não passa</span>'}
+ ${S.useCalc?'<button class="c-apply" id="cApplyF">Aplicar profundidade mínima ao detalhamento</button>':''}</div>
+ <div class="calc-grid"><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Fundação</th><th>Ø (cm)</th><th>L (m)</th><th>Hk (kN)</th><th>e (m)</th><th>Hu (kN)</th><th>FS tomb.</th><th>FS desl.</th><th>Prof. mín (m)</th><th>Md fuste (kN·m)</th></tr></thead><tbody>${tr}</tbody></table>
+ <p class="calc-hint">Cada pilar é verificado com o tubulão/estaca da sua posição (aba Tubulões). Md fuste: para conferir a armadura longitudinal do fuste.</p></div>
+ <div>${calcPileSVG(sel)}</div></div><pre class="calc-mem">${mem}</pre>`;
+}
+function calcTabPilar(){
+ const S=calcSettings,rs=calcPillar();if(!rs.length)return '';const a=pillarN2(),N1=pillarArms.N1;
+ const crit=rs.reduce((p,q)=>(q.AsReq/q.AsDet)>(p.AsReq/p.AsDet)||!Number.isFinite(q.AsReq)?q:p,rs[0]),sel=rs.find(r=>'p'+r.key===S.sel)||crit;
+ const tr=rs.map(r=>`<tr data-key="p${r.key}" class="${r===sel?'sel':''}${r===crit?' crit':''}"><td>${r.id}</td><td>${r.wall+1}</td><td>${calcFmt(r.b,0)}×${calcFmt(r.h,0)}</td><td>${calcFmt(r.Md)}</td><td>${calcFmt(r.xd,3)}</td><td>${calcFmt(r.AsReq)}</td><td>${calcFmt(r.AsDet)}</td><td>${calcOk(r.okM)}</td><td>${calcFmt(r.Vd)}</td><td>${calcFmt(r.VRd2)}</td><td>${calcFmt(r.AswReq*100)}</td><td>${calcFmt(r.AswDet*100)}</td><td>${calcOk(r.okV)}</td></tr>`).join('');
+ const r=sel,mem=`<b>Memória de cálculo — ${r.id} (Arrimo ${r.wall+1}) · seção ${calcFmt(r.b,0)} × ${calcFmt(r.h,0)} cm (h = lado perpendicular ao muro)</b>
+1) Materiais: fck = ${S.fck} MPa → fcd = ${calcFmt(r.fcd*10)} MPa · CA-50 fyd = ${calcFmt(r.fyd*10,1)} MPa · fctd = ${calcFmt(r.fctd*10,3)} MPa
+2) Altura útil: d = h − c − Øt − Ø/2 = ${calcFmt(r.h,0)} − ${calcFmt(Number(N1.cover)||3,1)} − ${calcFmt((Number(N1.dia)||5)/10,1)} − ${calcFmt((Number(a.cornerDia)||10)/20,1)} = ${calcFmt(r.d,1)} cm
+3) Flexão (tração no tardoz): Md = ${calcFmt(r.Md)} kN·m
+   x = 1,25·d·[1 − √(1 − Md/(0,425·b·d²·fcd))] = ${calcFmt(r.x,2)} cm → x/d = ${calcFmt(r.xd,3)} (limite 0,45) ${r.xd<=.45?'✓':'✗'}
+   As = Md/(fyd·(d − 0,4x)) = ${calcFmt(r.AsCalc)} cm² · As,mín = 0,15%·b·h = ${calcFmt(r.AsMin)} cm² → As,nec = <b>${calcFmt(r.AsReq)} cm²</b>
+   Detalhado no tardoz: 2 cantos Ø${a.cornerDia}${Number(a.soloN)?` + ${a.soloN} Ø${a.soloDia}`:''} = <b>${calcFmt(r.AsDet)} cm²</b> ${r.okM?'✓':'✗'}
+4) Cisalhamento: Vd = ${calcFmt(r.Vd)} kN · VRd2 = 0,27·(1 − fck/250)·fcd·b·d = ${calcFmt(r.VRd2)} kN ${r.Vd<=r.VRd2?'✓':'✗'}
+   Vc = 0,6·fctd·b·d = ${calcFmt(r.Vc)} kN → Asw/s nec = máx[(Vd − Vc)/(0,9·d·fywd); 0,2·fctm/fywk·b] = <b>${calcFmt(r.AswReq*100)} cm²/m</b>
+   Detalhado: estribo Ø${N1.dia} c/${N1.spacing} (2 ramos) = <b>${calcFmt(r.AswDet*100)} cm²/m</b> ${r.AswDet>=r.AswReq-1e-6?'✓':'✗'}
+Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados), engaste no topo da VB, γc = ${calcFmt(S.gc,2)}, γs = ${calcFmt(S.gs,2)}.`;
+ return `<div class="calc-k">Armadura detalhada no tardoz: <b>${calcFmt(rs[0].AsDet)} cm²</b> · maior As,nec: <b>${calcFmt(Math.max(...rs.map(x=>x.AsReq).filter(Number.isFinite)))} cm²</b> (${crit.id}) · ${rs.every(x=>x.okM&&x.okV)?'<span class="c-ok">todos os pilares passam</span>':'<span class="c-no">há pilar que não passa</span>'}
+ ${S.useCalc?'<button class="c-apply" id="cApplyP">Aplicar armadura ao detalhamento</button>':''}</div>
+ <div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>Seção (cm)</th><th>Md (kN·m)</th><th>x/d</th><th>As nec (cm²)</th><th>As det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>VRd2 (kN)</th><th>Asw/s nec (cm²/m)</th><th>Asw/s det (cm²/m)</th><th>Cisalh.</th></tr></thead><tbody>${tr}</tbody></table></div>
+ <pre class="calc-mem">${mem}</pre>`;
+}
+function calcTabResumo(){
+ const S=calcSettings,P=calcPillar(),F=calcFoundation(),items=[];
+ const pb=new Map();for(const r of P){const o=pb.get(r.pid)||{okM:true,okV:true};o.okM&&=r.okM;o.okV&&=r.okV;pb.set(r.pid,o)}
+ for(const f of F){const p=pb.get(f.pid)||{okM:true,okV:true};items.push({id:f.id,cells:[p.okM,p.okV,f.FSt>=S.fsTomb,f.FSd>=S.fsDesl,f.depth>=f.depthReq-1e-6],fst:f.FSt,fsd:f.FSd})}
+ const all=items.every(i=>i.cells.every(Boolean));
+ return `<div class="calc-k" style="font-size:14px">${all?'<span class="c-ok">✓ TODAS AS VERIFICAÇÕES PASSAM</span>':'<span class="c-no">✗ HÁ VERIFICAÇÕES QUE NÃO PASSAM</span>'} · modo: <b>${S.useCalc?'com cálculo do programa':'só detalhamento (conferência)'}</b></div>
+ <table class="calc-t calc-sum" style="max-width:900px"><thead><tr><th>Pilar</th><th>Pilar · flexão</th><th>Pilar · cisalhamento</th><th>Tombamento (FS)</th><th>Deslizamento (FS)</th><th>Engaste</th></tr></thead><tbody>
+ ${items.map(i=>`<tr><td>${i.id}</td><td>${calcOk(i.cells[0])}</td><td>${calcOk(i.cells[1])}</td><td>${calcOk(i.cells[2])} ${calcFmt(i.fst)}</td><td>${calcOk(i.cells[3])} ${calcFmt(i.fsd)}</td><td>${calcOk(i.cells[4])}</td></tr>`).join('')}</tbody></table>
+ <p class="calc-hint">Vigas (VB/VT/VI): verificação na próxima etapa. Parâmetros: γ=${calcFmt(S.gamma,1)} kN/m³ · φ=${calcFmt(S.phi,1)}° · c=${calcFmt(S.c,1)} kPa · q=${calcFmt(S.q,1)} kN/m² · γf=${calcFmt(S.gf,2)} · fck=${S.fck} MPa · FS tomb. ≥ ${calcFmt(S.fsTomb,1)} · FS desl. ≥ ${calcFmt(S.fsDesl,1)}</p>`;
+}
+function calcRender(){
+ const S=calcSettings,body=$('calcResults');if(!body)return;
+ document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
+ document.querySelectorAll('#calcDialog [data-for]').forEach(l=>l.style.display=l.dataset.for.split(' ').includes(S.tab)||l.dataset.for==='all'?'':'none');
+ if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
+ body.innerHTML=S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
+ body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
+ if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();
+}
+const calcInputs={cGamma:'gamma',cPhi:'phi',cC:'c',cQ:'q',cGf:'gf',cFsT:'fsTomb',cFsD:'fsDesl',cFck:'fck'};
 function calcOpen(){
  let dlg=$('calcDialog');
  if(!dlg){
   dlg=document.createElement('dialog');dlg.id='calcDialog';
-  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button class="on" data-tab="empuxo">Empuxo</button><button disabled title="Próxima etapa">Pilar</button><button disabled title="Próxima etapa">Viga</button><button disabled title="Próxima etapa">Fundação</button><button disabled title="Próxima etapa">Resumo</button></nav><button id="calcClose" title="Fechar">✕</button></div>
+  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button disabled title="Próxima etapa">Viga</button><button data-tab="resumo">Resumo</button></nav>
+  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
-   <label>Arrimo<select id="cWall"></select></label>
-   <label>γ solo (kN/m³)<input id="cGamma" type="number" step="0.5" min="10" max="25"></label>
-   <label>φ (graus)<input id="cPhi" type="number" step="1" min="0" max="45"></label>
-   <label>c (kPa)<input id="cC" type="number" step="1" min="0"></label>
-   <label>Sobrecarga q (kN/m²)<input id="cQ" type="number" step="1" min="0"></label>
-   <label>Empuxo<select id="cMode"><option value="ka">Ativo (Ka · Rankine)</option><option value="k0">Repouso (K0)</option></select></label>
-   <label>γf<input id="cGf" type="number" step="0.05" min="1" max="2"></label>
+   <label data-for="all">Arrimo<select id="cWall"></select></label>
+   <label data-for="all">γ solo (kN/m³)<input id="cGamma" type="number" step="0.5" min="10" max="25"></label>
+   <label data-for="all">φ (graus)<input id="cPhi" type="number" step="1" min="0" max="45"></label>
+   <label data-for="empuxo resumo">c (kPa)<input id="cC" type="number" step="1" min="0"></label>
+   <label data-for="all">Sobrecarga q (kN/m²)<input id="cQ" type="number" step="1" min="0"></label>
+   <label data-for="empuxo resumo">Empuxo<select id="cMode"><option value="ka">Ativo (Ka · Rankine)</option><option value="k0">Repouso (K0)</option></select></label>
+   <label data-for="all">γf<input id="cGf" type="number" step="0.05" min="1" max="2"></label>
+   <label data-for="fundacao resumo">FS tombamento mín.<input id="cFsT" type="number" step="0.1" min="1"></label>
+   <label data-for="fundacao resumo">FS deslizamento mín.<input id="cFsD" type="number" step="0.1" min="1"></label>
+   <label data-for="pilar resumo">fck (MPa)<input id="cFck" type="number" step="5" min="20" max="50"></label>
   </div><div id="calcResults"></div></div>`;
   document.body.appendChild(dlg);
   $('calcClose').onclick=()=>dlg.close();
-  const map={cGamma:'gamma',cPhi:'phi',cC:'c',cQ:'q',cGf:'gf'};
-  for(const [id,k] of Object.entries(map))$(id).oninput=()=>{const v=Number($(id).value);if(Number.isFinite(v)&&$(id).value!==''){calcSettings[k]=v;calcRender()}};
+  dlg.querySelectorAll('.calc-tabs button[data-tab]').forEach(b=>b.onclick=()=>{calcSettings.tab=b.dataset.tab;calcSettings.sel=null;calcRender()});
+  for(const [id,k] of Object.entries(calcInputs))$(id).oninput=()=>{const v=Number($(id).value);if(Number.isFinite(v)&&$(id).value!==''){calcSettings[k]=v;calcRender()}};
   $('cMode').onchange=()=>{calcSettings.mode=$('cMode').value;calcRender()};
+  $('cUse').onchange=()=>{calcSettings.useCalc=$('cUse').value==='1';calcRender()};
   $('cWall').onchange=()=>{calcSettings.wall=$('cWall').value;calcSettings.sel=null;calcRender()};
  }
  const S=calcSettings;
  $('cWall').innerHTML='<option value="all">Todos</option>'+wallSegments.map((_,i)=>`<option value="${i}">Arrimo ${i+1}</option>`).join('');
  if(S.wall!=='all'&&!(Number(S.wall)<wallSegments.length))S.wall='all';
- $('cWall').value=S.wall;$('cGamma').value=S.gamma;$('cPhi').value=S.phi;$('cC').value=S.c;$('cQ').value=S.q;$('cMode').value=S.mode;$('cGf').value=S.gf;
+ $('cWall').value=S.wall;for(const [id,k] of Object.entries(calcInputs))$(id).value=S[k];$('cMode').value=S.mode;$('cUse').value=S.useCalc?'1':'0';
  calcRender();if(!dlg.open)dlg.showModal();
 }
 (()=>{const css=document.createElement('style');css.textContent=`
-#calcDialog{width:min(1240px,96vw);height:min(860px,92vh);padding:0;border:1px solid #6a9aba;border-radius:10px;background:#eaf3fa;color:#173a55;font:12px Arial}
+#calcDialog{width:min(1260px,96vw);height:min(880px,93vh);padding:0;border:1px solid #6a9aba;border-radius:10px;background:#eaf3fa;color:#173a55;font:12px Arial}
 #calcDialog::backdrop{background:#0008}
-.calc-head{display:flex;align-items:center;gap:16px;background:#173a55;color:#fff;padding:8px 14px;position:sticky;top:0}
+.calc-head{display:flex;align-items:center;gap:16px;background:#173a55;color:#fff;padding:8px 14px;position:sticky;top:0;z-index:2;flex-wrap:wrap}
 .calc-tabs{display:flex;gap:4px;flex:1}.calc-tabs button{background:#24506f;color:#dcebf7;border:0;border-radius:5px 5px 0 0;padding:6px 14px;font-size:12px;cursor:pointer}
 .calc-tabs button.on{background:#eaf3fa;color:#173a55;font-weight:bold}.calc-tabs button:disabled{opacity:.45;cursor:default}
+.calc-mode{font-size:11px;display:flex;align-items:center;gap:6px}.calc-mode select{height:26px;border-radius:4px;border:0;padding:2px 6px;font-size:12px}
 #calcClose{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
 #calcBody{padding:12px 14px}.calc-in{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.calc-in label{display:flex;flex-direction:column;gap:3px;font-size:10px;min-width:110px}.calc-in input,.calc-in select{height:28px;border:1px solid #b5c9da;border-radius:4px;padding:3px 6px;font-size:12px}
-.calc-k{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:7px 10px;margin-bottom:10px}
+.calc-in label{display:flex;flex-direction:column;gap:3px;font-size:10px;min-width:105px;flex:1}.calc-in input,.calc-in select{height:28px;border:1px solid #b5c9da;border-radius:4px;padding:3px 6px;font-size:12px}
+.calc-k{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.c-apply{margin-left:auto;background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer}
+.c-ok{color:#1e7d3c;font-weight:bold}.c-no{color:#c0392b;font-weight:bold}
 .calc-grid{display:grid;grid-template-columns:1fr 340px;gap:12px;align-items:start}
 @media(max-width:900px){.calc-grid{grid-template-columns:1fr}}
 .calc-t{border-collapse:collapse;width:100%;background:#fff}.calc-t th,.calc-t td{border:1px solid #c7d7e4;padding:4px 6px;text-align:right;white-space:nowrap}
 .calc-t th{background:#dcebf7;text-align:center;font-size:11px}.calc-t td:first-child,.calc-t td:nth-child(2){text-align:center}
 .calc-t tr[data-key]{cursor:pointer}.calc-t tr[data-key]:hover{background:#f2f8fc}.calc-t tr.sel{background:#fff3c4}.calc-t tr.crit td:first-child{color:#c0392b;font-weight:bold}
+.calc-sum td{text-align:center!important}
 .calc-hint{font-size:10px;color:#4c6271;margin:4px 0}
 .calc-mem{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:10px;font:12px/1.55 Consolas,monospace;white-space:pre-wrap;margin-top:12px}`;document.head.appendChild(css);
- const aside=document.querySelector('aside'),b=document.createElement('button');b.id='sideCalc';b.type='button';b.title='Painel de cálculo';b.innerHTML='Σ<br>Cálculo';b.onclick=calcOpen;aside.insertBefore(b,$('sideSteel').nextSibling);
+ const aside=document.querySelector('aside'),b=document.createElement('button');b.id='sideCalc';b.type='button';b.title='Calcular / dimensionar — abre o painel de cálculo';b.innerHTML='Σ<br>Calcular';b.onclick=calcOpen;aside.insertBefore(b,$('sideSteel').nextSibling);
  const nav=[...document.querySelectorAll('header .nav button')].find(x=>x.textContent.trim()==='Cálculo');if(nav)nav.onclick=calcOpen;
 })();
 </script></body></html>
