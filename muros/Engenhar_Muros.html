@@ -1705,7 +1705,7 @@ const TABLE_COL_W=150;
 // dos desenhos que ela contém (limite superior das posições da relação de aço).
 function steelRowsEstimate(codes){const set=new Set();for(const c of codes){const g=findGroup(c);if(!g)continue;for(const t of g.querySelectorAll('text')){const p=steelParseLabel(t.textContent||'');if(p)set.add(p.dia+'|'+p.len)}}return set.size}
 function kindTableHeight(kinds,codes){
- if(kinds.includes('planta')){const types=Object.keys(foundationCounts('pile')).length+($('blockEnabled').checked?Object.keys(foundationCounts('block')).length:0);return (17+7*6.6+5)+4+(24+Math.max(1,types)*6.6+5)+4+(27+6*7+10)}
+ if(kinds.includes('planta')){const types=Object.keys(foundationCounts('pile')).length+($('blockEnabled').checked?Object.keys(foundationCounts('block')).length:0);return (17+7*6.6+5)+4+(24+Math.max(1,types)*6.6+5)+4+(27+6*7+10)+4+(17+6*6.6+5)}
  const rows=steelRowsEstimate(codes);return rows?13+9+rows*7+4:0;
 }
 function layoutArea(format='A1',orientation='landscape'){let [w,h]=sheetSizes[format];if(orientation==='portrait')[w,h]=[h,w];const stripW=Math.min(180,w*.42),x0=28,y0=16,x1=w-10-stripW-10,y1=h-14;return {x0,y0,x1,y1,w:x1-x0,h:y1-y0}}
@@ -2110,7 +2110,8 @@ function sheetDraw(sceneG){
       cy+=drawSheetIndex(g,colX,cy,TW,unit)+4*unit;
       cy+=drawFoundationTable(g,colX,cy,TW,unit)+4*unit;
       const all=[...steelBySheet.values()].flat();
-      if(all.length)drawSteelSummary(g,colX,cy,TW,all,unit,steelRegistryFallback?'RESUMO GERAL DE AÇO · CONFERIR':'RESUMO GERAL DE AÇO');
+      if(all.length){drawSteelSummary(g,colX,cy,TW,all,unit,steelRegistryFallback?'RESUMO GERAL DE AÇO · CONFERIR':'RESUMO GERAL DE AÇO');cy+=steelSummaryHeight(all,unit)+4*unit}
+      drawQuantTable(g,colX,cy,TW,unit);
     }else if(rows.length){
       drawSteelTable(g,colX,cy,TW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',d.h-cy-14*unit);
     }
@@ -2922,12 +2923,87 @@ function calcCircleMRd(D,cover,nBars,dia,stDia){ // cm, mm → kN·m
  let lo=.5,hi=2*D;for(let it=0;it<80;it++){const mid=(lo+hi)/2;if(forces(mid).N>0)hi=mid;else lo=mid}
  return forces((lo+hi)/2).M/100;
 }
+// ---------- Quantitativo (V245): concreto, forma, aço e alvenaria (sem preços) ----------
+// Concreto estrutural por peça; forma lateral (pilares 4 faces; vigas 2 faces; blocos 4 faces; estacas sem forma);
+// lastro de concreto magro (5 cm) sob os blocos; aço pela relação das pranchas (+10% de perdas, como no resumo).
+function calcQuant(){
+ const items=[],add=(grp,item,un,q,note='')=>{if(q>1e-9)items.push({grp,item,un,q,note})};
+ if(!wallFinished||wallPoints.length<2)return {items,tot:{}};
+ const ids=pillarIds(),pil=new Map();let conc={pil:0,vb:0,vi:0,vt:0,blk:0,est:0},forma={pil:0,vb:0,vi:0,vt:0,blk:0},alv=0;
+ const blkVals=$('blockEnabled')?.checked===false?null:true;
+ const bx=c=>foundationValues('block',c);
+ for(let i=0;i<wallPoints.length-1;i++){
+  const P=wallProfile(i);if(!P)continue;const bw=Math.max(10,Number(P.d.wallBeamWidth)||20),bh=P.bh,cb=Math.max(10,Number(P.d.wallColX)||20),ch=Math.max(10,Number(P.d.wallColY)||40);
+  const zones=elevationEnabled?elevationBeamZones(P):[],hasTop=!!(elevationEnabled&&elevationSettings.top);
+  for(let j=0;j<P.n;j++){const pid=ids[i]?.[j]??j,zb=P.foundTop[j]+bh,h=Math.max(0,P.T(P.xs[j])-zb);const o=pil.get(pid)||{h:0,b:cb,d:ch};o.h=Math.max(o.h,h);pil.set(pid,o)}
+  for(let k=0;k<P.n-1;k++){
+   const L=P.xs[k+1]-P.xs[k],zb=P.spanBase[k]+bh,net=Math.max(0,L-cb);
+   // VB: desconta a largura do bloco (meio bloco em cada pilar) quando há bloco.
+   const keyA=foundationKey({x:wallStart.x+(P.a.x+(P.b.x-P.a.x)*k/(P.n-1))*.78,y:wallStart.y+(P.a.y+(P.b.y-P.a.y)*k/(P.n-1))*.78});
+   const bW=foundationNoBlock(keyA)?cb:Number(bx(foundationEnsure('block',keyA)).blockX)||80,vbL=Math.max(0,L-bW);
+   conc.vb+=bw*bh*vbL/1e6;forma.vb+=2*bh*vbL/1e4;
+   const vis=zones.filter(([z0,z1])=>z0>=zb-1);conc.vi+=vis.length*bw*bh*net/1e6;forma.vi+=vis.length*2*bh*net/1e4;
+   let dev=0,topAvg=0;const N=20;for(let t=0;t<N;t++){const x=P.xs[k]+L*(t+.5)/N;topAvg+=P.T(x)/N}
+   for(let t=0;t<N;t++){const x0=P.xs[k]+L*t/N,x1=x0+L/N;dev+=Math.hypot(L/N,P.T(x1)-P.T(x0))}
+   if(hasTop){const vtL=Math.max(0,dev-cb);conc.vt+=bw*bh*vtL/1e6;forma.vt+=2*bh*vtL/1e4}
+   const hm=Math.max(0,topAvg-zb-(vis.length+(hasTop?1:0))*bh);alv+=hm*net/1e4;
+  }
+ }
+ for(const o of pil.values()){conc.pil+=o.b*o.d*o.h/1e6;forma.pil+=2*(o.b+o.d)*o.h/1e4}
+ // Fundações
+ let lastro=0,nBlk=0,nEst=0,escav=0;
+ for(const [code,n] of Object.entries(foundationCounts('block'))){const v=bx(code),X=Number(v.blockX)||80,Y=Number(v.blockY)||80,H=Number(v.blockH)||80;nBlk+=n;conc.blk+=n*X*Y*H/1e6;forma.blk+=n*2*(X+Y)*H/1e4;lastro+=n*X*Y*5/1e6;escav+=n*X*Y*(H+5)/1e6}
+ for(const [code,n] of Object.entries(foundationCounts('pile'))){const v=foundationValues('pile',code),D=Number(v.shaft)||60,L=Number(v.depth)||300;nEst+=n;
+  let vol=Math.PI*D*D/4*L;
+  if(Number(v.pileKind)!==1){const Db=Math.max(D,Number(v.base)||D),hb=Math.min(L,Number(v.baseHeight)||0),sk=Math.min(hb,Number(v.skirt)||0),hf=hb-sk;
+   vol=Math.PI*D*D/4*(L-hb)+Math.PI*hf/12*(Db*Db+Db*D+D*D)+Math.PI*Db*Db/4*sk}
+  conc.est+=n*vol/1e6}
+ const pileTxt=Object.entries(foundationCounts('pile')).map(([c,n])=>{const v=foundationValues('pile',c);return `${n} ${Number(v.pileKind)===1?'estaca':'tubulão'} Ø${v.shaft} × ${(Number(v.depth)/100).toFixed(2).replace('.',',')} m`}).join(' · ');
+ add('Concreto estrutural','Pilares','m³',conc.pil,`${pil.size} pilares`);
+ add('Concreto estrutural','Vigas baldrame (VB)','m³',conc.vb);
+ add('Concreto estrutural','Vigas intermediárias (VI)','m³',conc.vi);
+ add('Concreto estrutural','Vigas de topo (VT)','m³',conc.vt);
+ add('Concreto estrutural','Blocos de coroamento','m³',conc.blk,`${nBlk} blocos`);
+ add('Concreto estrutural','Estacas / tubulões','m³',conc.est,pileTxt);
+ add('Concreto magro','Lastro sob blocos (5 cm)','m³',lastro);
+ add('Forma','Pilares (4 faces)','m²',forma.pil);
+ add('Forma','Vigas baldrame (2 faces)','m²',forma.vb);
+ add('Forma','Vigas intermediárias (2 faces)','m²',forma.vi);
+ add('Forma','Vigas de topo (2 faces)','m²',forma.vt);
+ add('Forma','Blocos (4 faces)','m²',forma.blk);
+ // Aço pela relação de todas as pranchas (mesma base do resumo geral)
+ const rows=[...steelBySheet.values()].flat(),steel=steelSummaryRows(rows),kg={CA50:0,CA60:0};
+ for(const r of steel){const w=r.meters*r.dia*r.dia*.006165;kg[r.steel]+=w;add('Aço',`${r.steel} Ø${String(r.dia).replace('.',',')} mm`,'kg',w*1.1,`${r.meters.toFixed(1).replace('.',',')} m + 10%`)}
+ add('Alvenaria','Alvenaria armada (área líquida)','m²',alv,`≈ ${Math.ceil(alv*12.5)} blocos 14×19×39`);
+ add('Movimento de terra','Escavação dos blocos (com lastro)','m³',escav);
+ const sum=k=>items.filter(x=>x.grp===k).reduce((a,b)=>a+b.q,0);
+ const tot={conc:sum('Concreto estrutural'),magro:sum('Concreto magro'),forma:sum('Forma'),ca50:kg.CA50*1.1,ca60:kg.CA60*1.1,alv,blocos:Math.ceil(alv*12.5),hasSteel:rows.length>0};
+ tot.taxa=tot.conc>0?(tot.ca50+tot.ca60)/tot.conc:0;
+ return {items,tot};
+}
+function calcTabQuant(){
+ const {items,tot}=calcQuant();if(!items.length)return '<p style="padding:20px">Lance e conclua o muro para gerar o quantitativo.</p>';
+ let last='',rows='';for(const r of items){if(r.grp!==last){rows+=`<tr><td colspan="4" style="text-align:left;background:#eef5fa;font-weight:bold">${r.grp}</td></tr>`;last=r.grp}
+  rows+=`<tr><td style="text-align:left">${r.item}</td><td>${r.un}</td><td><b>${calcFmt(r.q,r.un==='kg'?1:2)}</b></td><td style="text-align:left;color:#4c6271">${r.note}</td></tr>`}
+ return `<div class="calc-k" style="gap:18px"><span>Concreto estrutural <b>${calcFmt(tot.conc)} m³</b></span><span>Concreto magro <b>${calcFmt(tot.magro)} m³</b></span><span>Forma <b>${calcFmt(tot.forma)} m²</b></span><span>Aço CA50 <b>${calcFmt(tot.ca50,1)} kg</b> · CA60 <b>${calcFmt(tot.ca60,1)} kg</b></span><span>Taxa <b>${calcFmt(tot.taxa,0)} kg/m³</b></span><span>Alvenaria <b>${calcFmt(tot.alv)} m²</b> (≈ ${tot.blocos} blocos)</span></div>
+ ${tot.hasSteel?'':'<p class="calc-hint" style="color:#c0392b">Aço: organize as pranchas para gerar a relação de aço.</p>'}
+ <table class="calc-t" style="max-width:980px"><thead><tr><th>Item</th><th>Un.</th><th>Quantidade</th><th>Observação</th></tr></thead><tbody>${rows}</tbody></table>
+ <p class="calc-hint">Quantidades geométricas do projeto, sem perdas (exceto o aço, +10%). Forma lateral das vigas considera a alvenaria/solo como fundo. O quadro resumo também sai na prancha da planta.</p>`;
+}
+// Quadro de quantitativos na prancha da planta (coluna de tabelas, abaixo do resumo geral de aço).
+
+function drawQuantTable(g,x,y,w,u){
+ const {tot}=calcQuant(),h=(17+6*6.6+5)*u;sheetBox(g,x,y,w,h,'QUADRO DE QUANTITATIVOS',u);
+ const L=[['Concreto estrutural (fck '+(stampData.fck||'25')+' MPa)',`${steelNumber(tot.conc||0,2)} m³`],['Concreto magro (lastro)',`${steelNumber(tot.magro||0,2)} m³`],['Forma',`${steelNumber(tot.forma||0,2)} m²`],['Aço CA50 / CA60 (+10%)',`${steelNumber(tot.ca50||0,1)} / ${steelNumber(tot.ca60||0,1)} kg`],['Taxa de aço',`${steelNumber(tot.taxa||0,0)} kg/m³`],['Alvenaria armada',`${steelNumber(tot.alv||0,2)} m² (≈ ${tot.blocos||0} blocos)`]];
+ L.forEach(([a,b],k)=>{sheetText(g,x+4*u,y+(23+k*6.6)*u,a,u,2.5);sheetText(g,x+w-4*u,y+(23+k*6.6)*u,b,u,2.5,{'text-anchor':'end'})});
+ return h;
+}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
  document.querySelectorAll('#calcDialog [data-for]').forEach(l=>l.style.display=l.dataset.for.split(' ').includes(S.tab)||l.dataset.for==='all'?'':'none');
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
- body.innerHTML=S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
+ body.innerHTML=S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
  if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
 }
@@ -2936,7 +3012,7 @@ function calcOpen(){
  let dlg=$('calcDialog');
  if(!dlg){
   dlg=document.createElement('dialog');dlg.id='calcDialog';
-  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button></nav>
+  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button></nav>
   <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
    <label data-for="all">Arrimo<select id="cWall"></select></label>
