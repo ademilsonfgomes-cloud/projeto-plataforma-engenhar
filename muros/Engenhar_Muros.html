@@ -1233,8 +1233,9 @@ function drawPillarDetails(parent){
   const inset=dia=>ci+pillarArms.N1.dia/10*factor+dia/20*factor,rad=dia=>Math.max(1.4,dia/20*factor);
   const bc=inset(A2.cornerDia),bars=[];
   const bcE=inset(A2.cornerExtDia);
-  for(const [cx,cy] of [[sx+bc,sy+bc],[sx+sw-bc,sy+bc]])bars.push({x:cx,y:cy,dia:A2.cornerDia,face:'CANTOS'});
-  for(const [cx,cy] of [[sx+bcE,sy+sh-bcE],[sx+sw-bcE,sy+sh-bcE]])bars.push({x:cx,y:cy,dia:A2.cornerExtDia,face:'CANTOS'});
+  const cSame=Number(A2.cornerExtDia)===Number(A2.cornerDia);
+  for(const [cx,cy] of [[sx+bc,sy+bc],[sx+sw-bc,sy+bc]])bars.push({x:cx,y:cy,dia:A2.cornerDia,face:cSame?'CANTOS':'CANTOS TARDOZ'});
+  for(const [cx,cy] of [[sx+bcE,sy+sh-bcE],[sx+sw-bcE,sy+sh-bcE]])bars.push({x:cx,y:cy,dia:A2.cornerExtDia,face:cSame?'CANTOS':'CANTOS EXTERNA'});
   const faceBars=(n,dia,face,p0,p1)=>{for(let m=1;m<=n;m++){const f=m/(n+1);bars.push({x:p0[0]+(p1[0]-p0[0])*f,y:p0[1]+(p1[1]-p0[1])*f,dia,face})}};
   const bs=inset(A2.soloDia),be=inset(A2.extDia),bl=inset(A2.latDia);
   faceBars(A2.soloN,A2.soloDia,'TARDOZ',[sx+bc,sy+bs],[sx+sw-bc,sy+bs]);
@@ -1247,8 +1248,11 @@ function drawPillarDetails(parent){
   dimH(sx,sx+sw,sy-16,sy,String(v.a),g);dimV(sy,sy+sh,sx-19,sx,String(v.b),g);
   // Linhas de chamada: uma por posição (bitola), empilhadas à direita da seção.
   const PUs=unitFor(detailScale[code]||25);let ly=sy+3*PUs;
-  for(const gr of groups){const rep=bars.find(b=>b.dia===gr.dia&&(gr.parts.length>1||true));
-   path(`M${rep.x} ${rep.y} L${sx+sw+9*PUs} ${ly-1.6*PUs} H${sx+sw+13*PUs}`,ink,'none',.6,g,{'data-layer':'cotas'});
+  // Uma linha de chamada para CADA barra da posição, convergindo no mesmo ponto do rótulo.
+  const inGroup=(b,gr)=>b.dia===gr.dia&&gr.parts.some(pt=>new RegExp('^\\S+ '+b.face+'( \\(|$)').test(pt));
+  for(const gr of groups){const mine=bars.filter(b=>inGroup(b,gr)),kx=sx+sw+9*PUs,ky=ly-1.6*PUs;
+   for(const b of (mine.length?mine:bars.filter(b=>b.dia===gr.dia).slice(0,1)))path(`M${b.x} ${b.y} L${kx} ${ky}`,ink,'none',.5,g,{'data-layer':'cotas'});
+   path(`M${kx} ${ky} H${sx+sw+13*PUs}`,ink,'none',.6,g,{'data-layer':'cotas'});
    txt(sx+sw+14*PUs,ly,v.variable?`${gr.qty} Ø${String(gr.dia).replace('.',',')}`:`${gr.qty} ${gr.token}`,10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});ly+=7*PUs}
   path(`M${sx+sw-ci} ${sy+sh*.75} L${sx+sw+9*PUs} ${ly-1.6*PUs} H${sx+sw+13*PUs}`,ink,'none',.6,g,{'data-layer':'cotas'});
   txt(sx+sw+14*PUs,ly,'N1',10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});
