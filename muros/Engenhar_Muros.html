@@ -18,7 +18,7 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 <div class="toolbar"><button id="new">Novo projeto</button><button id="open">Abrir JSON</button><button id="save">Salvar JSON</button><button id="copyFoundation" type="button" title="Pincel de características: clique na origem e depois nos destinos; Esc para sair" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold">🖌 Copiar características</button><button id="refreshNear" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Gerar novamente os detalhamentos completos dos tipos de fundação">↻ Atualizar detalhes</button><button id="refresh">Atualizar desenhos</button><button id="layerSettings" type="button" style="background:#d4e5f5;border:1px solid #78a5c5;font-weight:bold">◫ Layers e Penas</button><button id="refreshSteel" type="button" style="background:#cdebd7;color:#17452c;border:2px solid #59a47b;font-weight:bold" title="Recalcular as tabelas de aço das pranchas">↻ Atualizar aço</button><button id="organizeSheets" type="button" style="background:#f7d979;color:#172e3f;font-weight:bold;border:2px solid #c79b26" title="Monta o conjunto padrão de pranchas e distribui os detalhes sem sobreposição">▦ Organizar pranchas</button><button id="editStamp" type="button">▤ Editar carimbo</button><button id="fit">Ajustar</button><button id="sheetOpen" title="Abrir editor de pranchas">▤ Pranchas no CAD</button><button id="quickNewSheet" title="Escolher formato e adicionar prancha à direita">＋ Adicionar prancha</button><span class="sep"></span><label>Escala de prancha <select id="printScale" style="height:28px"><option value="20">1:20</option><option value="25" selected>1:25</option><option value="50">1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><span class="sep"></span><b>Planta e Geometria</b><div class="swatches" id="colors"><button class="swatch active" style="background:#0c1b29" data-color="#0c1b29" title="Fundo preto azulado"></button><button class="swatch" style="background:#38434b" data-color="#38434b" title="Fundo cinza escuro"></button><button class="swatch" style="background:#859098" data-color="#859098" title="Fundo cinza"></button><button class="swatch" style="background:#ffffff" data-color="#ffffff" title="Fundo branco"></button><button class="swatch" style="background:#1b3852" data-color="#1b3852" title="Fundo azul marinho"></button></div><label><input id="grade" type="checkbox" checked> Grade</label></div>
 <div class="shell"><aside><button id="sidePlanta" type="button">▦<br>Planta</button><button id="editMuro" class="edit-mode side-tool" title="Lançar e editar muro na planta">▰<br>Arrimos</button><button id="editTubulo" class="edit-mode side-tool" title="Mostrar parâmetros do tubulão">♙<br>Tubulões</button><button id="editBloco" class="edit-mode side-tool" title="Mostrar parâmetros do bloco">▣<br>Blocos</button><button id="sidePilares" type="button">▥<br>Pilares</button><button id="sideVigas" type="button">▤<br>Vigas</button><button id="quickElevations" type="button" class="side-tool">▦<br>Elevações</button><button id="sideSheets">▤<br>Pranchas</button><button id="sideSteel" type="button" title="Localizar relação e resumo de aço">▤<br>Aço</button></aside><main>
 <div class="ribbon" id="tubuloRibbon"><h3>TUBULÕES — GEOMETRIA E ARMADURAS <small style="float:right;font-size:10px;font-weight:normal">Prévia gráfica em centímetros · cálculo não validado</small></h3>
-<label>Identificação<input id="id" value="T1"></label><label>Ø fuste (cm)<input id="shaft" type="number" min="20" value="60"></label><label>Ø base (cm)<input id="base" type="number" min="20" value="120"></label><label>Profundidade (cm)<input id="depth" type="number" min="50" value="330"></label><label>Altura base (cm)<input id="baseHeight" type="number" min="10" value="50"></label><label>Altura saia (cm)<input id="skirt" type="number" min="0" value="35"></label><label>Cobrimento (cm)<input id="cover" type="number" min="2" value="5"></label><label>Nº barras<input id="bars" type="number" min="2" value="8"></label><label>Ø barras (mm)<input id="barDia" type="number" min="5" value="16"></label><label>Compr. barras (cm)<input id="barLen" type="number" min="10" value="260"></label><label>Ø estribos (mm)<input id="stDia" type="number" min="4" value="8"></label><label>Compr. circular N2 (cm)<input id="ringLen" type="number" min="20" step="0.1" value="154.6" title="Comprimento do arco circular na linha média, sem os ganchos"></label><label>Estribos c/ (cm)<input id="spacing" type="number" min="1" value="15"></label>
+<label>Identificação<input id="id" value="T1"></label><label>Ø fuste (cm)<input id="shaft" type="number" min="20" value="60"></label><label>Ø base (cm)<input id="base" type="number" min="20" value="120"></label><label>Profundidade (cm)<input id="depth" type="number" min="50" value="330"></label><label>Altura base (cm)<input id="baseHeight" type="number" min="10" value="50"></label><label>Altura saia (cm)<input id="skirt" type="number" min="0" value="35"></label><label>Cobrimento (cm)<input id="cover" type="number" min="2" value="5"></label><label>Nº barras<input id="bars" type="number" min="2" value="8"></label><label>Ø barras (mm)<input id="barDia" type="number" min="5" value="16"></label><label>Compr. barras (cm)<input id="barLen" type="number" min="10" value="260"></label><label>Ø estribos (mm)<input id="stDia" type="number" min="4" value="8"></label><label>Compr. circular N2 (cm)<input id="ringLen" type="number" min="20" step="0.1" value="154.6" title="Comprimento do arco circular na linha média, sem os ganchos"></label><label>Estribos c/ (cm)<input id="spacing" type="number" min="1" value="15"></label><label>Tipo<select id="pileKind"><option value="0">Tubulão (base alargada)</option><option value="1">Estaca escavada mecanicamente</option></select></label><label>Bloco de coroamento<select id="noBlock"><option value="0">Com bloco</option><option value="1">Sem bloco</option></select></label><label>Zona reforçada topo (cm)<input id="topZone" type="number" min="10" value="70"></label><label>Estribos topo c/ (cm)<input id="topSpacing" type="number" min="2" value="10"></label>
 </div>
 <div id="blockRibbon" style="display:none;align-items:center;gap:10px;padding:5px 12px;background:#c9dfed;color:#173a55;flex-wrap:wrap;font-size:11px;border-top:1px solid #b0c9da">
 <strong>BLOCOS · B1 — DIMENSÕES EDITÁVEIS</strong>
@@ -82,7 +82,7 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 <script>
 'use strict';
 const $=id=>document.getElementById(id),svg=$('drawing'),cad=$('cad'),ns='http://www.w3.org/2000/svg';
-const fields=['id','shaft','base','depth','baseHeight','skirt','cover','bars','barDia','barLen','stDia','ringLen','spacing'];
+const fields=['id','shaft','base','depth','baseHeight','skirt','cover','bars','barDia','barLen','stDia','ringLen','spacing','pileKind','noBlock','topZone','topSpacing'];
 let extra=[],seq=3,mode='select',selected=null,freePoints=[],pointer=null;let blockOffset={x:0,y:0},tubuloOffset={x:0,y:0};
 let view={x:0,y:0,k:1},initialized=false,scene={w:620,h:430};
 let activeEditor='tubulo';
@@ -92,7 +92,7 @@ let wallTitleOffset=128,lastSheetRefs=new Map();let wallSegments=[],wallActive=0
 // Tipos de fundação são identificados por características; instâncias por coordenada.
 let foundationCopyMode=false,foundationCopySource=null;
 let foundationOverrides={};let foundationTypes={pile:{},block:{}};let foundationTypeCounter={pile:2,block:2};let foundationEditing=null;let extraDetailOffsets={};let renderingVariant=false;let foundationBaseModels={pile:null,block:null};
-const foundationFieldSets={pile:[['shaft','Diâmetro do fuste (cm)'],['base','Diâmetro da base (cm)'],['depth','Profundidade (cm)'],['baseHeight','Altura da base (cm)'],['skirt','Saia (cm)'],['bars','Barras longitudinais'],['barDia','Ø longitudinal (mm)'],['stDia','Ø estribo (mm)'],['spacing','Espaçamento (cm)']],block:[['blockX','Bloco lado X (cm)'],['blockY','Bloco lado Y (cm)'],['blockH','Altura do bloco (cm)'],['blockPile','Ø tubulão (cm)'],['blockCover','Cobrimento (cm)'],['blockDiaX','Ø armadura X (mm)'],['blockDiaY','Ø armadura Y (mm)'],['blockDiaC','Ø costela (mm)']]};
+const foundationFieldSets={pile:[['pileKind','Tipo de fundação'],['noBlock','Bloco de coroamento'],['shaft','Diâmetro do fuste (cm)'],['base','Diâmetro da base (cm)'],['depth','Profundidade (cm)'],['baseHeight','Altura da base (cm)'],['skirt','Saia (cm)'],['bars','Barras longitudinais'],['barDia','Ø longitudinal (mm)'],['barLen','Compr. barras longitudinais (cm)'],['stDia','Ø estribo (mm)'],['spacing','Espaçamento (cm)'],['topZone','Sem bloco: zona reforçada no topo (cm)'],['topSpacing','Sem bloco: estribos do topo c/ (cm)']],block:[['blockX','Bloco lado X (cm)'],['blockY','Bloco lado Y (cm)'],['blockH','Altura do bloco (cm)'],['blockPile','Ø tubulão (cm)'],['blockCover','Cobrimento (cm)'],['blockDiaX','Ø armadura X (mm)'],['blockDiaY','Ø armadura Y (mm)'],['blockDiaC','Ø costela (mm)']]};
 function foundationCurrentFields(kind){return Object.fromEntries(foundationFieldSets[kind].map(([id])=>[id,String($(id).value)]))}
 function foundationDefaults(kind){return foundationBaseModels[kind]||foundationCurrentFields(kind)}
 function foundationFreezeDefaults(){for(const kind of ['pile','block'])if(!foundationBaseModels[kind])foundationBaseModels[kind]={...foundationCurrentFields(kind)}}
@@ -103,7 +103,7 @@ function foundationValues(kind,code){return code===(kind==='pile'?'T1':'B1')?fou
 function foundationAssign(kind,key,values){foundationFreezeDefaults();const base=foundationDefaults(kind),initial=kind==='pile'?'T1':'B1';let code=initial;
  if(foundationSignature(values)!==foundationSignature(base)){
   code=Object.keys(foundationTypes[kind]).find(c=>foundationSignature(foundationTypes[kind][c])===foundationSignature(values));
-  if(!code){code=(kind==='pile'?'T':'B')+foundationTypeCounter[kind]++;foundationTypes[kind][code]={...values}}
+  if(!code){const est=kind==='pile'&&Number(values.pileKind)===1;code=est?'E'+(foundationTypeCounter.estaca=(foundationTypeCounter.estaca||1)+1,foundationTypeCounter.estaca-1):(kind==='pile'?'T':'B')+foundationTypeCounter[kind]++;foundationTypes[kind][code]={...values}}
  }
  if(!foundationOverrides[key])foundationOverrides[key]={};foundationOverrides[key][kind]=code;return code}
 function foundationCopyCancel(){foundationCopyMode=false;foundationCopySource=null;document.body.classList.remove('foundation-brush');$('copyFoundation').style.background='#cdebd7';$('copyFoundation').textContent='🖌 Copiar características';}
@@ -116,10 +116,15 @@ function foundationCopyClick(kind,key){
  const code=foundationAssign(kind,key,{...foundationCopySource.values});if(kind==='block')$('blockEnabled').checked=true;
  draw();status(`Características de ${foundationCopySource.code} copiadas para esta posição (${code}). ${Object.entries(foundationCounts(kind)).map(([c,n])=>c+': '+n+' un.').join(' | ')}. Continue clicando nos destinos ou Esc para encerrar.`);
 }
-function foundationCounts(kind){const counts={};for(const p of foundationPoints()){const code=foundationEnsure(kind,foundationKey(p));counts[code]=(counts[code]||0)+1}return counts}
+// Posição sem bloco de coroamento: definida no tipo de fundação profunda (noBlock).
+function foundationNoBlock(key){return Number(foundationValues('pile',foundationEnsure('pile',key)).noBlock)===1}
+function foundationCounts(kind){const counts={};for(const p of foundationPoints()){const key=foundationKey(p);if(kind==='block'&&foundationNoBlock(key))continue;const code=foundationEnsure(kind,key);counts[code]=(counts[code]||0)+1}return counts}
 function foundationPoints(){const found=new Map();for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));for(let j=0;j<n;j++){const t=j/(n-1),p={x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78};found.set(foundationKey(p),p)}}return [...found.values()]}
-function foundationOpen(kind,key){foundationFreezeDefaults();const code=foundationEnsure(kind,key),values=foundationValues(kind,code);foundationEditing={kind,key};$('foundationEditorTitle').textContent=`${kind==='pile'?'TUBULÃO':'BLOCO'} ${code} — EDITAR POSIÇÃO`;
- $('foundationEditorFields').replaceChildren();for(const [id,label] of foundationFieldSets[kind]){const box=document.createElement('label');box.textContent=label;box.style.display='flex';box.style.flexDirection='column';box.style.gap='3px';const input=document.createElement('input');input.type='number';input.step='any';input.min='0.1';input.dataset.foundationField=id;input.value=values[id]??'';input.style.width='135px';box.append(input);$('foundationEditorFields').append(box)}$('foundationEditor').hidden=false}
+function foundationOpen(kind,key){foundationFreezeDefaults();const code=foundationEnsure(kind,key),values=foundationValues(kind,code);foundationEditing={kind,key};$('foundationEditorTitle').textContent=`${kind==='pile'?'FUNDAÇÃO':'BLOCO'} ${code} — EDITAR POSIÇÃO`;
+ $('foundationEditorFields').replaceChildren();for(const [id,label] of foundationFieldSets[kind]){const box=document.createElement('label');box.textContent=label;box.style.display='flex';box.style.flexDirection='column';box.style.gap='3px';const opts={pileKind:[['0','Tubulão (base alargada)'],['1','Estaca escavada mecanicamente']],noBlock:[['0','Com bloco de coroamento'],['1','Sem bloco (estribos reforçados no topo)']]}[id];
+  let input;if(opts){input=document.createElement('select');for(const [v,t] of opts){const o=document.createElement('option');o.value=v;o.textContent=t;input.append(o)}input.value=String(Number(values[id]??$(id).value)||0);input.style.width='220px'}else{input=document.createElement('input');input.type='number';input.step='any';input.min='0';input.value=values[id]??$(id)?.value??'';input.style.width='135px'}
+  input.dataset.foundationField=id;box.append(input);
+  if(id==='pileKind')input.onchange=()=>{const f=k=>$('foundationEditorFields').querySelector(`[data-foundation-field="${k}"]`);if(input.value==='1'&&Number(f('shaft')?.value)>=50){for(const [k,v] of Object.entries({shaft:30,base:30,depth:600,baseHeight:10,skirt:0,bars:6,barDia:10,barLen:600,stDia:5,spacing:20}))if(f(k))f(k).value=v}};$('foundationEditorFields').append(box)}$('foundationEditor').hidden=false}
 // Enquadra o NOVO detalhamento no CAD: anteriormente ele era criado fora da
 // area visivel, enquanto o botao Atualizar apenas redesenhava sem navegar.
 function revealFoundationDetail(code){
@@ -141,7 +146,7 @@ function revealFoundationDetail(code){
 function visibleFoundationCodes(){return Array.from(svg.querySelectorAll('[data-extra-code]')).map(n=>n.dataset.extraCode)}
 function foundationClose(){foundationEditing=null;$('foundationEditor').hidden=true}
 $('foundationCancel').onclick=foundationClose;
-$('foundationApply').onclick=()=>{if(!foundationEditing)return;const {kind,key}=foundationEditing;const vals={};for(const input of $('foundationEditorFields').querySelectorAll('input')){if(!Number.isFinite(Number(input.value))||Number(input.value)<=0){input.focus();return}vals[input.dataset.foundationField]=String(Number(input.value))}const code=foundationAssign(kind,key,vals);if(kind==='block')$('blockEnabled').checked=true;foundationClose();draw();const revealed=(code!=='T1'&&code!=='B1')?revealFoundationDetail(code):false;status(`${code} aplicado SOMENTE nesta posição. ${Object.entries(foundationCounts(kind)).map(([c,n])=>c+': '+n+' un.').join(' | ')}. ${revealed?'Novo detalhamento enquadrado no CAD.':'Detalhamento atualizado.'}`)};
+$('foundationApply').onclick=()=>{if(!foundationEditing)return;const {kind,key}=foundationEditing;const vals={};for(const input of $('foundationEditorFields').querySelectorAll('input,select')){const id=input.dataset.foundationField;if(input.localName==='select'){vals[id]=String(Number(input.value)||0);continue}const zeroOk=['skirt'].includes(id);if(!Number.isFinite(Number(input.value))||Number(input.value)<0||(!zeroOk&&Number(input.value)<=0)){input.focus();return}vals[id]=String(Number(input.value))}const code=foundationAssign(kind,key,vals);if(kind==='block')$('blockEnabled').checked=true;foundationClose();draw();const revealed=(code!=='T1'&&code!=='B1')?revealFoundationDetail(code):false;status(`${code} aplicado SOMENTE nesta posição. ${Object.entries(foundationCounts(kind)).map(([c,n])=>c+': '+n+' un.').join(' | ')}. ${revealed?'Novo detalhamento enquadrado no CAD.':'Detalhamento atualizado.'}`)};
 
 const wallIds=['wallLength','wallPillars','wallBeamWidth','wallBeamHeight','wallColX','wallColY','wallHeight','wallSlope','wallSoil','wallSoilLevel','wallFrontLevel'];
 function wallDefaults(){return Object.fromEntries(wallIds.map(id=>[id,$(id).value]))}
@@ -403,14 +408,19 @@ if(!renderingVariant && wallPoints.length>=2){
 let bg=el('rect',{x:0,y:0,width:w,height:h,fill:'transparent'});bg.dataset.background='1';
 let sceneG=el('g',{transform:`translate(${view.x} ${view.y}) scale(${view.k})`,'data-scene':'1'});let g=el('g',{transform:`translate(${tubuloOffset.x} ${tubuloOffset.y})`,'data-tubulo-group':'1',style:wallPoints.length>=2?'':'display:none'},sceneG);
 let shaft=clamp(numeric('shaft')||60,20,300),base=Math.max(shaft,numeric('base')||120),depth=clamp(numeric('depth')||330,50,2000),bh=clamp(numeric('baseHeight')||50,10,depth*.8),sk=clamp(numeric('skirt')||35,0,bh),cover=clamp(numeric('cover')||5,2,shaft/3),barLen=clamp(numeric('barLen')||260,10,depth),qty=clamp(Math.round(numeric('bars')||8),2,32),spacing=Math.max(1,numeric('spacing')||15),dia=Math.max(4,numeric('barDia')||16),stDia=Math.max(4,numeric('stDia')||8);
+// V237 — Tipo (tubulão / estaca escavada) e ligação sem bloco (zona reforçada no topo).
+const pk=Number($('pileKind').value)===1,nb=Number($('noBlock').value)===1,topZone=Math.max(10,numeric('topZone')||70),topSp=Math.max(2,numeric('topSpacing')||10);
+if(pk){base=shaft;bh=0;sk=0}
 let scale=0.78,top=94,x=145,shaftW=shaft*scale,baseW=base*scale,bodyH=depth*scale,shoulder=top+bodyH-bh*scale,skirtEnd=shoulder+sk*scale,bottom=top+bodyH;
 scene={w:$('blockEnabled').checked?1050:555,h:Math.max(490,bottom+207)};
-label(30,23,`T1 — DETALHAMENTO DO TUBULÃO · ${foundationCounts('pile').T1||0} UN.`,g,{'data-role':'title'});
+label(30,23,`T1 — ${pk?'DETALHAMENTO DA ESTACA ESCAVADA':'DETALHAMENTO DO TUBULÃO'}${nb?' · SEM BLOCO':''} · ${foundationCounts('pile').T1||0} UN.`,g,{'data-role':'title'});
 text(30,37,'CORTE LONGITUDINAL • SEÇÕES • ARMADURAS','white',8,g);text(30,49,'ESC. 1:{s} • COTAS EM cm','#a9c7da',8,g,{'data-scale-label':'ESC. 1:{s} • COTAS EM cm'});
 let left=x-shaftW/2,right=x+shaftW/2,bl=x-baseW/2,br=x+baseW/2;
 path(`M${left} ${top} H${right} V${shoulder} L${br} ${skirtEnd} V${bottom} H${bl} V${skirtEnd} L${left} ${shoulder} Z`,'#f5c845','none',.95,g);
 for(let yy=top+9;yy<bottom-4;yy+=10){let lx=yy<=shoulder?left:yy<=skirtEnd?left-(shaftW-baseW)*.5*(yy-shoulder)/Math.max(1,skirtEnd-shoulder):bl;let rx=2*x-lx;line(lx+2,yy,rx-2,yy,'#23495d',.4,g)}
-let ringDiaCm=clamp(numeric('ringLen')/Math.PI,10,shaft-2*cover-stDia/10);
+// Comprimento do estribo circular limitado ao fuste (vale para estacas de menor diâmetro).
+const ringEff=Math.min(numeric('ringLen')||1e9,Math.PI*(shaft-2*cover-stDia/10));
+let ringDiaCm=clamp(ringEff/Math.PI,10,shaft-2*cover-stDia/10);
 let ringRadius=ringDiaCm*scale/2;
 let barCenterRadius=Math.max(2,ringRadius-(stDia+dia)/20*scale-.8);
 let barTop=top+8,barBottom=Math.min(top+barLen*scale,shoulder-2),bx1=x-barCenterRadius,bx2=x+barCenterRadius;
@@ -425,13 +435,18 @@ const n1LabelY=barBottom-8;
 const n1Label=text(n1LabelX,n1LabelY,`N1 · ${qty}Ø${dia} · C=${barLen.toFixed(0)} cm`,'#f06b76',10,g,{'font-weight':'bold'});
 n1Label.setAttribute('transform',`rotate(-90 ${n1LabelX} ${n1LabelY})`);
 editLabel(n1Label,'N1');
-let stirrupCount=Math.max(1,Math.floor((barBottom-barTop)/(spacing*scale))+1);
-for(let i=0;i<stirrupCount;i++){let yy=barTop+i*(barBottom-barTop)/Math.max(1,stirrupCount-1);let e=line(bx1,yy,bx2,yy,'#60d1f3',.75,g);selectable(e,'N2')}
+// Estribos: sem bloco, zona reforçada no topo (padrão 70 cm c/10) e o restante no espaçamento normal.
+const barCm=(barBottom-barTop)/scale,zoneCm=nb?Math.min(topZone,barCm):0;
+const zoneCount=nb?Math.floor(zoneCm/topSp)+1:0;
+let stirrupCount=nb?Math.max(0,Math.floor((barCm-zoneCm)/spacing)):Math.max(1,Math.floor((barBottom-barTop)/(spacing*scale))+1);
+if(nb){for(let i=0;i<zoneCount;i++){const yy=barTop+i*topSp*scale;let e=line(bx1,yy,bx2,yy,'#60d1f3',.95,g);selectable(e,'N2')}for(let i=1;i<=stirrupCount;i++){const yy=barTop+(zoneCm+i*spacing)*scale;if(yy>barBottom+.1)break;let e=line(bx1,yy,bx2,yy,'#60d1f3',.75,g);selectable(e,'N2')}
+ dimV(barTop,barTop+zoneCm*scale,right+44,right,String(Math.round(zoneCm)),g);text(right+50,barTop+zoneCm*scale/2,`ZONA REFORÇADA c/${topSp}`,'#60d1f3',9,g,{'font-weight':'bold'});}
+else for(let i=0;i<stirrupCount;i++){let yy=barTop+i*(barBottom-barTop)/Math.max(1,stirrupCount-1);let e=line(bx1,yy,bx2,yy,'#60d1f3',.75,g);selectable(e,'N2')}
 dimV(top,bottom,left-85,left,`${depth} cm`,g);
-dimV(shoulder,bottom,right+68,right,`${bh} cm`,g);
-if(sk<bh)dimV(skirtEnd,bottom,right+104,right,`${Math.round((bh-sk)*10)/10} cm`,g);
+if(!pk){dimV(shoulder,bottom,right+68,right,`${bh} cm`,g);
+if(sk<bh)dimV(skirtEnd,bottom,right+104,right,`${Math.round((bh-sk)*10)/10} cm`,g);}
 dimH(left,right,top-26,top,`Ø fuste ${shaft} cm`,g);
-dimH(bl,br,bottom+29,bottom,`Ø base ${base} cm`,g);
+if(!pk)dimH(bl,br,bottom+29,bottom,`Ø base ${base} cm`,g);
 // Corte A-A indicado no fuste e apresentado como CORTE A à direita.
 let cutY=top+54;
 line(left-17,cutY,right+17,cutY,'#e7eaf1',.7,g,{'stroke-dasharray':'6 3'});
@@ -446,17 +461,19 @@ for(let i=0;i<qty;i++){let a=2*Math.PI*i/qty,rr=barCenterRadius;circle(cx+rr*Mat
 path(`M${cx+barCenterRadius} ${cy} L${cx+r+14} ${cy-r+4} H${cx+r+26}`,'#d6e8f4','none',.6,g,{'data-layer':'cotas'});text(cx+r+29,cy-r+7,`${qty} N1`,'#f06b76',10,g,{'font-weight':'bold'});
 path(`M${cx-ringRadius*.71} ${cy+ringRadius*.71} L${cx-r-14} ${cy+r-2} H${cx-r-26}`,'#d6e8f4','none',.6,g,{'data-layer':'cotas'});text(cx-r-29,cy+r+1,'N2','#60d1f3',10,g,{'font-weight':'bold','text-anchor':'end'});
 // A seção do fuste mantém as bolinhas; a edição N1 é feita pela legenda lateral.
-let bcx=x,bcy=bottom+125,brad=baseW/2;
+// Seção da base alargada só existe no tubulão.
+if(!pk){let bcx=x,bcy=bottom+125,brad=baseW/2;
 line(bl,bottom,bl,bcy,'#7995a6',.8,g,{'stroke-dasharray':'5 5'});
 line(br,bottom,br,bcy,'#7995a6',.8,g,{'stroke-dasharray':'5 5'});
 line(x,bottom+40,x,bcy+brad+15,'#54758a',.65,g,{'stroke-dasharray':'5 5'});
 label(bcx-brad,bcy-brad-16,'SEÇÃO DA BASE',g);
 circle(bcx,bcy,brad,'#f5c845','none',.95,g);
 circle(bcx,bcy,r,'#37637c','none',.8,g,{'stroke-dasharray':'3 3'});
-dimH(bcx-brad,bcx+brad,bcy+brad+26,bcy,`Ø ${base} cm`,g);
+dimH(bcx-brad,bcx+brad,bcy+brad+26,bcy,`Ø ${base} cm`,g);}
 // O diâmetro do corte acompanha o Ø do fuste e a cor do concreto.
 dimH(cx-r,cx+r,cy+r+21,cy,`Ø ${shaft} cm`,g);
-let ey=top+132,er=ringRadius;text(cx,ey-9,'N2','#f5cc50',11,g,{'font-weight':'bold','text-anchor':'middle'});let e=hookedRing(cx,ey+er,er,stDia,g,true);dimH(cx-er,cx+er,ey+2*er+22,ey+er,`Ø ${ringDiaCm.toFixed(1)} cm`,g);const n2Label=text(cx,ey+2*er+42,`N2 · ${stirrupCount}Ø${stDia} · c/${spacing} · C=${numeric('ringLen').toFixed(1).replace('.',',')} cm`,'#60d1f3',10,g,{'text-anchor':'middle','font-weight':'bold'});editLabel(n2Label,'N2');
+let ey=top+132,er=ringRadius;text(cx,ey-9,'N2','#f5cc50',11,g,{'font-weight':'bold','text-anchor':'middle'});let e=hookedRing(cx,ey+er,er,stDia,g,true);dimH(cx-er,cx+er,ey+2*er+22,ey+er,`Ø ${ringDiaCm.toFixed(1)} cm`,g);const ringTxt=ringEff.toFixed(1).replace('.',',');const n2Label=text(cx,ey+2*er+42,`N2 · ${stirrupCount}Ø${stDia} · c/${spacing} · C=${ringTxt} cm`,'#60d1f3',10,g,{'text-anchor':'middle','font-weight':'bold'});editLabel(n2Label,'N2');
+if(nb){const zl=text(cx,ey+2*er+56,`N2 · ${zoneCount}Ø${stDia} · c/${topSp} NO TOPO · C=${ringTxt} cm`,'#60d1f3',10,g,{'text-anchor':'middle','font-weight':'bold'});editLabel(zl,'N2')}
 
 for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');let sh=path(d,'#f06b76','none',2.6,grp,{'stroke-linecap':'round','stroke-linejoin':'round'});selectable(sh,item.pos);if(selected===item.pos)sh.classList.add('selected');for(let pt of item.points)circle(pt[0],pt[1],2.4,'#f06b76','#f06b76',1,grp);let p=item.points[0];const t=text(p[0]+7,p[1]-8,`${item.pos} · ${item.qty}Ø${item.dia} · C=${item.len} cm`,'#f6d65a',10,grp);editLabel(t,item.pos)}
 // Arrimos independentes; cada trecho tem viga, pilares e solo próprios.
@@ -515,7 +532,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
    const pileCode=foundationEnsure('pile',fkey),blockCode=foundationEnsure('block',fkey);
    const pileProps=foundationValues('pile',pileCode),blockProps=foundationValues('block',blockCode);
    const pileDiameter=clamp(Number(pileProps.shaft)||60,20,300)*scaleW;
-   const blockOn=$('blockEnabled').checked;
+   const blockOn=$('blockEnabled').checked&&Number(pileProps.noBlock)!==1;
    const blockWidth=clamp(Number(blockProps.blockX)||80,40,500)*scaleW;
    const blockDepth=clamp(Number(blockProps.blockY)||80,40,500)*scaleW;
    const rot=Math.atan2(dy,dx)*180/Math.PI;
@@ -533,7 +550,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
    const lx=pcx+lsx*(reach+mm(8)),ly=pcy+lsy*(reach+mm(8));
    line(pcx+lsx*pileDiameter/2,pcy+lsy*pileDiameter/2,lx,ly,'#d9e9f2',.55,wg,{'data-layer':'cotas'});
    circle(pcx+lsx*pileDiameter/2,pcy+lsy*pileDiameter/2,mm(.45),'#d9e9f2','#d9e9f2',.4,wg);
-   const callText=blockOn?`${blockCode} · ${pileCode}`:pileCode;
+   const callText=blockOn?`${blockCode} · ${pileCode}`:`${pileCode} (SEM BLOCO)`;
    if(Math.abs(lsy)>=Math.abs(lsx))ptext(lx,ly+(lsy>0?mm(3.6):-mm(1.2)),callText,'#70e7ac',2.5,{'text-anchor':'middle'});
    else ptext(lx+(lsx>0?mm(1):-mm(1)),ly+mm(1.25),callText,'#70e7ac',2.5,{'text-anchor':lsx>0?'start':'end'});
    // Eixo do pilar até o círculo de identificação, no lado das cotas.
@@ -763,7 +780,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
      detail.removeAttribute('data-tubulo-group');detail.removeAttribute('data-block-group');
      detail.removeAttribute('style');
      detail.querySelectorAll('[data-pos],[data-block-armature],[data-block-hit]').forEach(n=>{n.removeAttribute('data-pos');n.removeAttribute('data-block-armature');n.removeAttribute('data-block-hit')});
-     const title=detail.querySelector('text');if(title)title.textContent=`${code} — ${kind==='pile'?'DETALHAMENTO DO TUBULÃO':'BLOCO DE COROAMENTO'} · ${amount} UN.`;
+     const title=detail.querySelector('text');if(title)title.textContent=`${code} — ${kind==='pile'?(Number(values.pileKind)===1?'DETALHAMENTO DA ESTACA ESCAVADA':'DETALHAMENTO DO TUBULÃO')+(Number(values.noBlock)===1?' · SEM BLOCO':''):'BLOCO DE COROAMENTO'} · ${amount} UN.`;
      // Os desenhos originais possuem origem própria. Neutralize-a antes de
      // posicionar a variante, evitando somar deslocamentos duas vezes.
      detail.setAttribute('transform',kind==='pile'?'translate(0 0)':'translate(-590 0)');
@@ -881,10 +898,12 @@ function drawWallElevations(parent){
     const blockX=Math.max(40,Number(block.blockX)||80)*sc,blockH=Math.max(20,Number(block.blockH)||80)*sc;
     const shaft=Math.max(20,Number(pile.shaft)||60)*sc,base=Math.max(shaft/sc,Number(pile.base)||120)*sc,depth=Math.max(50,Number(pile.depth)||330)*sc;
     const ph=Math.min(depth*.8,Math.max(10,Number(pile.baseHeight)||50)*sc),sk=Math.min(ph,Math.max(0,Number(pile.skirt)||0)*sc);
-    const y0=zeroY+blockH,y1=y0+depth,shoulder=y1-ph,skirtEnd=shoulder+sk;
-    el('rect',{x:px-blockX/2,y:zeroY,width:blockX,height:blockH,stroke:gold,'stroke-width':1,fill:'#d8b77c','fill-opacity':.16},g);
-    path(`M${px-shaft/2} ${y0} V${shoulder} L${px-base/2} ${skirtEnd} V${y1} H${px+base/2} V${skirtEnd} L${px+shaft/2} ${shoulder} V${y0}`,gold,'#c9aa7d',1,g,{'fill-opacity':.1});
-    t(px,zeroY+blockH/2+1.25*U,blockCode,gold,8,{'text-anchor':'middle'});
+    // Sem bloco: a fundação começa no +0,00 (fundo da VB). Estaca: fuste reto, sem base alargada.
+    const hasBlock=Number(pile.noBlock)!==1,isPile=Number(pile.pileKind)===1;
+    const y0=zeroY+(hasBlock?blockH:0),y1=y0+depth,shoulder=isPile?y1:y1-ph,skirtEnd=isPile?y1:shoulder+sk,baseW=isPile?shaft:base;
+    if(hasBlock)el('rect',{x:px-blockX/2,y:zeroY,width:blockX,height:blockH,stroke:gold,'stroke-width':1,fill:'#d8b77c','fill-opacity':.16},g);
+    path(`M${px-shaft/2} ${y0} V${shoulder} L${px-baseW/2} ${skirtEnd} V${y1} H${px+baseW/2} V${skirtEnd} L${px+shaft/2} ${shoulder} V${y0}`,gold,'#c9aa7d',1,g,{'fill-opacity':.1});
+    if(hasBlock)t(px,zeroY+blockH/2+1.25*U,blockCode,gold,8,{'text-anchor':'middle'});
     t(px,y0+(shoulder-y0)/2,pileCode,gold,8,{'text-anchor':'middle'});
     lowest=Math.max(lowest,y1);
    }
@@ -1080,10 +1099,11 @@ function drawPillarDetails(parent){
   const n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));
   for(let j=0;j<n;j++){
    const t=j/(n-1),pt={x:wallStart.x+(p0.x+(p1.x-p0.x)*t)*.78,y:wallStart.y+(p0.y+(p1.y-p0.y)*t)*.78};
-   const bCode=foundationEnsure('block',foundationKey(pt));
-   const blockHeight=Math.max(30,Number(foundationValues('block',bCode).blockH)||80);
-   const key=[a,b,height,blockHeight].join(':');
-   if(!types.has(key))types.set(key,{a,b,height,blockHeight,ids:new Set()});
+   const fk=foundationKey(pt),bCode=foundationEnsure('block',fk),noBlock=foundationNoBlock(fk);
+   const fnd=foundationValues('pile',foundationEnsure('pile',fk)),fndName=Number(fnd.pileKind)===1?'ESTACA':'TUBULÃO',fndDa=fndName==='ESTACA'?'DA ESTACA':'DO TUBULÃO',fndNa=fndName==='ESTACA'?'NA ESTACA':'NO TUBULÃO';
+   const blockHeight=noBlock?0:Math.max(30,Number(foundationValues('block',bCode).blockH)||80);
+   const key=[a,b,height,blockHeight,noBlock?fndName:''].join(':');
+   if(!types.has(key))types.set(key,{a,b,height,blockHeight,noBlock,fndName,fndDa,fndNa,ids:new Set()});
    types.get(key).ids.add(ids[i][j]);
   }
  }
@@ -1165,14 +1185,17 @@ function drawPillarDetails(parent){
   }
   elevation(xH,wH);elevation(xB,wB);
   dimV(top,bottom,xH-22,xH,String(v.height),g);
+  // Sem bloco: espera reta, ancorada 80Ø dentro da estaca/tubulão (sem dobra no pé).
+  const embedOf=dia=>v.noBlock?80*dia/10:v.blockHeight,maxEmbed=Math.max(...waits.map(w=>embedOf(w.dia)));
   const waitDiameter=waits[0].dia,lapCm=pillarArms.N3.lapFactor*waitDiameter/10;
-  const waitTop=bottom-lapCm*sc,waitBaseY=bottom+v.blockHeight*sc,waitBend=pillarArms.N3.bend*sc,waitBendCm=pillarArms.N3.bend;
+  const waitTop=bottom-lapCm*sc,waitBaseY=bottom+maxEmbed*sc,waitBend=pillarArms.N3.bend*sc,waitBendCm=pillarArms.N3.bend;
   const waitCutCm=Math.round(v.blockHeight+lapCm+waitBendCm);
   const lineEnd=waitX+(waits.length-1)*24+waitBend+30;
   ln(xH-30,top,lineEnd,top,'#7e9bb3',.8);ln(xH-30,bottom,lineEnd,bottom,gold,1.5);ln(xH-30,waitBaseY,lineEnd,waitBaseY,'#7e9bb3',1);
   txt(lineEnd+4,top+4,`NÍVEL ${levelFmt(v.height)} · TOPO DO MURO`,9,gold);
-  txt(lineEnd+4,bottom+4,'NÍVEL +0,00 · TOPO DO BLOCO',9,gold);
-  txt(lineEnd+4,waitBaseY+4,`NÍVEL ${levelFmt(-v.blockHeight)} · FUNDO DO BLOCO`,9,gold);
+  txt(lineEnd+4,bottom+4,v.noBlock?`NÍVEL +0,00 · TOPO ${v.fndDa}`:'NÍVEL +0,00 · TOPO DO BLOCO',9,gold);
+  txt(lineEnd+4,waitBaseY+4,v.noBlock?`NÍVEL ${levelFmt(-maxEmbed)} · PONTA DAS ESPERAS (80Ø)`:`NÍVEL ${levelFmt(-v.blockHeight)} · FUNDO DO BLOCO`,9,gold);
+  if(v.noBlock){el('rect',{x:xH-6,y:bottom,width:(waitX+(waits.length-1)*24+20)-(xH-6),height:maxEmbed*sc,fill:'#c9aa7d','fill-opacity':.07,stroke:'#c9aa7d','stroke-width':.6,'stroke-dasharray':'5 3'},g);txt(xH,bottom+maxEmbed*sc/2,v.fndName,9,'#c9aa7d')}
   // Uma barra isolada por posição (bitola) entre as vistas.
   const barLength=Math.max(0,v.height-pillarArms.N2.topCover-pillarArms.N2.bottomCover);
   groups.forEach((gr,k)=>{const bx=n2X+k*26;
@@ -1182,17 +1205,18 @@ function drawPillarDetails(parent){
   });
   // Esperas: uma barra por posição; transpasse pela bitola de cada uma.
   const PU=unitFor(detailScale[code]||25),minTop=Math.min(...waits.map(w=>bottom-pillarArms.N3.lapFactor*w.dia/10*sc));
-  waits.forEach((w,k)=>{const wx=waitX+k*24,lap=pillarArms.N3.lapFactor*w.dia/10,wTop=bottom-lap*sc,cut=Math.round(v.blockHeight+lap+waitBendCm);
-   path(`M ${wx} ${wTop} L ${wx} ${waitBaseY-9} Q ${wx} ${waitBaseY-5} ${wx+5} ${waitBaseY-5} L ${wx+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
+  waits.forEach((w,k)=>{const wx=waitX+k*24,lap=pillarArms.N3.lapFactor*w.dia/10,wTop=bottom-lap*sc,emb=embedOf(w.dia),cut=Math.round(emb+lap+(v.noBlock?0:waitBendCm));
+   if(v.noBlock)path(`M ${wx} ${wTop} L ${wx} ${bottom+emb*sc}`,blue,'none',2.5,g);
+   else path(`M ${wx} ${wTop} L ${wx} ${waitBaseY-9} Q ${wx} ${waitBaseY-5} ${wx+5} ${waitBaseY-5} L ${wx+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
    el('rect',{x:wx-8,y:wTop,width:16,height:waitBaseY-wTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N3',style:'cursor:pointer'},g);
-   if(k===0){dimV(wTop,bottom,wx-16,wx,String(lap),g);dimV(bottom,waitBaseY,wx-16,wx,`${v.blockHeight}`,g);txt(wx+waitBend/2,waitBaseY+14,`${waitBendCm}`,9,ink,{'text-anchor':'middle'})}
+   if(k===0){dimV(wTop,bottom,wx-16,wx,String(lap),g);dimV(bottom,bottom+emb*sc,wx-16,wx,`${emb}`,g);if(!v.noBlock)txt(wx+waitBend/2,waitBaseY+14,`${waitBendCm}`,9,ink,{'text-anchor':'middle'})}
    const wly=minTop-9*PU-(waits.length-1-k)*7.5*PU;
    path(`M${wx} ${wTop+2*PU} L${wx+4*PU} ${wly+1.5*PU} H${wx+7*PU}`,ink,'none',.6,g,{'data-layer':'cotas'});
-   txt(wx+8*PU,wly+2.5*PU,`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cut} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'});
+   txt(wx+8*PU,wly+2.5*PU,`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cut} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer',...(v.noBlock?{'data-shape':'reta'}:{})});
   });
   // Notas do pilar: um único bloco de texto, abaixo de todo o desenho.
   ty=Math.max(ty+30,waitBaseY+48);
-  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.blockHeight} cm NO BLOCO + TRANSPASSE ${pillarArms.N3.lapFactor}Ø + DOBRA ${waitBendCm} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.height} cm (VB + ALVENARIA)`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
+  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.noBlock?`80Ø RETOS ${v.fndNa} (SEM DOBRA)`:`${v.blockHeight} cm NO BLOCO`} + TRANSPASSE ${pillarArms.N3.lapFactor}Ø${v.noBlock?'':` + DOBRA ${waitBendCm} cm`}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.height} cm (VB + ALVENARIA)${v.noBlock?' · APOIO DIRETO '+v.fndNa+' (SEM BLOCO)':''}`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
  }
 }
 function fit(){let w=cad.clientWidth,h=cad.clientHeight;if(!wallPoints.length && sheets.length){const sh=sheets[0],d=sheetDims(sh);view.k=clamp(Math.min((w-90)/d.w,(h-85)/d.h),.035,2);view.x=(w-d.w*view.k)/2-sh.x*view.k;view.y=(h-d.h*view.k)/2-sh.y*view.k;}else{view.k=clamp(Math.min((w-90)/scene.w,(h-70)/scene.h),.15,2);view.x=(w-scene.w*view.k)/2;view.y=(h-scene.h*view.k)/2;}draw()}
@@ -1308,7 +1332,7 @@ $('wallClear').onclick=()=>{if(wallPoints.length&&!confirm('Apagar o traçado do
 $('wallFocus').onclick=focusWall;
 wallIds.forEach(id=>$(id).addEventListener('input',wallUpdateActive));
 const refreshAllDetails=()=>{foundationFreezeDefaults();const existingBlockVariants=Object.keys(foundationCounts('block')).some(c=>c!=='B1');if(existingBlockVariants)$('blockEnabled').checked=true;draw();const t=foundationCounts('pile'),b=foundationCounts('block');const codes=Object.keys(t).concat(Object.keys(b)).filter(c=>c!=='T1'&&c!=='B1');const rendered=visibleFoundationCodes();const missing=codes.filter(c=>!rendered.includes(c));const last=codes.filter(c=>rendered.includes(c)).at(-1);if(last)revealFoundationDetail(last);status((missing.length?'ATENÇÃO: desenho não gerado: '+missing.join(', ')+' | ':'')+'Detalhamentos: '+Object.entries(t).map(([k,v])=>k+' '+v+' un.').concat(Object.entries(b).map(([k,v])=>k+' '+v+' un.')).join(' | ')+' · Novos desenhos no CAD: '+rendered.join(', ')+(last?' · Exibindo '+last:''));};$('refresh').onclick=refreshAllDetails;$('refreshSteel').onclick=()=>{draw();status('V205: numeração única por prancha e tabelas atualizadas. Conferir quantitativos e comprimentos preliminares antes do uso executivo.');};$('refreshNear').onclick=refreshAllDetails;$('foundationRefresh').onclick=refreshAllDetails;
-$('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms=pillarArmsDefault();foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15};$(id).value=defaults[id]});closePanels();fit()};
+$('new').onclick=()=>{if(!confirm('Iniciar novo projeto e descartar alterações não salvas?'))return;extra=[];seq=3;stampData={...stampData,contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',revision:'00',date:new Date().toLocaleDateString('pt-BR')};foundationOverrides={};foundationTypes={pile:{},block:{}};beamArms={N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:2,bend:15},N3:{dia:10,qty:2,bend:15}};pillarArms=pillarArmsDefault();foundationBaseModels={pile:null,block:null};foundationTypeCounter={pile:2,block:2};extraDetailOffsets={};detailScale={};elevationEnabled=false;topBeamArms=null;elevationSettings={top:true,mid:0,course:20,hDia:8,vDia:8,vSpace:20,found:true};wallPoints=[];wallSegments=[];wallActive=0;detailsPlaced=false;sheets=[{id:1,format:'A1',orientation:'landscape',scale:50,x:0,y:0,done:false}];sheetCurrent=1;sheetSeq=2;sheetSync();wallSyncOptions();wallFinished=false;wallPreview=null;wallAwaitNextClick=false;blockOffset={x:0,y:0};tubuloOffset={x:0,y:0};wallOffset={x:0,y:0};fields.forEach(id=>{let defaults={id:'T1',shaft:60,base:120,depth:330,baseHeight:50,skirt:35,cover:5,bars:8,barDia:16,barLen:260,stDia:8,ringLen:154.6,spacing:15,pileKind:0,noBlock:0,topZone:70,topSpacing:10};$(id).value=defaults[id]});closePanels();fit()};
 function download(name,content,mime){let blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
 $('save').onclick=()=>{let data={app:'Engenhar Muros',version:'V125',module:'tubuloes',parameters:Object.fromEntries(fields.map(id=>[id,$(id).value])),printScale:$('printScale').value,wall:{points:wallPoints,segments:wallSegments,active:wallActive,finished:wallFinished,parameters:Object.fromEntries(wallIds.map(id=>[id,$(id).value]))},blockOffset,tubuloOffset,wallOffset,wallOrtho,detailsPlaced,foundationOverrides,foundationTypes,pillarArms,beamArms,topBeamArms,elevationEnabled,elevationSettings,foundationBaseModels,foundationTypeCounter,extraDetailOffsets,detailScale,block:Object.fromEntries(['blockEnabled','blockId','blockX','blockY','blockH','blockPile','blockCover','blockSameXY','blockDiaX','blockDiaY','blockDiaC','blockQtyX','blockQtyY','blockQtyC','blockSpX','blockSpY','blockSpC'].map(id=>[id,['blockEnabled','blockSameXY'].includes(id)?$(id).checked:$(id).value])),extra,seq,stampData,sheet:{sheets,active:sheetCurrent,next:sheetSeq}};let safe=($('id').value||'Tubulao').replace(/[^a-zA-Z0-9_-]/g,'_');download('Engenhar_Tubuloes_'+safe+'.json',JSON.stringify(data,null,2),'application/json')};
 $('open').onclick=()=>$('file').click();$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let d=JSON.parse(await f.text());if(d.version!=='V125'||d.module!=='tubuloes'||!d.parameters)throw Error('Formato incompatível. Abra apenas projetos JSON desta versão de demonstração.');fields.forEach(id=>{if(d.parameters[id]!=null)$(id).value=d.parameters[id]});if(['20','25','50','75','100'].includes(String(d.printScale)))$('printScale').value=String(d.printScale);if(d.wall){wallPoints=Array.isArray(d.wall.points)?d.wall.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)).slice(0,100):[];wallFinished=!!d.wall.finished;wallSegments=Array.isArray(d.wall.segments)?d.wall.segments.filter(v=>v&&v.parameters).slice(0,99):[];if(d.wall.parameters)wallIds.forEach(id=>{if(d.wall.parameters[id]!=null)$(id).value=d.wall.parameters[id]})}if(wallSegments.length!==Math.max(0,wallPoints.length-1))wallRebuild();else{wallActive=Math.max(0,Math.min(Number(d.wall?.active)||0,wallSegments.length-1));wallSyncOptions();if(wallSegments.length)wallSelect(wallActive)}detailsPlaced=typeof d.detailsPlaced==='boolean'?d.detailsPlaced:wallPoints.length>=2;if(d.wallOffset&&Number.isFinite(d.wallOffset.x)&&Number.isFinite(d.wallOffset.y))wallOffset=d.wallOffset;if(typeof d.wallOrtho==='boolean'){wallOrtho=d.wallOrtho;$("wallOrtho").textContent="ORTO F8: "+(wallOrtho?"ON":"OFF");$("wallOrtho").setAttribute("aria-pressed",String(wallOrtho));$("wallOrtho").style.background=wallOrtho?"#a9e6c6":""}if(d.blockOffset&&Number.isFinite(d.blockOffset.x)&&Number.isFinite(d.blockOffset.y))blockOffset=d.blockOffset;if(d.tubuloOffset&&Number.isFinite(d.tubuloOffset.x)&&Number.isFinite(d.tubuloOffset.y))tubuloOffset=d.tubuloOffset;if(typeof d.elevationEnabled==='boolean')elevationEnabled=d.elevationEnabled;if(d.elevationSettings&&typeof d.elevationSettings==='object')elevationSettings={...elevationSettings,...d.elevationSettings};if(d.extraDetailOffsets&&typeof d.extraDetailOffsets==='object')extraDetailOffsets=d.extraDetailOffsets;detailScale=(d.detailScale&&typeof d.detailScale==='object')?d.detailScale:{};if(d.foundationOverrides&&typeof d.foundationOverrides==='object')foundationOverrides=d.foundationOverrides;if(d.foundationBaseModels&&typeof d.foundationBaseModels==='object')foundationBaseModels=d.foundationBaseModels;if(d.foundationTypes&&typeof d.foundationTypes==='object')foundationTypes=d.foundationTypes;if(d.topBeamArms&&typeof d.topBeamArms==='object')topBeamArms=d.topBeamArms;else topBeamArms=null;if(d.beamArms&&typeof d.beamArms==='object')for(const pos of ['N1','N2','N3'])if(d.beamArms[pos])beamArms[pos]={...beamArms[pos],...d.beamArms[pos]};if(d.pillarArms&&typeof d.pillarArms==='object'){pillarArms=pillarArmsDefault();for(const pos of ['N1','N2','N3'])if(d.pillarArms[pos])pillarArms[pos]={...pillarArms[pos],...d.pillarArms[pos]};if(d.pillarArms.N2&&d.pillarArms.N2.cornerDia==null){delete pillarArms.N2.cornerDia;pillarN2()}if(d.pillarArms.N3&&d.pillarArms.N3.follow==null)pillarArms.N3.follow=0}if(d.foundationTypeCounter&&typeof d.foundationTypeCounter==='object')foundationTypeCounter=d.foundationTypeCounter;if(d.block){for(let [id,value] of Object.entries(d.block)){if($(id)){if(['blockEnabled','blockSameXY'].includes(id))$(id).checked=!!value;else $(id).value=value}}}if(d.stampData&&typeof d.stampData==='object')stampData={...stampData,...Object.fromEntries(Object.entries(d.stampData).filter(([k,v])=>typeof v==='string'&&stampFieldsConfig.some(([key])=>key===k)))};if(d.sheet&&Array.isArray(d.sheet.sheets)){sheets=d.sheet.sheets.filter(v=>v&&sheetSizes[v.format]&&Number.isFinite(v.x)&&Number.isFinite(v.y)).slice(0,50);sheetCurrent=d.sheet.active;sheetSeq=Math.max(1,...sheets.map(v=>v.id+1));sheetSync()}extra=Array.isArray(d.extra)?d.extra:[];seq=Math.max(3,Number(d.seq)||3);closePanels();fit();status('Projeto JSON carregado.')}catch(err){alert(err.message)}e.target.value=''};
@@ -1341,7 +1365,7 @@ const unitFor=s=>sheetModelUnit*s/10;
 const SHEET_KIND_TITLES={planta:'PLANTA DE LOCAÇÃO DOS ARRIMOS',fundacoes:'FUNDAÇÕES — TUBULÕES E BLOCOS',pilares:'PILARES',vigas:'VIGAS BALDRAME E CINTAS DE TOPO',elevacoes:'ELEVAÇÕES DOS ARRIMOS',notas:'NOTAS GERAIS · DRENAGEM E IMPERMEABILIZAÇÃO'};
 const SHEET_PLAN=[
  {kind:'planta',scales:[50,75,100],newSheet:true,match:c=>c==='PLANTA'},
- {kind:'fundacoes',scales:[25,50,75],newSheet:true,match:c=>/^[TB]\d+$/.test(c)},
+ {kind:'fundacoes',scales:[25,50,75],newSheet:true,match:c=>/^[TBE]\d+$/.test(c)},
  {kind:'pilares',scales:[25,50,75],newSheet:false,match:c=>/^P\d+$/.test(c)},
  {kind:'vigas',scales:[50,75,100],newSheet:true,match:c=>/^V[BT]\d+$/.test(c)},
  {kind:'elevacoes',scales:[50,75,100],newSheet:true,match:c=>/^EL\d+$/.test(c)}
@@ -1510,7 +1534,7 @@ function organizeSheets(quiet=false){
  };
  for(const cat of SHEET_PLAN){
   draw();
-  const codes=detailGroups().map(groupCode).filter(c=>cat.match(c)).sort((a,b)=>{const k=c=>/^T\d/.test(c)?0:/^B\d/.test(c)?1:/^VB/.test(c)?2:/^VT/.test(c)?3:4;return k(a)-k(b)||a.localeCompare(b,undefined,{numeric:true})});
+  const codes=detailGroups().map(groupCode).filter(c=>cat.match(c)).sort((a,b)=>{const k=c=>/^[TE]\d/.test(c)?0:/^B\d/.test(c)?1:/^VB/.test(c)?2:/^VT/.test(c)?3:4;return k(a)-k(b)||a.localeCompare(b,undefined,{numeric:true})});
   if(!codes.length)continue;
   let chosen=null;
   for(const s of cat.scales){
@@ -1527,8 +1551,8 @@ function organizeSheets(quiet=false){
  }
  let x=0;lastValidSteelBySheet=new Map();
  // Título e categorias da folha a partir dos desenhos que ela realmente contém.
- for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks}
- sheets=specs.map((sp,i)=>{const sh={id:i+1,format,orientation,scale:sp.scale,x,y:0,done:false,kind:sp.kinds[0],kinds:[...sp.kinds],title:sp.kinds.map(k=>SHEET_KIND_TITLES[k]).join(' · ')};x+=sheetDims(sh).w+300;return sh});
+ for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks;sp.hasE=sp.items.some(i=>/^E\d/.test(i.code));sp.hasT=sp.items.some(i=>/^T\d/.test(i.code));sp.hasB=sp.items.some(i=>/^B\d/.test(i.code))}
+ sheets=specs.map((sp,i)=>{const sh={id:i+1,format,orientation,scale:sp.scale,x,y:0,done:false,kind:sp.kinds[0],kinds:[...sp.kinds],title:sp.kinds.map(k=>k==='fundacoes'?'FUNDAÇÕES — '+[sp.hasT&&'TUBULÕES',sp.hasE&&'ESTACAS',sp.hasB&&'BLOCOS'].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' E $1'):SHEET_KIND_TITLES[k]).join(' · ')};x+=sheetDims(sh).w+300;return sh});
  sheetSeq=sheets.length+1;sheetCurrent=1;sheetSync();
  draw();
  specs.forEach((sp,i)=>{const sh=sheets[i],u=sheetDims(sh).unit;for(const it of sp.items){const g=findGroup(it.code);const b=sceneBox(g);if(!b)continue;shiftGroup(it.code,g,sh.x+it.x*u-b.x,sh.y+it.y*u-b.y)}});
@@ -1591,7 +1615,7 @@ function buildSteelRegistry(sceneG){
  if(basePile&&basePile.getAttribute('display')!=='none'&&basePile.style.display!=='none')sources.push({g:basePile,code:'T1',kind:'pile',count:foundationCounts('pile').T1||0});
  if(baseBlock&&baseBlock.getAttribute('display')!=='none'&&baseBlock.style.display!=='none')sources.push({g:baseBlock,code:'B1',kind:'block',count:foundationCounts('block').B1||0});
  for(const g of sceneG.querySelectorAll('[data-extra-code]')){
-  const code=g.getAttribute('data-extra-code');const kind=code.startsWith('EL')?'elevation':code.startsWith('T')?'pile':code.startsWith('B')?'block':code.startsWith('P')?'pillar':'beam';
+  const code=g.getAttribute('data-extra-code');const kind=code.startsWith('EL')?'elevation':/^[TE]\d/.test(code)?'pile':code.startsWith('B')?'block':code.startsWith('P')?'pillar':'beam';
   const count=kind==='pile'?foundationCounts('pile')[code]||0:kind==='block'?foundationCounts('block')[code]||0:kind==='pillar'?Number((g.querySelector('text')?.textContent||'').match(/(\d+)\s*UN/)?.[1]||1):1;
   sources.push({g,code,kind,count});
  }
@@ -1612,7 +1636,7 @@ function buildSteelRegistry(sceneG){
    const raw=t.textContent||'';const parsed=steelParseLabel(raw) || (()=>{const m=raw.match(/\b(N\d+)\s*[-–:]\s*(\d+)\s*Ø\s*([\d.,]+)\s*C\s*[=≈]\s*([\d.,]+)\s*cm/i);return m?{old:m[1],qty:Number(m[2]),dia:Number(m[3].replace(',','.')),len:Number(m[4].replace(',','.'))}:null})();
    if(!parsed||!Number.isFinite(parsed.len)||parsed.len<=0||!Number.isFinite(parsed.qty)||parsed.qty<=0)continue;
    // Não contabilizar rótulos descritivos sem quantidade e comprimento.
-   const shape=src.kind==='elevation'?'reta':src.kind==='beam'?(parsed.old==='N1'?'estribo':'barra dobrada'):src.kind==='pillar'?(t.getAttribute('data-pillar-arm')==='N1'?'estribo':t.getAttribute('data-pillar-arm')==='N3'?'espera':'reta'):src.kind==='pile'?(parsed.old==='N2'?'circular':'reta'):'bloco';
+   const shape=src.kind==='elevation'?'reta':src.kind==='beam'?(parsed.old==='N1'?'estribo':'barra dobrada'):src.kind==='pillar'?(t.getAttribute('data-shape')?t.getAttribute('data-shape'):t.getAttribute('data-pillar-arm')==='N1'?'estribo':t.getAttribute('data-pillar-arm')==='N3'?'espera':'reta'):src.kind==='pile'?(parsed.old==='N2'?'circular':'reta'):'bloco';
    const signature=[shape,parsed.dia.toFixed(3),parsed.len.toFixed(3)].join('|');
    let entry=local.get(signature);
    if(!entry){entry={pos:'N'+(local.size+1),dia:parsed.dia,len:parsed.len,qty:0,shape,elems:new Set()};local.set(signature,entry);rows.push(entry)}
@@ -1679,7 +1703,7 @@ function stampContents(sceneG,sh){
  const codes={pile:[],block:[],pillar:[],beam:[],elevation:[]};
  for(const group of sceneG.querySelectorAll('[data-extra-code], [data-tubulo-group], [data-block-group]')){
   const code=group.getAttribute('data-extra-code')||(group.hasAttribute('data-tubulo-group')?'T1':'B1');
-  const kind=code.startsWith('EL')?'elevation':code.startsWith('T')?'pile':code.startsWith('B')?'block':code.startsWith('P')?'pillar':'beam';
+  const kind=code.startsWith('EL')?'elevation':/^[TE]\d/.test(code)?'pile':code.startsWith('B')?'block':code.startsWith('P')?'pillar':'beam';
   if(group.style.display==='none'||group.getAttribute('display')==='none')continue;
   if(kind==='pile'&&!(foundationCounts('pile')[code]||0))continue;
   if(kind==='block'&&!(foundationCounts('block')[code]||0))continue;
@@ -1808,7 +1832,7 @@ function drawSheetIndex(g,x,y,w,u){
 }
 function drawFoundationTable(g,x,y,w,u){
  const pile=Object.entries(foundationCounts('pile')).filter(([,n])=>n>0),block=$('blockEnabled').checked?Object.entries(foundationCounts('block')).filter(([,n])=>n>0):[];
- const rows=[...pile.map(([c,n])=>{const v=foundationValues('pile',c);return [c,n,`TUBULÃO Ø${v.shaft} · BASE Ø${v.base} · PROF. ${v.depth} cm`]}),...block.map(([c,n])=>{const v=foundationValues('block',c);return [c,n,`BLOCO ${v.blockX}×${v.blockY}×${v.blockH} cm`]})];
+ const rows=[...pile.map(([c,n])=>{const v=foundationValues('pile',c),sb=Number(v.noBlock)===1?' · SEM BLOCO':'';return [c,n,Number(v.pileKind)===1?`ESTACA ESCAVADA Ø${v.shaft} · L=${v.depth} cm${sb}`:`TUBULÃO Ø${v.shaft} · BASE Ø${v.base} · PROF. ${v.depth} cm${sb}`]}),...block.map(([c,n])=>{const v=foundationValues('block',c);return [c,n,`BLOCO ${v.blockX}×${v.blockY}×${v.blockH} cm`]})];
  const h=(24+Math.max(1,rows.length)*6.6+5)*u;
  sheetBox(g,x,y,w,h,'QUADRO DE FUNDAÇÕES',u);
  ['TIPO','QTD','CARACTERÍSTICAS (cm)'].forEach((v,j)=>sheetText(g,x+[4,24,42][j]*u,y+18*u,v,u,2.5,{fill:'#7ce3fa'}));
