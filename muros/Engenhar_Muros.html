@@ -1756,6 +1756,8 @@ function organizeSheets(quiet=false){
   sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+sp.cy,w:it.w,h:it.h,compact:!!it.useAlt});
   sp.cx+=it.w+gap;sp.rowH=Math.max(sp.rowH,it.h);return true;
  };
+ // V254 — Medição de cada tipo de elemento (escala e tamanho de cada desenho).
+ const cats=[];
  for(const cat of SHEET_PLAN){
   draw();
   const codes=detailGroups().map(groupCode).filter(c=>cat.match(c)).sort((a,b)=>{const k=c=>/^[TE]\d/.test(c)?0:/^B\d/.test(c)?1:/^VB/.test(c)?2:/^VI/.test(c)?3:/^VT/.test(c)?4:5;return k(a)-k(b)||a.localeCompare(b,undefined,{numeric:true})});
@@ -1770,24 +1772,35 @@ function organizeSheets(quiet=false){
    chosen={scale:s,sized};
    if(sized.every(i=>i.w<=area.w&&i.h<=area.h))break;
   }
-  // Vigas largas demais para ficar ao lado da coluna de tabelas: tenta o layout compacto.
+  // Vigas: variante compacta (corte abaixo), usada quando assim cabe ao lado da coluna de tabelas.
   if(cat.kind==='vigas'){beamCompact=new Set(codes);draw();const u=unitFor(chosen.scale);
    for(const it of chosen.sized){const b=sceneBox(findGroup(it.code));if(b&&b.w/u<it.w-1)it.alt={w:b.w/u,h:b.h/u}}
    beamCompact=new Set();draw()}
-  // V243 — Aproveitamento das folhas: cada desenho vai para a primeira folha de MESMA escala em que
-  // couber (planta, vigas e elevações 1:50 dividem a folha); outra categoria começa em nova fileira.
-  for(const it of chosen.sized){
-   let ok=false;
-   for(const sp of specs.filter(x=>x.scale===chosen.scale)){
-    const save={cx:sp.cx,cy:sp.cy,rowH:sp.rowH};
-    if(sp.items.length&&sp.lastKind!==cat.kind){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}
-    const kindsSave=[...sp.kinds];if(!sp.kinds.includes(cat.kind))sp.kinds.push(cat.kind);
-    if(place(sp,it)){sp.lastKind=cat.kind;cur=sp;ok=true;break}
-    Object.assign(sp,save);sp.kinds=kindsSave;
-   }
-   if(!ok){newSpec(cat.kind,chosen.scale);place(cur,it);cur.lastKind=cat.kind}
-  }
+  cats.push({kind:cat.kind,idx:cats.length,scale:chosen.scale,sized:chosen.sized});
  }
+ // V254 — Distribuição por TIPO DE ELEMENTO: cada tipo (planta, fundações, pilares, vigas, elevações)
+ // fica inteiro numa folha; só se divide quando não cabe sozinho numa folha. Entre as combinações
+ // possíveis de tipos por folha (mesma escala), escolhe: menos tipos divididos → menos folhas →
+ // folhas mais equilibradas (maior ocupação da folha menos ocupada).
+ const simulate=blocks=>{const out=[];let splits=0;
+  for(const block of blocks){let sp={kinds:[block[0].kind],scale:block[0].scale,items:[],cx:0,cy:0,rowH:0,resH:0,first:block[0].idx};out.push(sp);
+   for(const cat of block){const start=out.length;
+    if(sp.items.length){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}
+    if(!sp.kinds.includes(cat.kind))sp.kinds.push(cat.kind);
+    for(const it0 of cat.sized){const it={...it0};
+     if(!place(sp,it)){sp={kinds:[cat.kind],scale:cat.scale,items:[],cx:0,cy:0,rowH:0,resH:0,first:cat.idx};out.push(sp);place(sp,it)}}
+    if(out.length>start)splits++}}
+  const fills=out.map(sp=>sp.items.reduce((t,i)=>t+i.w*i.h,0)/(area.w*area.h));
+  return {specs:out,splits,n:out.length,minFill:Math.min(...fills)}};
+ const partitions=list=>{const res=[];const rec=(i,blocks)=>{if(i===list.length){res.push(blocks.map(b=>[...b]));return}
+  for(const b of blocks){b.push(list[i]);rec(i+1,blocks);b.pop()}blocks.push([list[i]]);rec(i+1,blocks);blocks.pop()};rec(0,[]);return res};
+ for(const scale of [...new Set(cats.map(c=>c.scale))]){
+  const group=cats.filter(c=>c.scale===scale);let best=null;
+  for(const blocks of partitions(group)){const r=simulate(blocks);
+   if(!best||r.splits<best.splits||(r.splits===best.splits&&(r.n<best.n||(r.n===best.n&&r.minFill>best.minFill+1e-9))))best=r}
+  specs.push(...best.specs);
+ }
+ specs.sort((p,q)=>p.first-q.first);
  let x=0;lastValidSteelBySheet=new Map();
  // Título e categorias da folha a partir dos desenhos que ela realmente contém.
  for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks;const pk=c=>{try{return Number(foundationValues('pile',c).pileKind)===1}catch(e){return false}};sp.hasE=sp.items.some(i=>/^E\d/.test(i.code)||(/^T\d/.test(i.code)&&pk(i.code)));sp.hasT=sp.items.some(i=>/^T\d/.test(i.code)&&!pk(i.code));sp.hasB=sp.items.some(i=>/^B\d/.test(i.code))}
