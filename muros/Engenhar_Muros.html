@@ -2717,8 +2717,7 @@ function calcTabEmpuxo(){
    Sobrecarga afastada a = ${calcFmt(S.qDist)} m: atua a partir de z1 = a·tg φ = ${calcFmt(S.qDist*Math.tan(fr))} m e é plena a partir de z2 = a·tg(45° + φ/2) = ${calcFmt(S.qDist*Math.tan(Math.PI/4+fr/2))} m (f varia de 0 a 1)`:''}
    topo:  p = ${calcFmt(K,3)}·(0 + ${calcFmt(S.q*calcQz(S,0),1)})${S.c>0?` − 2·${calcFmt(S.c,1)}·${calcFmt(Math.sqrt(K),3)}`:''} = ${calcFmt(st.pTop)} kPa${S.c>0&&st.z0>0?`   (trinca de tração até z0 = ${calcFmt(st.z0)} m)`:''}
 ${Number.isFinite(sel.strip.zw)&&sel.strip.zw<sel.H?`   água a zw = ${calcFmt(sel.strip.zw)} m: p = K·(γ·zw + γ'·(z − zw) + q) + 10·(z − zw)
-   base:  p = ${calcFmt(K,3)}·(${calcFmt(S.gamma,1)}·${calcFmt(sel.strip.zw)} + ${calcFmt(Math.max(S.gamma,S.gsat)-10,1)}·${calcFmt(sel.H-sel.strip.zw)} + ${calcFmt(S.q*calcQz(S,sel.H),1)}) + 10·${calcFmt(sel.H-sel.strip.zw)} = ${calcFmt(st.pBase)} kPa`:''}${Number.isFinite(sel.strip.zw)&&sel.strip.zw<sel.H?'':`
-   base:  p = ${calcFmt(K,3)}·(${calcFmt(S.gamma,1)}·${calcFmt(sel.H)} + ${calcFmt(S.q*calcQz(S,sel.H),1)})${sel.Hf<sel.H-1e-3?` − ${calcFmt(1-Math.sin(fr),3)}·${calcFmt(S.gamma,1)}·${calcFmt(sel.H-sel.Hf)}`:''}${S.c>0?` − 2·${calcFmt(S.c,1)}·${calcFmt(Math.sqrt(K),3)}`:''} = ${calcFmt(st.pBase)} kPa`}
+   base:  p = ${calcFmt(K,3)}·(${calcFmt(S.gamma,1)}·${calcFmt(sel.strip.zw)} + ${calcFmt(Math.max(S.gamma,S.gsat)-10,1)}·${calcFmt(sel.H-sel.strip.zw)} + ${calcFmt(S.q*calcQz(S,sel.H),1)}) + 10·${calcFmt(sel.H-sel.strip.zw)} = ${calcFmt(st.pBase)} kPa`:''}${Number.isFinite(sel.strip.zw)&&sel.strip.zw<sel.H?'':`   base:  p = ${calcFmt(K,3)}·(${calcFmt(S.gamma,1)}·${calcFmt(sel.H)} + ${calcFmt(S.q*calcQz(S,sel.H),1)})${sel.Hf<sel.H-1e-3?` − ${calcFmt(1-Math.sin(fr),3)}·${calcFmt(S.gamma,1)}·${calcFmt(sel.H-sel.Hf)}`:''}${S.c>0?` − 2·${calcFmt(S.c,1)}·${calcFmt(Math.sqrt(K),3)}`:''} = ${calcFmt(st.pBase)} kPa`}
 4) Empuxo por metro de muro (seção do pilar, integração na altura):${!simple?'':`
    solo:       E1 = K·γ·H²/2 = ${calcFmt(K,3)}·${calcFmt(S.gamma,1)}·${calcFmt(sel.H)}²/2 = ${calcFmt(K*S.gamma*sel.H**2/2)} kN/m  (a H/3 = ${calcFmt(sel.H/3)} m)
    sobrecarga: E2 = K·q·H = ${calcFmt(K,3)}·${calcFmt(S.q,1)}·${calcFmt(sel.H)} = ${calcFmt(K*S.q*sel.H)} kN/m  (a H/2 = ${calcFmt(sel.H/2)} m)`}
@@ -3160,6 +3159,18 @@ function cutListHtml(){
  <p class="foot">Comprimentos de corte conforme a relação de aço das pranchas (ganchos e dobras incluídos). Conferir dobramento (pinos NBR 6118) e quantidades antes do corte. Posições numeradas por folha.</p></main></body></html>`;
 }
 function cutListOpen(){const w=window.open('','_blank');if(!w){alert('Permita janelas pop-up para abrir a lista de corte.');return}w.document.open();w.document.write(cutListHtml());w.document.close()}
+// ---------- Modelos de premissas (V250) ----------
+const CALC_PRESET_KEYS=['gamma','phi','c','q','qDist','mode','beta','water','gsat','gf','fsTomb','fsDesl','fck','useFront','soil','minDepth','fsVert'];
+const CALC_PRESETS={
+ 'Conservador — sobrecarga junto ao muro':{mode:'ka',gamma:18,phi:30,c:0,q:10,qDist:0,beta:0,water:''},
+ 'Rua ou carga a 1,5 m do muro':{mode:'coulomb',gamma:18,phi:30,c:0,q:10,qDist:1.5,beta:0,water:''},
+ 'Jardim / quintal sem uso':{mode:'coulomb',gamma:18,phi:30,c:0,q:5,qDist:0,beta:0,water:''},
+ 'Solo resistente (compacto)':{mode:'coulomb',gamma:18,phi:33,c:0,q:10,qDist:1.5,beta:0,water:''},
+ 'Talude acima do muro (β = 15°)':{mode:'coulomb',gamma:18,phi:30,c:0,q:0,qDist:0,beta:15,water:''}};
+function calcUserPresets(){try{return JSON.parse(localStorage.getItem('engenharCalcPresets')||'{}')}catch(e){return {}}}
+function calcPresetOptions(){const u=calcUserPresets();return '<option value="">— escolher modelo —</option>'+Object.keys(CALC_PRESETS).map(k=>`<option value="b:${k}">${k}</option>`).join('')+(Object.keys(u).length?'<optgroup label="Meus modelos">'+Object.keys(u).map(k=>`<option value="u:${k}">${k}</option>`).join('')+'</optgroup>':'')}
+function calcPresetApply(v){if(!v)return;const src=v.startsWith('b:')?CALC_PRESETS[v.slice(2)]:calcUserPresets()[v.slice(2)];if(!src)return;Object.assign(calcSettings,src);calcSettings.sel=null;calcOpen();status(`Premissas: modelo "${v.slice(2)}" aplicado.`)}
+function calcPresetSave(){const name=prompt('Nome do modelo de premissas (ex.: Obra padrão Uberlândia):');if(!name)return;const u=calcUserPresets();u[name.trim()]=Object.fromEntries(CALC_PRESET_KEYS.map(k=>[k,calcSettings[k]]));try{localStorage.setItem('engenharCalcPresets',JSON.stringify(u))}catch(e){alert('Não foi possível salvar o modelo neste navegador.');return}$('cPreset').innerHTML=calcPresetOptions();status(`Modelo "${name}" salvo neste navegador.`)}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
@@ -3180,6 +3191,7 @@ function calcOpen(){
   dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button><button data-tab="opt">Otimizar</button></nav>
   <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcReport" title="Memória de cálculo completa para imprimir ou salvar em PDF" style="background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Memória (PDF)</button><button id="calcCut" title="Lista de corte e dobra para a armação" style="background:#24506f;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Corte e dobra</button><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
+   <label data-for="all" style="flex:2;min-width:230px">Modelo de premissas<span style="display:flex;gap:4px;min-width:0"><select id="cPreset" style="flex:1;min-width:0;width:100%"></select><button type="button" id="cPresetSave" title="Salvar as premissas atuais como modelo" style="height:28px;border:1px solid #b5c9da;border-radius:4px;background:#fff;cursor:pointer">💾</button></span></label>
    <label data-for="all">Arrimo<select id="cWall"></select></label>
    <label data-for="all">γ solo (kN/m³)<input id="cGamma" type="number" step="0.5" min="10" max="25"></label>
    <label data-for="all">φ (graus)<input id="cPhi" type="number" step="1" min="0" max="45"></label>
@@ -3215,6 +3227,7 @@ function calcOpen(){
   $('cWater').oninput=()=>{calcSettings.water=$('cWater').value.trim();calcRender()};
   $('cSpt').oninput=()=>{calcSettings.spt=$('cSpt').value;calcRender()};
   $('cSoil').onchange=()=>{calcSettings.soil=$('cSoil').value;calcRender()};
+  $('cPreset').onchange=()=>calcPresetApply($('cPreset').value);$('cPresetSave').onclick=calcPresetSave;
   $('cAlv').onchange=()=>{calcSettings.alvModel=$('cAlv').value;calcSettings.sel=null;calcRender()};
   $('cFront').onchange=()=>{calcSettings.useFront=$('cFront').value==='1';calcRender()};
   $('cMaxDia').onchange=()=>{calcSettings.maxDia=Number($('cMaxDia').value);calcRender()};
@@ -3222,6 +3235,7 @@ function calcOpen(){
   $('cWall').onchange=()=>{calcSettings.wall=$('cWall').value;calcSettings.sel=null;calcRender()};
  }
  const S=calcSettings;
+ $('cPreset').innerHTML=calcPresetOptions();
  $('cWall').innerHTML='<option value="all">Todos</option>'+wallSegments.map((_,i)=>`<option value="${i}">Arrimo ${i+1}</option>`).join('');
  if(S.wall!=='all'&&!(Number(S.wall)<wallSegments.length))S.wall='all';
  $('cWall').value=S.wall;for(const [id,k] of Object.entries(calcInputs))$(id).value=S[k];$('cMode').value=S.mode;$('cFront').value=S.useFront?'1':'0';$('cAlv').value=S.alvModel;$('cSpt').value=S.spt||'';$('cWater').value=S.water||'';$('cSoil').value=S.soil;$('cMid').value=String(Math.min(3,Math.max(0,Math.round(elevationSettings.mid)||0)));$('cMaxDia').value=String(S.maxDia);$('cUse').value=S.useCalc?'1':'0';
@@ -3231,7 +3245,8 @@ function calcOpen(){
 #calcDialog{width:min(1260px,96vw);height:min(880px,93vh);padding:0;border:1px solid #6a9aba;border-radius:10px;background:#eaf3fa;color:#173a55;font:12px Arial}
 #calcDialog::backdrop{background:#0008}
 .calc-head{display:flex;align-items:center;gap:16px;background:#173a55;color:#fff;padding:8px 14px;position:sticky;top:0;z-index:2;flex-wrap:wrap}
-.calc-tabs{display:flex;gap:4px;flex:1}.calc-tabs button{background:#24506f;color:#dcebf7;border:0;border-radius:5px 5px 0 0;padding:6px 14px;font-size:12px;cursor:pointer}
+.calc-tabs{display:flex;gap:4px;flex:1}.calc-tabs button{background:#24506f;color:#dcebf7;border:0;border-radius:5px 5px 0 0;padding:6px 10px;font-size:12px;cursor:pointer}
+#cUse{max-width:210px}.calc-head{gap:10px!important}
 .calc-tabs button.on{background:#eaf3fa;color:#173a55;font-weight:bold}.calc-tabs button:disabled{opacity:.45;cursor:default}
 .calc-mode{font-size:11px;display:flex;align-items:center;gap:6px}.calc-mode select{height:26px;border-radius:4px;border:0;padding:2px 6px;font-size:12px}
 #calcClose{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
