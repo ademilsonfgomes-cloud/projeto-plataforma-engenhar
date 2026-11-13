@@ -2477,7 +2477,7 @@ $('notesApply').onclick=()=>{bendTableOn=$('notesBendTable').checked;technicalNo
 // e momento máximo no fuste. Pilar: flexão simples e cisalhamento (NBR 6118, modelo I).
 // Modo "Só detalhamento": o cálculo é só conferência e nunca altera o desenho.
 // Modo "Com cálculo do programa": botões "Aplicar ao detalhamento" ficam disponíveis.
-let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null,useCalc:false,tab:'empuxo',fsTomb:2,fsDesl:1.5,fck:25,fyk:500,gc:1.4,gs:1.15,qDist:0,useFront:true,maxDia:16,stagger:true,gAlv:3,alvModel:'cintas',spt:'',soil:'areia',minDepth:3,fsVert:2,asMinPile:.4,minArm:2,water:'',gsat:20,beta:0};
+let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null,useCalc:false,tab:'empuxo',fsTomb:2,fsDesl:1.5,fck:25,fyk:500,gc:1.4,gs:1.15,qDist:0,useFront:true,maxDia:16,stagger:true,gAlv:3,optR:60,alvModel:'cintas',spt:'',soil:'areia',minDepth:3,fsVert:2,asMinPile:.4,minArm:2,water:'',gsat:20,beta:0};
 const calcFmt=(v,d=2)=>Number.isFinite(v)?v.toFixed(d).replace('.',','):'—';
 const calcBar=dia=>Math.PI*(Number(dia)||0)**2/400; // cm² de uma barra (Ø em mm)
 // Coeficiente horizontal: Rankine (δ = 0), Coulomb (δ = 2/3·φ, componente horizontal Ka·cos δ) ou repouso.
@@ -3017,21 +3017,88 @@ function drawQuantTable(g,x,y,w,u){
  L.forEach(([a,b],k)=>{sheetText(g,x+4*u,y+(23+k*6.6)*u,a,u,2.5);sheetText(g,x+w-4*u,y+(23+k*6.6)*u,b,u,2.5,{'text-anchor':'end'})});
  return h;
 }
+// ---------- Otimização (V247): seção do pilar × vão entre pilares × diâmetro da estaca ----------
+// Para cada combinação calcula a armadura do pilar (como o "Aplicar"), a profundidade e a armadura do fuste,
+// e soma aço (pilares + esperas + fuste) e concreto (pilares + estacas + blocos). As vigas e a alvenaria quase
+// não mudam entre as opções e ficam fora da comparação. Índice = aço (kg) + R × concreto (m³).
+let calcOptResult=null;
+function calcOptSnapshot(){return {seg:wallSegments.map(s=>({...s.parameters})),fbm:JSON.stringify(foundationBaseModels),ft:JSON.stringify(foundationTypes),
+ fields:Object.fromEntries(['shaft','base','depth','bars','barDia','barLen','blockX','blockY','blockPile'].map(id=>[id,$(id)?.value])),arms:JSON.stringify(pillarArms),
+ fo:JSON.stringify(foundationOverrides)}}
+function calcOptRestore(sn){wallSegments.forEach((s,i)=>s.parameters={...sn.seg[i]});foundationBaseModels=JSON.parse(sn.fbm);foundationTypes=JSON.parse(sn.ft);
+ for(const [id,v] of Object.entries(sn.fields))if($(id)&&v!=null)$(id).value=v;pillarArms=JSON.parse(sn.arms);foundationOverrides=JSON.parse(sn.fo)}
+function calcOptSetPiles(D){foundationFreezeDefaults();for(const code of ['T1',...Object.keys(foundationTypes.pile||{})]){calcSetPile(code,'shaft',D);
+ const v=foundationValues('pile',code);if(Number(v.pileKind)===1||Number(v.base)<D)calcSetPile(code,'base',D)}}
+function calcOptEval(cb,ch,sp,D){
+ const S=calcSettings,kgm=d=>.006165*d*d;
+ wallSegments.forEach((s,i)=>{const P=wallProfile(i);s.parameters.wallColX=String(cb);s.parameters.wallColY=String(ch);s.parameters.wallPillars=String(Math.max(2,Math.ceil(P.L/100/sp-1e-6)+1))});
+ calcOptSetPiles(D);
+ const sig=wallSegments.map(x=>x.parameters.wallPillars).join(','),P0=wallProfile(0);sp=P0?P0.L/100/(P0.n-1):sp;
+ const rs=calcPillar();if(!rs.length)return null;
+ if(rs.some(r=>!(r.disc>0)||r.xd>.45))return {cb,ch,sp,D,fail:'seção insuficiente'};
+ const As=Math.max(...rs.map(r=>r.AsReq)),cover=Number(pillarArms.N1.cover)||3;let pick=null;
+ for(const dia of [10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25))){const sMin=Math.max(2,dia/10,2.28),bw=cb-2*cover-2*(Number(pillarArms.N1.dia)||5)/10,nMax=Math.floor((bw+sMin)/(dia/10+sMin)),n=Math.max(2,Math.ceil(As/calcBar(dia)-1e-9));if(n<=nMax){pick={dia,n};break}}
+ if(!pick)return {cb,ch,sp,D,fail:`aço não cabe na face de ${cb} cm`};
+ // Aço do pilar (por pilar): tardoz + 4Ø10 nas demais posições + esperas + estribos Ø5 c/15.
+ const ids=new Set(rs.map(r=>r.pid)),nP=ids.size,H=Math.max(...rs.map(r=>r.H))*100,blkH=Number($('blockH')?.value)||80;
+ const lap=d=>60*d/10,wait=d=>blkH+lap(d)+21,lens=H-6;
+ const kgPil=pick.n*kgm(pick.dia)*(lens+wait(pick.dia))/100+4*kgm(10)*(lens+wait(10))/100+Math.ceil(H/15+1)*kgm(5)*(2*(cb+ch-12)+10)/100;
+ // Fundação
+ const F=calcFoundation();let kgF=0,concE=0,depthMax=0,fBars='';
+ for(const r of F){const dep=Math.max(100,Math.ceil(r.depthReq*10)*10);depthMax=Math.max(depthMax,dep);
+  let best=null;for(const dia of [12.5,16,20])for(let n=6;n<=16;n++){const A=n*calcBar(dia);if(best&&A>=best.A)continue;if(A<r.AsMinF-1e-9)continue;if(calcCircleMRd(D,Number(r.fCov)||5,n,dia,8)>=r.Mdmax)best={n,dia,A}}
+  if(!best)return {cb,ch,sp,D,fail:'fuste sem armadura viável'};
+  const bl=Math.min(dep,Math.max(r.kind==='Estaca'?(Number(S.minArm)||0)*100:0,Math.ceil((r.f+.6)*10)*10,100));
+  kgF+=best.n*kgm(best.dia)*bl/100+Math.ceil(dep/15)*kgm(8)*Math.PI*(D-10)/100;concE+=Math.PI*D*D/4*dep/1e6;fBars=`${best.n}Ø${String(best.dia).replace('.',',')}`}
+ const blkSide=Math.max(Number($('blockX')?.value)||80,Math.ceil((D+20)/10)*10,Math.ceil((ch+20)/10)*10),blk=$('blockEnabled')?.checked===false?0:nP*blkSide*blkSide*blkH/1e6;
+ const concP=nP*cb*ch*H/1e6,steel=nP*kgPil+kgF,conc=concP+concE+blk;
+ return {cb,ch,sp,D,sig,nP,pick,depth:depthMax,fBars,steel,conc,blkSide,idx:steel+(Number(S.optR)||60)*conc,okF:F.every(r=>r.FSt>=S.fsTomb&&r.FSd>=S.fsDesl)};
+}
+function calcOptRun(){
+ const sn=calcOptSnapshot(),out=[];
+ try{for(const cb of [20,25])for(const ch of [30,35,40,50])for(const sp of [2,2.5,3,3.5])for(const D of [40,50,60,70]){const r=calcOptEval(cb,ch,sp,D);if(r&&!(r.sig&&out.some(o=>o.sig===r.sig&&o.cb===cb&&o.ch===ch&&o.D===D)))out.push(r)}}
+ finally{calcOptRestore(sn)}
+ const ok=out.filter(r=>!r.fail).sort((a,b)=>a.idx-b.idx);calcOptResult={ok,fails:out.length-ok.length,cur:calcOptCurrent()};calcRender();
+}
+function calcOptCurrent(){const s=wallSegments[0]?.parameters||{},P=wallProfile(0);return {cb:Number(s.wallColX),ch:Number(s.wallColY),sp:P?P.L/100/(P.n-1):0,D:Number(foundationValues('pile','T1').shaft)}}
+function calcOptUse(k){
+ const r=calcOptResult?.ok?.[k];if(!r)return;
+ wallSegments.forEach((s,i)=>{const P=wallProfile(i);s.parameters.wallColX=String(r.cb);s.parameters.wallColY=String(r.ch);s.parameters.wallPillars=String(Math.max(2,Math.ceil(P.L/100/r.sp-1e-6)+1))});
+ if(wallSegments[wallActive])for(const id of ['wallColX','wallColY','wallPillars'])$(id).value=wallSegments[wallActive].parameters[id];
+ calcOptSetPiles(r.D);if($('blockPile'))$('blockPile').value=r.D;
+ if($('blockX')&&Number($('blockX').value)<r.blkSide){$('blockX').value=r.blkSide;$('blockY').value=r.blkSide}
+ draw();const useCalc=calcSettings.useCalc;calcSettings.useCalc=true;calcApplyPillar();calcApplyFoundation();calcSettings.useCalc=useCalc;
+ calcOptResult=null;draw();calcRender();status(`Solução aplicada: pilar ${r.cb}×${r.ch}, vão ≈ ${calcFmt(r.sp,1)} m (${r.nP} pilares), estaca Ø${r.D}. Confira as abas e reorganize as pranchas.`);
+}
+function calcTabOpt(){
+ const S=calcSettings,R=calcOptResult,cur=calcOptCurrent();
+ let html=`<div class="calc-k">Testa até <b>128 combinações</b>: pilar 20 ou 25 × 30/35/40/50 cm · vão de 2,0 a 3,5 m · estaca Ø40 a Ø70. Usa as premissas das outras abas.
+ <label style="display:flex;align-items:center;gap:6px;margin-left:12px">1 m³ de concreto equivale a <input id="cOptR" type="number" step="5" min="0" value="${S.optR??60}" style="width:60px;height:26px"> kg de aço</label>
+ <button class="c-apply" id="cOptRun">Rodar otimização</button></div>
+ <p class="calc-hint">Atual: pilar ${cur.cb}×${cur.ch} · vão ≈ ${calcFmt(cur.sp,2)} m · estaca Ø${cur.D}. Índice = aço + R × concreto (o R pondera custo de concreto/forma contra aço; 60 kg/m³ é um valor usual). Vigas e alvenaria não entram na comparação.</p>`;
+ if(R){const top=R.ok.slice(0,12);
+  html+=`<table class="calc-t"><thead><tr><th>#</th><th>Pilar (cm)</th><th>Vão (m)</th><th>Pilares</th><th>Tardoz</th><th>Estaca</th><th>Fuste</th><th>Aço (kg)</th><th>Concreto (m³)</th><th>Índice</th><th></th></tr></thead><tbody>${top.map((r,k)=>`<tr${r.cb===cur.cb&&r.ch===cur.ch&&Math.abs(r.sp-cur.sp)<.3&&r.D===cur.D?' class="sel"':''}><td>${k+1}</td><td>${r.cb}×${r.ch}</td><td>${calcFmt(r.sp,1)}</td><td>${r.nP}</td><td>${r.pick.n}Ø${String(r.pick.dia).replace('.',',')}</td><td>Ø${r.D} × ${calcFmt(r.depth/100,2)} m</td><td>${r.fBars}</td><td>${calcFmt(r.steel,0)}</td><td>${calcFmt(r.conc,2)}</td><td><b>${calcFmt(r.idx,0)}</b></td><td><button class="c-apply" data-opt="${k}" style="padding:3px 10px">Usar</button></td></tr>`).join('')}</tbody></table>
+  <p class="calc-hint">${R.ok.length} combinações viáveis · ${R.fails} descartadas (seção insuficiente ou aço que não cabe). "Usar" altera pilares, vão e estaca do projeto e aplica as armaduras; depois reorganize as pranchas.</p>`}
+ return html;
+}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
  document.querySelectorAll('#calcDialog [data-for]').forEach(l=>l.style.display=l.dataset.for.split(' ').includes(S.tab)||l.dataset.for==='all'?'':'none');
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
- body.innerHTML=S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
+ body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
  if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
+ if($('cOptRun'))$('cOptRun').onclick=()=>{$('cOptRun').textContent='Calculando…';setTimeout(calcOptRun,30)};
+ if($('cOptR'))$('cOptR').onchange=()=>{calcSettings.optR=Number($('cOptR').value)||0;if(calcOptResult){calcOptResult.ok.forEach(r=>r.idx=r.steel+calcSettings.optR*r.conc);calcOptResult.ok.sort((a,b)=>a.idx-b.idx)}calcRender()};
+ body.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>calcOptUse(Number(b.dataset.opt)));
 }
 const calcInputs={cBeta:'beta',cGsat:'gsat',cMinD:'minDepth',cFsV:'fsVert',cAsMin:'asMinPile',cMinArm:'minArm',cGa:'gAlv',cGamma:'gamma',cPhi:'phi',cC:'c',cQ:'q',cQd:'qDist',cGf:'gf',cFsT:'fsTomb',cFsD:'fsDesl',cFck:'fck'};
 function calcOpen(){
  let dlg=$('calcDialog');
  if(!dlg){
   dlg=document.createElement('dialog');dlg.id='calcDialog';
-  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button></nav>
+  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button><button data-tab="opt">Otimizar</button></nav>
   <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
    <label data-for="all">Arrimo<select id="cWall"></select></label>
