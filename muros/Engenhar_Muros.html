@@ -504,7 +504,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
  const titleMaxX=titlePts.length?Math.max(...titlePts.map(p=>p.x)):ox+360;
  const titleMinY=titlePts.length?Math.min(...titlePts.map(p=>p.y)):oy;
  const titleX=(titleMinX+titleMaxX)/2;
- wallTitleOffset=Math.max(128,(detailScale.PLANTA||50)*0.78/10*58);const titleY=titleMinY-wallTitleOffset;
+ wallTitleOffset=Math.max(128,(detailScale.PLANTA||50)*0.78/10*(elevationEnabled?74:58));const titleY=titleMinY-wallTitleOffset;
  if(wallPoints.length>=2){
  // Área de captura independente para arrastar pelo título, mesmo sem muro lançado.
  // O retângulo invisível fica atrás do texto e não acompanha os demais desenhos.
@@ -737,11 +737,12 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   return sx0+W;
  }
  const aX=bx+24*U,aEnd=section(aX,'CORTE A–A',B.x,'x','y',pa);
- const bX=aEnd+32*U,bEnd=section(bX,'CORTE B–B',B.y,'y','x',pb);
+ const bX=aEnd+46*U,bEnd=section(bX,'CORTE B–B',B.y,'y','x',pb);
  // Níveis à direita do corte B–B.
  const lvX=bEnd+50*U;
  const vbH=Math.max(10,Number(wp.wallBeamHeight)||40);
- for(const [yy,txt] of [[blockTop,`${levelFmt(vbH)} TOPO = TOPO DA VB`],[blockBot,`${levelFmt(vbH-B.h)} FUNDO`],[lastroBot,`${levelFmt(vbH-B.h-LASTRO)} LASTRO`]]){line(bEnd+2*U,yy,lvX+22*U,yy,yellow,.6,blockG,{'stroke-dasharray':yy===blockTop?'':'6 3'});text(lvX,yy-1.2*U,txt,yellow,8,blockG)}
+ // Linhas de nível terminam antes do texto; fundo e lastro (5 cm) num só rótulo para não sobrepor.
+ for(const [yy,txt] of [[blockTop,`${levelFmt(vbH)} TOPO = TOPO DA VB`],[blockBot,`${levelFmt(vbH-B.h)} FUNDO · ${levelFmt(vbH-B.h-LASTRO)} LASTRO`],[lastroBot,'']]){line(bEnd+2*U,yy,lvX-2*U,yy,yellow,.6,blockG,{'stroke-dasharray':yy===blockTop?'':'6 3'});if(txt)text(lvX,yy+1*U,txt,yellow,8,blockG)}
  // ---------- FORMATOS (verdadeira grandeza, fechamento 10Ø) ----------
  const fy=pileBot+20*U;
  text(bx,fy,'FORMATOS DAS ARMADURAS · VERDADEIRA GRANDEZA · FECHAMENTO 10Ø',yellow,11,blockG,{'font-weight':'bold'});
@@ -1752,13 +1753,23 @@ function organizeSheets(quiet=false){
    chosen={scale:s,sized};
    if(sized.every(i=>i.w<=area.w&&i.h<=area.h))break;
   }
-  if(cur&&!cat.newSheet&&cur.scale===chosen.scale){cur.kinds.push(cat.kind);if(cur.items.length){cur.cx=0;cur.cy+=cur.rowH+gap;cur.rowH=0}}
-  else newSpec(cat.kind,chosen.scale);
-  for(const it of chosen.sized){if(!place(cur,it)){newSpec(cat.kind,chosen.scale);place(cur,it)}}
+  // V243 — Aproveitamento das folhas: cada desenho vai para a primeira folha de MESMA escala em que
+  // couber (planta, vigas e elevações 1:50 dividem a folha); outra categoria começa em nova fileira.
+  for(const it of chosen.sized){
+   let ok=false;
+   for(const sp of specs.filter(x=>x.scale===chosen.scale)){
+    const save={cx:sp.cx,cy:sp.cy,rowH:sp.rowH};
+    if(sp.items.length&&sp.lastKind!==cat.kind){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}
+    const kindsSave=[...sp.kinds];if(!sp.kinds.includes(cat.kind))sp.kinds.push(cat.kind);
+    if(place(sp,it)){sp.lastKind=cat.kind;cur=sp;ok=true;break}
+    Object.assign(sp,save);sp.kinds=kindsSave;
+   }
+   if(!ok){newSpec(cat.kind,chosen.scale);place(cur,it);cur.lastKind=cat.kind}
+  }
  }
  let x=0;lastValidSteelBySheet=new Map();
  // Título e categorias da folha a partir dos desenhos que ela realmente contém.
- for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks;sp.hasE=sp.items.some(i=>/^E\d/.test(i.code));sp.hasT=sp.items.some(i=>/^T\d/.test(i.code));sp.hasB=sp.items.some(i=>/^B\d/.test(i.code))}
+ for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks;const pk=c=>{try{return Number(foundationValues('pile',c).pileKind)===1}catch(e){return false}};sp.hasE=sp.items.some(i=>/^E\d/.test(i.code)||(/^T\d/.test(i.code)&&pk(i.code)));sp.hasT=sp.items.some(i=>/^T\d/.test(i.code)&&!pk(i.code));sp.hasB=sp.items.some(i=>/^B\d/.test(i.code))}
  sheets=specs.map((sp,i)=>{const sh={id:i+1,format,orientation,scale:sp.scale,x,y:0,done:false,kind:sp.kinds[0],kinds:[...sp.kinds],title:sp.kinds.map(k=>k==='fundacoes'?'FUNDAÇÕES — '+[sp.hasT&&'TUBULÕES',sp.hasE&&'ESTACAS',sp.hasB&&'BLOCOS'].filter(Boolean).join(', ').replace(/, ([^,]*)$/,' E $1'):SHEET_KIND_TITLES[k]).join(' · ')};x+=sheetDims(sh).w+300;return sh});
  sheetSeq=sheets.length+1;sheetCurrent=1;sheetSync();
  draw();

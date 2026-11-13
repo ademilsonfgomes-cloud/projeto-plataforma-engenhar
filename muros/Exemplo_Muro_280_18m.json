@@ -67,16 +67,16 @@
     }
   },
   "blockOffset": {
-    "x": 3472.2933532714846,
-    "y": 19.452877235412597
+    "x": 3466.950732421875,
+    "y": 20.409301948547363
   },
   "tubuloOffset": {
-    "x": 3608.011447906494,
-    "y": 19.452877235412597
+    "x": 3606.470947265625,
+    "y": 20.409301948547363
   },
   "wallOffset": {
     "x": 105.40000076293946,
-    "y": -367.3999877929688
+    "y": -304.5814147949219
   },
   "wallOrtho": false,
   "detailsPlaced": true,
@@ -188,7 +188,7 @@
     "wall": "all",
     "sel": null,
     "useCalc": true,
-    "tab": "resumo",
+    "tab": "empuxo",
     "fsTomb": 2,
     "fsDesl": 1.5,
     "fck": 25,
@@ -235,24 +235,24 @@
   },
   "extraDetailOffsets": {
     "P1": {
-      "x": 3623.6114501953125,
-      "y": 625.2757419586181
+      "x": 3622.5,
+      "y": 638.8885988235473
     },
     "VB1": {
-      "x": 5612.581053543091,
-      "y": 322.80575370788574
+      "x": 92.76118202209473,
+      "y": 911.2786021804809
     },
     "VI1-1": {
-      "x": 5612.581053543091,
-      "y": 844.0643705368042
+      "x": 92.76118202209473,
+      "y": 1426.4101695632933
     },
     "VT1": {
-      "x": 5612.581053543091,
-      "y": 1359.6965435028076
+      "x": 5612.611182022095,
+      "y": 324.71860218048096
     },
     "EL1": {
-      "x": 9189.45,
-      "y": 301.1321928024292
+      "x": 5609.55,
+      "y": 839.8501695632934
     }
   },
   "detailScale": {
@@ -287,7 +287,7 @@
   "extra": [],
   "seq": 3,
   "stampData": {
-    "contractor": "",
+    "contractor": "Cirleia e Duda",
     "taxid": "",
     "address": "",
     "district": "",
@@ -302,9 +302,9 @@
     "date": "13/11/2026",
     "email": "ademilsonfgomes@gmail.com",
     "phone": "",
-    "fck": "",
-    "coverNominal": "",
-    "caa": ""
+    "fck": "25",
+    "coverNominal": "30",
+    "caa": "II"
   },
   "sheet": {
     "sheets": [
@@ -318,9 +318,10 @@
         "done": false,
         "kind": "planta",
         "kinds": [
-          "planta"
+          "planta",
+          "vigas"
         ],
-        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS"
+        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · VIGAS BALDRAME E CINTAS DE TOPO"
       },
       {
         "id": 2,
@@ -335,7 +336,7 @@
           "fundacoes",
           "pilares"
         ],
-        "title": "FUNDAÇÕES — TUBULÕES E BLOCOS · PILARES"
+        "title": "FUNDAÇÕES — ESTACAS E BLOCOS · PILARES"
       },
       {
         "id": 3,
@@ -347,26 +348,13 @@
         "done": false,
         "kind": "vigas",
         "kinds": [
-          "vigas"
-        ],
-        "title": "VIGAS BALDRAME E CINTAS DE TOPO"
-      },
-      {
-        "id": 4,
-        "format": "A1",
-        "orientation": "landscape",
-        "scale": 50,
-        "x": 9099.75,
-        "y": 0,
-        "done": false,
-        "kind": "elevacoes",
-        "kinds": [
+          "vigas",
           "elevacoes"
         ],
-        "title": "ELEVAÇÕES DOS ARRIMOS"
+        "title": "VIGAS BALDRAME E CINTAS DE TOPO · ELEVAÇÕES DOS ARRIMOS"
       }
     ],
     "active": 1,
-    "next": 5
+    "next": 4
   }
 }
