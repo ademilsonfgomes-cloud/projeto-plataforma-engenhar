@@ -3081,6 +3081,50 @@ function calcTabOpt(){
   <p class="calc-hint">${R.ok.length} combinações viáveis · ${R.fails} descartadas (seção insuficiente ou aço que não cabe). "Usar" altera pilares, vão e estaca do projeto e aplica as armaduras; depois reorganize as pranchas.</p>`}
  return html;
 }
+// ---------- Memória de cálculo em PDF (V248) ----------
+// Documento A4 com capa, premissas e as memórias das abas (pilar/fundação/viga mais solicitados),
+// verificações e quantitativo. Abre em nova janela para "Imprimir / Salvar como PDF".
+function calcReportHtml(){
+ const S=calcSettings,sv={tab:S.tab,sel:S.sel,wall:S.wall};S.wall='all';S.sel=null;
+ const clean=h=>String(h||'').replace(/<button[^>]*>.*?<\/button>/gs,'').replace(/<input[^>]*>/g,'');
+ let parts;try{parts={emp:clean(calcTabEmpuxo()),fun:clean(calcTabFundacao()),pil:clean(calcTabPilar()),vig:clean(calcTabViga()),res:clean(calcTabResumo()),qua:clean(calcTabQuant())}}finally{Object.assign(S,sv)}
+ const sd=stampData||{},esc=t=>String(t??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+ const modeTxt=S.mode==='k0'?'Repouso (K0)':S.mode==='coulomb'?'Ativo — Coulomb (δ = 2/3·φ)':'Ativo — Rankine (δ = 0)';
+ const prem=[['Peso específico do solo γ',`${calcFmt(S.gamma,1)} kN/m³`],['Ângulo de atrito φ',`${calcFmt(S.phi,1)}°`],['Coesão c',`${calcFmt(S.c,1)} kPa`],['Empuxo',modeTxt],
+  ['Talude do aterro β',`${calcFmt(S.beta||0,1)}°`],['Sobrecarga q',`${calcFmt(S.q,1)} kN/m² ${S.qDist>0?`a ${calcFmt(S.qDist)} m do tardoz`:'junto ao tardoz'}`],
+  ['Nível d\'água',S.water?`${S.water} cm (a partir do ±0,00) · γsat ${calcFmt(S.gsat,1)} kN/m³`:'sem água (drenagem funcionando)'],['Terreno da frente',S.useFront?'descontado (reação em repouso)':'ignorado'],
+  ['Coeficientes',`γf = ${calcFmt(S.gf,2)} · γc = ${calcFmt(S.gc,2)} · γs = ${calcFmt(S.gs,2)}`],['Materiais',`concreto fck ${S.fck} MPa · aço CA-50 / CA-60`],
+  ['Fundação',`FS tombamento ≥ ${calcFmt(S.fsTomb,1)} · FS deslizamento ≥ ${calcFmt(S.fsDesl,1)} · FS vertical ${calcFmt(S.fsVert,1)} · prof. mínima ${calcFmt(S.minDepth,1)} m`],
+  ['Sondagem (SPT por metro)',S.spt?esc(S.spt)+` · solo: ${(CALC_SOILS[S.soil]||CALC_SOILS.areia).t}`:'não informada'],
+  ['Alvenaria',`${S.alvModel==='faixas'?'vence na horizontal entre pilares':'vence na vertical entre as vigas'} · ${calcFmt(S.gAlv,1)} kN/m²`]];
+ const walls=wallSegments.map((s,i)=>{const P=wallProfile(i),d=s.parameters;return `<tr><td>Arrimo ${i+1}</td><td>${calcFmt(P.L/100)} m</td><td>${P.n}</td><td>${d.wallColX}×${d.wallColY} cm</td><td>${calcFmt(d.wallHeight/100)} m</td><td>${d.wallBeamWidth}×${d.wallBeamHeight} cm</td><td>${d.wallSoilLevel?levelFmt(levelIn(d.wallSoilLevel)):'topo do muro'}</td></tr>`}).join('');
+ const sec=(n,t,h)=>`<section><h2>${n}. ${t}</h2>${h}</section>`;
+ return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Memória de cálculo — ${esc(sd.contractor||'Muro de arrimo')}</title><style>
+ @page{size:A4;margin:16mm 14mm}*{box-sizing:border-box}body{font:10.5pt Arial,Helvetica,sans-serif;color:#1a2a36;margin:0}
+ .bar{position:sticky;top:0;background:#fff;padding:10px 16px;box-shadow:0 1px 6px #aab;display:flex;justify-content:space-between;align-items:center}.bar button{background:#286ead;color:#fff;border:0;border-radius:6px;padding:9px 14px;font-weight:bold;cursor:pointer}
+ main{max-width:190mm;margin:0 auto;padding:10px}.cover{height:250mm;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;break-after:page}
+ .cover img{width:95mm}.cover h1{font-size:22pt;margin:18mm 0 4mm;color:#173a55}.cover .sub{font-size:13pt;color:#2d6a9a}.cover table{margin-top:16mm;border-collapse:collapse;font-size:11pt}.cover td{padding:3px 10px;text-align:left}.cover td:first-child{color:#556;text-align:right}
+ h2{font-size:13pt;color:#173a55;border-bottom:2px solid #173a55;padding-bottom:3px;margin:14px 0 8px;break-after:avoid}section{break-inside:auto}
+ table{border-collapse:collapse;width:100%;font-size:8.5pt;margin:4px 0}th,td{border:1px solid #b9c8d4;padding:3px 5px;text-align:right}th{background:#e3eef6;text-align:center}td:first-child{text-align:center}
+ .prem td{text-align:left}.prem td:first-child{width:38%;color:#445;text-align:left}
+ .calc-k{border:1px solid #b9c8d4;border-radius:4px;padding:5px 8px;margin:6px 0;font-size:9pt;background:#f6f9fb}.c-ok{color:#1e7d3c;font-weight:bold}.c-no{color:#c0392b;font-weight:bold}
+ .calc-grid{display:block}.calc-grid svg{width:85mm;max-width:100%;height:auto;display:block;margin:6px auto}.calc-k span{margin-right:14px;display:inline-block}
+ .calc-mem{white-space:pre-wrap;font:8.6pt/1.45 Consolas,'Courier New',monospace;border:1px solid #b9c8d4;padding:7px;background:#fbfcfd;break-inside:auto}
+ .calc-hint{font-size:7.5pt;color:#556}.calc-h{font-size:10pt;margin:8px 0 3px}tr.sel{background:#fff6cf}tr.crit td:first-child{color:#c0392b;font-weight:bold}small{font-size:7pt}
+ .foot{margin-top:14px;font-size:8pt;color:#556;border-top:1px solid #ccd;padding-top:6px}
+ @media print{.bar{display:none}main{padding:0}}
+ </style></head><body><div class="bar"><b>Memória de cálculo · Engenhar</b><button onclick="window.print()">Imprimir / Salvar como PDF</button></div><main>
+ <div class="cover"><img src="${stampLogoData}" alt="Engenhar"><h1>MEMÓRIA DE CÁLCULO<br>MURO DE ARRIMO</h1><div class="sub">Empuxo · Fundação · Pilares · Vigas · Alvenaria armada</div>
+ <table><tr><td>Contratante</td><td><b>${esc(sd.contractor||'—')}</b></td></tr><tr><td>Endereço</td><td>${esc([sd.address,sd.district,sd.city,sd.state].filter(Boolean).join(', ')||'—')}</td></tr>
+ <tr><td>Responsável técnico</td><td>${esc(sd.responsible||'—')} · ${esc(sd.crea||'')}</td></tr><tr><td>Revisão / data</td><td>${esc(sd.revision||'00')} · ${esc(sd.date||new Date().toLocaleDateString('pt-BR'))}</td></tr></table></div>
+ ${sec(1,'Geometria',`<table><thead><tr><th>Trecho</th><th>Comprimento</th><th>Pilares</th><th>Pilar</th><th>Altura do muro</th><th>VB</th><th>Aterro</th></tr></thead><tbody>${walls}</tbody></table><p class="calc-hint">Níveis em relação ao ±0,00 = topo da viga baldrame (VB).</p>`)}
+ ${sec(2,'Premissas de cálculo',`<table class="prem">${prem.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`)}
+ ${sec(3,'Empuxo de terra',parts.emp)}${sec(4,'Fundação',parts.fun)}${sec(5,'Pilares',parts.pil)}${sec(6,'Vigas e alvenaria',parts.vig)}
+ ${sec(7,'Resumo das verificações',parts.res)}${sec(8,'Quantitativo',parts.qua)}
+ <div class="foot">Memória gerada pelo Engenhar Muros. As memórias detalhadas referem-se ao elemento mais solicitado de cada grupo; as tabelas listam todos os elementos. Hipóteses e métodos indicados em cada item; resultados sujeitos à verificação do responsável técnico.</div>
+ </main></body></html>`;
+}
+function calcReportOpen(){const w=window.open('','_blank');if(!w){alert('Permita janelas pop-up para abrir a memória de cálculo.');return}w.document.open();w.document.write(calcReportHtml());w.document.close()}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
@@ -3099,7 +3143,7 @@ function calcOpen(){
  if(!dlg){
   dlg=document.createElement('dialog');dlg.id='calcDialog';
   dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button><button data-tab="opt">Otimizar</button></nav>
-  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
+  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcReport" title="Memória de cálculo completa para imprimir ou salvar em PDF" style="background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Memória (PDF)</button><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
    <label data-for="all">Arrimo<select id="cWall"></select></label>
    <label data-for="all">γ solo (kN/m³)<input id="cGamma" type="number" step="0.5" min="10" max="25"></label>
@@ -3128,7 +3172,7 @@ function calcOpen(){
    <label data-for="pilar viga fundacao resumo">fck (MPa)<input id="cFck" type="number" step="5" min="20" max="50"></label>
   </div><div id="calcResults"></div></div>`;
   document.body.appendChild(dlg);
-  $('calcClose').onclick=()=>dlg.close();
+  $('calcClose').onclick=()=>dlg.close();$('calcReport').onclick=calcReportOpen;
   dlg.querySelectorAll('.calc-tabs button[data-tab]').forEach(b=>b.onclick=()=>{calcSettings.tab=b.dataset.tab;calcSettings.sel=null;calcRender()});
   for(const [id,k] of Object.entries(calcInputs))$(id).oninput=()=>{const v=Number($(id).value);if(Number.isFinite(v)&&$(id).value!==''){calcSettings[k]=v;calcRender()}};
   $('cMode').onchange=()=>{calcSettings.mode=$('cMode').value;calcRender()};
