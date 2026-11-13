@@ -56,7 +56,7 @@ body.foundation-brush #copyFoundation{background:#f7d979!important;border-color:
 <span style="font-size:10px;color:#48647a">Clique o início e depois o ponto final: confirme a medida ou digite um comprimento na caixa do CAD. Enter conclui; Esc cancela. Dimensões em planta, sem dimensionamento estrutural.</span>
 </div>
 <div id="sheetRibbon" hidden><strong>PRANCHAS NO CAD</strong><label>Formato <select id="sheetFormat"><option>A0</option><option selected>A1</option><option>A2</option><option>A3</option></select></label><label>Escala visual <select id="sheetScale"><option value="25">1:25</option><option value="50" selected>1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><label>Orientação <select id="sheetOrientation"><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label><button id="sheetCreate">+ Nova prancha</button><label>Ativa <select id="sheetActive"></select></label><button id="sheetFinish">Concluir prancha</button><button id="sheetReopen">Reabrir</button><button id="sheetDelete">Excluir prancha</button><button id="sheetClose">Ocultar faixa</button><span style="color:#4d667a">Clique na faixa superior da folha para mudar seu formato. Novas pranchas são adicionadas à direita; arraste a borda para mover.</span></div>
-<dialog id="layerDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:700px;padding:15px;font:12px Arial"><h3 style="margin:0 0 8px">Layers e penas · Padrão Engenhar</h3><p style="font-size:11px;margin:0 0 9px">Cores de trabalho no CAD e hierarquia de espessuras. Cotas são os traços mais finos (0,10 mm). Os valores de pena são nominais para a saída gráfica e requerem calibração na impressão em escala.</p><div id="layerRows" style="max-height:55vh;overflow:auto"></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px"><label><input type="checkbox" id="layerMono"> Visualização monocromática</label><button type="button" id="layerReset">Restaurar padrão</button><span style="flex:1"></span><button type="button" id="layerClose">Fechar</button></div></dialog><dialog id="profileDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:640px;padding:16px;font:12px Arial"><h3 id="profileTitle" style="margin:0 0 6px">Perfil do arrimo</h3><p style="margin:0 0 8px;font-size:11px">Níveis em cm em relação ao <b>+0,00</b> (topo da fundação). Altere só os pilares que mudam: entre dois pilares o topo é uma linha reta. A base de cada vão é arredondada para múltiplos da fiada (degraus no eixo dos pilares).</p><div id="profileRows" style="max-height:45vh;overflow:auto"></div><div style="margin:10px 0;padding:8px;background:#dcebf7;border-radius:6px"><b>Atalho — inclinar o topo:</b> do pilar <select id="profFrom"></select> até o pilar <select id="profTo"></select> com topo final <input id="profToTop" type="number" style="width:70px"> cm <button type="button" id="profApplyRamp">Aplicar</button></div><div style="padding:8px;background:#dcebf7;border-radius:6px"><b>Pontos intermediários do topo</b> (opcional, quando a mudança é no meio de um vão): <button type="button" id="profAddPt">+ ponto</button><div id="profPts"></div></div><div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="profOk">Aplicar perfil</button><button type="button" id="profFlat">Voltar a nivelado</button><span style="flex:1"></span><button type="button" id="profCancel">Cancelar</button></div></dialog><dialog id="elevationDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:420px;padding:17px;font:12px Arial"><h3 style="margin:0 0 12px">Elevação dos arrimos</h3><label style="display:block;margin:9px 0"><input id="elevTop" type="checkbox" checked> Viga superior (topo)</label><label style="display:block;margin:9px 0">Vigas intermediárias <input id="elevMid" type="number" min="0" max="5" value="0" style="width:60px"></label><label style="display:block;margin:9px 0">Altura da fiada (cm) <input id="elevCourse" type="number" min="10" value="20" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura horizontal Ø (mm) <input id="elevHDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura vertical Ø (mm) <input id="elevVDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Espaçamento vertical (cm) <input id="elevVSpace" type="number" min="5" value="20" style="width:65px"></label><label style="display:block;margin:9px 0"><input id="elevFound" type="checkbox" checked> Mostrar blocos e tubulões</label><p style="font-size:10px;color:#617689">Representação geométrica preliminar. Armaduras e ancoragens dependem de dimensionamento e verificação técnica.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button id="elevCancel" type="button">Cancelar</button><button id="elevApply" type="button">Gerar / atualizar</button></div></dialog><dialog id="stampEditor" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:560px;padding:17px"><h3 style="margin:0 0 12px">Dados do carimbo · Engenhar</h3><div id="stampFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div><p style="font-size:11px">Os dados da obra são compartilhados entre as pranchas. O conteúdo, o formato e a folha são calculados individualmente.</p><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="stampCancel">Cancelar</button><button type="button" id="stampApply">Aplicar dados</button></div></dialog><div id="cad" class="viewport"><svg id="drawing" xmlns="http://www.w3.org/2000/svg" aria-label="Desenho CAD de tubulão"></svg>
+<dialog id="layerDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:700px;padding:15px;font:12px Arial"><h3 style="margin:0 0 8px">Layers e penas · Padrão Engenhar</h3><p style="font-size:11px;margin:0 0 9px">Cores de trabalho no CAD e hierarquia de espessuras. Cotas são os traços mais finos (0,10 mm). Os valores de pena são nominais para a saída gráfica e requerem calibração na impressão em escala.</p><div id="layerRows" style="max-height:55vh;overflow:auto"></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px"><label><input type="checkbox" id="layerMono"> Visualização monocromática</label><button type="button" id="layerReset">Restaurar padrão</button><span style="flex:1"></span><button type="button" id="layerClose">Fechar</button></div></dialog><dialog id="profileDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:640px;padding:16px;font:12px Arial"><h3 id="profileTitle" style="margin:0 0 6px">Perfil do arrimo</h3><p style="margin:0 0 8px;font-size:11px">Níveis em cm em relação ao <b>+0,00</b> (fundo da VB no início). A VB entra no bloco/estaca: o topo da fundação é o topo da VB. Altere só os pilares que mudam: entre dois pilares o topo é uma linha reta. A base de cada vão é arredondada para múltiplos da fiada (degraus no eixo dos pilares).</p><div id="profileRows" style="max-height:45vh;overflow:auto"></div><div style="margin:10px 0;padding:8px;background:#dcebf7;border-radius:6px"><b>Atalho — inclinar o topo:</b> do pilar <select id="profFrom"></select> até o pilar <select id="profTo"></select> com topo final <input id="profToTop" type="number" style="width:70px"> cm <button type="button" id="profApplyRamp">Aplicar</button></div><div style="padding:8px;background:#dcebf7;border-radius:6px"><b>Pontos intermediários do topo</b> (opcional, quando a mudança é no meio de um vão): <button type="button" id="profAddPt">+ ponto</button><div id="profPts"></div></div><div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="profOk">Aplicar perfil</button><button type="button" id="profFlat">Voltar a nivelado</button><span style="flex:1"></span><button type="button" id="profCancel">Cancelar</button></div></dialog><dialog id="elevationDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:420px;padding:17px;font:12px Arial"><h3 style="margin:0 0 12px">Elevação dos arrimos</h3><label style="display:block;margin:9px 0"><input id="elevTop" type="checkbox" checked> Viga superior (topo)</label><label style="display:block;margin:9px 0">Vigas intermediárias <input id="elevMid" type="number" min="0" max="5" value="0" style="width:60px"></label><label style="display:block;margin:9px 0">Altura da fiada (cm) <input id="elevCourse" type="number" min="10" value="20" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura horizontal Ø (mm) <input id="elevHDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura vertical Ø (mm) <input id="elevVDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Espaçamento vertical (cm) <input id="elevVSpace" type="number" min="5" value="20" style="width:65px"></label><label style="display:block;margin:9px 0"><input id="elevFound" type="checkbox" checked> Mostrar blocos e tubulões</label><p style="font-size:10px;color:#617689">Representação geométrica preliminar. Armaduras e ancoragens dependem de dimensionamento e verificação técnica.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button id="elevCancel" type="button">Cancelar</button><button id="elevApply" type="button">Gerar / atualizar</button></div></dialog><dialog id="stampEditor" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:560px;padding:17px"><h3 style="margin:0 0 12px">Dados do carimbo · Engenhar</h3><div id="stampFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div><p style="font-size:11px">Os dados da obra são compartilhados entre as pranchas. O conteúdo, o formato e a folha são calculados individualmente.</p><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="stampCancel">Cancelar</button><button type="button" id="stampApply">Aplicar dados</button></div></dialog><div id="cad" class="viewport"><svg id="drawing" xmlns="http://www.w3.org/2000/svg" aria-label="Desenho CAD de tubulão"></svg>
 <div id="foundationEditor" hidden style="position:absolute;z-index:50;left:50%;top:48%;transform:translate(-50%,-50%);background:#eaf3fa;color:#173a55;border:2px solid #5e93b4;border-radius:8px;box-shadow:0 12px 45px #0009;padding:16px;min-width:330px;font:12px Arial"><strong id="foundationEditorTitle" style="font-size:15px">Editar fundação</strong><p id="foundationEditorHelp" style="margin:8px 0">Altere os parâmetros desta posição. Um tipo diferente receberá novo código.</p><div id="foundationEditorFields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div style="display:flex;gap:7px;margin-top:13px"><button type="button" id="foundationApply">Aplicar nesta posição</button><button type="button" id="foundationRefresh">↻ Atualizar detalhes</button><button type="button" id="foundationCancel">Cancelar</button></div></div>
 <div id="beamArmEditor" hidden style="position:absolute;z-index:67;left:50%;top:46%;transform:translate(-50%,-50%);background:#eaf3fa;color:#173a55;border:2px solid #5e93b4;border-radius:9px;box-shadow:0 12px 45px #0009;padding:16px;min-width:320px;font:12px Arial"><strong id="beamArmTitle" style="font-size:15px">Editar armadura da viga VB1</strong><div id="beamArmFields" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0"></div><p style="font-size:10px;color:#637b8d">Detalhamento geométrico preliminar. Verificar ganchos, ancoragens e armaduras antes da execução.</p><div style="display:flex;gap:8px"><button type="button" id="beamArmApply">Aplicar</button><button type="button" id="beamArmCancel">Cancelar</button></div></div>
 <div id="pillarArmEditor" hidden style="position:absolute;z-index:65;left:50%;top:48%;transform:translate(-50%,-50%);background:#eaf3fa;color:#173a55;border:2px solid #5e93b4;border-radius:9px;box-shadow:0 12px 45px #0009;padding:16px;min-width:300px;max-width:95%;font:12px Arial"><strong id="pillarArmTitle" style="font-size:15px">Editar armadura do pilar</strong><p id="pillarArmHelp" style="line-height:1.4"></p><div id="pillarArmFields" style="display:grid;grid-template-columns:1fr 1fr;gap:9px"></div><p style="font-size:10px;color:#637b8d">Valores geométricos preliminares. Conferir armaduras, ancoragens, emendas e ganchos antes da execução.</p><div style="display:flex;gap:8px"><button type="button" id="pillarArmApply">Aplicar</button><button type="button" id="pillarArmCancel">Cancelar</button></div></div>
@@ -600,7 +600,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   }
   // Rótulo do arrimo além das chamadas de fundação (que são horizontais em muros verticais).
   const off=segReach+mm(19)+(Math.abs(uy)>Math.abs(ux)?mm(16):0);
-  rtext((a.x+b.x)/2+nx*sgn*off,(a.y+b.y)/2+ny*sgn*off,`ARRIMO ${idx+1} · VB${idx+1} ${num('wallBeamWidth')}×${num('wallBeamHeight')} · PILARES ${num('wallColX')}×${num('wallColY')} cm`,yellow,3.5,{'font-weight':'bold'});
+  rtext((a.x+b.x)/2+nx*sgn*off,(a.y+b.y)/2+ny*sgn*off,`ARRIMO ${idx+1} · ${(()=>{const nm=vbNames(),rs=vbRuns(idx).sort((p,q)=>q.base-p.base).map(r=>nm.get(`${idx}:${r.r}`));return rs.length>1?rs[0]+' A '+rs[rs.length-1]:rs[0]||'VB'+(idx+1)})()} ${num('wallBeamWidth')}×${num('wallBeamHeight')} · PILARES ${num('wallColX')}×${num('wallColY')} cm`,yellow,3.5,{'font-weight':'bold'});
  }
  for(let i=1;i<pts.length;i++)drawSegment(pts[i-1],pts[i],i-1);
  if(preview)drawSegment(pts[pts.length-1],preview,pts.length-1,true);
@@ -653,6 +653,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  const cxp=px+ww/2,cyp=py+hh/2;
  line(cxp,py-9*U,cxp,py+hh+3*U,'#36cfc9',.5,blockG,{'stroke-dasharray':'8 3 2 3'});line(cxp,py+hh+21*U,cxp,py+hh+24*U,'#36cfc9',.5,blockG);line(px-5*U,cyp,px+ww+5*U,cyp,'#36cfc9',.5,blockG,{'stroke-dasharray':'8 3 2 3'});
  circle(cxp,cyp,B.pile*sc/2,grey,'none',.8,blockG,{'stroke-dasharray':'4 3'});
+ {const vbw=Math.max(10,Number(wp.wallBeamWidth)||20)*sc;for(const sg of [-1,1])line(px-6*U,cyp+sg*vbw/2,px+ww+6*U,cyp+sg*vbw/2,'#f5cb69',.7,blockG,{'stroke-dasharray':'5 3'});text(px-7*U,cyp-vbw/2-1*U,'VB',yellow,8,blockG,{'text-anchor':'end','font-weight':'bold'})}
  el('rect',{x:cxp-pa*sc/2,y:cyp-pb*sc/2,width:pa*sc,height:pb*sc,stroke:'#f06b76','stroke-width':1.1,fill:'#f06b76','fill-opacity':.12},blockG);
  for(const sx of [-1,1])for(const sy of [-1,1])circle(cxp+sx*(pa/2-waitIn)*sc,cyp+sy*(pb/2-waitIn)*sc,Math.max(1.2,waitDia/2*sc),'#f06b76','#f06b76',.5,blockG);
  // Armaduras em planta: N_X (paralelas a X), N_Y (paralelas a Y) e costela (contorno).
@@ -699,6 +700,8 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   el('path',{d:`M${lx0} ${ly0} H${lx0+lw} V${ly0+lh} H${lx0} Z`,fill:'none',stroke:col[dirKey],'stroke-width':1.2},blockG);
   const nC=q(crossKey);for(let i=0;i<nC;i++){const xx=lx0+3+(lw-6)*i/(nC-1);circle(xx,ly0+2.2,1.5,col[crossKey],col[crossKey],.5,blockG);circle(xx,ly0+lh-2.2,1.5,col[crossKey],col[crossKey],.5,blockG)}
   const nCost=q('c');for(let i=0;i<nCost;i++){const yy=ly0+6+(lh-12)*i/Math.max(1,nCost-1);circle(lx0-dC*sc/2-.6,yy,1.4,col.c,col.c,.5,blockG);circle(lx0+lw+dC*sc/2+.6,yy,1.4,col.c,col.c,.5,blockG)}
+  // VB entrando no bloco: trecho tracejado do topo do bloco até o fundo da VB.
+  {const vbw=Math.max(10,Number(wp.wallBeamWidth)||20),vbh=Math.max(10,Number(wp.wallBeamHeight)||40)*sc;if(dirKey==='x'){el('rect',{x:sx0,y:blockTop,width:W,height:vbh,fill:'none',stroke:'#f5cb69','stroke-width':.7,'stroke-dasharray':'5 3'},blockG)}else{const bw=vbw*sc;el('rect',{x:cx-bw/2,y:blockTop,width:bw,height:vbh,fill:'none',stroke:'#f5cb69','stroke-width':.7,'stroke-dasharray':'5 3'},blockG)}text(sx0-1.5*U,blockTop+vbh/2+1.2*U,'VB',yellow,8,blockG,{'text-anchor':'end','font-weight':'bold'})}
   // Esperas do pilar: descem até o fundo das armaduras com dobra para fora.
   const wx=(pillarW/2-waitIn)*sc,wBot=ly0+lh-4;
   for(const sgn of [-1,1])path(`M${cx+sgn*wx} ${blockTop-stub+3*U} V${wBot} H${cx+sgn*(wx+waitBend*sc)}`,'#f06b76','none',1.6,blockG);
@@ -720,7 +723,8 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  const bX=aEnd+32*U,bEnd=section(bX,'CORTE B–B',B.y,'y','x',pb);
  // Níveis à direita do corte B–B.
  const lvX=bEnd+50*U;
- for(const [yy,txt] of [[blockTop,'+0,00 TOPO'],[blockBot,`${levelFmt(-B.h)} FUNDO`],[lastroBot,`${levelFmt(-(B.h+LASTRO))} LASTRO`]]){line(bEnd+2*U,yy,lvX+22*U,yy,yellow,.6,blockG,{'stroke-dasharray':yy===blockTop?'':'6 3'});text(lvX,yy-1.2*U,txt,yellow,8,blockG)}
+ const vbH=Math.max(10,Number(wp.wallBeamHeight)||40);
+ for(const [yy,txt] of [[blockTop,`${levelFmt(vbH)} TOPO = TOPO DA VB`],[blockBot,`${levelFmt(vbH-B.h)} FUNDO`],[lastroBot,`${levelFmt(vbH-B.h-LASTRO)} LASTRO`]]){line(bEnd+2*U,yy,lvX+22*U,yy,yellow,.6,blockG,{'stroke-dasharray':yy===blockTop?'':'6 3'});text(lvX,yy-1.2*U,txt,yellow,8,blockG)}
  // ---------- FORMATOS (verdadeira grandeza, fechamento 10Ø) ----------
  const fy=pileBot+20*U;
  text(bx,fy,'FORMATOS DAS ARMADURAS · VERDADEIRA GRANDEZA · FECHAMENTO 10Ø',yellow,11,blockG,{'font-weight':'bold'});
@@ -925,12 +929,13 @@ function drawWallElevations(parent){
   if(S.top){const up=topLine(0,L,0),lo=topLine(0,L,topH).reverse();el('polygon',{points:[...up,...lo].map(q=>q.join(',')).join(' '),stroke:cyan,'stroke-width':1.5,fill:'#70c8ef','fill-opacity':.19},g);t(X(L)+3*U,Y(T(L)-topH/2)+1.75*U,`VT${i+1}`,cyan,10,{'font-weight':'bold'})}
   // VB por vão (degraus nos pilares).
   for(let k=0;k<n-1;k++)el('rect',{x:X(xs[k]),y:Y(spanBase[k]+bh),width:(xs[k+1]-xs[k])*sc,height:bh*sc,stroke:gold,'stroke-width':1.4,fill:'#f5c845','fill-opacity':.14},g);
-  t(X(L)+3*U,Y(spanBase[n-2]+bh/2)+1.75*U,`VB${i+1}`,gold,10,{'font-weight':'bold'});
+  const vbN=vbNames();if(P.flatBase)t(X(L)+3*U,Y(spanBase[n-2]+bh/2)+1.75*U,vbNameAtSpan(i,0,vbN),gold,10,{'font-weight':'bold'});
   // Pilares, eixos e fundações (topo da fundação no nível da base do pilar).
-  let lowest=Y(Math.min(...foundTop));const axisX=[];
+  let lowest=Y(Math.min(...foundTop)+bh);const axisX=[];
   for(let j=0;j<n;j++){
    const px=X(xs[j]),col=Math.max(10,Number(d.wallColX)||20)*sc;axisX.push(px);
-   el('rect',{x:px-col/2,y:Y(T(xs[j])),width:col,height:(T(xs[j])-foundTop[j])*sc,stroke:cyan,'stroke-width':1.15,fill:'#62b4d6','fill-opacity':.24},g);
+   // Pilar nasce no topo da fundação, que coincide com o topo da VB (a VB entra no bloco/estaca).
+   el('rect',{x:px-col/2,y:Y(T(xs[j])),width:col,height:(T(xs[j])-foundTop[j]-bh)*sc,stroke:cyan,'stroke-width':1.15,fill:'#62b4d6','fill-opacity':.24},g);
    const pid=`P${ids[i]?.[j]??j+1}`;
    ln(px,top-28*U,px,Y(T(xs[j]))-1*U,'#36cfc9',.6,{'stroke-dasharray':'8 3 2 3'});
    circle(px,top-32.5*U,4.5*U,'#36cfc9','none',.9,g,{'data-layer':'eixos'});
@@ -943,7 +948,7 @@ function drawWallElevations(parent){
     const blockX=Math.max(40,Number(block.blockX)||80)*sc,blockH=Math.max(20,Number(block.blockH)||80)*sc;
     const shaft=Math.max(20,Number(pile.shaft)||60)*sc,base=Math.max(shaft/sc,Number(pile.base)||120)*sc,depth=Math.max(50,Number(pile.depth)||330)*sc;
     const ph=Math.min(depth*.8,Math.max(10,Number(pile.baseHeight)||50)*sc),sk=Math.min(ph,Math.max(0,Number(pile.skirt)||0)*sc);
-    const hasBlock=Number(pile.noBlock)!==1,isPile=Number(pile.pileKind)===1,fy=Y(foundTop[j]);
+    const hasBlock=Number(pile.noBlock)!==1,isPile=Number(pile.pileKind)===1,fy=Y(foundTop[j]+bh);
     const y0=fy+(hasBlock?blockH:0),y1=y0+depth,shoulder=isPile?y1:y1-ph,skirtEnd=isPile?y1:shoulder+sk,baseW=isPile?shaft:base;
     if(hasBlock)el('rect',{x:px-blockX/2,y:fy,width:blockX,height:blockH,stroke:gold,'stroke-width':1,fill:'#d8b77c','fill-opacity':.16},g);
     path(`M${px-shaft/2} ${y0} V${shoulder} L${px-baseW/2} ${skirtEnd} V${y1} H${px+baseW/2} V${skirtEnd} L${px+shaft/2} ${shoulder} V${y0}`,gold,'#c9aa7d',1,g,{'fill-opacity':.1});
@@ -953,7 +958,8 @@ function drawWallElevations(parent){
    }
   }
   // Níveis da base por vão quando há degraus.
-  if(!P.flatBase)for(let k=0;k<n-1;k++)t(X((xs[k]+xs[k+1])/2),Y(spanBase[k])+4*U,`BASE ${levelFmt(spanBase[k])}`,gold,8,{'text-anchor':'middle','font-weight':'bold'});
+  // Nome de cada VB (por nível) dentro da própria faixa da viga, com o nível do fundo.
+  if(!P.flatBase)for(const r of vbRuns(i))t(X((xs[r.a]+xs[r.b])/2),Y(r.base+bh/2)+1.25*U,`${vbN.get(`${i}:${r.r}`)} (${levelFmt(r.base)})`,gold,8,{'text-anchor':'middle','font-weight':'bold'});
   // Cotas horizontais: eixo a eixo e total (cm), acima do ponto mais alto.
   for(let j=0;j<n-1;j++)dimH(axisX[j],axisX[j+1],top-9*U,Y(Math.max(T(xs[j]),T(xs[j+1]))),cm(L/(n-1)),g);
   dimH(X(0),X(L),top-18*U,top,cm(L),g,n>2&&(n-1)%2===0?(axisX[Math.floor((n-1)/2)-1]+axisX[Math.floor((n-1)/2)])/2:undefined);
@@ -971,7 +977,7 @@ function drawWallElevations(parent){
   const z0=spanBase[0],zt0=T(0);
   dimV(Y(zt0),Y(z0+bh),x-9*U,x,cm(zt0-z0-bh),g);dimV(Y(z0+bh),Y(z0),x-9*U,x,cm(bh),g);dimV(Y(zt0),Y(z0),x-18*U,x,cm(zt0-z0),g);
   const level=(yy,cmv,desc)=>{const lx=x-26*U;ln(lx-44*U,yy,lx,yy,gold,.7);path(`M${lx-6*U} ${yy} l${-1.8*U} ${-3*U} h${3.6*U} z`,gold,gold,.6,g);text(lx-9*U,yy-1.2*U,levelFmt(cmv),gold,TF(2.5),g,{'text-anchor':'end','font-weight':'bold','data-pt':'1'});text(lx-44*U,yy+4.6*U,desc,gold,TF(2.5),g,{'data-pt':'1'})};
-  level(Y(zt0),zt0,'TOPO DO MURO');level(Y(z0+bh),z0+bh,'TOPO DA VB');level(Y(foundTop[0]),foundTop[0],'TOPO DA FUNDAÇÃO');
+  level(Y(zt0),zt0,'TOPO DO MURO');level(Y(z0+bh),z0+bh,'TOPO DA VB = TOPO DA FUNDAÇÃO');
   // Terreno: aterro no tardoz acompanha o topo (ou nível informado); face externa por vão.
   const soilV=profileNum(d.wallSoilLevel),frontV=profileNum(d.wallFrontLevel);
   if(soilV==null){const ps=topLine(0,L,0);path('M'+ps.map(q=>q.join(' ')).join(' L'),earth,'none',1.1,g,{'stroke-dasharray':'10 4'});t(X(L)+24*U,Y(T(L))-1.2*U,`NT ATERRO (TARDOZ) ${P.flatTop?levelFmt(T(L)):'ACOMPANHA O TOPO'}`,earth,8)}
@@ -1147,11 +1153,14 @@ function drawBeamDetails(parent,kind="VB"){
 }
 // Peças de viga por arrimo: VB em trechos nivelados (degraus nos pilares, cada trecho com
 // as barras ancoradas nos pilares das pontas); VT com o comprimento desenvolvido do topo.
+// VB: cada trecho nivelado é uma viga independente. Numeração única no projeto: em cada
+// arrimo, do nível mais alto para o mais baixo (VB1, VB2, VB3...), continuando no seguinte.
+function vbRuns(i){const P=wallProfile(i);if(!P)return [];const runs=[];let s0=0;for(let k=1;k<=P.n-1;k++)if(k===P.n-1||P.spanBase[k]!==P.spanBase[s0]){runs.push([s0,k]);s0=k}return runs.map(([a,b],r)=>({a,b,r,base:P.spanBase[a]}))}
+function vbNames(){const map=new Map();let c=1;for(let i=0;i<wallSegments.length;i++){const runs=vbRuns(i).sort((p,q)=>q.base-p.base||p.a-q.a);for(const run of runs)map.set(`${i}:${run.r}`,`VB${c++}`)}return map}
+function vbNameAtSpan(i,k,names=vbNames()){const run=vbRuns(i).find(r=>k>=r.a&&k<r.b);return run?names.get(`${i}:${run.r}`):`VB${i+1}`}
 function beamPieces(kind,i){
  const P=wallProfile(i);if(!P)return [];
- if(kind==="VB"){const runs=[];let s0=0;for(let k=1;k<=P.n-1;k++)if(k===P.n-1||P.spanBase[k]!==P.spanBase[s0]){runs.push([s0,k]);s0=k}
-  if(runs.length===1)return [{code:`VB${i+1}`,len:Math.round(P.L),nP:P.n,j0:0}];
-  return runs.map(([a,b],k)=>({code:`VB${i+1}.${k+1}`,len:Math.round(P.xs[b]-P.xs[a]),nP:b-a+1,j0:a,note:`TRECHO ${k+1} · BASE ${levelFmt(P.spanBase[a])}`}))}
+ if(kind==="VB"){const names=vbNames(),runs=vbRuns(i);return runs.map(r=>({code:names.get(`${i}:${r.r}`),len:Math.round(P.xs[r.b]-P.xs[r.a]),nP:r.b-r.a+1,j0:r.a,note:runs.length>1||!P.flatBase?`FUNDO ${levelFmt(r.base)}`:''}))}
  if(kind==="VT"){let dev=0;for(let k=1;k<P.nodes.length;k++)dev+=Math.hypot(P.nodes[k].x-P.nodes[k-1].x,P.nodes[k].z-P.nodes[k-1].z);return [{code:`VT${i+1}`,len:Math.round(dev),nP:P.n,j0:0,note:P.flatTop?'':'INCLINADA · COMPRIMENTO DESENVOLVIDO'}]}
  return [{code:`${kind}${i+1}`,len:Math.round(P.L),nP:P.n,j0:0}];
 }
@@ -1170,11 +1179,11 @@ function drawPillarDetails(parent){
    const fk=foundationKey(pt),bCode=foundationEnsure('block',fk),noBlock=foundationNoBlock(fk);
    const fnd=foundationValues('pile',foundationEnsure('pile',fk)),fndName=Number(fnd.pileKind)===1?'ESTACA':'TUBULÃO',fndDa=fndName==='ESTACA'?'DA ESTACA':'DO TUBULÃO',fndNa=fndName==='ESTACA'?'NA ESTACA':'NO TUBULÃO';
    const blockHeight=noBlock?0:Math.max(30,Number(foundationValues('block',bCode).blockH)||80);
-   const height=Math.round(PF.T(PF.xs[j])-PF.foundTop[j]);
+   const height=Math.round(PF.T(PF.xs[j])-PF.foundTop[j]-PF.bh);
    // Pilares agrupados por seção e ligação com a fundação; a altura de cada um vai no quadro.
    const key=[a,b,blockHeight,noBlock?fndName:''].join(':');
    if(!types.has(key))types.set(key,{a,b,blockHeight,noBlock,fndName,fndDa,fndNa,ids:new Set(),inst:new Map()});
-   const ty=types.get(key);ty.ids.add(ids[i][j]);if(!ty.inst.has(ids[i][j]))ty.inst.set(ids[i][j],{h:height,top:PF.T(PF.xs[j]),base:PF.foundTop[j]});
+   const ty=types.get(key);ty.ids.add(ids[i][j]);if(!ty.inst.has(ids[i][j]))ty.inst.set(ids[i][j],{h:height,top:PF.T(PF.xs[j]),base:PF.foundTop[j]+PF.bh});
   }
  }
  let index=0;
@@ -1263,9 +1272,11 @@ function drawPillarDetails(parent){
   const waitCutCm=Math.round(v.blockHeight+lapCm+waitBendCm);
   const lineEnd=waitX+(waits.length-1)*24+waitBend+30;
   ln(xH-30,top,lineEnd,top,'#7e9bb3',.8);ln(xH-30,bottom,lineEnd,bottom,gold,1.5);ln(xH-30,waitBaseY,lineEnd,waitBaseY,'#7e9bb3',1);
-  txt(lineEnd+4,top+4,v.variable?'TOPO DO MURO (NÍVEL NO QUADRO)':`NÍVEL ${levelFmt(v.height)} · TOPO DO MURO`,9,gold);
-  txt(lineEnd+4,bottom+4,v.variable?`TOPO ${v.noBlock?v.fndDa:'DO BLOCO'} (NÍVEL NO QUADRO)`:v.noBlock?`NÍVEL +0,00 · TOPO ${v.fndDa}`:'NÍVEL +0,00 · TOPO DO BLOCO',9,gold);
-  txt(lineEnd+4,waitBaseY+4,v.variable?(v.noBlock?`PONTA DAS ESPERAS (${maxEmbed} cm ABAIXO DO TOPO DA FUNDAÇÃO)`:`FUNDO DO BLOCO (${v.blockHeight} cm ABAIXO DO TOPO)`):v.noBlock?`NÍVEL ${levelFmt(-maxEmbed)} · PONTA DAS ESPERAS (80Ø)`:`NÍVEL ${levelFmt(-v.blockHeight)} · FUNDO DO BLOCO`,9,gold);
+  // Níveis: +0,00 = fundo da VB; o topo da fundação coincide com o topo da VB.
+  const inst=[...v.inst.values()],i0=inst[0],same=inst.every(q=>q.top===i0.top&&q.base===i0.base),fndTxt=v.noBlock?v.fndDa:'DO BLOCO';
+  txt(lineEnd+4,top+4,same?`NÍVEL ${levelFmt(i0.top)} · TOPO DO MURO`:'TOPO DO MURO (NÍVEL NO QUADRO)',9,gold);
+  txt(lineEnd+4,bottom+4,same?`NÍVEL ${levelFmt(i0.base)} · TOPO ${fndTxt} = TOPO DA VB`:`TOPO ${fndTxt} = TOPO DA VB (NÍVEL NO QUADRO)`,9,gold);
+  txt(lineEnd+4,waitBaseY+4,v.noBlock?(same?`NÍVEL ${levelFmt(i0.base-maxEmbed)} · PONTA DAS ESPERAS (80Ø)`:`PONTA DAS ESPERAS (${maxEmbed} cm ABAIXO DO TOPO DA FUNDAÇÃO)`):(same?`NÍVEL ${levelFmt(i0.base-v.blockHeight)} · FUNDO DO BLOCO`:`FUNDO DO BLOCO (${v.blockHeight} cm ABAIXO DO TOPO)`),9,gold);
   if(v.noBlock){el('rect',{x:xH-6,y:bottom,width:(waitX+(waits.length-1)*24+20)-(xH-6),height:maxEmbed*sc,fill:'#c9aa7d','fill-opacity':.07,stroke:'#c9aa7d','stroke-width':.6,'stroke-dasharray':'5 3'},g);txt(xH,bottom+maxEmbed*sc/2,v.fndName,9,'#c9aa7d')}
   // Uma barra isolada por posição (bitola) entre as vistas.
   const barLength=Math.max(0,v.height-pillarArms.N2.topCover-pillarArms.N2.bottomCover);
@@ -1287,13 +1298,13 @@ function drawPillarDetails(parent){
   });
   // Notas do pilar: um único bloco de texto, abaixo de todo o desenho.
   ty=Math.max(ty+30,waitBaseY+48);
-  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.noBlock?`80Ø RETOS ${v.fndNa} (SEM DOBRA)`:`${v.blockHeight} cm NO BLOCO`} + TRANSPASSE ${pillarArms.N3.lapFactor}Ø${v.noBlock?'':` + DOBRA ${waitBendCm} cm`}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.variable?'H VARIÁVEL (VER QUADRO)':v.height+' cm'} (VB + ALVENARIA)${v.noBlock?' · APOIO DIRETO '+v.fndNa+' (SEM BLOCO)':''}`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
+  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.noBlock?`80Ø RETOS ${v.fndNa} (SEM DOBRA)`:`${v.blockHeight} cm NO BLOCO`} + TRANSPASSE ${pillarArms.N3.lapFactor}Ø${v.noBlock?'':` + DOBRA ${waitBendCm} cm`}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.variable?'H VARIÁVEL (VER QUADRO)':v.height+' cm'} (ACIMA DA VB) · VB EMBUTIDA NA FUNDAÇÃO${v.noBlock?' · APOIO DIRETO '+v.fndNa+' (SEM BLOCO)':''}`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
   // QUADRO DE PILARES (altura variável): uma linha por pilar, com as posições e comprimentos
   // de cada um; é daqui que a relação de aço lê as quantidades (1 pilar por linha).
   if(v.variable){
    const QU=unitFor(detailScale[code]||25),F=c=>(c/CAP*QU).toFixed(2),qt=(x,y,str,attrs={})=>text(x,y,str,ink,9,g,{'data-pt':'1','font-size':F(2.5),...attrs});
    ty+=6*QU;txt(sx-12,ty,'QUADRO DE PILARES',12,cyan,{'font-weight':'bold'});ty+=4*QU;
-   const cols=[0,16,30,46,62,118,170,222].map(v=>sx-12+v*QU),head=['PILAR','H (cm)','TOPO','BASE','LONGITUDINAIS','ESTRIBOS','ESPERAS'];
+   const cols=[0,16,30,46,62,118,170,222].map(v=>sx-12+v*QU),head=['PILAR','H (cm)','TOPO','TOPO FUND.','LONGITUDINAIS','ESTRIBOS','ESPERAS'];
    const rowsQ=[...v.inst].sort((p,q)=>p[0]-q[0]);
    const lineH=5.4*QU,heights=rowsQ.map(()=>Math.max(groups.length,waits.length,1)*lineH+2*QU),tblH=7*QU+heights.reduce((a,b)=>a+b,0);
    el('rect',{x:cols[0],y:ty,width:cols[7]-cols[0],height:tblH,fill:'none',stroke:'#8198a8','stroke-width':.8},g);
@@ -1541,7 +1552,7 @@ const SHEET_PLAN=[
  {kind:'planta',scales:[50,75,100],newSheet:true,match:c=>c==='PLANTA'},
  {kind:'fundacoes',scales:[25,50,75],newSheet:true,match:c=>/^[TBE]\d+$/.test(c)},
  {kind:'pilares',scales:[25,50,75],newSheet:false,match:c=>/^P\d+$/.test(c)},
- {kind:'vigas',scales:[50,75,100],newSheet:true,match:c=>/^(V[BT]\d+(\.\d+)?|VI\d+-\d+)$/.test(c)},
+ {kind:'vigas',scales:[50,75,100],newSheet:true,match:c=>/^(V[BT]\d+|VI\d+-\d+)$/.test(c)},
  {kind:'elevacoes',scales:[50,75,100],newSheet:true,match:c=>/^EL\d+$/.test(c)}
 ];
 function sceneRoot(){return svg.querySelector('[data-scene]')}
