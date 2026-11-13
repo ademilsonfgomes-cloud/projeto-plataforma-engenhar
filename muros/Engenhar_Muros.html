@@ -55,7 +55,7 @@ main.ribbons-min #tubuloRibbon,main.ribbons-min #blockRibbon,main.ribbons-min #w
 <label>Pilar — lado B (cm) <input id="wallColY" type="number" min="10" value="40" style="width:44px"></label>
 <label>Altura muro (cm) <input id="wallHeight" type="number" min="30" value="250" style="width:52px"></label>
 <label hidden>Declive (%) <input id="wallSlope" type="number" step="0.1" value="0" style="width:48px"></label><button id="profileBtn" type="button" style="background:#f7d979;border:1px solid #c79b26;font-weight:bold" title="Topo e base do arrimo pilar a pilar: topo inclinado, base em degraus">▤ Perfil do arrimo</button>
-<label title="Nível do aterro no tardoz, em cm, a partir do +0,00 (topo dos blocos). Vazio = topo do muro">Nível aterro (cm) <input id="wallSoilLevel" type="number" step="1" placeholder="topo" style="width:52px"></label><label title="Nível do terreno na face externa, em cm, a partir do +0,00. Vazio = topo da VB">Nível frente (cm) <input id="wallFrontLevel" type="number" step="1" placeholder="VB" style="width:52px"></label><label>Solo <select id="wallSoil"><option value="left">À esquerda do traçado</option><option value="right">À direita do traçado</option><option value="none">Não definido</option></select></label>
+<label title="Nível do aterro no tardoz, em cm, a partir do ±0,00 (topo da VB). Vazio = topo do muro">Nível aterro (cm) <input id="wallSoilLevel" type="number" step="1" placeholder="topo" style="width:52px"></label><label title="Nível do terreno na face externa, em cm, a partir do ±0,00 (topo da VB). Vazio = topo da VB">Nível frente (cm) <input id="wallFrontLevel" type="number" step="1" placeholder="VB" style="width:52px"></label><label>Solo <select id="wallSoil"><option value="left">À esquerda do traçado</option><option value="right">À direita do traçado</option><option value="none">Não definido</option></select></label>
 <span style="font-size:10px;color:#48647a">Clique o início e depois o ponto final: confirme a medida ou digite um comprimento na caixa do CAD. Enter conclui; Esc cancela. Dimensões em planta, sem dimensionamento estrutural.</span>
 </div>
 <div id="sheetRibbon" hidden><strong>PRANCHAS NO CAD</strong><label>Formato <select id="sheetFormat"><option>A0</option><option selected>A1</option><option>A2</option><option>A3</option></select></label><label>Escala visual <select id="sheetScale"><option value="25">1:25</option><option value="50" selected>1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><label>Orientação <select id="sheetOrientation"><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label><button id="sheetCreate">+ Nova prancha</button><label>Ativa <select id="sheetActive"></select></label><button id="sheetFinish">Concluir prancha</button><button id="sheetReopen">Reabrir</button><button id="sheetDelete">Excluir prancha</button><button id="sheetClose">Ocultar faixa</button><span style="color:#4d667a">Clique na faixa superior da folha para mudar seu formato. Novas pranchas são adicionadas à direita; arraste a borda para mover.</span></div>
@@ -690,7 +690,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  const lgx=px+ww+10*U;let lgy=py+6*U;
  for(const [k,txt] of [['x',`${arm.x.pos} — ${q('x')} ESTR. VERTICAIS ∥ X · c/${fmt(sp.x)}`],['y',`${arm.y.pos} — ${q('y')} ESTR. VERTICAIS ∥ Y · c/${fmt(sp.y)}`],['c',`${arm.c.pos} — ${q('c')} ESTR. HORIZONTAIS · c/${fmt(sp.c)}`],['p','PILAR E ESPERAS (VER PILAR)']]){
   line(lgx,lgy-1.2*U,lgx+5*U,lgy-1.2*U,k==='p'?'#f06b76':col[k],1.4,blockG);text(lgx+7*U,lgy,txt,ink,8,blockG);lgy+=6*U}
- text(lgx,lgy,`TUBULÃO Ø${B.pile} (TRACEJADO)`,grey,8,blockG);
+ text(lgx,lgy,`${Number($('pileKind')?.value)===1?'ESTACA':'TUBULÃO'} Ø${B.pile} (TRACEJADO)`,grey,8,blockG);
  // ---------- CORTES ----------
  // Esperas mostradas no comprimento real acima do bloco (transpasse adotado × Ø).
  const waitLap=Math.round(pillarArms.N3.lapFactor*waitDia),stub=(waitLap+14)*sc,cutTop=py+hh+33*U,blockTop=cutTop+9*U+stub,blockBot=blockTop+H,lastroBot=blockBot+LASTRO*sc,pileBot=lastroBot+18*U;
@@ -760,7 +760,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   text(fx,fTop+maxH+23.5*U,bp.same&&k==='x'?`(${q('x')} EM X + ${q('y')} EM Y)`:tag,ink,8,blockG);
   const labW=String(t.textContent).length*(3.5/CAP)*U*.6;fx+=Math.max(w+20*U,labW)+12*U;
  }
- text(bx,fTop+maxH+31*U,`COBRIMENTO ${B.cover} cm · COSTELAS POR FORA DOS ESTRIBOS VERTICAIS · LASTRO ${LASTRO} cm · TUBULÃO EMBUTIDO ${EMB} cm`,'#a9c7da',8,blockG);
+ text(bx,fTop+maxH+31*U,`COBRIMENTO ${B.cover} cm · COSTELAS POR FORA DOS ESTRIBOS VERTICAIS · LASTRO ${LASTRO} cm · ${Number($('pileKind')?.value)===1?'ESTACA EMBUTIDA':'TUBULÃO EMBUTIDO'} ${EMB} cm`,'#a9c7da',8,blockG);
  el('rect',{x:bx-12,y:12,width:Math.max(fx-bx,lvX+24*U-bx),height:fTop+maxH+34*U-12,fill:'transparent','pointer-events':'all','data-block-hit':'1'},blockG);
 }
 
@@ -977,7 +977,7 @@ function drawWallElevations(parent){
   }
   // Níveis da base por vão quando há degraus.
   // Nome de cada VB (por nível) dentro da própria faixa da viga, com o nível do fundo.
-  if(!P.flatBase)for(const r of vbRuns(i))t(X((xs[r.a]+xs[r.b])/2),Y(r.base+bh/2)+1.25*U,`${vbN.get(`${i}:${r.r}`)} (${levelFmt(r.base)})`,gold,8,{'text-anchor':'middle','font-weight':'bold'});
+  if(!P.flatBase)for(const r of vbRuns(i))t(X((xs[r.a]+xs[r.b])/2),Y(r.base+bh/2)+1.25*U,`${vbN.get(`${i}:${r.r}`)} ${levelFmt(r.base+bh)}`,gold,8,{'text-anchor':'middle','font-weight':'bold'});
   // Cotas horizontais: eixo a eixo e total (cm), acima do ponto mais alto.
   for(let j=0;j<n-1;j++)dimH(axisX[j],axisX[j+1],top-9*U,Y(Math.max(T(xs[j]),T(xs[j+1]))),cm(L/(n-1)),g);
   dimH(X(0),X(L),top-18*U,top,cm(L),g,n>2&&(n-1)%2===0?(axisX[Math.floor((n-1)/2)-1]+axisX[Math.floor((n-1)/2)])/2:undefined);
@@ -997,7 +997,7 @@ function drawWallElevations(parent){
   const level=(yy,cmv,desc)=>{const lx=x-26*U;ln(lx-44*U,yy,lx,yy,gold,.7);path(`M${lx-6*U} ${yy} l${-1.8*U} ${-3*U} h${3.6*U} z`,gold,gold,.6,g);text(lx-9*U,yy-1.2*U,levelFmt(cmv),gold,TF(2.5),g,{'text-anchor':'end','font-weight':'bold','data-pt':'1'});text(lx-44*U,yy+4.6*U,desc,gold,TF(2.5),g,{'data-pt':'1'})};
   level(Y(zt0),zt0,'TOPO DO MURO');level(Y(z0+bh),z0+bh,'TOPO DA VB = TOPO DA FUNDAÇÃO');
   // Terreno: aterro no tardoz acompanha o topo (ou nível informado); face externa por vão.
-  const soilV=profileNum(d.wallSoilLevel),frontV=profileNum(d.wallFrontLevel);
+  const soilV=levelIn(d.wallSoilLevel),frontV=levelIn(d.wallFrontLevel);
   if(soilV==null){const ps=topLine(0,L,0);path('M'+ps.map(q=>q.join(' ')).join(' L'),earth,'none',1.1,g,{'stroke-dasharray':'10 4'});t(X(L)+24*U,Y(T(L))-1.2*U,`NT ATERRO (TARDOZ) ${P.flatTop?levelFmt(T(L)):'ACOMPANHA O TOPO'}`,earth,8)}
   else{ln(X(0)-8,Y(soilV),X(L)+8,Y(soilV),earth,1.1,{'stroke-dasharray':'10 4'});t(X(L)+24*U,Y(soilV)-1.2*U,`NT ATERRO (TARDOZ) ${levelFmt(soilV)}`,earth,8)}
   for(let k=0;k<n-1;k++){const zf=frontV==null?spanBase[k]+bh:frontV,yF=Y(zf),xa=k===0?X(xs[k])-30:X(xs[k]),xb=k===n-2?X(xs[k+1])+30:X(xs[k+1]);ln(xa,yF,xb,yF,earth,1.4);for(let xx=xa+4;xx<xb;xx+=14)ln(xx,yF,xx-7,yF+7,earth,.6);if(k<n-2&&frontV==null&&spanBase[k+1]!==spanBase[k])ln(xb,yF,xb,Y(spanBase[k+1]+bh),earth,1.4)}
@@ -1501,16 +1501,16 @@ function profileOpen(){
  const i=wallActive,P=wallProfile(i),ids=pillarIds()[i]||[];
  $('profileTitle').textContent=`Perfil do arrimo ${i+1} — ${ids.length} pilares, ${String(Math.round(P.L)/100).replace('.',',')} m`;
  const box=$('profileRows');box.replaceChildren();
- const head=document.createElement('div');head.style.cssText='display:grid;grid-template-columns:70px 150px 1fr;gap:8px;font-weight:bold;padding:4px';head.innerHTML='<span>Pilar</span><span>Nível do topo (cm)</span><span>Base do vão até o próximo pilar (cm)</span>';box.append(head);
+ const head=document.createElement('div');head.style.cssText='display:grid;grid-template-columns:70px 150px 1fr;gap:8px;font-weight:bold;padding:4px';head.innerHTML='<span>Pilar</span><span>Topo do muro (cm)</span><span>Topo da VB no vão até o próximo pilar (cm) · ±0 = topo da VB</span>';box.append(head);
  ids.forEach((pid,j)=>{const r=document.createElement('div');r.style.cssText='display:grid;grid-template-columns:70px 150px 1fr;gap:8px;align-items:center;padding:3px 4px;border-top:1px solid #c8d9e6';
   const a=document.createElement('b');a.textContent='P'+pid;
-  const tp=document.createElement('input');tp.type='number';tp.step='1';tp.value=Math.round(P.top[j]);tp.dataset.profTop=j;tp.style.width='110px';
+  const tp=document.createElement('input');tp.type='number';tp.step='1';tp.value=Math.round(P.top[j]-levelRef());tp.dataset.profTop=j;tp.style.width='110px';
   const bs=document.createElement('input');bs.type='number';bs.step=String(P.course);bs.style.width='110px';
   if(j<ids.length-1){bs.value=P.spanBase[j];bs.dataset.profBase=j;r.append(a,tp,bs)}else{const sp=document.createElement('span');sp.textContent='—';r.append(a,tp,sp)}
   box.append(r)});
  for(const sel of [$('profFrom'),$('profTo')]){sel.replaceChildren();ids.forEach((pid,j)=>{const o=document.createElement('option');o.value=j;o.textContent='P'+pid;sel.append(o)})}
- $('profFrom').value=0;$('profTo').value=ids.length-1;$('profToTop').value=Math.round(P.top[ids.length-1]);
- const pts=$('profPts');pts.replaceChildren();(P.pr.pts||[]).forEach(q=>profileAddPoint(q.d/100,q.z));
+ $('profFrom').value=0;$('profTo').value=ids.length-1;$('profToTop').value=Math.round(P.top[ids.length-1]-levelRef());
+ const pts=$('profPts');pts.replaceChildren();(P.pr.pts||[]).forEach(q=>profileAddPoint(q.d/100,q.z-levelRef()));
  $('profileDialog').showModal();
 }
 function profileAddPoint(dm='',z=''){const r=document.createElement('div');r.style.cssText='display:flex;gap:6px;align-items:center;margin-top:5px';r.innerHTML='a <input type="number" step="0.01" style="width:70px" data-pt-d> m do início → topo <input type="number" step="1" style="width:70px" data-pt-z> cm <button type="button">✕</button>';r.querySelector('[data-pt-d]').value=dm;r.querySelector('[data-pt-z]').value=z;r.querySelector('button').onclick=()=>r.remove();$('profPts').append(r)}
@@ -1518,12 +1518,12 @@ $('profileBtn').onclick=profileOpen;
 $('profAddPt').onclick=()=>profileAddPoint();
 $('profCancel').onclick=()=>$('profileDialog').close();
 $('profApplyRamp').onclick=()=>{const a=Number($('profFrom').value),b=Number($('profTo').value),zb=Number($('profToTop').value);if(!(b>a)||!Number.isFinite(zb))return;const ins=[...$('profileRows').querySelectorAll('[data-prof-top]')];const za=Number(ins[a].value);for(let j=a;j<=b;j++)ins[j].value=Math.round(za+(zb-za)*(j-a)/(b-a))};
-$('profFlat').onclick=()=>{const P=wallProfile(wallActive);$('profileRows').querySelectorAll('[data-prof-top]').forEach(x=>x.value=P.h+P.bh);$('profileRows').querySelectorAll('[data-prof-base]').forEach(x=>x.value=0);$('profPts').replaceChildren()};
+$('profFlat').onclick=()=>{const P=wallProfile(wallActive);$('profileRows').querySelectorAll('[data-prof-top]').forEach(x=>x.value=P.h+P.bh-levelRef());$('profileRows').querySelectorAll('[data-prof-base]').forEach(x=>x.value=0);$('profPts').replaceChildren()};
 $('profOk').onclick=()=>{
  const i=wallActive,seg=wallSegments[i];if(!seg)return;
- const top=[...$('profileRows').querySelectorAll('[data-prof-top]')].map(x=>profileNum(x.value));
+ const top=[...$('profileRows').querySelectorAll('[data-prof-top]')].map(x=>levelIn(x.value));
  const base=[...$('profileRows').querySelectorAll('[data-prof-base]')].map(x=>profileNum(x.value)??0);
- const pts=[...$('profPts').children].map(r=>({d:Number(r.querySelector('[data-pt-d]').value)*100,z:Number(r.querySelector('[data-pt-z]').value)})).filter(q=>Number.isFinite(q.d)&&q.d>0&&Number.isFinite(q.z));
+ const pts=[...$('profPts').children].map(r=>({d:Number(r.querySelector('[data-pt-d]').value)*100,z:Number(r.querySelector('[data-pt-z]').value)+levelRef()})).filter(q=>Number.isFinite(q.d)&&q.d>0&&Number.isFinite(q.z));
  if(top.some(v=>v==null)){status('Informe o nível do topo de todos os pilares.');return}
  seg.profile={top,base,pts};
  // Pilar de canto: o mesmo nível de topo vale para os dois arrimos que se encontram nele.
@@ -1531,7 +1531,7 @@ $('profOk').onclick=()=>{
  if(prev){const Pp=wallProfile(i-1);prev.profile={top:[...Pp.top],base:[...Pp.spanBase],pts:Pp.pr.pts||[],...(prev.profile||{})};prev.profile.top=[...(prev.profile.top||Pp.top)];prev.profile.top[Pp.n-1]=top[0]}
  if(next){const Pn=wallProfile(i+1);next.profile={top:[...Pn.top],base:[...Pn.spanBase],pts:Pn.pr.pts||[],...(next.profile||{})};next.profile.top=[...(next.profile.top||Pn.top)];next.profile.top[0]=top[top.length-1]}
  $('profileDialog').close();draw();organizeSheets(true);
- const P=wallProfile(i);status(`Perfil do arrimo ${i+1} aplicado: topo ${P.flatTop?'nivelado':'variável ('+levelFmt(Math.min(...P.top))+' a '+levelFmt(Math.max(...P.top))+')'}, base ${P.flatBase?'nivelada':'em degraus ('+[...new Set(P.spanBase)].map(levelFmt).join(' / ')+')'}. Pranchas reorganizadas.`);
+ const P=wallProfile(i);status(`Perfil do arrimo ${i+1} aplicado: topo ${P.flatTop?'nivelado':'variável ('+levelFmt(Math.min(...P.top))+' a '+levelFmt(Math.max(...P.top))+')'}, base ${P.flatBase?'nivelada':'em degraus (topo da VB '+[...new Set(P.spanBase)].map(z=>levelFmt(z+P.bh)).join(' / ')+')'}. Pranchas reorganizadas.`);
 };
 wallIds.forEach(id=>$(id).addEventListener('input',wallUpdateActive));
 const refreshAllDetails=()=>{foundationFreezeDefaults();const existingBlockVariants=Object.keys(foundationCounts('block')).some(c=>c!=='B1');if(existingBlockVariants)$('blockEnabled').checked=true;draw();const t=foundationCounts('pile'),b=foundationCounts('block');const codes=Object.keys(t).concat(Object.keys(b)).filter(c=>c!=='T1'&&c!=='B1');const rendered=visibleFoundationCodes();const missing=codes.filter(c=>!rendered.includes(c));const last=codes.filter(c=>rendered.includes(c)).at(-1);if(last)revealFoundationDetail(last);status((missing.length?'ATENÇÃO: desenho não gerado: '+missing.join(', ')+' | ':'')+'Detalhamentos: '+Object.entries(t).map(([k,v])=>k+' '+v+' un.').concat(Object.entries(b).map(([k,v])=>k+' '+v+' un.')).join(' | ')+' · Novos desenhos no CAD: '+rendered.join(', ')+(last?' · Exibindo '+last:''));};$('refresh').onclick=refreshAllDetails;$('refreshSteel').onclick=()=>{draw();status('V205: numeração única por prancha e tabelas atualizadas. Conferir quantitativos e comprimentos preliminares antes do uso executivo.');};$('refreshNear').onclick=refreshAllDetails;$('foundationRefresh').onclick=refreshAllDetails;
@@ -1687,7 +1687,11 @@ function declutterText(root){
 // Numeração global dos pilares: a mesma em planta, elevações e detalhes.
 function pillarIds(){const map=new Map();let next=1;const out=[];for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));const row=[];for(let j=0;j<n;j++){const t=j/(n-1);const k=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78});if(!map.has(k))map.set(k,next++);row.push(map.get(k))}out.push(row)}return out}
 function idRange(list){const v=[...new Set(list)].sort((a,b)=>a-b);const parts=[];for(let i=0;i<v.length;){let j=i;while(j+1<v.length&&v[j+1]===v[j]+1)j++;parts.push(j-i>=2?`P${v[i]} A P${v[j]}`:j>i?`P${v[i]}, P${v[j]}`:`P${v[i]}`);i=j+1}return parts.join(', ')}
-const levelFmt=cm=>(cm>=0?'+':'−')+(Math.abs(cm)/100).toFixed(2).replace('.',',');
+const // ±0,00 = TOPO DA VB (a VB fica abaixo do zero). Internamente os níveis seguem medidos a partir do
+// fundo da VB de referência; levelRef() faz a conversão para exibição e entrada de dados.
+levelRef=()=>Math.max(10,Number(wallSegments?.[0]?.parameters?.wallBeamHeight)||Number(document.getElementById('wallBeamHeight')?.value)||40),
+levelFmt=cm=>{const v=Math.round(cm-levelRef());return v===0?'±0,00':(v>0?'+':'−')+(Math.abs(v)/100).toFixed(2).replace('.',',')},
+levelIn=v=>{const n=profileNum(v);return n==null?null:n+levelRef()};
 function groupCode(g){if(!g||!g.getAttribute)return null;if(g.hasAttribute('data-wall-group'))return 'PLANTA';if(g.hasAttribute('data-tubulo-group'))return 'T1';if(g.hasAttribute('data-block-group'))return 'B1';return g.getAttribute('data-extra-code')}
 function groupVisible(g){return g.style.display!=='none'&&g.getAttribute('display')!=='none'}
 function detailGroups(root=sceneRoot()){if(!root)return [];return [...root.children].filter(g=>groupCode(g)&&groupVisible(g))}
@@ -2481,7 +2485,7 @@ function calcEarth(){
  for(let i=0;i<wallPoints.length-1;i++){
   if(S.wall!=='all'&&String(i)!==String(S.wall))continue;
   const P=wallProfile(i);if(!P)continue;
-  const soilV=profileNum(P.d.wallSoilLevel),frontV=profileNum(P.d.wallFrontLevel),soil=x=>soilV==null?P.T(x):soilV;
+  const soilV=levelIn(P.d.wallSoilLevel),frontV=levelIn(P.d.wallFrontLevel),soil=x=>soilV==null?P.T(x):soilV;
   const dx0=P.b.x-P.a.x,dy0=P.b.y-P.a.y,sgn=P.d.wallSoil==='right'?-1:1,nx=-dy0/P.L*sgn,ny=dx0/P.L*sgn;
   for(let j=0;j<P.n;j++){
    const xa=j>0?(P.xs[j-1]+P.xs[j])/2:0,xb=j<P.n-1?(P.xs[j]+P.xs[j+1])/2:P.L;
@@ -2722,7 +2726,7 @@ function calcBeams(){
  for(let i=0;i<wallPoints.length-1;i++){
   if(S.wall!=='all'&&String(i)!==String(S.wall))continue;
   const P=wallProfile(i);if(!P)continue;
-  const soilV=profileNum(P.d.wallSoilLevel),frontV=profileNum(P.d.wallFrontLevel),soil=x=>soilV==null?P.T(x):soilV;
+  const soilV=levelIn(P.d.wallSoilLevel),frontV=levelIn(P.d.wallFrontLevel),soil=x=>soilV==null?P.T(x):soilV;
   const b=Math.max(10,Number(P.d.wallBeamWidth)||20),bh=P.bh,nS=P.n-1,cf=calcContCoef(nS),zones=elevationEnabled?elevationBeamZones(P):[],hasTop=!!(elevationEnabled&&ES.top);
   const runs=vbRuns(i);
   for(let k=0;k<nS;k++){
