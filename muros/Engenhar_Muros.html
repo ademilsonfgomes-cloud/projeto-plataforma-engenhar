@@ -3153,11 +3153,8 @@ function calcTabOpt(){
 // ---------- Memória de cálculo em PDF (V248) ----------
 // Documento A4 com capa, premissas e as memórias das abas (pilar/fundação/viga mais solicitados),
 // verificações e quantitativo. Abre em nova janela para "Imprimir / Salvar como PDF".
-function calcReportHtml(){
- const S=calcSettings,sv={tab:S.tab,sel:S.sel,wall:S.wall};S.wall='all';S.sel=null;
- const clean=h=>String(h||'').replace(/<button[^>]*>.*?<\/button>/gs,'').replace(/<input[^>]*>/g,'');
- let parts;try{parts={emp:clean(calcTabEmpuxo()),fun:clean(calcTabFundacao()),pil:clean(calcTabPilar()),vig:clean(calcTabViga()),res:clean(calcTabResumo()),qua:clean(calcTabQuant())}}finally{Object.assign(S,sv)}
- const sd=stampData||{},esc=t=>String(t??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function calcReportPremisses(){
+ const S=calcSettings,esc=t=>String(t??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
  const modeTxt=S.mode==='k0'?'Repouso (K0)':S.mode==='coulomb'?'Ativo — Coulomb (δ = 2/3·φ)':'Ativo — Rankine (δ = 0)';
  const prem=[['Peso específico do solo γ',`${calcFmt(S.gamma,1)} kN/m³`],['Ângulo de atrito φ',`${calcFmt(S.phi,1)}°`],['Coesão c',`${calcFmt(S.c,1)} kPa`],['Empuxo',modeTxt],
   ['Talude do aterro β',`${calcFmt(S.beta||0,1)}°`],['Sobrecarga q',`${calcFmt(S.q,1)} kN/m² ${S.qDist>0?`a ${calcFmt(S.qDist)} m do tardoz`:'junto ao tardoz'}`],
@@ -3166,8 +3163,33 @@ function calcReportHtml(){
   ['Fundação',`FS tombamento ≥ ${calcFmt(S.fsTomb,1)} · FS deslizamento ≥ ${calcFmt(S.fsDesl,1)} · FS vertical ${calcFmt(S.fsVert,1)} · prof. mínima ${calcFmt(S.minDepth,1)} m`],
   ['Sondagem (SPT por metro)',S.spt?esc(S.spt)+` · solo: ${(CALC_SOILS[S.soil]||CALC_SOILS.areia).t}`:'não informada'],
   ['Alvenaria',`${S.alvModel==='faixas'?'vence na horizontal entre pilares':'vence na vertical entre as vigas'} · ${calcFmt(S.gAlv,1)} kN/m²`]];
- const walls=wallSegments.map((s,i)=>{const P=wallProfile(i),d=s.parameters;return `<tr><td>Arrimo ${i+1}</td><td>${calcFmt(P.L/100)} m</td><td>${P.n}</td><td>${d.wallColX}×${d.wallColY} cm</td><td>${calcFmt(d.wallHeight/100)} m</td><td>${d.wallBeamWidth}×${d.wallBeamHeight} cm</td><td>${d.wallSoilLevel?levelFmt(levelIn(d.wallSoilLevel)):'topo do muro'}</td></tr>`}).join('');
- const sec=(n,t,h)=>`<section><h2>${n}. ${t}</h2>${h}</section>`;
+ return `<table class="prem">${prem.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`;
+}
+function calcReportNorms(){
+ return `<table class="prem"><thead><tr><th style="text-align:left">Documento</th><th style="text-align:left">Aplicação nesta memória</th></tr></thead><tbody>${[
+  ['ABNT NBR 6118:2023 — Projeto de estruturas de concreto','Materiais e coeficientes (seções 8 e 12); cobrimento e classe de agressividade (seção 7); aderência, ancoragem e emendas por transpasse (9.3 a 9.5); combinações (11.8); limites de deslocamento e de abertura de fissuras (13.3 e 13.4); flexão, cisalhamento — modelo I — e ELS de vigas e pilares (seção 17, incluindo armadura de pele); detalhamento de vigas e pilares (seção 18)'],
+  ['ABNT NBR 6122:2019 — Projeto e execução de fundações','Fatores de segurança das fundações profundas, métodos semiempíricos de capacidade de carga, limitação da parcela de ponta em estacas escavadas e armadura mínima de estacas (conferir a tabela para o tipo de estaca adotado)'],
+  ['ABNT NBR 8681:2003 — Ações e segurança nas estruturas','Classificação das ações (empuxo permanente; sobrecarga variável), coeficientes γf e fatores de combinação ψ'],
+  ['ABNT NBR 6484:2020 — Sondagem SPT','Índices N utilizados na capacidade de carga'],
+  ['ABNT NBR 16868-1:2020 — Alvenaria estrutural','Não verificada nesta memória (compressão e cisalhamento da alvenaria)'],
+  ['Rankine (1857) · Coulomb (1776)','Coeficientes de empuxo ativo; repouso K0 = 1 − sen φ (Jaky)'],
+  ['DIN 4085','Distribuição da sobrecarga afastada do tardoz'],
+  ['Broms (1964)','Resistência lateral de estaca curta em solo não coesivo'],
+  ['Décourt & Quaresma (1978, 1996)','Capacidade de carga de estacas pelo SPT'],
+  ['Branson (1963)','Inércia equivalente para a flecha (adotada pela NBR 6118)']].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</tbody></table>`;
+}
+function calcReportCombos(){
+ const S=calcSettings;
+ return `<table class="prem"><thead><tr><th style="text-align:left">Combinação</th><th style="text-align:left">Expressão adotada</th><th style="text-align:left">Uso</th></tr></thead><tbody>
+  <tr><td>ELU — normal</td><td>Fd = γg·E(solo${S.water?' + água':''}) + γq·E(q) · γg = γq = ${calcFmt(S.gf,2)}</td><td>Flexão e cisalhamento de pilares, vigas, fuste e bloco; ancoragens</td></tr>
+  <tr><td>ELS — quase permanente</td><td>E(solo${S.water?' + água':''}) + ψ2·E(q) · ψ2 = ${calcFmt(Number(S.psi2??.3),2)}</td><td>Flecha no topo do pilar (com fluência)</td></tr>
+  <tr><td>ELS — frequente</td><td>E(solo${S.water?' + água':''}) + ψ1·E(q) · ψ1 = ${calcFmt(Number(S.psi1??.4),2)}</td><td>Abertura de fissuras</td></tr>
+  <tr><td>Estabilidade da fundação</td><td>Ações características (γ = 1,0) · FS tombamento ≥ ${calcFmt(S.fsTomb,1)} · FS deslizamento ≥ ${calcFmt(S.fsDesl,1)} · FS vertical ${calcFmt(S.fsVert,1)}</td><td>Broms; capacidade de carga (FS global)</td></tr>
+  </tbody></table><p class="calc-hint">E(·) = empuxo produzido pela parcela indicada. O empuxo de terra é tratado como ação permanente desfavorável; a sobrecarga sobre o aterro como ação variável.</p>`;
+}
+function calcReportShell(body){
+ const S=calcSettings,sd=stampData||{},esc=t=>String(t??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+ const toc=[...body.matchAll(/<h2>([^<]+)<\/h2>/g)].map(m=>`<li>${m[1]}</li>`).join('');
  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Memória de cálculo — ${esc(sd.contractor||'Muro de arrimo')}</title><style>
  @page{size:A4;margin:16mm 14mm}*{box-sizing:border-box}body{font:10.5pt Arial,Helvetica,sans-serif;color:#1a2a36;margin:0}
  .bar{position:sticky;top:0;background:#fff;padding:10px 16px;box-shadow:0 1px 6px #aab;display:flex;justify-content:space-between;align-items:center}.bar button{background:#286ead;color:#fff;border:0;border-radius:6px;padding:9px 14px;font-weight:bold;cursor:pointer}
@@ -3183,38 +3205,170 @@ function calcReportHtml(){
  .foot{margin-top:14px;font-size:8pt;color:#556;border-top:1px solid #ccd;padding-top:6px}
  .term{break-inside:avoid;margin-top:16px}.term p{font-size:9.5pt;text-align:justify;line-height:1.45}.sig td{text-align:left;font-size:9.5pt;padding:6px 8px}
  @media print{.bar{display:none}main{padding:0}}
+ h3{font-size:11pt;color:#2d6a9a;margin:12px 0 6px;border-left:4px solid #2d6a9a;padding-left:6px;break-after:avoid}
+ .row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;break-inside:avoid;margin:6px 0}.row svg{width:58mm;height:auto}.row svg.plot2{width:92mm}.row>svg:first-child:not(.plot){width:64mm}
+ .roww{break-inside:avoid;margin:6px 0}.roww svg{width:100%;height:auto;display:block;margin:4px 0}
+ .fig{margin:8px 0 10px;break-inside:avoid;text-align:center}.fig svg{width:100%;height:auto;max-height:160mm;border:1px solid #ccd}.fig figcaption{font-size:8.5pt;color:#445;margin-top:3px}
+ .toc{font-size:10pt;columns:2;margin:4px 0 0}.toc li{margin:2px 0}
  </style></head><body><div class="bar"><b>Memória de cálculo · Engenhar</b><button onclick="window.print()">Imprimir / Salvar como PDF</button></div><main>
  <div class="cover"><img src="${stampLogoData}" alt="Engenhar"><h1>MEMÓRIA DE CÁLCULO<br>MURO DE ARRIMO</h1><div class="sub">Empuxo · Fundação · Pilares · Vigas · Alvenaria armada</div>
  <table><tr><td>Contratante</td><td><b>${esc(sd.contractor||'—')}</b></td></tr><tr><td>Endereço</td><td>${esc([sd.address,sd.district,sd.city,sd.state].filter(Boolean).join(', ')||'—')}</td></tr>
  <tr><td>Responsável técnico</td><td>${esc(sd.responsible||'—')} · ${esc(sd.crea||'')}</td></tr><tr><td>Revisão / data</td><td>${esc(sd.revision||'00')} · ${esc(sd.date||new Date().toLocaleDateString('pt-BR'))}</td></tr></table></div>
- ${sec(1,'Geometria',`<table><thead><tr><th>Trecho</th><th>Comprimento</th><th>Pilares</th><th>Pilar</th><th>Altura do muro</th><th>VB</th><th>Aterro</th></tr></thead><tbody>${walls}</tbody></table><p class="calc-hint">Níveis em relação ao ±0,00 = topo da viga baldrame (VB).</p>`)}
- ${sec(2,'Premissas de cálculo',`<table class="prem">${prem.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`)}
- ${sec(3,'Normas e referências',`<table class="prem"><thead><tr><th style="text-align:left">Documento</th><th style="text-align:left">Aplicação nesta memória</th></tr></thead><tbody>${[
-  ['ABNT NBR 6118:2023 — Projeto de estruturas de concreto','Materiais e coeficientes (seções 8 e 12); cobrimento e classe de agressividade (seção 7); aderência, ancoragem e emendas por transpasse (9.3 a 9.5); combinações (11.8); limites de deslocamento e de abertura de fissuras (13.3 e 13.4); flexão, cisalhamento — modelo I — e ELS de vigas e pilares (seção 17, incluindo armadura de pele); detalhamento de vigas e pilares (seção 18)'],
-  ['ABNT NBR 6122:2019 — Projeto e execução de fundações','Fatores de segurança das fundações profundas, métodos semiempíricos de capacidade de carga, limitação da parcela de ponta em estacas escavadas e armadura mínima de estacas (conferir a tabela para o tipo de estaca adotado)'],
-  ['ABNT NBR 8681:2003 — Ações e segurança nas estruturas','Classificação das ações (empuxo permanente; sobrecarga variável), coeficientes γf e fatores de combinação ψ'],
-  ['ABNT NBR 6484:2020 — Sondagem SPT','Índices N utilizados na capacidade de carga'],
-  ['ABNT NBR 16868-1:2020 — Alvenaria estrutural','Não verificada nesta memória (compressão e cisalhamento da alvenaria)'],
-  ['Rankine (1857) · Coulomb (1776)','Coeficientes de empuxo ativo; repouso K0 = 1 − sen φ (Jaky)'],
-  ['DIN 4085','Distribuição da sobrecarga afastada do tardoz'],
-  ['Broms (1964)','Resistência lateral de estaca curta em solo não coesivo'],
-  ['Décourt & Quaresma (1978, 1996)','Capacidade de carga de estacas pelo SPT'],
-  ['Branson (1963)','Inércia equivalente para a flecha (adotada pela NBR 6118)']].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</tbody></table>`)}
- ${sec(4,'Combinações de ações',`<table class="prem"><thead><tr><th style="text-align:left">Combinação</th><th style="text-align:left">Expressão adotada</th><th style="text-align:left">Uso</th></tr></thead><tbody>
-  <tr><td>ELU — normal</td><td>Fd = γg·E(solo${S.water?' + água':''}) + γq·E(q) · γg = γq = ${calcFmt(S.gf,2)}</td><td>Flexão e cisalhamento de pilares, vigas, fuste e bloco; ancoragens</td></tr>
-  <tr><td>ELS — quase permanente</td><td>E(solo${S.water?' + água':''}) + ψ2·E(q) · ψ2 = ${calcFmt(Number(S.psi2??.3),2)}</td><td>Flecha no topo do pilar (com fluência)</td></tr>
-  <tr><td>ELS — frequente</td><td>E(solo${S.water?' + água':''}) + ψ1·E(q) · ψ1 = ${calcFmt(Number(S.psi1??.4),2)}</td><td>Abertura de fissuras</td></tr>
-  <tr><td>Estabilidade da fundação</td><td>Ações características (γ = 1,0) · FS tombamento ≥ ${calcFmt(S.fsTomb,1)} · FS deslizamento ≥ ${calcFmt(S.fsDesl,1)} · FS vertical ${calcFmt(S.fsVert,1)}</td><td>Broms; capacidade de carga (FS global)</td></tr>
-  </tbody></table><p class="calc-hint">E(·) = empuxo produzido pela parcela indicada. O empuxo de terra é tratado como ação permanente desfavorável; a sobrecarga sobre o aterro como ação variável.</p>`)}
- ${sec(5,'Empuxo de terra',parts.emp)}${sec(6,'Fundação',parts.fun)}${sec(7,'Pilares',parts.pil)}${sec(8,'Vigas e alvenaria',parts.vig)}
- ${sec(9,'Resumo das verificações',parts.res)}${sec(10,'Quantitativo',parts.qua)}
+ <section><h2 style="border:0">Sumário</h2><ol class="toc">${toc}<li>Termo de responsabilidade técnica</li></ol></section>
+ ${body}
  <section class="term"><h2>Termo de responsabilidade técnica</h2>
  <p>Declaro que esta memória de cálculo foi elaborada e conferida sob minha responsabilidade técnica, com base nas normas e nos métodos listados no item 3, nas premissas do item 2 e nos dados geotécnicos disponíveis. Alterações de geometria, de cargas, do tipo de solo ou do nível d'água em relação ao aqui considerado exigem a revisão do cálculo. A execução deve seguir as pranchas do projeto e as normas de execução aplicáveis.</p>
  <table class="sig"><tr><td>Responsável técnico: <b>${esc(sd.responsible||'')}</b></td><td>${esc(sd.crea||'CREA nº')}</td></tr>
  <tr><td>ART nº: ______________________________</td><td>Revisão ${esc(sd.revision||'00')} · ${esc(sd.date||new Date().toLocaleDateString('pt-BR'))}</td></tr>
  <tr><td colspan="2" style="height:22mm;vertical-align:bottom;text-align:center">_____________________________________________<br>Assinatura do responsável técnico</td></tr></table></section>
- <div class="foot">Memória gerada pelo Engenhar Muros. As memórias detalhadas referem-se ao elemento mais solicitado de cada grupo; as tabelas listam todos os elementos. Hipóteses e métodos indicados em cada item; resultados sujeitos à verificação do responsável técnico.</div>
+ <div class="foot">Memória gerada pelo Engenhar Muros. Elementos iguais (mesma geometria e mesmos esforços) são apresentados juntos; as tabelas listam todos os elementos. Hipóteses e métodos indicados em cada item; resultados sujeitos à verificação do responsável técnico.</div>
  </main></body></html>`;
+}
+// ---------- Memória de cálculo completa com figuras e diagramas (V259) ----------
+const RPT_C={ink:'#1a2a36',grid:'#d5dee6',k:'#2d6a9a',d:'#c0392b',f:'#e9eff4',g:'#3c8a3c',o:'#d68910'};
+const rf=(v,d=2)=>calcFmt(v,d);
+// Figura do projeto: clona o desenho do CAD (já em coordenadas da cena), converte para P&B.
+function rptFigure(code,caption){
+ const g=findGroup(code);if(!g)return '';const b=sceneBox(g);if(!b)return '';
+ const ns='http://www.w3.org/2000/svg',s2=document.createElementNS(ns,'svg'),pad=Math.max(b.w,b.h)*.02;
+ s2.setAttribute('xmlns',ns);s2.setAttribute('viewBox',`${b.x-pad} ${b.y-pad} ${b.w+2*pad} ${b.h+2*pad}`);s2.setAttribute('width','100%');
+ const cl=g.cloneNode(true);cl.querySelectorAll('[data-screen-only]').forEach(n=>n.remove());s2.appendChild(cl);
+ try{printify(s2,unitFor(detailScale[code]||50))}catch(e){}
+ const st=document.createElementNS(ns,'style');st.textContent='text{font-family:Arial,Helvetica,sans-serif}';s2.insertBefore(st,s2.firstChild);
+ return `<figure class="fig">${new XMLSerializer().serializeToString(s2)}<figcaption>${caption}</figcaption></figure>`;
+}
+// Diagrama vertical (valor × altura): séries [{pts:[[v,z]],color,label,fill}]
+function rptProfile(title,unit,H,series,opt={}){
+ const W=230,Hh=270,ml=34,mr=14,mt=34,mb=34,pw=W-ml-mr,ph=Hh-mt-mb;
+ const all=series.flatMap(s=>s.pts.map(p=>p[0])),vmax=Math.max(1e-9,...all.map(Math.abs)),neg=Math.min(0,...all)<-1e-9;
+ const X=v=>neg?ml+pw/2+v/vmax*pw/2:ml+v/vmax*pw,Y=z=>mt+ph-(z/H)*ph,x0=X(0);
+ let s=`<svg viewBox="0 0 ${W} ${Hh}" class="plot"><text x="${W/2}" y="13" text-anchor="middle" font-size="10.5" font-weight="bold" fill="${RPT_C.ink}">${title}</text><text x="${W/2}" y="25" text-anchor="middle" font-size="8" fill="#556">${unit}</text>`;
+ for(let k=0;k<=4;k++){const z=H*k/4,y=Y(z);s+=`<line x1="${ml}" y1="${y}" x2="${ml+pw}" y2="${y}" stroke="${RPT_C.grid}" stroke-width=".6"/><text x="${ml-3}" y="${y+3}" text-anchor="end" font-size="7.5" fill="#556">${rf(z,2)}</text>`}
+ s+=`<line x1="${x0}" y1="${mt}" x2="${x0}" y2="${mt+ph}" stroke="${RPT_C.ink}" stroke-width="1"/><text x="${ml-3}" y="${mt-6}" text-anchor="end" font-size="7.5" fill="#556">z (m)</text>`;
+ series.forEach((se,i)=>{const pts=se.pts.map(([v,z])=>`${X(v).toFixed(1)},${Y(z).toFixed(1)}`).join(' ');
+  if(se.fill)s+=`<polygon points="${X(0)},${Y(se.pts[0][1])} ${pts} ${X(0)},${Y(se.pts.at(-1)[1])}" fill="${se.color}" fill-opacity=".14" stroke="none"/>`;
+  s+=`<polyline points="${pts}" fill="none" stroke="${se.color}" stroke-width="1.6" ${se.dash?'stroke-dasharray="4 3"':''}/>`;
+  const m=se.pts.reduce((a,b)=>Math.abs(b[0])>Math.abs(a[0])?b:a,se.pts[0]);s+=`<text x="${X(m[0])+(m[0]>=0?3:-3)}" y="${Y(m[1])+(i?10:-3)}" text-anchor="${m[0]>=0?'start':'end'}" font-size="8" font-weight="bold" fill="${se.color}">${rf(m[0],opt.dec??2)}</text>`});
+ s+=`<g font-size="7.5">${series.map((se,i)=>`<line x1="${ml+i*95}" y1="${Hh-10}" x2="${ml+i*95+14}" y2="${Hh-10}" stroke="${se.color}" stroke-width="1.6" ${se.dash?'stroke-dasharray="4 3"':''}/><text x="${ml+i*95+18}" y="${Hh-7}" fill="${RPT_C.ink}">${se.label}</text>`).join('')}</g></svg>`;
+ return s;
+}
+// Diagrama horizontal ao longo de uma viga (momentos positivos para baixo).
+function rptBeam(title,unit,xs,series,supports){
+ const W=520,Hh=170,ml=30,mr=14,mt=30,mb=26,pw=W-ml-mr,ph=Hh-mt-mb,L=xs.at(-1)||1;
+ const all=series.flatMap(s=>s.v),vmax=Math.max(1e-9,...all.map(Math.abs)),X=x=>ml+x/L*pw,Y=v=>mt+ph/2+v/vmax*ph/2;
+ let s=`<svg viewBox="0 0 ${W} ${Hh}" class="plotw"><text x="${W/2}" y="13" text-anchor="middle" font-size="10.5" font-weight="bold" fill="${RPT_C.ink}">${title}</text><text x="${W/2}" y="24" text-anchor="middle" font-size="8" fill="#556">${unit}</text>`;
+ s+=`<line x1="${ml}" y1="${Y(0)}" x2="${ml+pw}" y2="${Y(0)}" stroke="${RPT_C.ink}"/>`;
+ for(const sx of supports)s+=`<path d="M${X(sx)} ${Y(0)} l-4 7 h8 z" fill="${RPT_C.ink}"/>`;
+ for(const se of series){const pts=xs.map((x,i)=>`${X(x).toFixed(1)},${Y(se.v[i]).toFixed(1)}`).join(' ');
+  s+=`<polygon points="${X(xs[0])},${Y(0)} ${pts} ${X(xs.at(-1))},${Y(0)}" fill="${se.color}" fill-opacity=".14"/><polyline points="${pts}" fill="none" stroke="${se.color}" stroke-width="1.5"/>`;
+  const iMax=se.v.reduce((a,v,i)=>v>se.v[a]?i:a,0),iMin=se.v.reduce((a,v,i)=>v<se.v[a]?i:a,0);
+  for(const i of [iMax,iMin])if(Math.abs(se.v[i])>1e-6)s+=`<text x="${X(xs[i])}" y="${Y(se.v[i])+(se.v[i]>0?10:-3)}" text-anchor="middle" font-size="8" font-weight="bold" fill="${se.color}">${rf(se.v[i],2)}</text>`}
+ return s+'</svg>';
+}
+function rptBars(title,unit,items,opt={}){
+ const W=520,rowH=16,mt=28,ml=170,pw=W-ml-60,Hh=mt+items.length*rowH+12,vmax=Math.max(opt.ref||0,...items.map(i=>i.v),1e-9);
+ let s=`<svg viewBox="0 0 ${W} ${Hh}" class="plotw"><text x="${W/2}" y="13" text-anchor="middle" font-size="10.5" font-weight="bold" fill="${RPT_C.ink}">${title}</text><text x="${W/2}" y="23" text-anchor="middle" font-size="8" fill="#556">${unit}</text>`;
+ items.forEach((it,k)=>{const y=mt+k*rowH,w=Math.max(1,it.v/vmax*pw),col=opt.ref&&it.v>opt.ref+1e-9?RPT_C.d:(it.color||RPT_C.k);
+  s+=`<text x="${ml-6}" y="${y+10}" text-anchor="end" font-size="8.5" fill="${RPT_C.ink}">${it.label}</text><rect x="${ml}" y="${y+2}" width="${w}" height="${rowH-5}" fill="${col}" fill-opacity=".8"/><text x="${ml+w+4}" y="${y+10}" font-size="8.5" fill="${RPT_C.ink}">${opt.pct?rf(it.v*100,0)+'%':rf(it.v,opt.dec??1)}</text>`});
+ if(opt.ref)s+=`<line x1="${ml+opt.ref/vmax*pw}" y1="${mt-4}" x2="${ml+opt.ref/vmax*pw}" y2="${Hh-8}" stroke="${RPT_C.d}" stroke-dasharray="4 3"/><text x="${ml+opt.ref/vmax*pw+3}" y="${mt-6}" font-size="7.5" fill="${RPT_C.d}">limite</text>`;
+ return s+'</svg>';
+}
+// Esforços e deformada ao longo do pilar (do topo da VB ao topo do muro).
+function rptPillarProfiles(r){
+ const S=calcSettings,K=calcK(S),H=r.H,N=30,rv=r.E/Math.max(1e-9,r.strip.E),rm=r.M/Math.max(1e-9,r.strip.M),pts=[];
+ for(let k=0;k<=N;k++){const z=H*k/N,st=calcStrip(Math.max(0,H-z),S,K,r.strip.Hf,r.strip.zw);pts.push({z,p:calcPz(S,K,Math.max(0,H-z),r.strip.Hf,r.strip.zw),V:st.E*rv,M:st.M*rm})}
+ // deformada (comb. quase permanente) com Branson + fluência
+ let def=null;if(r.els){const S2={...S,q:S.q*Number(S.psi2??.3)},Ecs=r.els.Ecs,Mr=r.els.Mr,Ic=r.els.Ic,I2=r.els.I2;let th=0,dl=0;const out=[[0,0]];
+  for(let k=0;k<N;k++){const z=H*(k+.5)/N,dz=H/N*100,M=calcStrip(Math.max(0,H-z),S2,K,r.strip.Hf,r.strip.zw).M*rm*100,Ie=M<=Mr?Ic:Math.min(Ic,(Mr/M)**3*Ic+(1-(Mr/M)**3)*I2),kap=M/(Ecs*Ie);dl+=th*dz+kap*dz*dz/2;th+=kap*dz;out.push([dl*10*(1+r.els.af),H*(k+1)/N])}def=out}
+ return {pts,def};
+}
+function rptSection(r){
+ const a=pillarN2(),W=300,Hh=230,sc=Math.min(150/r.h,110/r.b),bx=40,by=30,bw=r.b*sc,bh=r.h*sc,x=r.x*sc,d=r.d*sc;
+ const eps_s=r.x>0?3.5*(r.d-r.x)/r.x:0;
+ let s=`<svg viewBox="0 0 ${W} ${Hh}" class="plot2"><text x="${W/2}" y="14" text-anchor="middle" font-size="10.5" font-weight="bold" fill="${RPT_C.ink}">Seção na base — ${r.id} (ELU)</text>`;
+ s+=`<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="${RPT_C.f}" stroke="${RPT_C.ink}"/>`;
+ // tardoz em cima (tração), face externa embaixo (compressão)
+ s+=`<rect x="${bx}" y="${by+bh-.8*x}" width="${bw}" height="${.8*x}" fill="${RPT_C.d}" fill-opacity=".25"/><line x1="${bx-8}" y1="${by+bh-x}" x2="${bx+bw+8}" y2="${by+bh-x}" stroke="${RPT_C.d}" stroke-dasharray="4 3"/><text x="${bx+bw+10}" y="${by+bh-x+3}" font-size="8" fill="${RPT_C.d}">LN · x = ${rf(r.x,1)} cm</text>`;
+ const nT=2+(Number(a.soloN)||0);for(let k=0;k<nT;k++){const cx=bx+8+(bw-16)*(nT===1?.5:k/(nT-1));s+=`<circle cx="${cx}" cy="${by+bh-d}" r="3" fill="${RPT_C.ink}"/>`}
+ s+=`<text x="${bx+bw/2}" y="${by-5}" text-anchor="middle" font-size="8" fill="#556">TARDOZ (tração)</text><text x="${bx+bw/2}" y="${by+bh+11}" text-anchor="middle" font-size="8" fill="#556">face externa (compressão)</text>`;
+ // diagrama de deformações
+ const ex=bx+bw+70,sx=40/Math.max(3.5,eps_s);s+=`<line x1="${ex}" y1="${by}" x2="${ex}" y2="${by+bh}" stroke="${RPT_C.ink}"/>`;
+ s+=`<polygon points="${ex},${by+bh} ${ex-3.5*sx},${by+bh} ${ex},${by+bh-x} ${ex+eps_s*sx},${by+bh-d} ${ex},${by+bh-d}" fill="${RPT_C.k}" fill-opacity=".18" stroke="${RPT_C.k}"/>`;
+ s+=`<text x="${ex-3.5*sx-2}" y="${by+bh+11}" text-anchor="end" font-size="8" fill="${RPT_C.k}">εc = 3,5‰</text><text x="${ex+eps_s*sx+3}" y="${by+bh-d+3}" font-size="8" fill="${RPT_C.k}">εs = ${rf(eps_s,2)}‰</text>`;
+ s+=`<text x="${W/2}" y="${Hh-22}" text-anchor="middle" font-size="8" fill="${RPT_C.ink}">Md = ${rf(r.Md)} kN·m · d = ${rf(r.d,1)} cm · x/d = ${rf(r.xd,3)} · As,nec = ${rf(r.AsReq)} cm² · As,det = ${rf(r.AsDet)} cm²</text>`;
+ s+=`<text x="${W/2}" y="${Hh-10}" text-anchor="middle" font-size="8" fill="#556">${eps_s>=2.07?'aço escoando (εs ≥ εyd = 2,07‰) — domínio '+(r.xd<=.259?'2':'3'):'aço sem escoamento'}</text></svg>`;
+ return s;
+}
+function rptPileProfiles(f){
+ const S=calcSettings,g=S.gamma,D=f.D,Kp=f.Kp,H=f.H,e=f.e,pts=[];let zEnd=f.L;
+ for(let k=0;k<=40;k++){const z=f.L*k/40,M=H*(e+z)-.5*Kp*g*D*z**3;if(k>0&&M<0){zEnd=z;break}pts.push({z,p:3*Kp*g*z*D,V:H-1.5*Kp*g*D*z*z,M})}
+ return {pts,zEnd};
+}
+function calcReportHtml(){
+ const S=calcSettings,sv={tab:S.tab,sel:S.sel,wall:S.wall};S.wall='all';S.sel=null;
+ const clean=h=>String(h||'').replace(/<button[^>]*>.*?<\/button>/gs,'').replace(/<input[^>]*>/g,'');
+ const memOf=h=>{const i=h.indexOf('<pre class="calc-mem">');return i<0?'':h.slice(i)};
+ const sd=stampData||{},esc=t=>String(t??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+ let html='';const sec=(n,t,h)=>`<section><h2>${n}. ${t}</h2>${h}</section>`,sub=(t,h)=>`<h3>${t}</h3>${h}`;
+ try{
+  const K=calcK(S),E=calcEarth().rows,P=calcPillar(),F=calcFoundation(),B=calcBeams(),BK=calcBlock();
+  // agrupamento de elementos iguais
+  const grp=(arr,key)=>{const m=new Map();for(const r of arr){const k=key(r);if(!m.has(k))m.set(k,[]);m.get(k).push(r)}return [...m.values()]};
+  const pGroups=grp(P,r=>[r.wall,rf(r.H),r.b,r.h,rf(r.Md,1),rf(r.Vd,1)].join('|'));
+  const fGroups=grp(F,r=>[r.code,rf(r.H,1),rf(r.L),rf(r.Mdmax,1)].join('|'));
+  const label=rows=>idRange(rows.map(r=>r.pid));
+  // 1 Figuras do projeto
+  const figs=[rptFigure('PLANTA','Figura 1 — Planta de locação dos arrimos'),...wallSegments.map((_,i)=>rptFigure(`EL${i+1}`,`Figura — Elevação do arrimo ${i+1} (vista pela face externa)`)),rptFigure('P1','Figura — Detalhamento dos pilares'),rptFigure('T1','Figura — Estaca/tubulão'),rptFigure('B1','Figura — Bloco de coroamento')].filter(Boolean);
+  const geo=wallSegments.map((s,i)=>{const P0=wallProfile(i),d=s.parameters;return `<tr><td>Arrimo ${i+1}</td><td>${rf(P0.L/100)} m</td><td>${P0.n}</td><td>${rf(P0.L/100/(P0.n-1))} m</td><td>${d.wallColX}×${d.wallColY} cm</td><td>${rf(d.wallHeight/100)} m</td><td>${d.wallBeamWidth}×${d.wallBeamHeight} cm</td><td>${d.wallSoilLevel?levelFmt(levelIn(d.wallSoilLevel)):'topo do muro'}</td></tr>`}).join('');
+  html+=sec(1,'Descrição da estrutura e geometria',`<p>Muro de arrimo em alvenaria armada com pilares de concreto armado engastados na fundação (topo da viga baldrame = ±0,00). O empuxo do aterro é resistido pela alvenaria e pelas vigas (VB, VI, VT), que o transmitem aos pilares; os pilares, em balanço, levam os esforços às ${F[0]?.kind==='Estaca'?'estacas':'fundações'} por meio dos blocos de coroamento.</p>
+   <table><thead><tr><th>Trecho</th><th>Comprimento</th><th>Pilares</th><th>Vão</th><th>Pilar</th><th>Altura</th><th>VB/VI/VT</th><th>Aterro</th></tr></thead><tbody>${geo}</tbody></table>${figs.join('')}`);
+  html+=sec(2,'Premissas de cálculo',calcReportPremisses());
+  html+=sec(3,'Normas e referências',calcReportNorms());
+  html+=sec(4,'Combinações de ações',calcReportCombos());
+  // 5 Empuxo
+  let emp=clean(calcTabEmpuxo()).replace(/<pre class="calc-mem">[\s\S]*$/,'');
+  emp=emp.replace(/<div>\s*<svg[\s\S]*?<\/svg><\/div><\/div>/,'</div>');
+  for(const gR of pGroups){const r=E.find(x=>x.key===gR[0].key)||E[0];S.sel=r.key;
+   const m=memOf(clean(calcTabEmpuxo()));
+   emp+=sub(`Pilares ${label(gR)} — Arrimo ${r.wall+1}`,`<div class="row">${calcDiagramSVG(r,K)}${(()=>{const pr=rptPillarProfiles(r);return rptProfile('Pressão no tardoz','kPa (por metro de muro)',r.H,[{pts:pr.pts.map(p=>[p.p,p.z]),color:RPT_C.o,label:'p(z)',fill:1}])})()}</div>${m}`)}
+  html+=sec(5,'Empuxo de terra',emp);
+  // 6 Pilares
+  let pil=clean(calcTabPilar()).replace(/<pre class="calc-mem">[\s\S]*$/,'');
+  for(const gR of pGroups){const r=gR[0];S.sel='p'+r.key;const pr=rptPillarProfiles(r);
+   const m=memOf(clean(calcTabPilar()));
+   pil+=sub(`Pilares ${label(gR)} — seção ${r.b}×${r.h} cm`,`<div class="row">${rptProfile('Esforço cortante','kN',r.H,[{pts:pr.pts.map(p=>[p.V,p.z]),color:RPT_C.k,label:'Vk',fill:1},{pts:pr.pts.map(p=>[p.V*S.gf,p.z]),color:RPT_C.d,label:'Vd',dash:1}])}${rptProfile('Momento fletor','kN·m',r.H,[{pts:pr.pts.map(p=>[p.M,p.z]),color:RPT_C.k,label:'Mk',fill:1},{pts:pr.pts.map(p=>[p.M*S.gf,p.z]),color:RPT_C.d,label:'Md',dash:1}])}${pr.def?rptProfile('Deslocamento horizontal','mm (quase permanente + fluência)',r.H,[{pts:pr.def,color:RPT_C.g,label:'δ(z)',fill:1}],{dec:1}):''}</div><div class="row">${rptSection(r)}</div>${m}`)}
+  html+=sec(6,'Pilares',pil);
+  // 7 Fundação
+  let fun=clean(calcTabFundacao()).replace(/<pre class="calc-mem">[\s\S]*$/,'');fun=fun.replace(/<div>\s*<svg[\s\S]*?<\/svg><\/div><\/div>/,'</div>');
+  let blockTables='';
+  for(const gR of fGroups){const f=gR[0];S.sel='f'+f.pid;const h=clean(calcTabFundacao()),m=memOf(h);const pp=rptPileProfiles(f);
+   const mm=m.replace(/<h4 class="calc-h">Bloco de coroamento[\s\S]*$/,'');if(!blockTables){const j=m.indexOf('<h4 class="calc-h">Bloco de coroamento');if(j>=0)blockTables=m.slice(j)}
+   fun+=sub(`Fundação dos pilares ${label(gR)} — ${f.kind} ${f.code} Ø${rf(f.D*100,0)}`,`<div class="row">${calcPileSVG(f)}${rptProfile('Reação do solo (Broms)','kN/m',pp.zEnd,[{pts:pp.pts.map(p=>[p.p,pp.zEnd-p.z]),color:RPT_C.g,label:'3·Kp·γ·z·D',fill:1}])}</div><div class="row">${rptProfile('Cortante no fuste','kN',pp.zEnd,[{pts:pp.pts.map(p=>[p.V,pp.zEnd-p.z]),color:RPT_C.k,label:'Vk',fill:1}])}${rptProfile('Momento no fuste','kN·m',pp.zEnd,[{pts:pp.pts.map(p=>[p.M,pp.zEnd-p.z]),color:RPT_C.k,label:'Mk',fill:1},{pts:pp.pts.map(p=>[p.M*S.gf,pp.zEnd-p.z]),color:RPT_C.d,label:'Md',dash:1}])}</div><p class="calc-hint">Eixo vertical: profundidade acima da ponta do trecho analisado (topo da fundação no alto). Distribuição de Broms com reação plena até o ponto de momento nulo.</p>${mm}`)}
+  html+=sec(7,'Fundações, blocos e ancoragens',fun+blockTables);
+  // 8 Vigas
+  let vig=clean(calcTabViga()).replace(/<pre class="calc-mem">[\s\S]*$/,'');
+  const bKinds=grp(B.filter(r=>r.kind!=='ALV'),r=>[r.name,r.check].join('|'));
+  for(const gR of bKinds){const r=gR.reduce((a,b)=>b.Md>a.Md?b:a,gR[0]),spans=gR.length,L=r.L,w=r.load,cf=calcContCoef(spans),xs=[],Mv=[],Vv=[],sup=[0];
+   const Msup=k=>(k===0||k===spans)?0:-cf.neg*w*L*L;
+   for(let k=0;k<spans;k++){sup.push((k+1)*L);for(let t=0;t<=20;t++){const x=L*t/20,Ma=Msup(k),Mb=Msup(k+1);xs.push(k*L+x);Mv.push(S.gf*(Ma+(Mb-Ma)*x/L+w*x*(L-x)/2));Vv.push(S.gf*(w*(L/2-x)+(Mb-Ma)/L))}}
+   S.sel=r.key;const m=memOf(clean(calcTabViga())).replace(/<h4 class="calc-h">Armadura de pele[\s\S]*$/,'');
+   vig+=sub(`${r.name} — ${r.check==='vertical'?'flexão vertical (peso próprio e alvenaria)':'flexão horizontal (empuxo)'}`,`<div class="roww">${rptBeam(`Momento fletor de cálculo — ${r.name}`,'kN·m (positivo para baixo)',xs,[{v:Mv,color:RPT_C.d}],sup)}${rptBeam(`Esforço cortante de cálculo — ${r.name}`,'kN',xs,[{v:Vv,color:RPT_C.k}],sup)}</div>${m}`)}
+  const pele=memOf(clean(calcTabViga())).match(/<h4 class="calc-h">Armadura de pele[\s\S]*$/);
+  html+=sec(8,'Vigas e alvenaria armada',vig+(pele?pele[0]:''));
+  // 9 Resumo + utilização
+  const util=[['Pilar — flexão',Math.max(...P.map(r=>r.AsReq/Math.max(1e-9,r.AsDet)))],['Pilar — cisalhamento',Math.max(...P.map(r=>Math.max(r.Vd/r.VRd2,r.AswReq/Math.max(1e-9,r.AswDet))))],
+   ['Pilar — flecha (ELS)',Math.max(...P.map(r=>r.els?r.els.dTot/r.els.lim:0))],['Pilar — fissuração (ELS)',Math.max(...P.map(r=>r.els?r.els.wk/r.els.wlim:0))],
+   ['Estaca — tombamento',Math.max(...F.map(f=>S.fsTomb/Math.max(1e-9,f.FSt)))],['Estaca — deslizamento',Math.max(...F.map(f=>S.fsDesl/Math.max(1e-9,f.FSd)))],
+   ['Estaca — profundidade',Math.max(...F.map(f=>f.depthReq/Math.max(1e-9,f.depth)))],['Fuste — flexão',Math.max(...F.map(f=>f.Mdmax/Math.max(1e-9,f.MRdF)))],
+   ...(F.some(f=>f.cap)?[['Estaca — carga vertical',Math.max(...F.filter(f=>f.cap).map(f=>f.VL.V/Math.max(1e-9,f.cap.Padm)))]]:[]),
+   ['Esperas — ancoragem',Math.max(...BK.map(b=>b.esp.lbnec/Math.max(1e-9,b.esp.avail)))],['Bloco — tirante',Math.max(0,...BK.filter(b=>b.tie).map(b=>b.tie.AsReq/b.tie.AsF))],
+   ['Vigas — flexão',Math.max(0,...B.filter(r=>r.kind!=='ALV').map(r=>r.check==='vertical'?Math.max(r.reqB/r.detB,r.reqT/r.detT):r.req/Math.max(1e-9,r.det)))],['Alvenaria — flexão',Math.max(0,...B.filter(r=>r.kind==='ALV').map(r=>r.Md/Math.max(1e-9,r.MRd)))]].map(([label,v])=>({label,v:Number.isFinite(v)?v:0}));
+  html+=sec(9,'Resumo das verificações',clean(calcTabResumo())+`<div class="roww">${rptBars('Taxa de utilização (solicitação / resistência) — maior valor de cada verificação','≤ 100% atende',util,{ref:1,pct:1})}</div>`);
+  // 10 Quantitativo + gráficos
+  const Q=calcQuant(),qi=Q.items,conc=qi.filter(i=>i.grp==='Concreto estrutural').map(i=>({label:i.item,v:i.q})),aco=qi.filter(i=>i.grp==='Aço').map(i=>({label:i.item,v:i.q}));
+  html+=sec(10,'Quantitativo',clean(calcTabQuant())+`<div class="roww">${rptBars('Concreto estrutural por elemento','m³',conc,{dec:2})}${aco.length?rptBars('Aço por bitola (com 10% de perdas)','kg',aco,{dec:1}):''}</div>`);
+ }finally{Object.assign(S,sv)}
+ return calcReportShell(html);
 }
 function calcReportOpen(){const w=window.open('','_blank');if(!w){alert('Permita janelas pop-up para abrir a memória de cálculo.');return}w.document.open();w.document.write(calcReportHtml());w.document.close()}
 // ---------- Lista de corte e dobra (V249) ----------
