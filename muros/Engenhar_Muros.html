@@ -2583,7 +2583,14 @@ function calcEarth(){
     colB:Math.max(10,Number(P.d.wallColX)||20),colH:Math.max(10,Number(P.d.wallColY)||40),corner:(j===0&&i>0)||(j===P.n-1&&i<wallPoints.length-2)});
   }
  }
- return {K,rows};
+ // V263 — Pilar na emenda de trechos ALINHADOS (mesma direção do empuxo): soma as faixas dos dois lados
+ // numa única verificação. Em cantos (direções diferentes) cada direção continua verificada à parte.
+ const merged=[];
+ for(const r of rows){const o=merged.find(m=>m.pid===r.pid&&m.nx*r.nx+m.ny*r.ny>.985);
+  if(!o){merged.push({...r,parts:[r]});continue}
+  o.parts.push(r);o.b+=r.b;o.E+=r.E;o.M+=r.M;o.Vd=S.gf*o.E;o.Md=S.gf*o.M;o.y=o.E>0?o.M/o.E:0;o.H=Math.max(o.H,r.H);o.Hmax=Math.max(o.Hmax,r.Hmax);
+  o.colB=Math.max(o.colB,r.colB);o.colH=Math.max(o.colH,r.colH);o.corner=false;if(r.strip.E>o.strip.E)o.strip=r.strip}
+ return {K,rows:merged.map(m=>{const {parts,...rest}=m;return {...rest,joined:parts.length>1}})};
 }
 // ---------- Fundação (Broms, solo não coesivo, estaca curta/rígida de cabeça livre) ----------
 // ---------- Capacidade vertical (V244) ----------
