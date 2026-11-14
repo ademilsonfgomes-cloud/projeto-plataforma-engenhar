@@ -11482,12 +11482,16 @@ body[data-v85=plot] #pr121zoom{display:flex}#pr121zoom{display:none;position:abs
   const ligado = () => LS('auto133') !== '0';
   const nivel = () => { try { return window.level68?.current?.() || 'all'; } catch { return 'all'; } };
   const ocupado = () => document.body.classList.contains('wall101') || !!window.ferr56 || document.body.classList.contains('tool56');
+  // V137 — nunca durante a geração da modulação (renumerar no meio da geração travava o motor)
+  const gerando = () => /Cancelar/i.test(document.getElementById('generate')?.textContent || '') || !!document.querySelector('#genAll103[disabled]');
+  let desenhou = false; // só renumera paredes criadas com a ferramenta Nova parede
   let chave = null, conta = 0, pendente = false, timer = null;
 
   function renumerar() {
     timer = null;
-    if (!pendente || !ligado()) { pendente = false; return; }
+    if (!pendente || !ligado() || gerando()) { pendente = false; desenhou = false; conta = state.walls.length; return; }
     if (ocupado()) { timer = setTimeout(renumerar, 500); return; }
+    desenhou = false;
     pendente = false;
     try {
       const nb = document.getElementById('numberWalls');
@@ -11502,12 +11506,13 @@ body[data-v85=plot] #pr121zoom{display:flex}#pr121zoom{display:none;position:abs
   function observar() {
     const k = nivel(), n = state.walls.length;
     if (k !== chave) { chave = k; conta = n; return; }
-    if (n > conta && ligado()) { pendente = true; if (!timer) timer = setTimeout(renumerar, 400); }
-    else if (n < conta) conta = n;
+    if (document.body.classList.contains('wall101')) desenhou = true;
+    if (n > conta && ligado() && desenhou && !gerando()) { pendente = true; if (!timer) timer = setTimeout(renumerar, 400); }
+    else if (n !== conta && !pendente) conta = n;
   }
   try { const rw = renderWalls; renderWalls = function (...a) { const r = rw.apply(this, a); try { observar(); } catch (e) { console.error('V133', e); } return r; }; } catch (e) { console.error('V133', e); }
   // quando a ferramenta de desenho termina, renumera o que ficou pendente
-  new MutationObserver(() => { if (pendente && !ocupado() && !timer) timer = setTimeout(renumerar, 300); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  new MutationObserver(() => { if (document.body.classList.contains('wall101')) desenhou = true; if (pendente && !ocupado() && !timer) timer = setTimeout(renumerar, 300); }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   // ao abrir um projeto, a contagem recomeça (não renumera o projeto aberto)
   try { const inp = document.getElementById('restore'); if (inp && inp.onchange) { const o = inp.onchange; inp.onchange = async function (...a) { pendente = false; chave = null; const r = await o.apply(this, a); chave = null; observar(); pendente = false; return r; }; } } catch {}
 
