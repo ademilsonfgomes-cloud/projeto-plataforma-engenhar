@@ -59,7 +59,7 @@ main.ribbons-min #tubuloRibbon,main.ribbons-min #blockRibbon,main.ribbons-min #w
 <span style="font-size:10px;color:#48647a">Clique o início e depois o ponto final: confirme a medida ou digite um comprimento na caixa do CAD. Enter conclui; Esc cancela. Dimensões em planta, sem dimensionamento estrutural.</span>
 </div>
 <div id="sheetRibbon" hidden><strong>PRANCHAS NO CAD</strong><label>Formato <select id="sheetFormat"><option>A0</option><option selected>A1</option><option>A2</option><option>A3</option></select></label><label>Escala visual <select id="sheetScale"><option value="25">1:25</option><option value="50" selected>1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><label>Orientação <select id="sheetOrientation"><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label><button id="sheetCreate">+ Nova prancha</button><label>Ativa <select id="sheetActive"></select></label><button id="sheetFinish">Concluir prancha</button><button id="sheetReopen">Reabrir</button><button id="sheetDelete">Excluir prancha</button><button id="sheetClose">Ocultar faixa</button><span style="color:#4d667a">Clique na faixa superior da folha para mudar seu formato. Novas pranchas são adicionadas à direita; arraste a borda para mover.</span></div>
-<dialog id="layerDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:700px;padding:15px;font:12px Arial"><h3 style="margin:0 0 8px">Layers e penas · Padrão Engenhar</h3><p style="font-size:11px;margin:0 0 9px">Cores de trabalho no CAD e hierarquia de espessuras. Cotas são os traços mais finos (0,10 mm). Os valores de pena são nominais para a saída gráfica e requerem calibração na impressão em escala.</p><div id="layerRows" style="max-height:55vh;overflow:auto"></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px"><label><input type="checkbox" id="layerMono"> Visualização monocromática</label><button type="button" id="layerReset">Restaurar padrão</button><span style="flex:1"></span><button type="button" id="layerClose">Fechar</button></div></dialog><dialog id="profileDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:640px;padding:16px;font:12px Arial"><h3 id="profileTitle" style="margin:0 0 6px">Perfil do arrimo</h3><p style="margin:0 0 8px;font-size:11px">Níveis em cm em relação ao <b>+0,00</b> (fundo da VB no início). A VB entra no bloco/estaca: o topo da fundação é o topo da VB. Altere só os pilares que mudam: entre dois pilares o topo é uma linha reta. A base de cada vão é arredondada para múltiplos da fiada (degraus no eixo dos pilares).</p><div id="profileRows" style="max-height:45vh;overflow:auto"></div><div style="margin:10px 0;padding:8px;background:#dcebf7;border-radius:6px"><b>Atalho — inclinar o topo:</b> do pilar <select id="profFrom"></select> até o pilar <select id="profTo"></select> com topo final <input id="profToTop" type="number" style="width:70px"> cm <button type="button" id="profApplyRamp">Aplicar</button></div><div style="padding:8px;background:#dcebf7;border-radius:6px"><b>Pontos intermediários do topo</b> (opcional, quando a mudança é no meio de um vão): <button type="button" id="profAddPt">+ ponto</button><div id="profPts"></div></div><div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="profOk">Aplicar perfil</button><button type="button" id="profFlat">Voltar a nivelado</button><span style="flex:1"></span><button type="button" id="profCancel">Cancelar</button></div></dialog><dialog id="elevationDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:420px;padding:17px;font:12px Arial"><h3 style="margin:0 0 12px">Elevação dos arrimos</h3><label style="display:block;margin:9px 0"><input id="elevTop" type="checkbox" checked> Viga superior (topo)</label><label style="display:block;margin:9px 0">Vigas intermediárias (VI) <input id="elevMid" type="number" min="0" max="5" value="0" style="width:60px"> <small style="color:#4c6271">opcional · divide a alvenaria em partes iguais, sempre sobre uma fiada · sugestão: 1 VI a partir de ~6 fiadas</small></label><label style="display:block;margin:9px 0">Altura da fiada (cm) <input id="elevCourse" type="number" min="10" value="20" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura horizontal Ø (mm) <input id="elevHDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura vertical Ø (mm) <input id="elevVDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Espaçamento vertical (cm) <input id="elevVSpace" type="number" min="5" value="20" style="width:65px"></label><label style="display:block;margin:9px 0"><input id="elevFound" type="checkbox" checked> Mostrar blocos e tubulões</label><p style="font-size:10px;color:#617689">Representação geométrica preliminar. Armaduras e ancoragens dependem de dimensionamento e verificação técnica.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button id="elevCancel" type="button">Cancelar</button><button id="elevApply" type="button">Gerar / atualizar</button></div></dialog><dialog id="stampEditor" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:560px;padding:17px"><h3 style="margin:0 0 12px">Dados do carimbo · Engenhar</h3><div id="stampFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div><p style="font-size:11px">Os dados da obra são compartilhados entre as pranchas. O conteúdo, o formato e a folha são calculados individualmente.</p><div id="revList" style="font-size:11px;margin:6px 0;max-height:120px;overflow:auto"></div><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="revNew" title="Registra uma nova revisão (número, data e descrição) no carimbo e no quadro de revisões" style="margin-right:auto">＋ Nova revisão</button><button type="button" id="stampCancel">Cancelar</button><button type="button" id="stampApply">Aplicar dados</button></div></dialog><div id="cad" class="viewport"><svg id="drawing" xmlns="http://www.w3.org/2000/svg" aria-label="Desenho CAD de tubulão"></svg>
+<dialog id="layerDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:700px;padding:15px;font:12px Arial"><h3 style="margin:0 0 8px">Layers e penas · Padrão Engenhar</h3><p style="font-size:11px;margin:0 0 9px">Cores de trabalho no CAD e hierarquia de espessuras. Cotas são os traços mais finos (0,10 mm). Os valores de pena são nominais para a saída gráfica e requerem calibração na impressão em escala.</p><div id="layerRows" style="max-height:55vh;overflow:auto"></div><div style="display:flex;gap:10px;align-items:center;margin-top:10px"><label><input type="checkbox" id="layerMono"> Visualização monocromática</label><button type="button" id="layerReset">Restaurar padrão</button><span style="flex:1"></span><button type="button" id="layerClose">Fechar</button></div></dialog><dialog id="profileDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:96vw;width:640px;padding:16px;font:12px Arial"><h3 id="profileTitle" style="margin:0 0 6px">Perfil do arrimo</h3><p style="margin:0 0 8px;font-size:11px">Vãos entre pilares e níveis em cm; níveis em relação ao <b>±0,00</b> = topo da VB. A VB entra no bloco/estaca: o topo da fundação é o topo da VB. Altere só os pilares que mudam: entre dois pilares o topo é uma linha reta. A base de cada vão é arredondada para múltiplos da fiada (degraus no eixo dos pilares).</p><div id="profileRows" style="max-height:45vh;overflow:auto"></div><div style="margin:10px 0;padding:8px;background:#dcebf7;border-radius:6px"><b>Atalho — inclinar o topo:</b> do pilar <select id="profFrom"></select> até o pilar <select id="profTo"></select> com topo final <input id="profToTop" type="number" style="width:70px"> cm <button type="button" id="profApplyRamp">Aplicar</button></div><div style="padding:8px;background:#dcebf7;border-radius:6px"><b>Pontos intermediários do topo</b> (opcional, quando a mudança é no meio de um vão): <button type="button" id="profAddPt">+ ponto</button><div id="profPts"></div></div><div style="display:flex;gap:8px;margin-top:12px"><button type="button" id="profOk">Aplicar perfil</button><button type="button" id="profFlat">Voltar a nivelado</button><button type="button" id="profEqual" title="Distribui os pilares igualmente">Vãos iguais</button><span style="flex:1"></span><button type="button" id="profCancel">Cancelar</button></div></dialog><dialog id="elevationDialog" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:420px;padding:17px;font:12px Arial"><h3 style="margin:0 0 12px">Elevação dos arrimos</h3><label style="display:block;margin:9px 0"><input id="elevTop" type="checkbox" checked> Viga superior (topo)</label><label style="display:block;margin:9px 0">Vigas intermediárias (VI) <input id="elevMid" type="number" min="0" max="5" value="0" style="width:60px"> <small style="color:#4c6271">opcional · divide a alvenaria em partes iguais, sempre sobre uma fiada · sugestão: 1 VI a partir de ~6 fiadas</small></label><label style="display:block;margin:9px 0">Altura da fiada (cm) <input id="elevCourse" type="number" min="10" value="20" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura horizontal Ø (mm) <input id="elevHDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Armadura vertical Ø (mm) <input id="elevVDia" type="number" min="4" step="0.1" value="8" style="width:65px"></label><label style="display:block;margin:9px 0">Espaçamento vertical (cm) <input id="elevVSpace" type="number" min="5" value="20" style="width:65px"></label><label style="display:block;margin:9px 0"><input id="elevFound" type="checkbox" checked> Mostrar blocos e tubulões</label><p style="font-size:10px;color:#617689">Representação geométrica preliminar. Armaduras e ancoragens dependem de dimensionamento e verificação técnica.</p><div style="display:flex;justify-content:flex-end;gap:8px"><button id="elevCancel" type="button">Cancelar</button><button id="elevApply" type="button">Gerar / atualizar</button></div></dialog><dialog id="stampEditor" style="background:#eaf3fa;color:#173a55;border:1px solid #6a9aba;border-radius:9px;max-width:94vw;width:560px;padding:17px"><h3 style="margin:0 0 12px">Dados do carimbo · Engenhar</h3><div id="stampFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div><p style="font-size:11px">Os dados da obra são compartilhados entre as pranchas. O conteúdo, o formato e a folha são calculados individualmente.</p><div id="revList" style="font-size:11px;margin:6px 0;max-height:120px;overflow:auto"></div><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="revNew" title="Registra uma nova revisão (número, data e descrição) no carimbo e no quadro de revisões" style="margin-right:auto">＋ Nova revisão</button><button type="button" id="stampCancel">Cancelar</button><button type="button" id="stampApply">Aplicar dados</button></div></dialog><div id="cad" class="viewport"><svg id="drawing" xmlns="http://www.w3.org/2000/svg" aria-label="Desenho CAD de tubulão"></svg>
 <div id="foundationEditor" hidden style="position:absolute;z-index:50;left:50%;top:48%;transform:translate(-50%,-50%);background:#eaf3fa;color:#173a55;border:2px solid #5e93b4;border-radius:8px;box-shadow:0 12px 45px #0009;padding:16px;min-width:330px;font:12px Arial"><strong id="foundationEditorTitle" style="font-size:15px">Editar fundação</strong><p id="foundationEditorHelp" style="margin:8px 0">Altere os parâmetros desta posição. Um tipo diferente receberá novo código.</p><div id="foundationEditorFields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div style="display:flex;gap:7px;margin-top:13px"><button type="button" id="foundationApply">Aplicar nesta posição</button><button type="button" id="foundationRefresh">↻ Atualizar detalhes</button><button type="button" id="foundationCancel">Cancelar</button></div></div>
 <div id="beamArmEditor" hidden style="position:absolute;z-index:67;left:50%;top:46%;transform:translate(-50%,-50%);background:#eaf3fa;color:#173a55;border:2px solid #5e93b4;border-radius:9px;box-shadow:0 12px 45px #0009;padding:16px;min-width:320px;font:12px Arial"><strong id="beamArmTitle" style="font-size:15px">Editar armadura da viga VB1</strong><div id="beamArmFields" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0"></div><p style="font-size:10px;color:#637b8d">Detalhamento geométrico preliminar. Verificar ganchos, ancoragens e armaduras antes da execução.</p><div style="display:flex;gap:8px"><button type="button" id="beamArmApply">Aplicar</button><button type="button" id="beamArmCancel">Cancelar</button></div></div>
 <div id="pillarArmEditor" hidden style="position:absolute;z-index:65;left:50%;top:48%;transform:translate(-50%,-50%);background:#eaf3fa;color:#173a55;border:2px solid #5e93b4;border-radius:9px;box-shadow:0 12px 45px #0009;padding:16px;min-width:300px;max-width:95%;font:12px Arial"><strong id="pillarArmTitle" style="font-size:15px">Editar armadura do pilar</strong><p id="pillarArmHelp" style="line-height:1.4"></p><div id="pillarArmFields" style="display:grid;grid-template-columns:1fr 1fr;gap:9px"></div><p style="font-size:10px;color:#637b8d">Valores geométricos preliminares. Conferir armaduras, ancoragens, emendas e ganchos antes da execução.</p><div style="display:flex;gap:8px"><button type="button" id="pillarArmApply">Aplicar</button><button type="button" id="pillarArmCancel">Cancelar</button></div></div>
@@ -122,7 +122,9 @@ function foundationCopyClick(kind,key){
 // Posição sem bloco de coroamento: definida no tipo de fundação profunda (noBlock).
 function foundationNoBlock(key){return Number(foundationValues('pile',foundationEnsure('pile',key)).noBlock)===1}
 function foundationCounts(kind){const counts={};for(const p of foundationPoints()){const key=foundationKey(p);if(kind==='block'&&foundationNoBlock(key))continue;const code=foundationEnsure(kind,key);counts[code]=(counts[code]||0)+1}return counts}
-function foundationPoints(){const found=new Map();for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));for(let j=0;j<n;j++){const t=j/(n-1),p={x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78};found.set(foundationKey(p),p)}}return [...found.values()]}
+// V264 — Vãos entre pilares por arrimo (seg.spans, cm, n−1 valores). Sem vãos válidos: pilares equidistantes.
+function wallT(i,j,n){const sp=wallSegments?.[i]?.spans;if(Array.isArray(sp)&&sp.length===n-1&&sp.every(v=>Number(v)>0)){const tot=sp.reduce((a,b)=>a+Number(b),0);let c=0;for(let k=0;k<j;k++)c+=Number(sp[k]);return c/tot}return j/(n-1)}
+function foundationPoints(){const found=new Map();for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));for(let j=0;j<n;j++){const t=wallT(i,j,n),p={x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78};found.set(foundationKey(p),p)}}return [...found.values()]}
 function foundationOpen(kind,key){foundationFreezeDefaults();const code=foundationEnsure(kind,key),values=foundationValues(kind,code);foundationEditing={kind,key};$('foundationEditorTitle').textContent=`${kind==='pile'?'FUNDAÇÃO':'BLOCO'} ${code} — EDITAR POSIÇÃO`;
  $('foundationEditorFields').replaceChildren();for(const [id,label] of foundationFieldSets[kind]){const box=document.createElement('label');box.textContent=label;box.style.display='flex';box.style.flexDirection='column';box.style.gap='3px';const opts={pileKind:[['0','Tubulão (base alargada)'],['1','Estaca escavada mecanicamente']],noBlock:[['0','Com bloco de coroamento'],['1','Sem bloco (estribos reforçados no topo)']]}[id];
   let input;if(opts){input=document.createElement('select');for(const [v,t] of opts){const o=document.createElement('option');o.value=v;o.textContent=t;input.append(o)}input.value=String(Number(values[id]??$(id).value)||0);input.style.width='220px'}else{input=document.createElement('input');input.type='number';input.step='any';input.min='0';input.value=values[id]??$(id)?.value??'';input.style.width='135px'}
@@ -411,7 +413,7 @@ function blockClickLabel(e,which){
  e.classList.add('selectable');e.dataset.blockArmature=which;
  e.style.cursor='pointer';e.setAttribute('pointer-events','all');
 }
-function foundationQuantity(){const unique=new Set();for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],data=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(data.wallPillars)||4)));for(let j=0;j<n;j++){const t=j/(n-1);unique.add(`${Math.round((a.x+(b.x-a.x)*t)*100)/100}:${Math.round((a.y+(b.y-a.y)*t)*100)/100}`)}}return unique.size}
+function foundationQuantity(){const unique=new Set();for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],data=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(data.wallPillars)||4)));for(let j=0;j<n;j++){const t=wallT(i,j,n);unique.add(`${Math.round((a.x+(b.x-a.x)*t)*100)/100}:${Math.round((a.y+(b.y-a.y)*t)*100)/100}`)}}return unique.size}
 function draw(){
 if(!renderingVariant && wallPoints.length>=2)foundationFreezeDefaults();
 const w=Math.max(300,cad.clientWidth),h=Math.max(230,cad.clientHeight);svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.replaceChildren();
@@ -529,7 +531,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   const n=Math.max(2,Math.min(50,Math.round(num('wallPillars')||4)));
   const ids=[];let segReach=hw;
   for(let j=0;j<n;j++){
-   const t=j/(n-1),cx=a.x+dx*t,cy=a.y+dy*t;
+   const t=wallT(idx,j,n),cx=a.x+dx*t,cy=a.y+dy*t;
    const id='P'+(globalIds[idx]?.[j]??pId({x:cx,y:cy}).slice(1));ids.push(id);
    // Pilar de canto e sua fundação aparecem uma única vez no encontro de arrimos.
    if(renderedFoundations.has(id))continue;
@@ -598,9 +600,9 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   }
   const cmv=v=>String(Math.round(v/scaleW*10)/10).replace('.',',');
   // Texto da cota total no meio de um vão quando o centro coincide com o eixo de um pilar.
-  const tmid=(n-1)%2===0?(Math.floor((n-1)/2)-.5)/(n-1):.5;
+  const tmid=(n-1)%2===0?(wallT(idx,Math.floor((n-1)/2)-1,n)+wallT(idx,Math.floor((n-1)/2),n))/2:.5;
   dimension(0,1,hw+mm(18),cmv(len),n>2&&(n-1)%2===0?tmid:.5);
-  for(let j=0;j<n-1;j++)dimension(j/(n-1),(j+1)/(n-1),hw+mm(10),cmv(len/(n-1)));
+  for(let j=0;j<n-1;j++){const t0=wallT(idx,j,n),t1=wallT(idx,j+1,n);dimension(t0,t1,hw+mm(10),cmv(len*(t1-t0)))}
   // Marca de elevação: indica a vista e a folha onde ela está desenhada.
   if(elevationEnabled){
    const mx=(a.x+b.x)/2+nx*dimSide*(hw+mm(48)),my=(a.y+b.y)/2+ny*dimSide*(hw+mm(48)),r=mm(5.5);
@@ -848,7 +850,7 @@ function wallProfile(i){
  const L=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));
  const h=Math.max(30,Number(d.wallHeight)||250),bh=Math.max(10,Number(d.wallBeamHeight)||40),course=Math.max(10,Number(elevationSettings.course)||20);
  const pr=seg?.profile||{};
- const xs=Array.from({length:n},(_,j)=>L*j/(n-1));
+ const xs=Array.from({length:n},(_,j)=>L*wallT(i,j,n));
  const baseOf=(prof,k)=>{const v=profileNum(prof?.base?.[k]);return v==null?0:Math.round(v/course)*course};
  const spanBase=Array.from({length:n-1},(_,k)=>baseOf(pr,k));
  const top=xs.map((_,j)=>{const v=profileNum(pr.top?.[j]);return v==null?h+bh:v});
@@ -961,7 +963,7 @@ function drawWallElevations(parent){
    text(px,top-32.5*U+1.25*U,pid,ink,TF(2.5),g,{'text-anchor':'middle','font-weight':'bold','data-pt':'1','data-anchor':'1'});
    if(!P.flatTop)t(px+1.5*U,Y(T(xs[j]))-1.8*U,levelFmt(T(xs[j])),gold,8,{'font-weight':'bold'});
    if(S.found){
-    const key=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*j/(n-1))*sc,y:wallStart.y+(a.y+(b.y-a.y)*j/(n-1))*sc});
+    const key=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*wallT(i,j,n))*sc,y:wallStart.y+(a.y+(b.y-a.y)*wallT(i,j,n))*sc});
     const blockCode=foundationEnsure('block',key),pileCode=foundationEnsure('pile',key);
     const block=foundationValues('block',blockCode),pile=foundationValues('pile',pileCode);
     const blockX=Math.max(40,Number(block.blockX)||80)*sc,blockH=Math.max(20,Number(block.blockH)||80)*sc;
@@ -980,7 +982,7 @@ function drawWallElevations(parent){
   // Nome de cada VB (por nível) dentro da própria faixa da viga, com o nível do fundo.
   if(!P.flatBase)for(const r of vbRuns(i))t(X((xs[r.a]+xs[r.b])/2),Y(r.base+bh/2)+1.25*U,`${vbN.get(`${i}:${r.r}`)} ${levelFmt(r.base+bh)}`,gold,8,{'text-anchor':'middle','font-weight':'bold'});
   // Cotas horizontais: eixo a eixo e total (cm), acima do ponto mais alto.
-  for(let j=0;j<n-1;j++)dimH(axisX[j],axisX[j+1],top-9*U,Y(Math.max(T(xs[j]),T(xs[j+1]))),cm(L/(n-1)),g);
+  for(let j=0;j<n-1;j++)dimH(axisX[j],axisX[j+1],top-9*U,Y(Math.max(T(xs[j]),T(xs[j+1]))),cm(xs[j+1]-xs[j]),g);
   dimH(X(0),X(L),top-18*U,top,cm(L),g,n>2&&(n-1)%2===0?(axisX[Math.floor((n-1)/2)-1]+axisX[Math.floor((n-1)/2)])/2:undefined);
   // Chamadas das armaduras da alvenaria (comprimento único ou variável).
   const ES=elevationSteel(i),fmt=v=>Number(v).toFixed(1).replace('.',',');
@@ -1077,7 +1079,8 @@ function drawBeamDetails(parent,kind="VB"){
   const U=unitFor(detailScale[code]||50),TF=c=>c/CAP*U,x=12*U;
   const cover=Math.max(1,arms.N1.cover),inset=Math.min(H/3,cover*sc);
   const nPillars=piece.nP;
-  const axes=Array.from({length:nPillars-2},(_,j)=>lengthCm*(j+1)/(nPillars-1));
+  const PPb=wallProfile(i),xs0=PPb?PPb.xs.slice(piece.j0,piece.j0+nPillars):null,frc=j=>xs0&&xs0.length===nPillars&&xs0.at(-1)>xs0[0]?(xs0[j]-xs0[0])/(xs0.at(-1)-xs0[0]):j/(nPillars-1);
+  const axes=Array.from({length:nPillars-2},(_,j)=>lengthCm*frc(j+1));
   const upperPre=splitBars(arms.N2);
   const hasSplice=upperPre.some(p=>!p.last),bendTop=arms.N2.bend*sc,bendBot=arms.N3.bend*sc;
   const partTop=28*U+(hasSplice?6*U:0),upper0Y=partTop+(upperPre.length-1)*13*U,dimY=upper0Y+bendTop+8*U,y=dimY+7*U,compact=beamCompact.has(code),sectionX=compact?x+34*U:x+L+22*U;
@@ -1120,7 +1123,7 @@ function drawBeamDetails(parent,kind="VB"){
   // Pilares que apoiam a viga (numeração global) e eixos de emenda.
   const spliceAxes=new Set([...upper,...lower].filter(p=>!p.last).map(p=>Math.round(p.axis*100)/100));
   const pids=(pillarIds()[i]||[]).slice(piece.j0,piece.j0+piece.nP),colA=Math.max(10,Number(d.wallColX)||20)*sc;
-  for(let j=0;j<nPillars;j++){const axisCm=lengthCm*j/(nPillars-1),px=x+axisCm*sc;
+  for(let j=0;j<nPillars;j++){const axisCm=lengthCm*frc(j),px=x+axisCm*sc;
    el('rect',{x:px-colA/2,y:y-2*U,width:colA,height:H+4*U,fill:'#62b4d6','fill-opacity':.12,stroke:blue,'stroke-width':.8,'stroke-dasharray':'4 3'},g);
    ln(px,y-3*U,px,y+H+3*U,'#36cfc9',.6,{'stroke-dasharray':'8 3 2 3'});
    const splice=spliceAxes.has(Math.round(axisCm*100)/100);
@@ -1200,7 +1203,7 @@ function drawPillarDetails(parent){
   const PF=wallProfile(i);
   const n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));
   for(let j=0;j<n;j++){
-   const t=j/(n-1),pt={x:wallStart.x+(p0.x+(p1.x-p0.x)*t)*.78,y:wallStart.y+(p0.y+(p1.y-p0.y)*t)*.78};
+   const t=wallT(i,j,n),pt={x:wallStart.x+(p0.x+(p1.x-p0.x)*t)*.78,y:wallStart.y+(p0.y+(p1.y-p0.y)*t)*.78};
    const fk=foundationKey(pt),bCode=foundationEnsure('block',fk),noBlock=foundationNoBlock(fk);
    const fnd=foundationValues('pile',foundationEnsure('pile',fk)),fndName=Number(fnd.pileKind)===1?'ESTACA':'TUBULÃO',fndDa=fndName==='ESTACA'?'DA ESTACA':'DO TUBULÃO',fndNa=fndName==='ESTACA'?'NA ESTACA':'NO TUBULÃO';
    const blockHeight=noBlock?0:Math.max(30,Number(foundationValues('block',bCode).blockH)||80);
@@ -1521,20 +1524,26 @@ function profileOpen(){
  const i=wallActive,P=wallProfile(i),ids=pillarIds()[i]||[];
  $('profileTitle').textContent=`Perfil do arrimo ${i+1} — ${ids.length} pilares, ${String(Math.round(P.L)/100).replace('.',',')} m`;
  const box=$('profileRows');box.replaceChildren();
- const head=document.createElement('div');head.style.cssText='display:grid;grid-template-columns:70px 150px 1fr;gap:8px;font-weight:bold;padding:4px';head.innerHTML='<span>Pilar</span><span>Topo do muro (cm)</span><span>Topo da VB no vão até o próximo pilar (cm) · ±0 = topo da VB</span>';box.append(head);
- ids.forEach((pid,j)=>{const r=document.createElement('div');r.style.cssText='display:grid;grid-template-columns:70px 150px 1fr;gap:8px;align-items:center;padding:3px 4px;border-top:1px solid #c8d9e6';
+ const head=document.createElement('div');head.style.cssText='display:grid;grid-template-columns:55px 125px 125px 1fr;gap:8px;font-weight:bold;padding:4px';head.innerHTML='<span>Pilar</span><span>Vão até o próximo (cm)</span><span>Topo do muro (cm)</span><span>Topo da VB no vão (cm) · ±0 = topo da VB</span>';box.append(head);
+ ids.forEach((pid,j)=>{const r=document.createElement('div');r.style.cssText='display:grid;grid-template-columns:55px 125px 125px 1fr;gap:8px;align-items:center;padding:3px 4px;border-top:1px solid #c8d9e6';
   const a=document.createElement('b');a.textContent='P'+pid;
   const tp=document.createElement('input');tp.type='number';tp.step='1';tp.value=Math.round(P.top[j]-levelRef());tp.dataset.profTop=j;tp.style.width='110px';
   const bs=document.createElement('input');bs.type='number';bs.step=String(P.course);bs.style.width='110px';
-  if(j<ids.length-1){bs.value=P.spanBase[j];bs.dataset.profBase=j;r.append(a,tp,bs)}else{const sp=document.createElement('span');sp.textContent='—';r.append(a,tp,sp)}
+  const vn=document.createElement(j<ids.length-2?'input':'span');
+  if(j<ids.length-2){vn.type='number';vn.step='1';vn.min='10';vn.value=Math.round((P.xs[j+1]-P.xs[j])*10)/10;vn.dataset.profSpan=j;vn.style.width='100px';vn.oninput=profileSpanUpdate}
+  else if(j===ids.length-2){vn.id='profLastSpan';vn.style.cssText='font-weight:bold;padding-left:4px';vn.title='Último vão = comprimento do arrimo − soma dos anteriores'}else vn.textContent='—';
+  if(j<ids.length-1){bs.value=P.spanBase[j];bs.dataset.profBase=j;r.append(a,vn,tp,bs)}else{const sp=document.createElement('span');sp.textContent='—';r.append(a,vn,tp,sp)}
   box.append(r)});
+ box.dataset.len=String(P.L);profileSpanUpdate();
  for(const sel of [$('profFrom'),$('profTo')]){sel.replaceChildren();ids.forEach((pid,j)=>{const o=document.createElement('option');o.value=j;o.textContent='P'+pid;sel.append(o)})}
  $('profFrom').value=0;$('profTo').value=ids.length-1;$('profToTop').value=Math.round(P.top[ids.length-1]-levelRef());
  const pts=$('profPts');pts.replaceChildren();(P.pr.pts||[]).forEach(q=>profileAddPoint(q.d/100,q.z-levelRef()));
  $('profileDialog').showModal();
 }
+function profileSpanUpdate(){const box=$('profileRows'),L=Number(box.dataset.len)||0,ins=[...box.querySelectorAll('[data-prof-span]')],sum=ins.reduce((a,x)=>a+(Number(x.value)||0),0),last=Math.round((L-sum)*10)/10,el=$('profLastSpan');if(el){el.textContent=`${String(last).replace('.',',')} (resto)`;el.style.color=last>0?'#173a55':'#c0392b'}}
 function profileAddPoint(dm='',z=''){const r=document.createElement('div');r.style.cssText='display:flex;gap:6px;align-items:center;margin-top:5px';r.innerHTML='a <input type="number" step="0.01" style="width:70px" data-pt-d> m do início → topo <input type="number" step="1" style="width:70px" data-pt-z> cm <button type="button">✕</button>';r.querySelector('[data-pt-d]').value=dm;r.querySelector('[data-pt-z]').value=z;r.querySelector('button').onclick=()=>r.remove();$('profPts').append(r)}
 $('profileBtn').onclick=profileOpen;
+$('profEqual').onclick=()=>{const box=$('profileRows'),ins=[...box.querySelectorAll('[data-prof-span]')],L=Number(box.dataset.len)||0,eq=Math.round(L/(ins.length+1)*10)/10;ins.forEach(x=>x.value=eq);profileSpanUpdate()};
 $('profAddPt').onclick=()=>profileAddPoint();
 $('profCancel').onclick=()=>$('profileDialog').close();
 $('profApplyRamp').onclick=()=>{const a=Number($('profFrom').value),b=Number($('profTo').value),zb=Number($('profToTop').value);if(!(b>a)||!Number.isFinite(zb))return;const ins=[...$('profileRows').querySelectorAll('[data-prof-top]')];const za=Number(ins[a].value);for(let j=a;j<=b;j++)ins[j].value=Math.round(za+(zb-za)*(j-a)/(b-a))};
@@ -1545,6 +1554,10 @@ $('profOk').onclick=()=>{
  const base=[...$('profileRows').querySelectorAll('[data-prof-base]')].map(x=>profileNum(x.value)??0);
  const pts=[...$('profPts').children].map(r=>({d:Number(r.querySelector('[data-pt-d]').value)*100,z:Number(r.querySelector('[data-pt-z]').value)+levelRef()})).filter(q=>Number.isFinite(q.d)&&q.d>0&&Number.isFinite(q.z));
  if(top.some(v=>v==null)){status('Informe o nível do topo de todos os pilares.');return}
+const spIns=[...$('profileRows').querySelectorAll('[data-prof-span]')].map(x=>Number(x.value)),Ltot=Number($('profileRows').dataset.len)||0;
+ if(spIns.length){const last=Ltot-spIns.reduce((a,b)=>a+b,0),spans=[...spIns,last];
+  if(spans.some(v=>!(v>=10))){status('Vãos inválidos: cada vão deve ter pelo menos 10 cm e a soma não pode passar do comprimento do arrimo.');return}
+  const eq=Ltot/spans.length;seg.spans=spans.every(v=>Math.abs(v-eq)<.6)?null:spans.map(v=>Math.round(v*10)/10)}
  seg.profile={top,base,pts};
  // Pilar de canto: o mesmo nível de topo vale para os dois arrimos que se encontram nele.
  const prev=wallSegments[i-1],next=wallSegments[i+1];
@@ -1705,7 +1718,7 @@ function declutterText(root){
  return lastDeclutter;
 }
 // Numeração global dos pilares: a mesma em planta, elevações e detalhes.
-function pillarIds(){const map=new Map();let next=1;const out=[];for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));const row=[];for(let j=0;j<n;j++){const t=j/(n-1);const k=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78});if(!map.has(k))map.set(k,next++);row.push(map.get(k))}out.push(row)}return out}
+function pillarIds(){const map=new Map();let next=1;const out=[];for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],d=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(d.wallPillars)||4)));const row=[];for(let j=0;j<n;j++){const t=wallT(i,j,n);const k=foundationKey({x:wallStart.x+(a.x+(b.x-a.x)*t)*.78,y:wallStart.y+(a.y+(b.y-a.y)*t)*.78});if(!map.has(k))map.set(k,next++);row.push(map.get(k))}out.push(row)}return out}
 function idRange(list){const v=[...new Set(list)].sort((a,b)=>a-b);const parts=[];for(let i=0;i<v.length;){let j=i;while(j+1<v.length&&v[j+1]===v[j]+1)j++;parts.push(j-i>=2?`P${v[i]} A P${v[j]}`:j>i?`P${v[i]}, P${v[j]}`:`P${v[i]}`);i=j+1}return parts.join(', ')}
 const // ±0,00 = TOPO DA VB (a VB fica abaixo do zero). Internamente os níveis seguem medidos a partir do
 // fundo da VB de referência; levelRef() faz a conversão para exibição e entrada de dados.
@@ -2577,7 +2590,7 @@ function calcEarth(){
    const hf=x=>Math.max(0,soil(x)-zF)/100;
    const steps=Math.max(4,Math.ceil((xb-xa)/5)),dx=(xb-xa)/steps;let E=0,M=0,Hmax=0;
    for(let k=0;k<steps;k++){const x=xa+(k+.5)*dx,H=Math.max(0,soil(x)-zb)/100,r=calcStrip(H,S,K,hf(x),calcZwAt(S,soil(x)));E+=r.E*dx/100;M+=r.M*dx/100;Hmax=Math.max(Hmax,H)}
-   const Hp=Math.max(0,soil(P.xs[j])-zb)/100,strip=calcStrip(Hp,S,K,hf(P.xs[j]),calcZwAt(S,soil(P.xs[j]))),t=j/(P.n-1);
+   const Hp=Math.max(0,soil(P.xs[j])-zb)/100,strip=calcStrip(Hp,S,K,hf(P.xs[j]),calcZwAt(S,soil(P.xs[j]))),t=P.xs[j]/P.L;
    const pt={x:wallStart.x+(P.a.x+dx0*t)*.78,y:wallStart.y+(P.a.y+dy0*t)*.78};
    rows.push({key:`${i}-${j}`,wall:i,j,pid:ids[i]?.[j]??(j+1),id:'P'+(ids[i]?.[j]??(j+1)),b:(xb-xa)/100,H:Hp,Hf:hf(P.xs[j]),Hmax,zb,zFront:frontV==null?zb:frontV,E,M,y:E>0?M/E:0,Vd:S.gf*E,Md:S.gf*M,strip,nx,ny,fkey:foundationKey(pt),
     colB:Math.max(10,Number(P.d.wallColX)||20),colH:Math.max(10,Number(P.d.wallColY)||40),corner:(j===0&&i>0)||(j===P.n-1&&i<wallPoints.length-2)});
@@ -3082,7 +3095,7 @@ function calcQuant(){
   for(let k=0;k<P.n-1;k++){
    const L=P.xs[k+1]-P.xs[k],zb=P.spanBase[k]+bh,net=Math.max(0,L-cb);
    // VB: desconta a largura do bloco (meio bloco em cada pilar) quando há bloco.
-   const keyA=foundationKey({x:wallStart.x+(P.a.x+(P.b.x-P.a.x)*k/(P.n-1))*.78,y:wallStart.y+(P.a.y+(P.b.y-P.a.y)*k/(P.n-1))*.78});
+   const keyA=foundationKey({x:wallStart.x+(P.a.x+(P.b.x-P.a.x)*P.xs[k]/P.L)*.78,y:wallStart.y+(P.a.y+(P.b.y-P.a.y)*P.xs[k]/P.L)*.78});
    const bW=foundationNoBlock(keyA)?cb:Number(bx(foundationEnsure('block',keyA)).blockX)||80,vbL=Math.max(0,L-bW);
    conc.vb+=bw*bh*vbL/1e6;forma.vb+=2*bh*vbL/1e4;
    const vis=zones.filter(([z0,z1])=>z0>=zb-1);conc.vi+=vis.length*bw*bh*net/1e6;forma.vi+=vis.length*2*bh*net/1e4;
