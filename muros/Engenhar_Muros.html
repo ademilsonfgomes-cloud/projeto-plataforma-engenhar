@@ -2653,7 +2653,9 @@ function calcPillar(){
   if(soloLen>0&&Number(a.soloN)>0&&r.H>0){const lb=40*(Number(a.soloDia)||10)/10,z0=Math.max(0,(soloLen-lb)/100),H2=Math.max(0,r.H-z0);
    const K=calcK(S),Mz=r.strip.M>0?r.Md*calcStrip(H2,S,K,r.strip.Hf,r.strip.zw).M/r.strip.M:0,As2=2*calcBar(a.cornerDia),x2=As2*fyd/(.68*b*fcd),MRd2=As2*fyd*(d-.4*x2)/100;
    cut={soloLen,lb,z0,Mz,MRd2,ok:MRd2>=Mz-1e-9};okM=okM&&cut.ok}
-  return {...r,b,h,d,x,xd,AsCalc,AsMin,AsReq,AsDet,VRd2,Vc,AswReq,AswDet,okM,okV,fcd,fyd,fctd,fywd,fctm,disc,cut};
+  const row={...r,b,h,d,x,xd,AsCalc,AsMin,AsReq,AsDet,VRd2,Vc,AswReq,AswDet,okM,okV,fcd,fyd,fctd,fywd,fctm,disc,cut};
+  row.rules=calcPillarRules(row);row.els=calcPillarELS(row,AsDet,Number(a.cornerDia)||10);row.okRules=row.rules.ok;row.okELS=!row.els||(row.els.okD&&row.els.okW);
+  return row;
  });
 }
 // ---------- Aplicar ao detalhamento (somente no modo "com cálculo do programa") ----------
@@ -2701,6 +2703,10 @@ function calcApplyPillar(depth=0,prev=[]){
  for(const dia of [5,6.3,8,10]){const sp=Math.min(cur,Math.floor(2*calcBar(dia)/Asw/2.5)*2.5);if(sp>=10){st={dia,sp};break}}
  if(!st){const sp=Math.max(5,Math.min(cur,Math.floor(2*calcBar(10)/Asw/2.5)*2.5));st={dia:Math.max(10,Number(N1.dia)),sp}}
  if(st.dia!==Number(N1.dia)||st.sp!==cur){msg.push(`estribos Ø${N1.dia} c/${cur} → Ø${st.dia} c/${st.sp}`);N1.dia=st.dia;N1.spacing=st.sp}
+ // Regras do pilar: espaçamento máximo do estribo; transpasse calculado (NBR 6118) com mínimos.
+ {const R=calcPillarRules(rs[0]);if(Number(N1.spacing)>R.sMax){const ns=Math.floor(R.sMax);msg.push(`estribo do pilar c/${N1.spacing} → c/${ns} (regra 12Ø / 20 cm)`);N1.spacing=ns}
+  const fac=calcLapReq(calcPillar()).fac;
+  if(fac!==Number(pillarArms.N3.lapFactor)){msg.push(`transpasse das esperas ${pillarArms.N3.lapFactor}Ø → ${fac}Ø (calculado)`);pillarArms.N3.lapFactor=fac}}
  draw();
  // A troca de bitola altera d: repete até estabilizar.
  if(depth<3&&calcPillar().some(r=>!r.okM||!r.okV))return calcApplyPillar(depth+1,msg);
@@ -2810,8 +2816,12 @@ Hipóteses: solo homogêneo não coesivo (c desprezado na fundação), sem água
  ${S.useCalc?'<button class="c-apply" id="cApplyF">Aplicar profundidade mínima ao detalhamento</button>':''}</div>
  <div class="calc-grid"><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Fundação</th><th>Ø (cm)</th><th>L (m)</th><th>Hk (kN)</th><th>e (m)</th><th>Hu (kN)</th><th>FS tomb.</th><th>FS desl.</th><th>Prof. mín (m)</th><th>Pk / Padm (kN)</th><th>Md fuste (kN·m)</th><th>MRd fuste (kN·m)</th><th>As fuste / mín (cm²)</th></tr></thead><tbody>${tr}</tbody></table>
  <p class="calc-hint">Cada pilar é verificado com o tubulão/estaca da sua posição (aba Tubulões). MRd fuste: momento resistente com a armadura longitudinal da aba Tubulões.</p></div>
- <div>${calcPileSVG(sel)}</div></div><pre class="calc-mem">${mem}</pre>`;
+ <div>${calcPileSVG(sel)}</div></div><pre class="calc-mem">${mem}</pre>${(()=>{const B=calcBlock();if(!B.length)return '';
+  return `<h4 class="calc-h">Bloco de coroamento e ancoragens (NBR 6118, 9.4)</h4><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Fundação</th><th>Esperas Ø${calcFmt(B[0].dW,1)} — lb,nec / disponível (cm)</th><th>Armadura da estaca Ø${calcFmt(B[0].pileDia,1)} no bloco — lb,nec / disp. (cm)</th><th>Tirante do momento: As nec / det (cm²)</th><th>Fuste — Vd / VRd2 (kN)</th><th>Fuste — Asw/s nec / det (cm²/m)</th></tr></thead><tbody>
+  ${B.map(b=>{const v=calcPileShear(b);return `<tr><td>${b.id}</td><td>${b.noBlk?'sem bloco':(b.bc||'B1')+' '+b.X+'×'+b.Y+'×'+b.Hb}</td><td>${calcFmt(b.esp.lbnec/10,1)} / ${calcFmt(b.esp.avail/10,1)} ${calcOk(b.okEsp)}</td><td>${b.noBlk?'—':`${calcFmt(b.pil.lbnec/10,1)} / ${calcFmt(b.pilAvail/10,1)} ${calcOk(b.okPil)}`}</td><td>${b.tie?`${calcFmt(b.tie.AsReq)} / ${calcFmt(b.tie.AsF)} (${b.tie.qty}Ø${b.tie.dia}) ${calcOk(b.tie.ok)}`:'—'}</td><td>${calcFmt(v.Vd)} / ${calcFmt(v.VRd2)} ${calcOk(v.Vd<=v.VRd2)}</td><td>${calcFmt(v.req*100)} / ${calcFmt(v.det*100)} ${calcOk(v.det>=v.req-1e-9)}</td></tr>`}).join('')}</tbody></table></div>
+  <p class="calc-hint">Esperas: ${B[0].noBlk?'retas, 80Ø dentro da estaca (α = 1,0)':'com dobra no fundo do bloco (α = 0,7); disponível = altura do bloco − cobrimento'} · lb,nec = α·lb·As,calc/As,ef (${calcFmt(B[0].ratio,2)}). Armadura da estaca: deve entrar no bloco pelo menos lb,nec (proporcional a Md/MRd do fuste). Tirante: o momento do pilar passa à estaca pelos estribos verticais do bloco (T = Md / 0,8·lado). Fuste ao cisalhamento como seção retangular equivalente (bw = D; d = 0,72·D), estribo circular com 2 ramos.</p>`})()}`;
 }
+const esc2=t=>String(t??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 function calcTabPilar(){
  const S=calcSettings,rs=calcPillar();if(!rs.length)return '';const a=pillarN2(),N1=pillarArms.N1;
  const crit=rs.reduce((p,q)=>(q.AsReq/q.AsDet)>(p.AsReq/p.AsDet)||!Number.isFinite(q.AsReq)?q:p,rs[0]),sel=rs.find(r=>'p'+r.key===S.sel)||crit;
@@ -2830,17 +2840,26 @@ Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados),
  return `<div class="calc-k">Armadura detalhada no tardoz: <b>${calcFmt(rs[0].AsDet)} cm²</b> · maior As,nec: <b>${calcFmt(Math.max(...rs.map(x=>x.AsReq).filter(Number.isFinite)))} cm²</b> (${crit.id}) · ${rs.every(x=>x.okM&&x.okV)?'<span class="c-ok">todos os pilares passam</span>':'<span class="c-no">há pilar que não passa</span>'}
  ${S.useCalc?'<button class="c-apply" id="cApplyP">Aplicar armadura ao detalhamento</button>':''}</div>
  <div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>Seção (cm)</th><th>Md (kN·m)</th><th>x/d</th><th>As nec (cm²)</th><th>As det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>VRd2 (kN)</th><th>Asw/s nec (cm²/m)</th><th>Asw/s det (cm²/m)</th><th>Cisalh.</th></tr></thead><tbody>${tr}</tbody></table></div>
- <pre class="calc-mem">${mem}</pre>`;
+ <pre class="calc-mem">${mem}</pre>${(()=>{
+  const ru=r.rules,els=r.els,a2=pillarN2(),ratio=Math.min(1,r.AsReq/Math.max(1e-9,r.AsDet)),grp=pillarBarGroups(),lapNow=Number(pillarArms.N3.lapFactor)||60;
+  const LR=calcLapReq(rs),laps=LR.list,lapReq=LR.fac;
+  return `<h4 class="calc-h">Regras construtivas do pilar (NBR 6118, 18.4)</h4><table class="calc-t" style="max-width:900px"><tbody>${ru.items.map(([t,v,ok])=>`<tr><td style="text-align:left">${t}</td><td>${v}</td><td>${calcOk(ok)}</td></tr>`).join('')}</tbody></table>
+  <h4 class="calc-h">Transpasse das esperas (NBR 6118, 9.5.2 — tardoz: ${calcFmt(LR.frac*100,0)}% das barras emendadas na seção, α0t = ${calcFmt(LR.a0t,1)})</h4><table class="calc-t" style="max-width:900px"><thead><tr><th>Barra</th><th>Ø (mm)</th><th>fbd (MPa)</th><th>lb (cm)</th><th>lb,nec (cm)</th><th>l0 (cm)</th><th>Necessário</th><th>Adotado</th></tr></thead><tbody>${laps.map(x=>`<tr><td>${x.kind}</td><td>${calcFmt(x.dia,1)}</td><td>${calcFmt(x.L.fbd,2)}</td><td>${calcFmt(x.L.lb/10,1)}</td><td>${calcFmt(x.L.lbnec/10,1)}</td><td>${calcFmt(x.l0/10,1)}</td><td>${x.fac}Ø</td><td>${lapNow}Ø ${calcOk(lapNow>=x.fac)}</td></tr>`).join('')}</tbody></table>
+  <p class="calc-hint">lb = (Ø/4)·(fyd/fbd) ≥ 25Ø · lb,nec = lb·As,calc/As,ef (= ${calcFmt(LR.ratio,2)}) ≥ máx(0,3·lb; 10Ø; 10 cm) · tração: l0t = α0t·lb,nec ≥ máx(0,3·α0t·lb; 15Ø; 20 cm) · compressão: l0c = lb,nec ≥ máx(0,6·lb; 15Ø; 20 cm). Arredondado para múltiplos de 5Ø. ${S.useCalc?'O "Aplicar" ajusta o fator de transpasse.':''}</p>
+  ${els?`<h4 class="calc-h">ELS — deslocamento no topo e fissuração (${r.id})</h4><table class="calc-t" style="max-width:900px"><tbody>
+  <tr><td style="text-align:left">Flecha no topo (comb. quase permanente, solo + ${calcFmt(els.psi2,1)}·q; Branson; fluência αf = ${calcFmt(els.af,2)})</td><td>imediata ${calcFmt(els.dIm,1)} mm · total <b>${calcFmt(els.dTot,1)} mm</b></td><td>≤ ${calcFmt(els.lim,1)} mm (H/250 e 10 mm, alvenaria) ${calcOk(els.okD)}</td></tr>
+  <tr><td style="text-align:left">Abertura de fissuras na base, face do tardoz (comb. frequente, solo + ${calcFmt(els.psi1,1)}·q)</td><td>σs = ${calcFmt(els.ss,0)} MPa · <b>wk = ${calcFmt(els.wk,3)} mm</b></td><td>≤ ${calcFmt(els.wlim,1)} mm (CAA ${esc2(stampData?.caa||'II')}) ${calcOk(els.okW)}</td></tr></tbody></table>
+  <p class="calc-hint">Ecs = 0,85·5600·√fck = ${calcFmt(els.Ecs*10,0)} MPa · Ic = ${calcFmt(els.Ic,0)} cm⁴ · III = ${calcFmt(els.I2,0)} cm⁴ · Mr = 1,5·fctm·Ic/(h/2) = ${calcFmt(els.Mr/100,2)} kN·m. Flecha pela integração da curvatura M/(E·Ie) ao longo da altura do balanço.</p>`:''}`})()}`;
 }
 function calcTabResumo(){
- const S=calcSettings,P=calcPillar(),F=calcFoundation(),items=[];
+ const S=calcSettings,P=calcPillar(),F=calcFoundation(),items=[];let BK=[];try{BK=calcBlock()}catch(e){}
  const pb=new Map();for(const r of P){const o=pb.get(r.pid)||{okM:true,okV:true};o.okM&&=r.okM;o.okV&&=r.okV;pb.set(r.pid,o)}
- for(const f of F){const p=pb.get(f.pid)||{okM:true,okV:true};items.push({id:f.id,cells:[p.okM,p.okV,f.FSt>=S.fsTomb,f.FSd>=S.fsDesl,f.depth>=f.depthReq-1e-6,f.okFuste,f.okVert],fst:f.FSt,fsd:f.FSd,spt:f.hasSpt})}
+ for(const f of F){const p=pb.get(f.pid)||{okM:true,okV:true};const bk=BK.find(x=>x.pid===f.pid),pr=P.filter(x=>x.pid===f.pid);items.push({id:f.id,cells:[p.okM,p.okV,f.FSt>=S.fsTomb,f.FSd>=S.fsDesl,f.depth>=f.depthReq-1e-6,f.okFuste,f.okVert,pr.every(x=>x.okRules),pr.every(x=>x.okELS),!bk||(bk.okEsp&&bk.okPil&&bk.okTie&&calcPileShear(bk).ok)],fst:f.FSt,fsd:f.FSd,spt:f.hasSpt})}
  const B=calcBeams(),bOk=k=>B.filter(r=>k(r)).every(r=>r.okM&&r.okV),bTxt=k=>B.some(k)?calcOk(bOk(k)):'—';
  const all=items.every(i=>i.cells.every(Boolean))&&B.every(r=>r.okM&&r.okV);
  return `<div class="calc-k" style="font-size:14px">${all?'<span class="c-ok">✓ TODAS AS VERIFICAÇÕES PASSAM</span>':'<span class="c-no">✗ HÁ VERIFICAÇÕES QUE NÃO PASSAM</span>'} · modo: <b>${S.useCalc?'com cálculo do programa':'só detalhamento (conferência)'}</b></div>
- <table class="calc-t calc-sum" style="max-width:900px"><thead><tr><th>Pilar</th><th>Pilar · flexão</th><th>Pilar · cisalhamento</th><th>Tombamento (FS)</th><th>Deslizamento (FS)</th><th>Profundidade</th><th>Fuste</th><th>Carga vertical</th></tr></thead><tbody>
- ${items.map(i=>`<tr><td>${i.id}</td><td>${calcOk(i.cells[0])}</td><td>${calcOk(i.cells[1])}</td><td>${calcOk(i.cells[2])} ${calcFmt(i.fst)}</td><td>${calcOk(i.cells[3])} ${calcFmt(i.fsd)}</td><td>${calcOk(i.cells[4])}</td><td>${calcOk(i.cells[5])}</td><td>${i.spt?calcOk(i.cells[6]):'<small>sem SPT</small>'}</td></tr>`).join('')}</tbody></table>
+ <table class="calc-t calc-sum" style="max-width:900px"><thead><tr><th>Pilar</th><th>Pilar · flexão</th><th>Pilar · cisalhamento</th><th>Tombamento (FS)</th><th>Deslizamento (FS)</th><th>Profundidade</th><th>Fuste</th><th>Carga vertical</th><th>Regras pilar</th><th>ELS pilar</th><th>Bloco · ancoragem · cis. fuste</th></tr></thead><tbody>
+ ${items.map(i=>`<tr><td>${i.id}</td><td>${calcOk(i.cells[0])}</td><td>${calcOk(i.cells[1])}</td><td>${calcOk(i.cells[2])} ${calcFmt(i.fst)}</td><td>${calcOk(i.cells[3])} ${calcFmt(i.fsd)}</td><td>${calcOk(i.cells[4])}</td><td>${calcOk(i.cells[5])}</td><td>${i.spt?calcOk(i.cells[6]):'<small>sem SPT</small>'}</td><td>${calcOk(i.cells[7])}</td><td>${calcOk(i.cells[8])}</td><td>${calcOk(i.cells[9])}</td></tr>`).join('')}</tbody></table>
  <table class="calc-t calc-sum" style="max-width:900px;margin-top:10px"><thead><tr><th>VB · vertical</th><th>VB · horizontal</th><th>VI · horizontal</th><th>VT · horizontal</th><th>Alvenaria</th></tr></thead><tbody><tr><td>${bTxt(r=>r.check==='vertical')}</td><td>${bTxt(r=>r.check==='horizontal'&&r.kind==='VB')}</td><td>${bTxt(r=>r.check==='horizontal'&&r.kind==='VI')}</td><td>${bTxt(r=>r.check==='horizontal'&&r.kind==='VT')}</td><td>${bTxt(r=>r.kind==='ALV')}</td></tr></tbody></table>
  <p class="calc-hint">Parâmetros: γ=${calcFmt(S.gamma,1)} kN/m³ · φ=${calcFmt(S.phi,1)}° · c=${calcFmt(S.c,1)} kPa · q=${calcFmt(S.q,1)} kN/m² · γf=${calcFmt(S.gf,2)} · fck=${S.fck} MPa · FS tomb. ≥ ${calcFmt(S.fsTomb,1)} · FS desl. ≥ ${calcFmt(S.fsDesl,1)}</p>`;
 }
@@ -2977,7 +2996,8 @@ Verificação simplificada: a resistência à compressão da alvenaria e o graut
  <h4 class="calc-h">VB · VI · VT — flexão horizontal pelo empuxo (vencem entre pilares)</h4>
  <div style="overflow:auto"><table class="calc-t"><thead><tr><th>Viga</th><th>Arrimo/vão</th><th>Faixa</th><th>L (m)</th><th>w (kN/m)</th><th>Md (kN·m)</th><th>As face nec/det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>Cisalh.</th></tr></thead><tbody>${t2}</tbody></table></div>
  ${al.length?`<h4 class="calc-h">Alvenaria armada — ${S.alvModel==='faixas'?'vence na horizontal entre pilares (barra por fiada)':'vence na vertical entre as vigas (barras verticais)'}</h4><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Painel</th><th>Arrimo/vão</th><th>Entre</th><th>Vão (m)</th><th>p pé (kPa)</th><th>Md (kN·m/m)</th><th>MRd (kN·m/m)</th><th>Flexão</th></tr></thead><tbody>${t3}</tbody></table></div>`:''}
- <pre class="calc-mem">${mem}</pre>`;
+ <pre class="calc-mem">${mem}</pre>${(()=>{const hs=[...new Set(wallSegments.map(sg=>Number(sg.parameters?.wallBeamHeight)||40))],bw=Number(wallSegments[0]?.parameters?.wallBeamWidth)||20;
+  return `<h4 class="calc-h">Armadura de pele (NBR 6118, 17.3.5.2.3)</h4><p class="calc-hint" style="font-size:11px">${hs.map(h=>h>60?`Vigas com h = ${h} cm &gt; 60 cm: <b>armadura de pele obrigatória</b> — 0,10%·Ac,alma por face = ${calcFmt(.001*bw*h)} cm² (ex.: Ø8 c/${Math.min(20,Math.floor(calcBar(8)/(.001*bw*h)*h/5)*5)}), espaçamento ≤ 20 cm.`:`Vigas com h = ${h} cm ≤ 60 cm: armadura de pele não é exigida.`).join(' ')}</p>`})()}`;
 }
 // ---------- Fuste do tubulão/estaca: momento resistente da seção circular (flexão simples) ----------
 function calcCircleMRd(D,cover,nBars,dia,stDia){ // cm, mm → kN·m
@@ -3234,6 +3254,11 @@ function calcFailures(){
  const sv=calcSettings.wall;calcSettings.wall='all';
  try{
   const P=calcPillar(),badP=P.filter(r=>!r.okM||!r.okV);
+  const badR=P.filter(r=>!r.okRules),badE=P.filter(r=>!r.okELS);
+  for(const c of detailGroups().map(groupCode).filter(c=>/^P\d+$/.test(c))){
+   if(badR.length)add(c,'regras de pilar: '+badR[0].rules.items.filter(i=>!i[2]).map(i=>i[0].split(' (')[0].toLowerCase()).join(', '));
+   if(badE.length)add(c,'ELS: '+[badE.some(r=>r.els&&!r.els.okD)&&'deslocamento no topo',badE.some(r=>r.els&&!r.els.okW)&&'fissuração'].filter(Boolean).join(' e '))}
+  try{for(const b of calcBlock()){const w=[!b.okEsp&&'ancoragem das esperas',!b.okPil&&'arranque da estaca no bloco',!b.okTie&&'tirante do bloco',(()=>{const v=calcPileShear(b);return !v.ok&&'cisalhamento do fuste'})()].filter(Boolean);if(w.length)add(b.noBlk?b.code:(b.bc||'B1'),`${b.id}: ${w.join(', ')}`)}}catch(e){}
   if(badP.length){const ids=[...new Set(badP.map(r=>r.id))].join(', '),what=[badP.some(r=>!r.okM)&&'flexão',badP.some(r=>!r.okV)&&'cisalhamento'].filter(Boolean).join(' e ');
    for(const c of detailGroups().map(groupCode).filter(c=>/^P\d+$/.test(c)))add(c,`${ids}: ${what}`)}
   for(const f of calcFoundation()){const w=[f.FSt<calcSettings.fsTomb&&'tombamento',f.FSd<calcSettings.fsDesl&&'deslizamento',f.depth<f.depthReq-1e-6&&'profundidade',!f.okVert&&'carga vertical',f.MRdF<f.Mdmax&&'flexão do fuste',!f.okMin&&'armadura mínima'].filter(Boolean);if(w.length)add(f.code,`${f.id}: ${w.join(', ')}`)}
@@ -3254,6 +3279,73 @@ function calcMarkFailures(){
  }
 }
 (()=>{const d0=draw;draw=function(){const r=d0.apply(this,arguments);if(!renderingVariant){applyDetailSheetK();clearTimeout(calcMarkT);calcMarkT=setTimeout(calcMarkFailures,300)}return r}})();
+// ---------- NBR 6118 — aderência, ancoragem e transpasse (V257) ----------
+// fbd = η1·η2·η3·fctd (η1 = 2,25 CA-50; η2 = 1,0 boa aderência / 0,7 má; η3 = 1 para Ø < 32 mm)
+// lb = (Ø/4)·(fyd/fbd) ≥ 25Ø · lb,nec = α·lb·As,calc/As,ef ≥ máx(0,3·lb; 10Ø; 100 mm)
+// Transpasse tracionado: l0t = α0t·lb,nec ≥ máx(0,3·α0t·lb; 15Ø; 200 mm) (α0t = 2,0 com 100% emendadas)
+function nbrBond(dia,good=true){const S=calcSettings,fctd=.21*S.fck**(2/3)/S.gc,fyd=S.fyk/S.gs,fbd=2.25*(good?1:.7)*(dia<32?1:(132-dia)/100)*fctd;return {fctd,fbd,fyd,lb:Math.max(dia/4*fyd/fbd,25*dia)}} // mm
+function nbrLbNec(dia,ratio=1,hook=false,good=true){const b=nbrBond(dia,good),r=Math.min(1,Math.max(0,ratio));return {...b,ratio:r,alpha:hook?.7:1,lbnec:Math.max((hook?.7:1)*b.lb*r,.3*b.lb,10*dia,100)}}
+// Transpasse das esperas do pilar: barras do tardoz (tracionadas) com α0t pela % emendada na seção
+// (complementares descem no bloco e não são emendadas); demais barras: transpasse de compressão.
+function nbrA0t(frac){return frac<=.2?1.2:frac<=.25?1.4:frac<=.34?1.6:frac<=.5?1.8:2}
+function calcLapReq(rs){
+ const a=pillarN2(),crit=rs.reduce((x,y)=>y.Md>x.Md?y:x,rs[0]),ratio=Math.min(1,crit.AsReq/Math.max(1e-9,crit.AsDet));
+ const nT=2+(Number(a.soloN)||0),nSpl=2+(Number(a.soloLen)>0?0:(Number(a.soloN)||0)),frac=nSpl/nT,a0t=nbrA0t(frac);
+ const list=[];const dT=Number(a.cornerDia)||10;{const L=nbrLap(dT,ratio,a0t);list.push({dia:dT,kind:'tração (tardoz)',L,l0:L.l0t,fac:Math.ceil(L.l0t/dT/5)*5})}
+ if(!(Number(a.soloLen)>0)&&Number(a.soloN)>0&&Number(a.soloDia)!==dT){const d=Number(a.soloDia),L=nbrLap(d,ratio,a0t);list.push({dia:d,kind:'tração (tardoz)',L,l0:L.l0t,fac:Math.ceil(L.l0t/d/5)*5})}
+ for(const d of [...new Set([Number(a.cornerExtDia),Number(a.latN)>0?Number(a.latDia):0,Number(a.extN)>0?Number(a.extDia):0].filter(x=>x>0))]){const L=nbrLbNec(d,0,false),l0=Math.max(L.lbnec,.6*L.lb,15*d,200);list.push({dia:d,kind:'compressão',L:{...L,l0t:l0},l0,fac:Math.ceil(l0/d/5)*5})}
+ return {list,fac:Math.max(...list.map(x=>x.fac)),ratio,frac,a0t};
+}
+function nbrLap(dia,ratio=1,a0t=2,good=true){const a=nbrLbNec(dia,ratio,false,good);return {...a,a0t,l0t:Math.max(a0t*a.lbnec,.3*a0t*a.lb,15*dia,200)}}
+// ---------- ELS do pilar em balanço: flecha no topo (Branson + fluência) e fissuração na base ----------
+function calcPillarELS(r,As,dia){
+ const S=calcSettings,psi2=Number(S.psi2??.3),psi1=Number(S.psi1??.4),K=calcK(S),H=r.H;if(!(H>0)||!(r.strip.M>0))return null;
+ const b=r.b,h=r.h,d=r.d,fctm=.3*S.fck**(2/3),Ecs=.85*5600*Math.sqrt(S.fck)/10,Es=21000,ae=Es/Ecs,Ic=b*h**3/12,Mr=1.5*fctm/10*Ic/(h/2); // kN, cm
+ const x2=(-ae*As+Math.sqrt((ae*As)**2+2*b*ae*As*d))/b,I2=b*x2**3/3+ae*As*(d-x2)**2;
+ const Mz=(psi,zr)=>{const S2={...S,q:S.q*psi};const st=calcStrip(Math.max(0,H-zr),S2,K,r.strip.Hf,r.strip.zw);return st.M*r.M/r.strip.M*100}; // kN·cm na seção a zr (m) acima da base
+ const N=40;let dIm=0;
+ for(let k=0;k<N;k++){const zr=H*(k+.5)/N,M=Mz(psi2,zr);const Ie=M<=Mr?Ic:Math.min(Ic,(Mr/M)**3*Ic+(1-(Mr/M)**3)*I2);dIm+=M/(Ecs*Ie)*(H-zr)*100*(H/N*100)}
+ const af=1.32,dTot=dIm*(1+af)*10; // mm
+ const Hmm=H*1000,lim=Math.min(Hmm/250,10);
+ // Fissuração na base (combinação frequente): estádio II
+ const Mf=Mz(psi1,0),ss=Mf/(As*(d-x2/3))*10,c=Number(pillarArms.N1.cover)||3,Acr=b*Math.min(c+(Number(pillarArms.N1.dia)||5)/10+dia/20+7.5*dia/10,h/2),rr=As/Acr;
+ const w1=dia/(12.5*2.25)*ss/210000*3*ss/fctm,w2=dia/(12.5*2.25)*ss/210000*(4/rr+45),wk=Math.min(w1,w2);
+ const caa=String(stampData?.caa||'II').toUpperCase().trim(),wlim=caa==='I'?.4:caa==='IV'?.2:.3;
+ return {dIm:dIm*10,dTot,lim,okD:dTot<=lim+1e-9,Ecs,Ic,I2,Mr,x2,ss,wk,wlim,okW:wk<=wlim+1e-9,psi1,psi2,Mf:Mf/100,af};
+}
+// ---------- Bloco sobre uma estaca: ancoragem das esperas, arranque da estaca e tirante do momento ----------
+function calcBlock(){
+ const S=calcSettings,P=calcPillar(),F=calcFoundation(),a=pillarN2(),out=[];if(!P.length)return out;
+ const crit=P.reduce((x,y)=>y.Md>x.Md?y:x),ratio=Math.min(1,crit.AsReq/Math.max(1e-9,crit.AsDet));
+ for(const f of F){
+  const noBlk=(()=>{try{return foundationNoBlock(f.fkey)}catch(e){return false}})(),bc=noBlk?null:foundationEnsure('block',f.fkey),bv=bc?foundationValues('block',bc):{};
+  const rs=P.filter(r=>r.pid===f.pid),Md=Math.max(...rs.map(r=>r.Md)),Vd=Math.max(...rs.map(r=>r.Vd));
+  const dW=Math.max(Number(a.cornerDia)||10,Number(a.soloDia)||10);
+  const Hb=Number(bv.blockH)||80,cov=Number(bv.blockCover)||5,X=Number(bv.blockX)||80,Y=Number(bv.blockY)||80;
+  const esp=noBlk?{...nbrLbNec(dW,ratio,false),avail:80*dW}:{...nbrLbNec(dW,ratio,true),avail:(Hb-cov)*10};
+  const pileDia=Number(f.fDia)||12.5,pileRatio=Math.min(1,f.Mdmax/Math.max(1e-9,f.MRdF)),pil=nbrLbNec(pileDia,pileRatio,false);
+  let tie=null;if(!noBlk){const z=.8*Math.min(X,Y),T=Md*100/z,fyd=S.fyk/S.gs/10,qty=Math.max(1,Number($('blockQtyX')?.value)||4),dia=Number(bv.blockDiaX)||10,AsF=qty*calcBar(dia);tie={z,T,AsReq:T/fyd,AsF,qty,dia,ok:AsF>=T/fyd-1e-9}}
+  out.push({...f,noBlk,bc,Hb,cov,X,Y,MdP:Md,VdP:Vd,dW,ratio,esp,okEsp:esp.lbnec<=esp.avail+1e-6,pileDia,pileRatio,pil,pilAvail:(Hb-cov)*10,okPil:noBlk||pil.lbnec<=(Hb-cov)*10+1e-6,tie,okTie:!tie||tie.ok});
+ }
+ return out;
+}
+// ---------- Pilar: regras construtivas da NBR 6118 (18.4) ----------
+function calcPillarRules(r){
+ const a=pillarN2(),N1=pillarArms.N1,Ac=r.b*r.h;
+ const grp=pillarBarGroups(),AsTot=grp.reduce((t,g)=>t+g.qty*calcBar(g.dia),0),dMin=Math.min(...grp.map(g=>g.dia)),dMax=Math.max(...grp.map(g=>g.dia));
+ const AsMin=.004*Ac,AsMax=.04*Ac,sMax=Math.min(20,Math.min(r.b,r.h),12*dMin/10),tMin=Math.max(5,dMax/4);
+ const items=[['Armadura longitudinal mínima (0,4% Ac)',`${calcFmt(AsTot)} ≥ ${calcFmt(AsMin)} cm²`,AsTot>=AsMin-1e-9],
+  ['Armadura longitudinal máxima (4% Ac fora da emenda; 8% na emenda)',`${calcFmt(AsTot)} ≤ ${calcFmt(AsMax)} cm²`,AsTot<=AsMax+1e-9],
+  ['Bitola longitudinal mínima (10 mm)',`Ø${calcFmt(dMin,1)} mm`,dMin>=10-1e-9],
+  ['Bitola do estribo ≥ máx(5 mm; Ø/4)',`Ø${calcFmt(Number(N1.dia),1)} ≥ ${calcFmt(tMin,1)} mm`,Number(N1.dia)>=tMin-1e-9],
+  ['Espaçamento do estribo ≤ mín(20 cm; menor lado; 12Ø long.)',`c/${N1.spacing} ≤ ${calcFmt(sMax,1)} cm`,Number(N1.spacing)<=sMax+1e-9]];
+ return {items,ok:items.every(i=>i[2]),AsTot,AsMin,AsMax,sMax,tMin};
+}
+// ---------- Fuste: cisalhamento (seção circular → retangular equivalente bw = D, d = 0,72·D) ----------
+function calcPileShear(f){
+ const v=foundationValues('pile',f.code),D=f.D*100,st=Number(v.stDia)||8,sp=Number(v.spacing)||15;
+ const sh=calcShear(calcSettings.gf*f.H,D,.72*D,st,sp,2,true);return {...sh,Vd:calcSettings.gf*f.H,D,st,sp,ok:sh.ok};
+}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
