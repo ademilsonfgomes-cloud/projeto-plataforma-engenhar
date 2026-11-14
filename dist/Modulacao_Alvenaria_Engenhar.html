@@ -10914,10 +10914,59 @@ body.ui85 .v85:not(.on85){content-visibility:hidden}
 
   // Área da união de polígonos (volume de graute/argamassa): antes comparava todas as arestas de todas as paredes
   // entre si. Agora separa os polígonos em grupos que se tocam e soma — mesmo resultado, muito mais rápido.
+  // V138 — mesmo cálculo exato, sem comparar o que não pode se tocar: arestas só são cruzadas entre polígonos cujos
+  // retângulos envolventes se tocam (os outros não podem se cruzar) e, em cada faixa da varredura, só entram os polígonos
+  // que passam por ela. Um 2º pavimento com 103 paredes ligadas levava 8 s; o resultado é idêntico ao anterior.
+  function auRapido(polygons) {
+    if (!polygons.length) return 0;
+    const n = polygons.length, bb = new Array(n), E = new Array(n), xs = [];
+    for (let k = 0; k < n; k++) {
+      const poly = polygons[k]; let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; const es = [];
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i], b = poly[(i + 1) % poly.length]; xs.push(a.x);
+        if (a.x < x0) x0 = a.x; if (a.x > x1) x1 = a.x; if (a.y < y0) y0 = a.y; if (a.y > y1) y1 = a.y;
+        if (Math.abs(b.x - a.x) > 1e-8) es.push({ a, b, lo: Math.min(a.x, b.x), hi: Math.max(a.x, b.x), s: (b.y - a.y) / (b.x - a.x) });
+      }
+      bb[k] = [x0, y0, x1, y1]; E[k] = es;
+    }
+    const cruza = (A, B, mesmo) => {
+      for (let i = 0; i < A.length; i++) for (let j = mesmo ? i + 1 : 0; j < B.length; j++) {
+        const a = A[i], b = B[j]; if (Math.abs(a.s - b.s) < 1e-9) continue;
+        const x = (b.a.y - b.s * b.a.x - a.a.y + a.s * a.a.x) / (a.s - b.s);
+        if (x > Math.max(a.lo, b.lo) + 1e-8 && x < Math.min(a.hi, b.hi) - 1e-8) xs.push(x);
+      }
+    };
+    const ord = [...Array(n).keys()].sort((i, j) => bb[i][0] - bb[j][0]);
+    for (let p = 0; p < n; p++) {
+      const i = ord[p]; cruza(E[i], E[i], true);
+      for (let q = p + 1; q < n; q++) {
+        const j = ord[q]; if (bb[j][0] > bb[i][2] + 1e-6) break;
+        if (bb[j][1] <= bb[i][3] + 1e-6 && bb[j][3] >= bb[i][1] - 1e-6) cruza(E[i], E[j], false);
+      }
+    }
+    const events = [...new Set(xs.map(x => Math.round(x * 1e7) / 1e7))].sort((a, b) => a - b);
+    let area = 0, ptr = 0; const ativos = [];
+    for (let i = 1; i < events.length; i++) {
+      const x = (events[i - 1] + events[i]) / 2;
+      while (ptr < n && bb[ord[ptr]][0] < x) ativos.push(ord[ptr++]);
+      const spans = [];
+      for (let t = ativos.length - 1; t >= 0; t--) {
+        const k = ativos[t]; if (bb[k][2] <= x) { ativos.splice(t, 1); continue; }
+        const poly = polygons[k], ys = [];
+        for (let j = 0; j < poly.length; j++) { const a = poly[j], b = poly[(j + 1) % poly.length]; if (x > Math.min(a.x, b.x) && x < Math.max(a.x, b.x)) ys.push(a.y + (b.y - a.y) * (x - a.x) / (b.x - a.x)); }
+        if (ys.length >= 2) spans.push([Math.min(...ys), Math.max(...ys)]);
+      }
+      spans.sort((a, b) => a[0] - b[0]); let total = 0, end = -Infinity;
+      for (const [a, b] of spans) { if (b > end) { total += b - Math.max(a, end); end = b; } }
+      area += total * (events[i] - events[i - 1]);
+    }
+    return area;
+  }
+  window.auRapido138 = auRapido;
   try {
-    const au = areaUnion34;
+    const au0 = areaUnion34, au = p => (window.__v138off ? au0(p) : auRapido(p));
     areaUnion34 = function (polys) {
-      if (!Array.isArray(polys) || polys.length < 6 || window.__v119semGrupo) return au(polys);
+      if (!Array.isArray(polys) || polys.length < 6 || window.__v119semGrupo) return window.__v119semGrupo ? au0(polys) : au(polys);
       const bb = polys.map(p => { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const q of p) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; } return [x0, y0, x1, y1]; });
       const pai = polys.map((_, i) => i), raiz = i => { while (pai[i] !== i) { pai[i] = pai[pai[i]]; i = pai[i]; } return i; };
       const ordem = polys.map((_, i) => i).sort((i, j) => bb[i][0] - bb[j][0]);
