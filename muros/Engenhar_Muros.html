@@ -559,7 +559,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
       'stroke-dasharray':'5 3',transform:`translate(${pcx} ${pcy}) rotate(${rot})`,'data-foundation-kind':'block','data-foundation-key':fkey,style:'cursor:pointer;pointer-events:all'},wg);
    }
    circle(pcx,pcy,pileDiameter/2,'#65e7a1','transparent',1.6,wg,{'stroke-dasharray':'3 2','data-foundation-kind':'pile','data-foundation-key':fkey,style:'cursor:pointer;pointer-events:all'});
-   el('rect',{x:-colA/2,y:-colB/2,width:colA,height:colB,fill:'#0c2030',stroke:pillar,'stroke-width':1.2,transform:`translate(${pcx} ${pcy}) rotate(${rot})`,'data-foundation-kind':'pile','data-foundation-key':fkey,style:'cursor:pointer'},wg);
+   el('rect',{x:-colA/2,y:-colB/2,width:colA,height:colB,fill:'#0c2030',stroke:pillar,'stroke-width':1.2,transform:`translate(${pcx} ${pcy}) rotate(${rot})`,'data-foundation-kind':'pile','data-foundation-key':fkey,...(j>0&&j<n-1?{'data-pillar-seg':idx,'data-pillar-j':j,style:'cursor:ew-resize'}:{style:'cursor:pointer'})},wg);
    // Chamada da fundação com linha de chamada, no lado do solo; o pilar é
    // identificado no círculo do eixo (mesma numeração das elevações).
    const reach=Math.max(hw,colB/2,blockOn?blockDepth/2:0,pileDiameter/2);segReach=Math.max(segReach,reach);
@@ -1453,6 +1453,9 @@ svg.addEventListener('pointerdown',ev=>{
  const ph=ev.target.closest('[data-pillar-arm]');if(!editAct&&ph)editAct=()=>openPillarArm(ph.dataset.pillarArm);
  const posHit=ev.target.closest('[data-pos]');if(!editAct&&posHit)editAct=()=>{setActiveEditor('tubulo');edit(posHit.dataset.pos)};
  const al=ev.target.closest('[data-block-armature]');if(!editAct&&al)editAct=()=>{setActiveEditor('bloco');editBlock(al.dataset.blockArmature)};
+ // V265 — Arrastar um pilar intermediário ao longo do eixo do arrimo (clique sem arrastar abre a fundação).
+ const pmv=ev.target.closest('[data-pillar-j]');
+ if(pmv&&mode!=='move'){ev.preventDefault();pointer={type:'pillarPending',seg:Number(pmv.dataset.pillarSeg),j:Number(pmv.dataset.pillarJ),edit:editAct,x:p.x,y:p.y,id:ev.pointerId};svg.setPointerCapture(ev.pointerId);return}
  if(mode==='move'){if(grp){startGroupDrag(grp,p,ev);return}}
  else if(editAct){ev.preventDefault();pointer={type:'pending',edit:editAct,group:grp,x:p.x,y:p.y,id:ev.pointerId};svg.setPointerCapture(ev.pointerId);return}
  else if(grp){startGroupDrag(grp,p,ev);return}
@@ -1489,6 +1492,12 @@ svg.addEventListener('pointerdown',ev=>{
 svg.addEventListener('pointermove',ev=>{
  if(mode==='wallDraw'){if(!$('wallMeasure').hidden)return;wallPreview=wallConstrain(wallWorldPoint(point(ev)));draw();return}
  if(!pointer){hoverGroup(ev);return}let p=point(ev),dx=p.x-pointer.x,dy=p.y-pointer.y;
+ if(pointer.type==='pillarPending'||pointer.type==='pillarMove'){if(pointer.type==='pillarPending'){if(Math.hypot(dx,dy)<5)return;pointer.type='pillarMove'}
+  const i=pointer.seg,P=wallProfile(i);if(!P)return;const q=local(p),A={x:wallStart.x+wallOffset.x+P.a.x*.78,y:wallStart.y+wallOffset.y+P.a.y*.78},B={x:wallStart.x+wallOffset.x+P.b.x*.78,y:wallStart.y+wallOffset.y+P.b.y*.78};
+  const vx=B.x-A.x,vy=B.y-A.y,l2=vx*vx+vy*vy,t=l2?((q[0]-A.x)*vx+(q[1]-A.y)*vy)/l2:0,j=pointer.j,xs=[...P.xs];
+  let pos=Math.round(t*P.L);pos=Math.max(xs[j-1]+10,Math.min(xs[j+1]-10,pos));xs[j]=pos;
+  wallSegments[i].spans=xs.slice(1).map((v,k)=>Math.round((v-xs[k])*10)/10);draw();
+  const id=pillarIds()[i]?.[j];status(`P${id}: ${String(pos).replace('.',',')} cm do início do arrimo · vãos ${String(xs[j]-xs[j-1]).replace('.',',')} / ${String(xs[j+1]-xs[j]).replace('.',',')} cm — solte para fixar`);return}
  if(pointer.type==='pending'){if(Math.hypot(dx,dy)<5)return;const g=pointer.group;if(!g){pointer.type='idle';return}startGroupDrag(g,{x:pointer.x,y:pointer.y},ev);dx=p.x-pointer.x;dy=p.y-pointer.y}
  if(pointer.type==='idle')return;
  if(pointer.type==='sheet'){const sh=sheets.find(x=>x.id===pointer.sheetId);if(sh){sh.x=pointer.ox+dx/view.k;sh.y=pointer.oy+dy/view.k}}
@@ -1500,7 +1509,7 @@ svg.addEventListener('pointermove',ev=>{
  draw();
  if(pointer.code){const g=findGroup(pointer.code);if(g)hoverBox(g,true)}
 });
-svg.addEventListener('pointerup',()=>{const pend=pointer?.type==='pending'?pointer.edit:null;pointer=null;if(pend)pend()});svg.addEventListener('pointercancel',()=>{pointer=null});
+svg.addEventListener('pointerup',()=>{const pend=(pointer?.type==='pending'||pointer?.type==='pillarPending')?pointer.edit:null,moved=pointer?.type==='pillarMove';pointer=null;if(pend)pend();if(moved){draw();status($('status').textContent.replace(' — solte para fixar',' · confira o cálculo (Σ Calcular) e reorganize as pranchas'))}});svg.addEventListener('pointercancel',()=>{pointer=null});
 svg.addEventListener('wheel',ev=>{ev.preventDefault();let p=point(ev),k=clamp(view.k*(ev.deltaY<0?1.12:1/1.12),.15,5),factor=k/view.k;view.x=p.x-(p.x-view.x)*factor;view.y=p.y-(p.y-view.y)*factor;view.k=k;draw()},{passive:false});
 document.addEventListener('keydown',ev=>{if(ev.key==='F8'){ev.preventDefault();wallToggleOrtho();return}if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;if(ev.key==='Escape'){if(foundationCopyMode){foundationCopyCancel();status('Cópia encerrada.');return}wallHideMeasure();if(mode==='wallDraw')wallPreview=null;freePoints=[];setMode('select');closePanels()}else if(ev.key.toLowerCase()==='m'){$('moveBlock').click()}else if(ev.key.toLowerCase()==='l'&&mode!=='free')setMode('free');else if(ev.key==='Enter'&&mode==='wallDraw'){ev.preventDefault();wallEnd()}else if(ev.key==='Enter'&&mode==='free'){if(freePoints.length>=2){addShape([...freePoints],'Barra livre');freePoints=[]}else status('Marque ao menos dois pontos para concluir.')}else if((ev.key==='Backspace'||ev.key==='Delete')&&mode==='free'){ev.preventDefault();freePoints.pop();draw()}});
 fields.forEach(id=>$(id).addEventListener('input',()=>{draw()}));
@@ -1524,15 +1533,16 @@ function profileOpen(){
  const i=wallActive,P=wallProfile(i),ids=pillarIds()[i]||[];
  $('profileTitle').textContent=`Perfil do arrimo ${i+1} — ${ids.length} pilares, ${String(Math.round(P.L)/100).replace('.',',')} m`;
  const box=$('profileRows');box.replaceChildren();
- const head=document.createElement('div');head.style.cssText='display:grid;grid-template-columns:55px 125px 125px 1fr;gap:8px;font-weight:bold;padding:4px';head.innerHTML='<span>Pilar</span><span>Vão até o próximo (cm)</span><span>Topo do muro (cm)</span><span>Topo da VB no vão (cm) · ±0 = topo da VB</span>';box.append(head);
- ids.forEach((pid,j)=>{const r=document.createElement('div');r.style.cssText='display:grid;grid-template-columns:55px 125px 125px 1fr;gap:8px;align-items:center;padding:3px 4px;border-top:1px solid #c8d9e6';
+ const head=document.createElement('div');head.style.cssText='display:grid;grid-template-columns:45px 110px 80px 110px 1fr;gap:8px;font-weight:bold;padding:4px';head.innerHTML='<span>Pilar</span><span>Posição desde o início (cm)</span><span>Vão até o próximo</span><span>Topo do muro (cm)</span><span>Topo da VB no vão (cm) · ±0 = topo da VB</span>';box.append(head);
+ ids.forEach((pid,j)=>{const r=document.createElement('div');r.style.cssText='display:grid;grid-template-columns:45px 110px 80px 110px 1fr;gap:8px;align-items:center;padding:3px 4px;border-top:1px solid #c8d9e6';
   const a=document.createElement('b');a.textContent='P'+pid;
   const tp=document.createElement('input');tp.type='number';tp.step='1';tp.value=Math.round(P.top[j]-levelRef());tp.dataset.profTop=j;tp.style.width='110px';
   const bs=document.createElement('input');bs.type='number';bs.step=String(P.course);bs.style.width='110px';
-  const vn=document.createElement(j<ids.length-2?'input':'span');
-  if(j<ids.length-2){vn.type='number';vn.step='1';vn.min='10';vn.value=Math.round((P.xs[j+1]-P.xs[j])*10)/10;vn.dataset.profSpan=j;vn.style.width='100px';vn.oninput=profileSpanUpdate}
-  else if(j===ids.length-2){vn.id='profLastSpan';vn.style.cssText='font-weight:bold;padding-left:4px';vn.title='Último vão = comprimento do arrimo − soma dos anteriores'}else vn.textContent='—';
-  if(j<ids.length-1){bs.value=P.spanBase[j];bs.dataset.profBase=j;r.append(a,vn,tp,bs)}else{const sp=document.createElement('span');sp.textContent='—';r.append(a,vn,tp,sp)}
+  const inner=j>0&&j<ids.length-1,ps=document.createElement(inner?'input':'span');
+  if(inner){ps.type='number';ps.step='1';ps.value=Math.round(P.xs[j]*10)/10;ps.dataset.profPos=j;ps.style.width='95px';ps.oninput=profileSpanUpdate}
+  else{ps.textContent=String(Math.round(P.xs[j]*10)/10).replace('.',',');ps.style.paddingLeft='4px';ps.title=j?'Fim do arrimo':'Início do arrimo'}
+  const vn=document.createElement('span');vn.dataset.profVao=j;vn.style.cssText='font-weight:bold;padding-left:4px';if(j===ids.length-1)vn.textContent='—';
+  if(j<ids.length-1){bs.value=P.spanBase[j];bs.dataset.profBase=j;r.append(a,ps,vn,tp,bs)}else{const sp=document.createElement('span');sp.textContent='—';r.append(a,ps,vn,tp,sp)}
   box.append(r)});
  box.dataset.len=String(P.L);profileSpanUpdate();
  for(const sel of [$('profFrom'),$('profTo')]){sel.replaceChildren();ids.forEach((pid,j)=>{const o=document.createElement('option');o.value=j;o.textContent='P'+pid;sel.append(o)})}
@@ -1540,10 +1550,11 @@ function profileOpen(){
  const pts=$('profPts');pts.replaceChildren();(P.pr.pts||[]).forEach(q=>profileAddPoint(q.d/100,q.z-levelRef()));
  $('profileDialog').showModal();
 }
-function profileSpanUpdate(){const box=$('profileRows'),L=Number(box.dataset.len)||0,ins=[...box.querySelectorAll('[data-prof-span]')],sum=ins.reduce((a,x)=>a+(Number(x.value)||0),0),last=Math.round((L-sum)*10)/10,el=$('profLastSpan');if(el){el.textContent=`${String(last).replace('.',',')} (resto)`;el.style.color=last>0?'#173a55':'#c0392b'}}
+function profilePositions(){const box=$('profileRows'),L=Number(box.dataset.len)||0,ins=[...box.querySelectorAll('[data-prof-pos]')];return [0,...ins.map(x=>Number(x.value)),L]}
+function profileSpanUpdate(){const pos=profilePositions();$('profileRows').querySelectorAll('[data-prof-vao]').forEach(el=>{const j=Number(el.dataset.profVao);if(j>=pos.length-1)return;const v=Math.round((pos[j+1]-pos[j])*10)/10;el.textContent=String(v).replace('.',',');el.style.color=v>=10?'#173a55':'#c0392b'})}
 function profileAddPoint(dm='',z=''){const r=document.createElement('div');r.style.cssText='display:flex;gap:6px;align-items:center;margin-top:5px';r.innerHTML='a <input type="number" step="0.01" style="width:70px" data-pt-d> m do início → topo <input type="number" step="1" style="width:70px" data-pt-z> cm <button type="button">✕</button>';r.querySelector('[data-pt-d]').value=dm;r.querySelector('[data-pt-z]').value=z;r.querySelector('button').onclick=()=>r.remove();$('profPts').append(r)}
 $('profileBtn').onclick=profileOpen;
-$('profEqual').onclick=()=>{const box=$('profileRows'),ins=[...box.querySelectorAll('[data-prof-span]')],L=Number(box.dataset.len)||0,eq=Math.round(L/(ins.length+1)*10)/10;ins.forEach(x=>x.value=eq);profileSpanUpdate()};
+$('profEqual').onclick=()=>{const box=$('profileRows'),ins=[...box.querySelectorAll('[data-prof-pos]')],L=Number(box.dataset.len)||0;ins.forEach((x,k)=>x.value=Math.round(L*(k+1)/(ins.length+1)*10)/10);profileSpanUpdate()};
 $('profAddPt').onclick=()=>profileAddPoint();
 $('profCancel').onclick=()=>$('profileDialog').close();
 $('profApplyRamp').onclick=()=>{const a=Number($('profFrom').value),b=Number($('profTo').value),zb=Number($('profToTop').value);if(!(b>a)||!Number.isFinite(zb))return;const ins=[...$('profileRows').querySelectorAll('[data-prof-top]')];const za=Number(ins[a].value);for(let j=a;j<=b;j++)ins[j].value=Math.round(za+(zb-za)*(j-a)/(b-a))};
@@ -1554,9 +1565,9 @@ $('profOk').onclick=()=>{
  const base=[...$('profileRows').querySelectorAll('[data-prof-base]')].map(x=>profileNum(x.value)??0);
  const pts=[...$('profPts').children].map(r=>({d:Number(r.querySelector('[data-pt-d]').value)*100,z:Number(r.querySelector('[data-pt-z]').value)+levelRef()})).filter(q=>Number.isFinite(q.d)&&q.d>0&&Number.isFinite(q.z));
  if(top.some(v=>v==null)){status('Informe o nível do topo de todos os pilares.');return}
-const spIns=[...$('profileRows').querySelectorAll('[data-prof-span]')].map(x=>Number(x.value)),Ltot=Number($('profileRows').dataset.len)||0;
- if(spIns.length){const last=Ltot-spIns.reduce((a,b)=>a+b,0),spans=[...spIns,last];
-  if(spans.some(v=>!(v>=10))){status('Vãos inválidos: cada vão deve ter pelo menos 10 cm e a soma não pode passar do comprimento do arrimo.');return}
+const posAll=profilePositions(),Ltot=Number($('profileRows').dataset.len)||0;
+ if(posAll.length>2){const spans=posAll.slice(1).map((v,k)=>v-posAll[k]);
+  if(spans.some(v=>!(v>=10))){status('Posições inválidas: os pilares devem estar em ordem, com pelo menos 10 cm entre eles e dentro do comprimento do arrimo.');return}
   const eq=Ltot/spans.length;seg.spans=spans.every(v=>Math.abs(v-eq)<.6)?null:spans.map(v=>Math.round(v*10)/10)}
  seg.profile={top,base,pts};
  // Pilar de canto: o mesmo nível de topo vale para os dois arrimos que se encontram nele.
