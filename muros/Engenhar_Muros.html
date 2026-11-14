@@ -3162,7 +3162,7 @@ function calcReportHtml(){
  const prem=[['Peso específico do solo γ',`${calcFmt(S.gamma,1)} kN/m³`],['Ângulo de atrito φ',`${calcFmt(S.phi,1)}°`],['Coesão c',`${calcFmt(S.c,1)} kPa`],['Empuxo',modeTxt],
   ['Talude do aterro β',`${calcFmt(S.beta||0,1)}°`],['Sobrecarga q',`${calcFmt(S.q,1)} kN/m² ${S.qDist>0?`a ${calcFmt(S.qDist)} m do tardoz`:'junto ao tardoz'}`],
   ['Nível d\'água',S.water?`${S.water} cm (a partir do ±0,00) · γsat ${calcFmt(S.gsat,1)} kN/m³`:'sem água (drenagem funcionando)'],['Terreno da frente',S.useFront?'descontado (reação em repouso)':'ignorado'],
-  ['Coeficientes',`γf = ${calcFmt(S.gf,2)} · γc = ${calcFmt(S.gc,2)} · γs = ${calcFmt(S.gs,2)}`],['Materiais',`concreto fck ${S.fck} MPa · aço CA-50 / CA-60`],
+  ['Coeficientes',`γf = ${calcFmt(S.gf,2)} · γc = ${calcFmt(S.gc,2)} · γs = ${calcFmt(S.gs,2)} · ψ1 = ${calcFmt(Number(S.psi1??.4),1)} · ψ2 = ${calcFmt(Number(S.psi2??.3),1)}`],['Materiais',`concreto fck ${S.fck} MPa · aço CA-50 / CA-60`],
   ['Fundação',`FS tombamento ≥ ${calcFmt(S.fsTomb,1)} · FS deslizamento ≥ ${calcFmt(S.fsDesl,1)} · FS vertical ${calcFmt(S.fsVert,1)} · prof. mínima ${calcFmt(S.minDepth,1)} m`],
   ['Sondagem (SPT por metro)',S.spt?esc(S.spt)+` · solo: ${(CALC_SOILS[S.soil]||CALC_SOILS.areia).t}`:'não informada'],
   ['Alvenaria',`${S.alvModel==='faixas'?'vence na horizontal entre pilares':'vence na vertical entre as vigas'} · ${calcFmt(S.gAlv,1)} kN/m²`]];
@@ -3181,6 +3181,7 @@ function calcReportHtml(){
  .calc-mem{white-space:pre-wrap;font:8.6pt/1.45 Consolas,'Courier New',monospace;border:1px solid #b9c8d4;padding:7px;background:#fbfcfd;break-inside:auto}
  .calc-hint{font-size:7.5pt;color:#556}.calc-h{font-size:10pt;margin:8px 0 3px}tr.sel{background:#fff6cf}tr.crit td:first-child{color:#c0392b;font-weight:bold}small{font-size:7pt}
  .foot{margin-top:14px;font-size:8pt;color:#556;border-top:1px solid #ccd;padding-top:6px}
+ .term{break-inside:avoid;margin-top:16px}.term p{font-size:9.5pt;text-align:justify;line-height:1.45}.sig td{text-align:left;font-size:9.5pt;padding:6px 8px}
  @media print{.bar{display:none}main{padding:0}}
  </style></head><body><div class="bar"><b>Memória de cálculo · Engenhar</b><button onclick="window.print()">Imprimir / Salvar como PDF</button></div><main>
  <div class="cover"><img src="${stampLogoData}" alt="Engenhar"><h1>MEMÓRIA DE CÁLCULO<br>MURO DE ARRIMO</h1><div class="sub">Empuxo · Fundação · Pilares · Vigas · Alvenaria armada</div>
@@ -3188,8 +3189,30 @@ function calcReportHtml(){
  <tr><td>Responsável técnico</td><td>${esc(sd.responsible||'—')} · ${esc(sd.crea||'')}</td></tr><tr><td>Revisão / data</td><td>${esc(sd.revision||'00')} · ${esc(sd.date||new Date().toLocaleDateString('pt-BR'))}</td></tr></table></div>
  ${sec(1,'Geometria',`<table><thead><tr><th>Trecho</th><th>Comprimento</th><th>Pilares</th><th>Pilar</th><th>Altura do muro</th><th>VB</th><th>Aterro</th></tr></thead><tbody>${walls}</tbody></table><p class="calc-hint">Níveis em relação ao ±0,00 = topo da viga baldrame (VB).</p>`)}
  ${sec(2,'Premissas de cálculo',`<table class="prem">${prem.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`)}
- ${sec(3,'Empuxo de terra',parts.emp)}${sec(4,'Fundação',parts.fun)}${sec(5,'Pilares',parts.pil)}${sec(6,'Vigas e alvenaria',parts.vig)}
- ${sec(7,'Resumo das verificações',parts.res)}${sec(8,'Quantitativo',parts.qua)}
+ ${sec(3,'Normas e referências',`<table class="prem"><thead><tr><th style="text-align:left">Documento</th><th style="text-align:left">Aplicação nesta memória</th></tr></thead><tbody>${[
+  ['ABNT NBR 6118:2023 — Projeto de estruturas de concreto','Materiais e coeficientes (seções 8 e 12); cobrimento e classe de agressividade (seção 7); aderência, ancoragem e emendas por transpasse (9.3 a 9.5); combinações (11.8); limites de deslocamento e de abertura de fissuras (13.3 e 13.4); flexão, cisalhamento — modelo I — e ELS de vigas e pilares (seção 17, incluindo armadura de pele); detalhamento de vigas e pilares (seção 18)'],
+  ['ABNT NBR 6122:2019 — Projeto e execução de fundações','Fatores de segurança das fundações profundas, métodos semiempíricos de capacidade de carga, limitação da parcela de ponta em estacas escavadas e armadura mínima de estacas (conferir a tabela para o tipo de estaca adotado)'],
+  ['ABNT NBR 8681:2003 — Ações e segurança nas estruturas','Classificação das ações (empuxo permanente; sobrecarga variável), coeficientes γf e fatores de combinação ψ'],
+  ['ABNT NBR 6484:2020 — Sondagem SPT','Índices N utilizados na capacidade de carga'],
+  ['ABNT NBR 16868-1:2020 — Alvenaria estrutural','Não verificada nesta memória (compressão e cisalhamento da alvenaria)'],
+  ['Rankine (1857) · Coulomb (1776)','Coeficientes de empuxo ativo; repouso K0 = 1 − sen φ (Jaky)'],
+  ['DIN 4085','Distribuição da sobrecarga afastada do tardoz'],
+  ['Broms (1964)','Resistência lateral de estaca curta em solo não coesivo'],
+  ['Décourt & Quaresma (1978, 1996)','Capacidade de carga de estacas pelo SPT'],
+  ['Branson (1963)','Inércia equivalente para a flecha (adotada pela NBR 6118)']].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</tbody></table>`)}
+ ${sec(4,'Combinações de ações',`<table class="prem"><thead><tr><th style="text-align:left">Combinação</th><th style="text-align:left">Expressão adotada</th><th style="text-align:left">Uso</th></tr></thead><tbody>
+  <tr><td>ELU — normal</td><td>Fd = γg·E(solo${S.water?' + água':''}) + γq·E(q) · γg = γq = ${calcFmt(S.gf,2)}</td><td>Flexão e cisalhamento de pilares, vigas, fuste e bloco; ancoragens</td></tr>
+  <tr><td>ELS — quase permanente</td><td>E(solo${S.water?' + água':''}) + ψ2·E(q) · ψ2 = ${calcFmt(Number(S.psi2??.3),2)}</td><td>Flecha no topo do pilar (com fluência)</td></tr>
+  <tr><td>ELS — frequente</td><td>E(solo${S.water?' + água':''}) + ψ1·E(q) · ψ1 = ${calcFmt(Number(S.psi1??.4),2)}</td><td>Abertura de fissuras</td></tr>
+  <tr><td>Estabilidade da fundação</td><td>Ações características (γ = 1,0) · FS tombamento ≥ ${calcFmt(S.fsTomb,1)} · FS deslizamento ≥ ${calcFmt(S.fsDesl,1)} · FS vertical ${calcFmt(S.fsVert,1)}</td><td>Broms; capacidade de carga (FS global)</td></tr>
+  </tbody></table><p class="calc-hint">E(·) = empuxo produzido pela parcela indicada. O empuxo de terra é tratado como ação permanente desfavorável; a sobrecarga sobre o aterro como ação variável.</p>`)}
+ ${sec(5,'Empuxo de terra',parts.emp)}${sec(6,'Fundação',parts.fun)}${sec(7,'Pilares',parts.pil)}${sec(8,'Vigas e alvenaria',parts.vig)}
+ ${sec(9,'Resumo das verificações',parts.res)}${sec(10,'Quantitativo',parts.qua)}
+ <section class="term"><h2>Termo de responsabilidade técnica</h2>
+ <p>Declaro que esta memória de cálculo foi elaborada e conferida sob minha responsabilidade técnica, com base nas normas e nos métodos listados no item 3, nas premissas do item 2 e nos dados geotécnicos disponíveis. Alterações de geometria, de cargas, do tipo de solo ou do nível d'água em relação ao aqui considerado exigem a revisão do cálculo. A execução deve seguir as pranchas do projeto e as normas de execução aplicáveis.</p>
+ <table class="sig"><tr><td>Responsável técnico: <b>${esc(sd.responsible||'')}</b></td><td>${esc(sd.crea||'CREA nº')}</td></tr>
+ <tr><td>ART nº: ______________________________</td><td>Revisão ${esc(sd.revision||'00')} · ${esc(sd.date||new Date().toLocaleDateString('pt-BR'))}</td></tr>
+ <tr><td colspan="2" style="height:22mm;vertical-align:bottom;text-align:center">_____________________________________________<br>Assinatura do responsável técnico</td></tr></table></section>
  <div class="foot">Memória gerada pelo Engenhar Muros. As memórias detalhadas referem-se ao elemento mais solicitado de cada grupo; as tabelas listam todos os elementos. Hipóteses e métodos indicados em cada item; resultados sujeitos à verificação do responsável técnico.</div>
  </main></body></html>`;
 }
