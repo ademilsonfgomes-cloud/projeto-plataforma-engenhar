@@ -2531,7 +2531,7 @@ $('notesApply').onclick=()=>{bendTableOn=$('notesBendTable').checked;technicalNo
 // e momento máximo no fuste. Pilar: flexão simples e cisalhamento (NBR 6118, modelo I).
 // Modo "Só detalhamento": o cálculo é só conferência e nunca altera o desenho.
 // Modo "Com cálculo do programa": botões "Aplicar ao detalhamento" ficam disponíveis.
-let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null,useCalc:false,tab:'empuxo',fsTomb:2,fsDesl:1.5,fck:25,fyk:500,gc:1.4,gs:1.15,qDist:0,useFront:true,maxDia:16,stagger:true,showUtil:false,gAlv:3,optR:60,alvModel:'cintas',spt:'',soil:'areia',minDepth:3,fsVert:2,asMinPile:.4,minArm:2,water:'',gsat:20,beta:0};
+let calcSettings={gamma:18,phi:30,c:0,q:10,mode:'ka',gf:1.4,wall:'all',sel:null,useCalc:false,tab:'empuxo',fsTomb:2,fsDesl:1.5,fck:25,fyk:500,gc:1.4,gs:1.15,qDist:0,useFront:true,maxDia:16,stagger:true,gAlv:3,optR:60,alvModel:'cintas',spt:'',soil:'areia',minDepth:3,fsVert:2,asMinPile:.4,minArm:2,water:'',gsat:20,beta:0};
 const calcFmt=(v,d=2)=>Number.isFinite(v)?v.toFixed(d).replace('.',','):'—';
 const calcBar=dia=>Math.PI*(Number(dia)||0)**2/400; // cm² de uma barra (Ø em mm)
 // Coeficiente horizontal: Rankine (δ = 0), Coulomb (δ = 2/3·φ, componente horizontal Ka·cos δ) ou repouso.
@@ -2886,7 +2886,7 @@ ${r.cut?`   Complementares do tardoz (descem na fundação, sem espera) até ${r
 Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados), engaste no topo da VB, γc = ${calcFmt(S.gc,2)}, γs = ${calcFmt(S.gs,2)}.`;
  return `<div class="calc-k">Armadura detalhada no tardoz: <b>${calcFmt(rs[0].AsDet)} cm²</b> · maior As,nec: <b>${calcFmt(Math.max(...rs.map(x=>x.AsReq).filter(Number.isFinite)))} cm²</b> (${crit.id}) · ${rs.every(x=>x.okM&&x.okV)?'<span class="c-ok">todos os pilares passam</span>':'<span class="c-no">há pilar que não passa</span>'}
  ${S.useCalc?'<button class="c-apply" id="cApplyP">Aplicar armadura ao detalhamento</button>':''}</div>
- ${(()=>{const env=calcPillarEnvelope(sel);return env?`<div class="calc-grid" style="grid-template-columns:1fr 310px;margin-bottom:10px"><div><h4 class="calc-h" style="margin-top:0">Aproveitamento — ${sel.id} · <span style="color:${utilColor(env.main[1])}">${Number.isFinite(env.main[1])?calcFmt(env.main[1]*100,0):"—"}% (${utilText(env.main[1])})</span></h4>${utilBarsHTML(env)}<label style="font-size:11px;display:flex;gap:6px;align-items:center;margin-top:6px"><input type="checkbox" id="cShowUtil" ${calcSettings.showUtil===true?"checked":""}> Mostrar aproveitamento e gráfico de aço ao lado do desenho do pilar (só na tela)</label></div><div>${envSVG(env,"Área de aço necessária × detalhada — "+sel.id)}</div></div>`:""})()}
+ ${(()=>{const env=calcPillarEnvelope(sel);return env?`<div class="calc-grid" style="grid-template-columns:1fr 310px;margin-bottom:10px"><div><h4 class="calc-h" style="margin-top:0">Aproveitamento — ${sel.id} · <span style="color:${utilColor(env.main[1])}">${Number.isFinite(env.main[1])?calcFmt(env.main[1]*100,0):"—"}% (${utilText(env.main[1])})</span></h4>${utilBarsHTML(env)}</div><div>${envSVG(env,"Área de aço necessária × detalhada — "+sel.id)}</div></div>`:""})()}
  <div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>Seção (cm)</th><th>Md (kN·m)</th><th>x/d</th><th>As nec (cm²)</th><th>As det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>VRd2 (kN)</th><th>Asw/s nec (cm²/m)</th><th>Asw/s det (cm²/m)</th><th>Cisalh.</th></tr></thead><tbody>${tr}</tbody></table></div>
  <pre class="calc-mem">${mem}</pre>${(()=>{
   const ru=r.rules,els=r.els,a2=pillarN2(),ratio=Math.min(1,r.AsReq/Math.max(1e-9,r.AsDet)),grp=pillarBarGroups(),lapNow=Number(pillarArms.N3.lapFactor)||60;
@@ -3493,7 +3493,6 @@ function calcFailures(){
 }
 function calcMarkFailures(){
  const root=sceneRoot();if(!root)return;root.querySelectorAll('[data-screen-only]').forEach(n=>n.remove());
- if(calcSettings.showUtil===true)try{calcPillarOverlay(root)}catch(e){}
  let fails;try{fails=calcFailures()}catch(e){return}
  for(const [code,msgs] of fails){const g=findGroup(code);if(!g)continue;const b=sceneBox(g);if(!b)continue;
   const u=unitFor(detailScale[code]||25),fs=4.2*u,list=[...msgs],txt=`⚠ NÃO PASSA NO CÁLCULO${calcSettings.useCalc?'':' (conferência)'} — ${list.slice(0,3).join(' · ')}${list.length>3?` · +${list.length-3}`:''}`;
@@ -3612,33 +3611,6 @@ function envSVG(env,title){
 function utilBarsHTML(env){
  return `<table class="calc-t" style="max-width:520px"><thead><tr><th style="text-align:left">Verificação</th><th>Aproveitamento</th><th style="width:45%"></th></tr></thead><tbody>${env.items.map(([t,u])=>`<tr><td style="text-align:left">${t}</td><td><b style="color:${utilColor(u)}">${Number.isFinite(u)?calcFmt(u*100,0)+'%':'—'}</b></td><td style="text-align:left"><div style="height:10px;background:#e6edf2;border-radius:5px;overflow:hidden"><div style="height:10px;width:${Math.min(100,(Number.isFinite(u)?u:1.5)*66.7)}%;background:${utilColor(u)}"></div></div></td></tr>`).join('')}</tbody></table><p class="calc-hint">Barra: 66,7% da largura = 100% de aproveitamento. Acima de 100% não passa · 80–100% bem dimensionado · 50–80% com folga · abaixo de 50% folga excessiva.</p>`;
 }
-// Painel na tela do CAD, ao lado do detalhamento do pilar (não sai no PDF/DXF).
-function calcPillarOverlay(root){
- let P;try{P=calcPillar()}catch(e){return}if(!P.length)return;
- const r=P.reduce((x,y)=>y.Md>x.Md?y:x),env=calcPillarEnvelope(r);if(!env)return;
- for(const code of detailGroups().map(groupCode).filter(c=>/^P\d+$/.test(c))){
-  const g=findGroup(code);if(!g)continue;const b=sceneBox(g);if(!b)continue;
-  const u=unitFor(detailScale[code]||25),fs=3.2*u,W=70*u,Hc=95*u,x0=b.x+b.w+8*u,y0=b.y+2*u;
-  const mk=el('g',{'data-screen-only':'1',style:'cursor:pointer'},root);mk.onclick=()=>{calcSettings.tab='pilar';calcOpen()};
-  const Ht=Hc+fs*(env.items.length*1.6+6);
-  el('rect',{x:x0,y:y0,width:W,height:Ht,rx:fs*.5,fill:'#0f2436','fill-opacity':.94,stroke:'#4f7894','stroke-width':fs*.08},mk);
-  const T=(x,y,t,c='#e5edf5',sz=fs,bold=false,anchor='start')=>{const e=el('text',{x,y,fill:c,'font-size':sz,'font-family':'Arial','font-weight':bold?'bold':'normal','text-anchor':anchor},mk);e.textContent=t;return e};
-  const um=env.main[1];T(x0+fs*.6,y0+fs*1.5,`APROVEITAMENTO ${r.id}: ${Number.isFinite(um)?calcFmt(um*100,0):'—'}%`,utilColor(um)==='#c0392b'?'#ff7b6b':utilColor(um)==='#1e7d3c'?'#6be39a':utilColor(um)==='#2d6a9a'?'#7cc8ff':'#ffc04d',fs*1.05,true);
-  T(x0+fs*.6,y0+fs*2.8,`${env.main[0]} · ${utilText(um)}`,'#a9c7da',fs*.8);
-  env.items.forEach(([t,v],k)=>{const yy=y0+fs*(4.4+k*1.6);T(x0+fs*.6,yy,t,'#e5edf5',fs*.8);T(x0+W-fs*.6,yy,Number.isFinite(v)?calcFmt(v*100,0)+'%':'—',utilColor(v)==='#c0392b'?'#ff7b6b':'#e5edf5',fs*.8,true,'end')});
-  // gráfico As(z)
-  const gx=x0+fs*3,gy=y0+fs*(5+env.items.length*1.6),gw=W-fs*4.5,gh=Hc-fs*4,Amax=Math.max(1,...env.pts.map(p=>Math.max(p.Anec,p.Adet)))*1.1;
-  const X=v=>gx+v/Amax*gw,Y=z=>gy+gh-(z/env.H)*gh;
-  el('rect',{x:gx,y:gy,width:gw,height:gh,fill:'none',stroke:'#4f7894','stroke-width':fs*.05},mk);
-  for(let k=1;k<env.pts.length;k++){const p=env.pts[k],q=env.pts[k-1];if(p.Anec>p.Adet+1e-6||q.Anec>q.Adet+1e-6)el('rect',{x:gx,y:Y(p.z),width:gw,height:Y(q.z)-Y(p.z),fill:'#c0392b','fill-opacity':.35},mk)}
-  el('polyline',{points:env.pts.map(p=>`${X(p.Anec)},${Y(p.z)}`).join(' '),fill:'none',stroke:'#ff6b5b','stroke-width':fs*.18},mk);
-  el('polyline',{points:env.pts.map(p=>`${X(p.Adet)},${Y(p.z)}`).join(' '),fill:'none',stroke:'#63d0f3','stroke-width':fs*.22},mk);
-  for(let k=0;k<=2;k++){const z=env.H*k/2;T(gx-fs*.4,Y(z)+fs*.3,calcFmt(z,1),'#a9c7da',fs*.65,false,'end')}
-  T(gx,gy+gh+fs*1.1,'0',"#a9c7da",fs*.65);T(gx+gw,gy+gh+fs*1.1,`${calcFmt(Amax,0)} cm²`,'#a9c7da',fs*.65,false,'end');
-  T(gx,gy-fs*.5,'As (cm²) × altura (m)','#a9c7da',fs*.7);
-  T(x0+fs*.6,y0+Ht-fs*.8,'— As,nec','#ff6b5b',fs*.7,true);T(x0+fs*6,y0+Ht-fs*.8,'— As,det','#63d0f3',fs*.7,true);T(x0+fs*11.5,y0+Ht-fs*.8,'vermelho: falta aço','#a9c7da',fs*.7);
- }
-}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
@@ -3647,7 +3619,6 @@ function calcRender(){
  body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
  if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
- if($('cShowUtil'))$('cShowUtil').onchange=()=>{calcSettings.showUtil=$('cShowUtil').checked;draw()};
  if($('cOptRun'))$('cOptRun').onclick=()=>{$('cOptRun').textContent='Calculando…';setTimeout(calcOptRun,30)};
  if($('cOptR'))$('cOptR').onchange=()=>{calcSettings.optR=Number($('cOptR').value)||0;if(calcOptResult){calcOptResult.ok.forEach(r=>r.idx=r.steel+calcSettings.optR*r.conc);calcOptResult.ok.sort((a,b)=>a.idx-b.idx)}calcRender()};
  body.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>calcOptUse(Number(b.dataset.opt)));
