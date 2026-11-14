@@ -2703,10 +2703,14 @@ function calcApplyPillar(depth=0,prev=[]){
  for(const layers of [1,2])for(const dia of dias){if(pick)break;
   const sMin=Math.max(2,dia/10,2.28),bw=bMin-2*cover-2*(Number(N1.dia)||5)/10,nMax=Math.floor((bw+sMin)/(dia/10+sMin));if(nMax<2)continue;
   for(let n2=layers===1?0:1;n2<=(layers===1?0:nMax)&&!pick;n2++){for(let n1=2;n1<=nMax;n1++){if(n2>0&&n1<nMax)continue;
-   const t={...a,cornerDia:dia,soloN:n1-2,soloDia:dia,soloN2:n2,soloDia2:dia};let ok=true,nc=2,dc=Number(a.cornerExtDia)||10;
+   const t={...a,cornerDia:dia,soloN:n1-2,soloDia:dia,soloN2:n2,soloDia2:dia};let ok=true,nc=2,dc=10,need2=null;
    for(const r of rs){const G=calcPillarGeom({...t,cornerExtDia:dc,extN:0},r.h,cover,Number(N1.dia)||5),BN=calcBending(r.Md*100,r.b,G.d,G.dp,fcd,fyd),need=Math.max(BN.As,.0015*r.b*r.h);
     if(G.As<need-1e-9){ok=false;break}
-    if(BN.Asc>0){if(!Number.isFinite(BN.Asc)){ok=false;break}let fit=false;for(const dcc of dias.filter(x=>x>=10)){const n=Math.max(2,Math.ceil(BN.Asc/calcBar(dcc)-1e-9)),nm=Math.floor((bw+Math.max(2,dcc/10,2.28))/(dcc/10+Math.max(2,dcc/10,2.28)));if(n<=nm){if(dcc>dc||(dcc===dc&&n>nc)||nc<n){dc=Math.max(dc,dcc);nc=Math.max(nc,n)}fit=true;break}}if(!fit){ok=false;break}}}
+    if(BN.Asc>0){if(!Number.isFinite(BN.Asc)){ok=false;break}
+     // Face comprimida: a combinação de MENOR ÁREA (independe da bitola do tardoz), mínimo Ø10.
+     let best=null;for(const dcc of [10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25))){const sm=Math.max(2,dcc/10,2.28),nm=Math.floor((bw+sm)/(dcc/10+sm)),n=Math.max(2,Math.ceil(BN.Asc/calcBar(dcc)-1e-9));if(n<=nm&&(!best||n*calcBar(dcc)<best.A-1e-9))best={dcc,n,A:n*calcBar(dcc)}}
+     if(!best){ok=false;break}if(!need2||best.A>need2.A)need2=best}}
+   if(ok&&need2){dc=need2.dcc;nc=need2.n}
    if(ok){pick={dia,n1,n2,dc,nc};break}}}
  }
  if(!pick){status(`Pilar: nem com armadura dupla e 2 camadas (até Ø${String(dias.at(-1)||25).replace('.',',')}) a seção ${bMin}×${rs[0].h} atende. Aumente a seção ou reduza o vão entre pilares.`);calcRender();return}
