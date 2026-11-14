@@ -1023,7 +1023,7 @@ function pillarN2(){const a=pillarArms.N2;if(a.cornerDia==null){const extra=Math
 // Grupos de barras por bitola (uma posição N por bitola) e composição por face.
 // V246 — As barras intermediárias do TARDOZ podem ser complementares (soloLen > 0): só no trecho inferior,
 // medido a partir do topo da fundação; formam posição própria (comprimento diferente das contínuas).
-function pillarBarGroups(){const a=pillarN2(),soloLen=Math.max(0,Number(a.soloLen)||0),faces=[...(Number(a.cornerExtDia)===Number(a.cornerDia)?[['CANTOS',4,a.cornerDia]]:[['CANTOS TARDOZ',2,a.cornerDia],['CANTOS EXTERNA',2,a.cornerExtDia]]),['TARDOZ',a.soloN,a.soloDia],['TARDOZ 2ª CAMADA',Number(a.soloN2)||0,Number(a.soloDia2)||a.soloDia],['EXTERNA',a.extN,a.extDia],['LATERAIS',2*a.latN,a.latDia]].filter(f=>f[1]>0);const map=new Map();for(const [name,n,dia] of faces){const len=name==='TARDOZ'&&soloLen>0?soloLen:null,k=Number(dia)+'|'+(len||'');if(!map.has(k))map.set(k,{dia:Number(dia),qty:0,parts:[],len});const gr=map.get(k);gr.qty+=n;gr.parts.push(name==='LATERAIS'?`${a.latN}+${a.latN} LATERAIS`:len?`${n} ${name} (COMPLEMENTARES: DESCEM NA FUNDAÇÃO E SOBEM ${len} cm, SEM ESPERA)`:`${n} ${name}`)}const tokens=['N2','N4','N5','N6','N10','N11'],wt=['N3','N7','N8','N9','N12','N13'];const list=[...map.values()].sort((p,q)=>(p.len?1:0)-(q.len?1:0));const wmap=new Map();list.forEach(gr=>{if(!wmap.has(gr.dia))wmap.set(gr.dia,wt[wmap.size]||'N3')});return list.map((gr,i)=>({...gr,token:tokens[i]||'N2',waitToken:wmap.get(gr.dia)}))}
+function pillarBarGroups(){const a=pillarN2(),soloLen=Math.max(0,Number(a.soloLen)||0),faces=[...(Number(a.cornerExtDia)===Number(a.cornerDia)?[['CANTOS',4,a.cornerDia]]:[['CANTOS TARDOZ',2,a.cornerDia],['CANTOS EXTERNA',2,a.cornerExtDia]]),['TARDOZ',a.soloN,a.soloDia],['TARDOZ 2ª CAMADA',Number(a.soloN2)||0,Number(a.soloDia2)||a.soloDia],['EXTERNA',a.extN,a.extDia],['LATERAIS',2*a.latN,a.latDia]].filter(f=>f[1]>0);const map=new Map();for(const [name,n,dia] of faces){const len=(name==='TARDOZ'||name==='TARDOZ 2ª CAMADA')&&soloLen>0?soloLen:null,k=Number(dia)+'|'+(len||'');if(!map.has(k))map.set(k,{dia:Number(dia),qty:0,parts:[],len});const gr=map.get(k);gr.qty+=n;gr.parts.push(name==='LATERAIS'?`${a.latN}+${a.latN} LATERAIS`:len?`${n} ${name} (COMPLEMENTARES: DESCEM NA FUNDAÇÃO E SOBEM ${len} cm, SEM ESPERA)`:`${n} ${name}`)}const tokens=['N2','N4','N5','N6','N10','N11'],wt=['N3','N7','N8','N9','N12','N13'];const list=[...map.values()].sort((p,q)=>(p.len?1:0)-(q.len?1:0));const wmap=new Map();list.forEach(gr=>{if(!wmap.has(gr.dia))wmap.set(gr.dia,wt[wmap.size]||'N3')});return list.map((gr,i)=>({...gr,token:tokens[i]||'N2',waitToken:wmap.get(gr.dia)}))}
 let pillarArmEditing=null;
 const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento (cm)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['cornerDia','Cantos do TARDOZ (2 barras, lado do solo) — Ø (mm)'],['cornerExtDia','Cantos da face EXTERNA (2 barras) — Ø (mm)'],['soloN','Face do TARDOZ (solo): barras além dos cantos'],['soloDia','Face do tardoz — Ø (mm)'],['soloLen','Tardoz: comprimento das intermediárias a partir da base (cm, 0 = altura toda)'],['soloN2','Tardoz — 2ª CAMADA: número de barras'],['soloDia2','Tardoz 2ª camada — Ø (mm)'],['extN','Face EXTERNA: barras além dos cantos'],['extDia','Face externa — Ø (mm)'],['latN','CADA face LATERAL: barras além dos cantos'],['latDia','Faces laterais — Ø (mm)'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['follow','Esperas iguais às barras do pilar (1 = sim, 0 = não)'],['dia','Ø se independentes (mm)'],['qty','Quantidade se independentes'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
 const pillarZeroOk=['soloN','extN','latN','follow','soloLen','soloN2'];
@@ -2666,8 +2666,8 @@ function calcPillar(){
   const Vd=r.Vd,VRd2=.27*(1-S.fck/250)*fcd*b*d,Vc=.6*fctd*b*d,AswMin=.2*fctm/S.fyk*b,AswCalc=Math.max(0,(Vd-Vc)/(.9*d*fywd)),AswReq=Math.max(AswCalc,AswMin);
   let okM=disc>0&&AsDet>=AsReq-1e-6&&AscDet>=AscReq-1e-6;const okV=Vd<=VRd2&&AswDet>=AswReq-1e-6;
   const soloLen=Math.max(0,Number(a.soloLen)||0);let cut=null;
-  if(soloLen>0&&Number(a.soloN)>0&&r.H>0){const lb=40*(Number(a.soloDia)||10)/10,z0=Math.max(0,(soloLen-lb)/100),H2=Math.max(0,r.H-z0);
-   const K=calcK(S),Mz=r.strip.M>0?r.Md*calcStrip(H2,S,K,r.strip.Hf,r.strip.zw).M/r.strip.M:0,As2=2*calcBar(a.cornerDia)+G.A2,x2=As2*fyd/(.68*b*fcd),MRd2=As2*fyd*(d-.4*x2)/100;
+  if(soloLen>0&&(Number(a.soloN)>0||G.n2>0)&&r.H>0){const lb=40*(Number(a.soloDia)||10)/10,z0=Math.max(0,(soloLen-lb)/100),H2=Math.max(0,r.H-z0);
+   const K=calcK(S),Mz=r.strip.M>0?r.Md*calcStrip(H2,S,K,r.strip.Hf,r.strip.zw).M/r.strip.M:0,As2=2*calcBar(a.cornerDia),dc1=G.d1,x2=As2*fyd/(.68*b*fcd),MRd2=As2*fyd*(dc1-.4*x2)/100;
    cut={soloLen,lb,z0,Mz,MRd2,ok:MRd2>=Mz-1e-9};okM=okM&&cut.ok}
   const row={...r,b,h,d,dp:G.dp,G,x,xd,AsCalc,AsMin,AsReq,AsDet,AscReq,AscDet,dupla:BN.dupla,Mlim:BN.Mlim/100,sc:BN.sc,VRd2,Vc,AswReq,AswDet,okM,okV,fcd,fyd,fctd,fywd,fctm,disc,cut};
   row.rules=calcPillarRules(row);row.els=calcPillarELS(row,AsDet,Number(a.cornerDia)||10);row.okRules=row.rules.ok;row.okELS=!row.els||(row.els.okD&&row.els.okW);
@@ -2719,14 +2719,28 @@ function calcApplyPillar(depth=0,prev=[]){
  if(pick.n2>0||pick.nc>2)a.soloLen=0;
  const now=`tardoz ${pick.n1}Ø${pick.dia}${pick.n2?` + ${pick.n2}Ø${pick.dia} (2ª camada)`:''} · face externa ${pick.nc}Ø${pick.dc}${pick.nc>2||rs.some(r=>r.dupla)?' (compressão)':''}`;
  if(now!==old)msg.push(`${old} → ${now}`);
- const soloN=a.soloN,corner=pick.dia;
- // Escalonamento (só com 1 camada e sem armadura dupla): complementares do tardoz até onde os cantos bastam (+ 40Ø).
- if(S.stagger!==false&&soloN>0&&!pick.n2&&pick.nc<=2&&!rs.some(r=>calcBending(r.Md*100,r.b,r.d,r.dp,fcd,fyd).dupla)){const K=calcK(S),lb=40*pick.dia/10;let need=0;
-  for(const r of rs){const d=r.d,As2=2*calcBar(corner),x2=As2*fyd/(.68*r.b*fcd),MRd2=As2*fyd*(d-.4*x2)/100;if(!(r.H>0)||r.strip.M<=0)continue;
-   let z=0;for(;z<r.H;z+=.05){const Mz=r.Md*calcStrip(Math.max(0,r.H-z),S,K,r.strip.Hf,r.strip.zw).M/r.strip.M;if(Mz<=MRd2)break}need=Math.max(need,z)}
-  const hMin=Math.min(...rs.map(r=>r.H*100)),len=Math.ceil((need*100+lb)/10)*10,newLen=len>=hMin-20?0:len;
-  if(newLen!==Number(a.soloLen||0)){msg.push(newLen?`tardoz: ${soloN} Ø${pick.dia} complementares com ${newLen} cm (a partir da base)`:'tardoz: barras na altura toda');a.soloLen=newLen}}
- else if(a.soloLen&&(soloN===0||pick.n2||pick.nc>2)){a.soloLen=0}
+ // V261 — Economia ao longo da altura: cantos do tardoz contínuos (bitola menor, até o topo) e reforço
+ // (intermediárias + 2ª camada, bitola do cálculo) só embaixo: descem no bloco como espera e param
+ // onde os cantos bastam + ancoragem 40Ø. Escolhe a combinação de menor peso (contínuas + reforço).
+ if(S.stagger!==false){
+  const K=calcK(S),Hm=Math.max(...rs.map(r=>r.H)),emb=Number($('blockH')?.value)||80,bwF=bMin-2*cover-2*(Number(N1.dia)||5)/10;
+  const nMaxOf=dd=>{const sm=Math.max(2,dd/10,2.28);return Math.floor((bwF+sm)/(dd/10+sm))};
+  const P=pick.dia,lapC=dd=>Math.max(60,calcLapReq(rs).fac)*dd/10;
+  let best={w:2*calcBar(P)*(Hm*100+emb+lapC(P))+(pick.n1-2+pick.n2)*calcBar(P)*(Hm*100+emb+lapC(P)),cd:P,n1:pick.n1,n2:pick.n2,len:0};
+  for(const cd of [10,12.5,16,20,25].filter(x=>x<P&&x<=(Number(S.maxDia)||25)))
+   for(let n1=Math.max(3,pick.n1);n1<=nMaxOf(Math.max(cd,P));n1++)for(let n2=(n1<nMaxOf(P)?0:pick.n2);n2<=(n1<nMaxOf(P)?0:nMaxOf(P));n2++){
+    const t={...a,cornerDia:cd,soloN:n1-2,soloDia:P,soloN2:n2,soloDia2:P,cornerExtDia:pick.dc,extN:Math.max(0,pick.nc-2),extDia:pick.dc};let ok=true,need=0;
+    for(const r of rs){const G=calcPillarGeom(t,r.h,cover,Number(N1.dia)||5),BN=calcBending(r.Md*100,r.b,G.d,G.dp,fcd,fyd);
+     if(G.As<Math.max(BN.As,.0015*r.b*r.h)-1e-9||G.Asc<BN.Asc-1e-9){ok=false;break}
+     const As2=2*calcBar(cd),x2=As2*fyd/(.68*r.b*fcd),MRd2=As2*fyd*(G.d1-.4*x2)/100;if(!(r.H>0)||r.strip.M<=0)continue;
+     let z=0;for(;z<r.H;z+=.05){const Mz=r.Md*calcStrip(Math.max(0,r.H-z),S,K,r.strip.Hf,r.strip.zw).M/r.strip.M;if(Mz<=MRd2)break}need=Math.max(need,z)}
+    if(!ok)continue;const len=Math.ceil((need*100+40*P/10)/10)*10;if(len>=Hm*100-20)continue;
+    const w=2*calcBar(cd)*(Hm*100+emb+lapC(cd))+(n1-2+n2)*calcBar(P)*(len+emb+21);
+    if(w<best.w-1e-9)best={w,cd,n1,n2,len}}
+  if(best.len>0){a.cornerDia=best.cd;a.soloN=best.n1-2;a.soloN2=best.n2;a.soloLen=best.len;
+   msg.push(`economia na altura: cantos do tardoz 2Ø${String(best.cd).replace('.',',')} até o topo + reforço ${best.n1-2+best.n2}Ø${String(P).replace('.',',')} (descem no bloco e sobem ${best.len} cm)`)}
+  else a.soloLen=0;
+ }
  // Estribos: mantém espaçamento ≥ 10 cm aumentando a bitola quando preciso.
  const cur=Number(N1.spacing)||15;let st=null;
  for(const dia of [5,6.3,8,10]){const sp=Math.min(cur,Math.floor(2*calcBar(dia)/Asw/2.5)*2.5);if(sp>=10){st={dia,sp};break}}
