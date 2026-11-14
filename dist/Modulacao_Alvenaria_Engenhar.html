@@ -7896,7 +7896,7 @@ function detailHTML(g){const bs=g.its.filter(i=>i.kind==='beam'),hs=g.its.filter
   h+=plotTable26(['Elemento','L (cm)','Posição','Qtde.','Bitola','C unit. (cm)','Total (m)','Peso (kg)'],rows)+'<p>Aço CA-50 (CA-60 no Ø5,0). Comprimentos das barras = vão + ganchos de 10φ (mín. 10 cm) nas duas pontas; estribos fechados com ganchos. Peso total: '+Object.entries(tot).sort((a,b)=>a[0]-b[0]).map(([d,k])=>dTxt(N(d))+' '+f1(k,1)+' kg').join(' · ')+'. Detalhamento para conferência do projetista.</p>';}
  if(hs.length)h+='<h3>Aberturas na laje</h3>'+plotTable26(['Abertura','Uso','Dimensões (cm)'],hs.map(it=>{const P=W(it),xs=P.map(q=>q.x),ys=P.map(q=>q.y),dx=Math.max(...xs)-Math.min(...xs),dy=Math.max(...ys)-Math.min(...ys),fm=it.forma||(P.length===4?'ret':'pol');return [it.name,it.use||'',fm==='circ'?'Ø '+f1(dx,0):fm==='ret'?f1(dx,0)+' × '+f1(dy,0):'polígono de '+P.length+' lados · área '+f1(areaPx(P)/1e4,2)+' m² · total '+f1(dx,0)+' × '+f1(dy,0)];}))+'<p>Bordas das aberturas com reforço conforme o detalhe da laje.</p>';
  return h;}
-{const cp=collectPlot26;collectPlot26=function(...a){const d=cp.apply(this,a);try{for(const g of slabGroups()){const html=detailHTML(g),Wd=Math.min(d.availW,260),h=measureHTML26(html,Wd-4)+13;if(h<=d.availH)d.items.push({title:'Vigas, reforços e aberturas · '+g.name,w:Wd,h,html,lv77:g.lv,el97:true});}}catch(e){console.error('V97 prancha',e);}return d;};}
+{const cp=collectPlot26;collectPlot26=function(...a){const d=cp.apply(this,a);try{for(const g of slabGroups()){const html=detailHTML(g),Wd=Math.min(d.availW,260),h=measureHTML26(html,Wd-4)+13;if(h<=d.availH)d.items.push({title:'Vigas, reforços e aberturas · '+g.name,w:Wd,h,html,lv77:g.lv,el97:true});else if(Array.isArray(d.issues))d.issues.push('Vigas, reforços e aberturas · '+g.name+': o detalhamento não cabe numa folha — use folha maior ou escala menor.');}}catch(e){console.error('V97 prancha',e);}return d;};}
 window.el97={open:()=>{editing=null;render();box.hidden=false;},start,stop,bars,fit,list:mine,secSVG,detailHTML,slabGroups};
 const css=document.createElement('style');css.textContent=
  '#el97{position:fixed;top:130px;right:24px;width:360px;max-height:calc(100vh - 170px);overflow:auto;z-index:63;background:#fff;border:1px solid #b9c6d3;border-radius:9px;box-shadow:0 10px 28px rgba(16,46,75,.22);font-size:12.5px}#el97[hidden]{display:none}'+
@@ -8191,12 +8191,16 @@ const GLOBAL=it=>it.load77||it.slab95||it.el97||it.res96||it.slab82;
 {const cp=collectPlot26;collectPlot26=function(...a){const cur=L68().current(),keys=L68().levelKeys().filter(k=>wallsOf(k).length);
  if(cur==='all'||keys.length<2)return cp.apply(this,a);
  const LV=L7().levels(),idx=k=>Math.max(0,LV.findIndex(l=>l.key===k));const keepW=state.walls,keepR=state.results;let first=null;const items=[],miss=[];
+ // V136 — durante o ciclo, state.walls vira só as paredes de um pavimento; a lista "todas as paredes" (L68().all) ficava sem o
+ // pavimento em tela e as lajes (níveis, cobertura, vigas e reforços) eram calculadas sem ele — com o último nível em tela, a laje
+ // dele, a cobertura e as vigas/reforços sumiam das pranchas. Agora a lista completa fica fixa durante o ciclo.
+ const L68o=L68(),allOrig=L68o.all,ALL=allOrig.call(L68o).slice();L68o.all=()=>ALL.slice();
  try{for(const k of keys){const ws=L68().all().filter(w=>L68().keyOf(N(w.page||1))===k).sort((x,y)=>(N(x.seq58)||0)-(N(y.seq58)||0));const rs=ws.map(w=>L68().resultOf(w));
    const has=rs.length&&rs.every(r=>r&&r.rows);if(!has&&k!==cur){miss.push(L68().nameOf(k));}
    state.walls=k===cur?keepW:ws;state.results=k===cur?keepR:(has?rs:null);if(!state.results&&k!==cur)continue;
    let d;try{d=cp.apply(this,a);}catch(e){console.error('V103 pranchas',k,e);continue;}if(!first)first=d;
    for(const it of d.items||[]){if(GLOBAL(it)){if(d===first)items.push(it);continue;}it.lv77=idx(k);it.lvl103=k;items.push(it);}}}
- finally{state.walls=keepW;state.results=keepR;}
+ finally{state.walls=keepW;state.results=keepR;L68o.all=allOrig;}
  if(!first)return cp.apply(this,a);
  // V104 — ciclo por pavimento, na ordem da obra: cargas (e resistências) → para CADA pavimento (inclusive as repetições):
  // 1ª e 2ª fiadas → elevações e resumo → vigas e reforços → laje do topo dele; cada pavimento começa numa folha nova.

@@ -77,12 +77,16 @@ const GLOBAL=it=>it.load77||it.slab95||it.el97||it.res96||it.slab82;
 {const cp=collectPlot26;collectPlot26=function(...a){const cur=L68().current(),keys=L68().levelKeys().filter(k=>wallsOf(k).length);
  if(cur==='all'||keys.length<2)return cp.apply(this,a);
  const LV=L7().levels(),idx=k=>Math.max(0,LV.findIndex(l=>l.key===k));const keepW=state.walls,keepR=state.results;let first=null;const items=[],miss=[];
+ // V136 — durante o ciclo, state.walls vira só as paredes de um pavimento; a lista "todas as paredes" (L68().all) ficava sem o
+ // pavimento em tela e as lajes (níveis, cobertura, vigas e reforços) eram calculadas sem ele — com o último nível em tela, a laje
+ // dele, a cobertura e as vigas/reforços sumiam das pranchas. Agora a lista completa fica fixa durante o ciclo.
+ const L68o=L68(),allOrig=L68o.all,ALL=allOrig.call(L68o).slice();L68o.all=()=>ALL.slice();
  try{for(const k of keys){const ws=L68().all().filter(w=>L68().keyOf(N(w.page||1))===k).sort((x,y)=>(N(x.seq58)||0)-(N(y.seq58)||0));const rs=ws.map(w=>L68().resultOf(w));
    const has=rs.length&&rs.every(r=>r&&r.rows);if(!has&&k!==cur){miss.push(L68().nameOf(k));}
    state.walls=k===cur?keepW:ws;state.results=k===cur?keepR:(has?rs:null);if(!state.results&&k!==cur)continue;
    let d;try{d=cp.apply(this,a);}catch(e){console.error('V103 pranchas',k,e);continue;}if(!first)first=d;
    for(const it of d.items||[]){if(GLOBAL(it)){if(d===first)items.push(it);continue;}it.lv77=idx(k);it.lvl103=k;items.push(it);}}}
- finally{state.walls=keepW;state.results=keepR;}
+ finally{state.walls=keepW;state.results=keepR;L68o.all=allOrig;}
  if(!first)return cp.apply(this,a);
  // V104 — ciclo por pavimento, na ordem da obra: cargas (e resistências) → para CADA pavimento (inclusive as repetições):
  // 1ª e 2ª fiadas → elevações e resumo → vigas e reforços → laje do topo dele; cada pavimento começa numa folha nova.
