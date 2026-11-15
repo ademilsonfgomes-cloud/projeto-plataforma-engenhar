@@ -2911,6 +2911,7 @@ ${r.kind==='Estaca'?`12) Armadura mínima da estaca (NBR 6122 — conferir a tab
 Hipóteses: solo homogêneo não coesivo (c desprezado na fundação), sem água, base alargada e bloco não considerados na resistência lateral (a favor da segurança).`;
  return `<div class="calc-k">Broms · Kp = <b>${calcFmt(calcKp(S),3)}</b> · menor FS tombamento: <b>${crit.id}</b> = <b>${calcFmt(crit.FSt)}</b> · ${rs.every(x=>x.ok&&x.okFuste&&x.depth>=x.depthReq-1e-6)?'<span class="c-ok">todas as fundações passam</span>':'<span class="c-no">há fundação que não passa</span>'}
  ${S.useCalc?'<button class="c-apply" id="cApplyF">Aplicar profundidade mínima ao detalhamento</button>':''}</div>
+ ${ceEditFundacao()}
  <div class="calc-grid"><div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Fundação</th><th>Ø (cm)</th><th>L (m)</th><th>Hk (kN)</th><th>e (m)</th><th>Hu (kN)</th><th>FS tomb.</th><th>FS desl.</th><th>Prof. mín (m)</th><th>Pk / Padm (kN)</th><th>Md fuste (kN·m)</th><th>MRd fuste (kN·m)</th><th>As fuste / mín (cm²)</th></tr></thead><tbody>${tr}</tbody></table>
  <p class="calc-hint">Cada pilar é verificado com o tubulão/estaca da sua posição (aba Tubulões). MRd fuste: momento resistente com a armadura longitudinal da aba Tubulões.</p></div>
  <div>${calcPileSVG(sel)}</div></div><pre class="calc-mem">${mem}</pre>${(()=>{const B=calcBlock();if(!B.length)return '';
@@ -2936,6 +2937,7 @@ ${r.cut?`   Complementares do tardoz (descem na fundação, sem espera) até ${r
 Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados), engaste no topo da VB, γc = ${calcFmt(S.gc,2)}, γs = ${calcFmt(S.gs,2)}.`;
  return `<div class="calc-k">Armadura detalhada no tardoz: <b>${calcFmt(rs[0].AsDet)} cm²</b> · maior As,nec: <b>${calcFmt(Math.max(...rs.map(x=>x.AsReq).filter(Number.isFinite)))} cm²</b> (${crit.id}) · ${rs.every(x=>x.okM&&x.okV)?'<span class="c-ok">todos os pilares passam</span>':'<span class="c-no">há pilar que não passa</span>'}
  ${S.useCalc?'<button class="c-apply" id="cApplyP">Aplicar armadura ao detalhamento</button>':''}</div>
+ ${ceEditPilar()}
  ${(()=>{const env=calcPillarEnvelope(sel);return env?`<div class="calc-grid" style="grid-template-columns:1fr 310px;margin-bottom:10px"><div><h4 class="calc-h" style="margin-top:0">Aproveitamento — ${sel.id} · <span style="color:${utilColor(env.main[1])}">${Number.isFinite(env.main[1])?calcFmt(env.main[1]*100,0):"—"}% (${utilText(env.main[1])})</span></h4>${utilBarsHTML(env)}</div><div>${envSVG(env,"Área de aço necessária × detalhada — "+sel.id)}</div></div>`:""})()}
  <div style="overflow:auto"><table class="calc-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>Seção (cm)</th><th>Md (kN·m)</th><th>x/d</th><th>As nec (cm²)</th><th>As det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>VRd2 (kN)</th><th>Asw/s nec (cm²/m)</th><th>Asw/s det (cm²/m)</th><th>Cisalh.</th></tr></thead><tbody>${tr}</tbody></table></div>
  <pre class="calc-mem">${mem}</pre>${(()=>{
@@ -3089,6 +3091,7 @@ Verificação simplificada: a resistência à compressão da alvenaria e o graut
  const all=rs.every(r=>r.okM&&r.okV);
  const alvBad=al.some(r=>!r.okM)&&S.alvModel!=='faixas';
  return `<div class="calc-k">${all?'<span class="c-ok">todas as vigas e painéis passam</span>':'<span class="c-no">há viga ou painel que não passa</span>'}${alvBad?' · <b>dica:</b> uma VI a mais reduz o vão da alvenaria e alivia a VB':''} · peso da alvenaria ${calcFmt(S.gAlv,1)} kN/m² ${S.useCalc?'<button class="c-apply" id="cApplyV">Aplicar armadura das vigas e da alvenaria</button>':''}</div>
+ ${ceEditViga()}
  <h4 class="calc-h">VB — flexão vertical (peso da alvenaria e das vigas)</h4>
  <div style="overflow:auto"><table class="calc-t"><thead><tr><th>Viga</th><th>Arrimo/vão</th><th>Seção (cm)</th><th>L (m)</th><th>p (kN/m)</th><th>Md+ (kN·m)</th><th>Md− (kN·m)</th><th>As inf nec/det (cm²)</th><th>As sup nec/det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>Cisalh.</th></tr></thead><tbody>${t1}</tbody></table></div>
  <h4 class="calc-h">VB · VI · VT — flexão horizontal pelo empuxo (vencem entre pilares)</h4>
@@ -3661,6 +3664,44 @@ function envSVG(env,title){
 function utilBarsHTML(env){
  return `<table class="calc-t" style="max-width:520px"><thead><tr><th style="text-align:left">Verificação</th><th>Aproveitamento</th><th style="width:45%"></th></tr></thead><tbody>${env.items.map(([t,u])=>`<tr><td style="text-align:left">${t}</td><td><b style="color:${utilColor(u)}">${Number.isFinite(u)?calcFmt(u*100,0)+'%':'—'}</b></td><td style="text-align:left"><div style="height:10px;background:#e6edf2;border-radius:5px;overflow:hidden"><div style="height:10px;width:${Math.min(100,(Number.isFinite(u)?u:1.5)*66.7)}%;background:${utilColor(u)}"></div></div></td></tr>`).join('')}</tbody></table><p class="calc-hint">Barra: 66,7% da largura = 100% de aproveitamento. Acima de 100% não passa · 80–100% bem dimensionado · 50–80% com folga · abaixo de 50% folga excessiva.</p>`;
 }
+// V270 — Edição direta no painel de cálculo: os campos gravam no detalhamento e o cálculo refaz na hora.
+let calcEditOpen=true;const CE_DIAS=[5,6.3,8,10,12.5,16,20,25];
+function ceDia(v){return String(v).replace('.',',')}
+function ceF(k,label,v,kind){if(kind==='dia'){const n=Number(v),opts=CE_DIAS.includes(n)||!Number.isFinite(n)?CE_DIAS:[...CE_DIAS,n].sort((a,b)=>a-b);return `<label>${label}<select data-ce="${k}">${opts.map(d=>`<option value="${d}"${n===d?' selected':''}>Ø${ceDia(d)}</option>`).join('')}</select></label>`}
+ return `<label>${label}<input data-ce="${k}" data-kind="${kind||'num'}" type="number" step="${kind==='int'?1:'any'}" min="0" value="${esc2(v??'')}"></label>`}
+function ceBox(title,groups,note){return `<details class="calc-edit"${calcEditOpen?' open':''}><summary>✎ ${title}</summary>${groups.filter(Boolean).map(([h,fs])=>`<div class="ce-g"><b>${h}</b><div class="ce-f">${fs.join('')}</div></div>`).join('')}<p class="calc-hint" style="margin:6px 0 0">${note||''} Altere e tecle Enter (ou saia do campo): o desenho é atualizado e as verificações abaixo refazem na hora. Vale nos dois modos.</p></details>`}
+function ceSegs(){const S=calcSettings;return wallSegments.map((s,i)=>[s,i]).filter(([s,i])=>S.wall==='all'||Number(S.wall)===i)}
+function ceSetSeg(id,val){for(const [s,i] of ceSegs()){s.parameters[id]=String(val);if(i===wallActive&&$(id))$(id).value=String(val)}}
+function ceEditPilar(){const a=pillarN2(),N1=pillarArms.N1,N3=pillarArms.N3,sg=ceSegs()[0]?.[0]?.parameters||{};
+ return ceBox('Editar o pilar aqui (seção e armadura — vale para todos os pilares'+(calcSettings.wall==='all'?'':' do arrimo '+(Number(calcSettings.wall)+1))+')',[
+  ['Seção',[ceF('p:sec:wallColX','Lado A (ao longo do muro, cm)',sg.wallColX,'num'),ceF('p:sec:wallColY','Lado B (perpendicular, cm)',sg.wallColY,'num')]],
+  ['Tardoz (lado do solo — tracionado)',[ceF('p:N2:cornerDia','Cantos (2 barras)',a.cornerDia,'dia'),ceF('p:N2:soloN','Barras além dos cantos',a.soloN,'int'),ceF('p:N2:soloDia','Ø dessas barras',a.soloDia,'dia'),ceF('p:N2:soloLen','Compr. desde a base (cm, 0 = altura toda)',a.soloLen??0,'num'),ceF('p:N2:soloN2','2ª camada: nº de barras',a.soloN2??0,'int'),ceF('p:N2:soloDia2','2ª camada: Ø',a.soloDia2??a.soloDia,'dia')]],
+  ['Face externa e laterais',[ceF('p:N2:cornerExtDia','Cantos da face externa',a.cornerExtDia,'dia'),ceF('p:N2:extN','Face externa: barras além dos cantos',a.extN,'int'),ceF('p:N2:extDia','Ø face externa',a.extDia,'dia'),ceF('p:N2:latN','Cada lateral: barras além dos cantos',a.latN,'int'),ceF('p:N2:latDia','Ø laterais',a.latDia,'dia')]],
+  ['Estribo e esperas',[ceF('p:N1:dia','Estribo Ø',N1.dia,'dia'),ceF('p:N1:spacing','Estribo c/ (cm)',N1.spacing,'num'),ceF('p:N3:lapFactor','Transpasse das esperas (× Ø)',N3.lapFactor,'num')]]]);}
+function ceEditFundacao(){const F=calcFoundation(),codes=[...new Set(F.map(r=>r.code))];let B=[];try{B=calcBlock()}catch(e){}const bcodes=[...new Set(B.filter(b=>!b.noBlk).map(b=>b.bc||'B1'))];
+ const g=codes.map(c=>{const v=foundationValues('pile',c);return [`${c} (${Number(v.pileKind)===1?'estaca':'tubulão'} — ${F.filter(r=>r.code===c).map(r=>r.id).join(', ')})`,[ceF(`f:pile:${c}:shaft`,'Ø fuste (cm)',v.shaft,'num'),Number(v.pileKind)===1?'':ceF(`f:pile:${c}:base`,'Ø base (cm)',v.base,'num'),ceF(`f:pile:${c}:depth`,'Profundidade (cm)',v.depth,'num'),ceF(`f:pile:${c}:bars`,'Barras longitudinais',v.bars,'int'),ceF(`f:pile:${c}:barDia`,'Ø longitudinal',v.barDia,'dia'),ceF(`f:pile:${c}:barLen`,'Compr. das barras (cm)',v.barLen,'num'),ceF(`f:pile:${c}:stDia`,'Estribo Ø',v.stDia,'dia'),ceF(`f:pile:${c}:spacing`,'Estribo c/ (cm)',v.spacing,'num')]]});
+ const gb=bcodes.map(c=>{const v=foundationValues('block',c);return [`Bloco ${c}`,[ceF(`f:block:${c}:blockX`,'Lado X (cm)',v.blockX,'num'),ceF(`f:block:${c}:blockY`,'Lado Y (cm)',v.blockY,'num'),ceF(`f:block:${c}:blockH`,'Altura (cm)',v.blockH,'num'),ceF(`f:block:${c}:blockDiaX`,'Estribo vertical Ø',v.blockDiaX,'dia')]]});
+ if(gb.length)gb.push(['Blocos (todos)',[ceF('f:qty:blockQtyX','Estribos verticais por direção',$('blockQtyX')?.value,'int')]]);
+ return ceBox('Editar a fundação aqui (por tipo — muda todas as fundações do mesmo tipo)',[...g,...gb]);}
+function ceEditViga(){const rs=calcBeams(),kinds=[...new Set(rs.filter(r=>r.kind!=='ALV').map(r=>r.arms||'VB'))],ES=elevationSettings,sg=ceSegs()[0]?.[0]?.parameters||{};
+ const nm={VB:'VB — viga de base',VI:'VI — vigas intermediárias',VT:'VT — viga de topo'};
+ const g=kinds.map(k=>{const A=beamArmsOf(k);return [nm[k]||k,[ceF(`v:${k}:N3:qty`,'Inferior (N3): nº',A.N3.qty,'int'),ceF(`v:${k}:N3:dia`,'Ø inferior',A.N3.dia,'dia'),ceF(`v:${k}:N2:qty`,'Superior (N2): nº',A.N2.qty,'int'),ceF(`v:${k}:N2:dia`,'Ø superior',A.N2.dia,'dia'),ceF(`v:${k}:N1:dia`,'Estribo Ø',A.N1.dia,'dia'),ceF(`v:${k}:N1:spacing`,'Estribo c/ (cm)',A.N1.spacing,'num')]]});
+ g.unshift(['Seção da VB',[ceF('v:sec:wallBeamWidth','Largura (cm)',sg.wallBeamWidth,'num'),ceF('v:sec:wallBeamHeight','Altura (cm)',sg.wallBeamHeight,'num')]]);
+ if(rs.some(r=>r.kind==='ALV'))g.push(['Alvenaria armada',[ceF('v:alv:vDia','Vertical Ø',ES.vDia,'dia'),ceF('v:alv:vSpace','Vertical c/ (cm)',ES.vSpace,'num'),ceF('v:alv:hDia','Horizontal Ø (por fiada)',ES.hDia,'dia')]]);
+ return ceBox('Editar as vigas aqui (armadura e seção)',g);}
+const CE_ZERO=['soloN','soloN2','extN','latN','soloLen'];
+function calcEditSet(key,raw){const v=Number(raw),[t,a,b,c]=key.split(':');
+ if(!Number.isFinite(v)||v<0)return 'Valor inválido.';const f=c||b;
+ const isCount=/^(soloN|soloN2|extN|latN|bars|qty|blockQtyX)$/.test(f);if(!CE_ZERO.includes(f)&&v<=0)return 'Informe um valor maior que zero.';
+ const val=isCount?Math.round(v):v;
+ if(t==='p'){if(a==='sec'){if(val<10)return 'Seção mínima 10 cm.';ceSetSeg(b,val)}else{pillarArms[a][b]=val;pillarN2()}}
+ else if(t==='f'){if(a==='qty'){$('blockQtyX').value=val;if($('blockSameXY')?.checked&&$('blockQtyY'))$('blockQtyY').value=val}
+  else if(a==='pile')calcSetPile(b,c,val);else{calcSetBlock(b,c,val);if(c==='blockDiaX'&&$('blockSameXY')?.checked)calcSetBlock(b,'blockDiaY',val)}}
+ else if(t==='v'){if(a==='sec')ceSetSeg(b,val);else if(a==='alv'){elevationSettings[b]=val;const id={vDia:'elevVDia',vSpace:'elevVSpace',hDia:'elevHDia'}[b];if($(id))$(id).value=val}else beamArmsOf(a)[b][c]=val}
+ return null}
+function ceBind(body){const d=body.querySelector('details.calc-edit');if(d)d.ontoggle=()=>{calcEditOpen=d.open};
+ body.querySelectorAll('[data-ce]').forEach(el=>el.onchange=()=>{const k=el.dataset.ce,err=calcEditSet(k,el.value);if(err){status(err);el.focus();return}
+  try{draw()}catch(e){}const sc=$('calcResults')?.scrollTop;calcRender();if(sc!=null)$('calcResults').scrollTop=sc;status('Detalhamento atualizado pelo painel de cálculo.')})}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
@@ -3668,6 +3709,7 @@ function calcRender(){
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
  body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
+ ceBind(body);
  if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
  if($('cOptRun'))$('cOptRun').onclick=()=>{$('cOptRun').textContent='Calculando…';setTimeout(calcOptRun,30)};
  if($('cOptR'))$('cOptR').onchange=()=>{calcSettings.optR=Number($('cOptR').value)||0;if(calcOptResult){calcOptResult.ok.forEach(r=>r.idx=r.steel+calcSettings.optR*r.conc);calcOptResult.ok.sort((a,b)=>a.idx-b.idx)}calcRender()};
@@ -3745,6 +3787,7 @@ function calcOpen(){
 #calcBody{padding:12px 14px}.calc-in{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .calc-in label{display:flex;flex-direction:column;gap:3px;font-size:10px;min-width:105px;flex:1}.calc-in input,.calc-in select{height:28px;border:1px solid #b5c9da;border-radius:4px;padding:3px 6px;font-size:12px}
 .calc-k{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.calc-edit{background:#fff8e6;border:1px solid #e0b860;border-radius:6px;padding:6px 10px;margin:0 0 10px}.calc-edit summary{cursor:pointer;font-weight:bold;color:#7a4d00}.ce-g{display:flex;gap:10px;align-items:flex-start;margin-top:6px;flex-wrap:wrap}.ce-g>b{min-width:170px;font-size:11px;padding-top:14px}.ce-f{display:flex;gap:8px;flex-wrap:wrap;flex:1}.ce-f label{display:flex;flex-direction:column;font-size:10px;gap:2px;color:#4a5a66}.ce-f input,.ce-f select{width:78px;height:24px;border:1px solid #c9a24c;border-radius:4px;padding:1px 4px;font-size:12px;background:#fff}
 .c-apply{margin-left:auto;background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer}
 .c-ok{color:#1e7d3c;font-weight:bold}.c-no{color:#c0392b;font-weight:bold}
 .calc-grid{display:grid;grid-template-columns:1fr 340px;gap:12px;align-items:start}
