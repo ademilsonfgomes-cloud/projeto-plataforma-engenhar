@@ -414,7 +414,12 @@ function blockClickLabel(e,which){
  e.style.cursor='pointer';e.setAttribute('pointer-events','all');
 }
 function foundationQuantity(){const unique=new Set();for(let i=0;i<wallPoints.length-1;i++){const a=wallPoints[i],b=wallPoints[i+1],data=wallSegments[i]?.parameters||wallDefaults(),n=Math.max(2,Math.min(50,Math.round(Number(data.wallPillars)||4)));for(let j=0;j<n;j++){const t=wallT(i,j,n);unique.add(`${Math.round((a.x+(b.x-a.x)*t)*100)/100}:${Math.round((a.y+(b.y-a.y)*t)*100)/100}`)}}return unique.size}
+// V274 — Transpasse automático no modo "com cálculo": o fator calculado (NBR 6118, 9.5.2) para cada armadura de pilar; no modo "só detalhamento" vale o digitado.
+const lapAutoMap=new WeakMap();
+function lapAutoRefresh(){if(!calcSettings.useCalc)return;let rs;try{rs=calcPillar()}catch(e){return}if(!rs||!rs.length)return;const groups=new Map();for(const r of rs){const A=pillarArmsFor(r.id);if(!groups.has(A))groups.set(A,[]);groups.get(A).push(r)}for(const [A,list] of groups){try{lapAutoMap.set(A,withPillarArms(A,()=>calcLapReq(list).fac))}catch(e){}}}
+function lapFac(){return calcSettings.useCalc&&lapAutoMap.has(pillarArms)?lapAutoMap.get(pillarArms):(Number(pillarArms.N3.lapFactor)||60)}
 function draw(){
+if(!renderingVariant)lapAutoRefresh();
 if(!renderingVariant && wallPoints.length>=2)foundationFreezeDefaults();
 const w=Math.max(300,cad.clientWidth),h=Math.max(230,cad.clientHeight);svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.replaceChildren();
 let restoreBaseFields=null;
@@ -697,7 +702,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
  text(lgx,lgy,`${Number($('pileKind')?.value)===1?'ESTACA':'TUBULÃO'} Ø${B.pile} (TRACEJADO)`,grey,8,blockG);
  // ---------- CORTES ----------
  // Esperas mostradas no comprimento real acima do bloco (transpasse adotado × Ø).
- const waitLap=Math.round(pillarArms.N3.lapFactor*waitDia),stub=(waitLap+14)*sc,cutTop=py+hh+33*U,blockTop=cutTop+9*U+stub,blockBot=blockTop+H,lastroBot=blockBot+LASTRO*sc,pileBot=lastroBot+18*U;
+ const waitLap=Math.round(lapFac()*waitDia),stub=(waitLap+14)*sc,cutTop=py+hh+33*U,blockTop=cutTop+9*U+stub,blockBot=blockTop+H,lastroBot=blockBot+LASTRO*sc,pileBot=lastroBot+18*U;
  function section(sx0,title,widthCm,dirKey,crossKey,pillarW){
   const W=widthCm*sc,cx=sx0+W/2;
   text(sx0,cutTop,title,yellow,11,blockG,{'font-weight':'bold'});
@@ -725,7 +730,7 @@ if($('blockEnabled').checked && wallPoints.length>=2){
   // Esperas do pilar: descem até o fundo das armaduras com dobra para fora.
   const wx=(pillarW/2-waitIn)*sc,wBot=ly0+lh-4;
   for(const sgn of [-1,1])path(`M${cx+sgn*wx} ${blockTop-waitLap*sc} V${wBot} H${cx+sgn*(wx+waitBend*sc)}`,'#f06b76','none',1.6,blockG);
-  if(dirKey==='x'){dimV(blockTop-waitLap*sc,blockTop,cx-pw/2-5*U,cx-wx,String(waitLap),blockG);text(cx-pw/2-12*U,blockTop-waitLap*sc/2,`TRANSP. ${pillarArms.N3.lapFactor}Ø`,'#f06b76',8,blockG,{'text-anchor':'end'})}
+  if(dirKey==='x'){dimV(blockTop-waitLap*sc,blockTop,cx-pw/2-5*U,cx-wx,String(waitLap),blockG);text(cx-pw/2-12*U,blockTop-waitLap*sc/2,`TRANSP. ${lapFac()}Ø`,'#f06b76',8,blockG,{'text-anchor':'end'})}
   // Chamadas.
   const L=(x0,y0,x1,y1,t,colr)=>{path(`M${x0} ${y0} L${x1} ${y1} H${x1+3*U}`,ink,'none',.55,blockG,{'data-layer':'cotas'});text(x1+3.5*U,y1+1.25*U,t,colr,10,blockG,{'font-weight':'bold'})};
   const rx=sx0+W+LASTRO*sc+4*U;
@@ -1049,7 +1054,8 @@ function openPillarArm(pos,ids,gEl){if(!pillarArmFields[pos])return;pillarArmEdi
  const titles={N1:'ESTRIBO DO PILAR',N2:'BARRAS LONGITUDINAIS DO PILAR',N3:'ESPERAS DO PILAR (ARRANQUE NO BLOCO)'};
  $('pillarArmTitle').textContent=titles[pos]+(ids&&ids.length?` — ${ids.length>1?'pilares':'pilar'} ${ids.join(', ')}`:'');
  const help=pos==='N2'?'Barras longitudinais por face. A face do TARDOZ é a voltada para o solo (lado superior da seção no desenho). Barras de mesma bitola formam uma única posição no desenho.':pos==='N3'?'As esperas saem do bloco e emendam (transpasse) com as barras do pilar.':'Estribo do pilar.';
- $('pillarArmHelp').innerHTML=(drawn?`No desenho: <b>${drawn}</b><br>`:'')+help+'<br><small style="color:#637b8d">Os números N do desenho (N9, N11…) são numerados na prancha; aqui você edita o tipo de armadura.</small>';
+ const lapNote=pos==='N3'&&calcSettings.useCalc?`<br><b style="color:#1e6b42">Modo com cálculo: transpasse automático = ${withPillarArms(PA,lapFac)}Ø (calculado). O valor abaixo só vale no modo só detalhamento.</b>`:'';
+ $('pillarArmHelp').innerHTML=lapNote+(drawn?`No desenho: <b>${drawn}</b><br>`:'')+help+'<br><small style="color:#637b8d">Os números N do desenho (N9, N11…) são numerados na prancha; aqui você edita o tipo de armadura.</small>';
  $('pillarArmFields').replaceChildren();const labels={N3:{follow:'Esperas iguais às barras do pilar?',dia:'Ø das esperas (só se NÃO forem iguais)',qty:'Quantidade de esperas (só se NÃO forem iguais)',lapFactor:'Transpasse (vezes Ø)',bend:'Dobra no fundo do bloco (cm)'}};
  const rows={};for(const [id,label0] of pillarArmFields[pos]){const label=labels[pos]?.[id]||label0;const lab=document.createElement('label');lab.textContent=label;lab.style.display='flex';lab.style.flexDirection='column';lab.style.gap='4px';let input;
   if(pos==='N3'&&id==='follow'){input=document.createElement('select');input.innerHTML='<option value="1">Sim — mesma quantidade e bitola das barras do pilar</option><option value="0">Não — definir Ø e quantidade</option>';input.value=Number(PA[pos][id])?'1':'0'}
@@ -1330,7 +1336,7 @@ function drawPillarDetails(parent){
   dimV(top,bottom,xH-22,xH,v.variable?'H':String(v.height),g);
   // Sem bloco: espera reta, ancorada 80Ø dentro da estaca/tubulão (sem dobra no pé).
   const embedOf=dia=>v.noBlock?80*dia/10:v.blockHeight,maxEmbed=Math.max(...waits.map(w=>embedOf(w.dia)));
-  const waitDiameter=waits[0].dia,lapCm=pillarArms.N3.lapFactor*waitDiameter/10;
+  const waitDiameter=waits[0].dia,lapCm=lapFac()*waitDiameter/10;
   const waitTop=bottom-lapCm*sc,waitBaseY=bottom+maxEmbed*sc,waitBend=pillarArms.N3.bend*sc,waitBendCm=pillarArms.N3.bend;
   const waitCutCm=Math.round(v.blockHeight+lapCm+waitBendCm);
   const lineEnd=waitX+(waits.length-1)*24+waitBend+30;
@@ -1354,8 +1360,8 @@ function drawPillarDetails(parent){
    txt(bx+12,ym,v.variable&&!gr.len?`${gr.qty} Ø${gr.dia.toFixed(1).replace('.',',')} · C VARIÁVEL (QUADRO)`:`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C${gr.len?'≈':'='}${cutC} cm`,10,blue,{'text-anchor':'middle','font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 ${bx+12} ${ym})`,...(gr.len?{'data-shape':v.noBlock?'reta':'espera'}:{})});
   });
   // Esperas: uma barra por posição; transpasse pela bitola de cada uma.
-  const PU=unitFor(detailScale[code]||25),minTop=Math.min(...waits.map(w=>bottom-pillarArms.N3.lapFactor*w.dia/10*sc));
-  waits.forEach((w,k)=>{const wx=waitX+k*24,lap=pillarArms.N3.lapFactor*w.dia/10,wTop=bottom-lap*sc,emb=embedOf(w.dia),cut=Math.round(emb+lap+(v.noBlock?0:waitBendCm));
+  const PU=unitFor(detailScale[code]||25),minTop=Math.min(...waits.map(w=>bottom-lapFac()*w.dia/10*sc));
+  waits.forEach((w,k)=>{const wx=waitX+k*24,lap=lapFac()*w.dia/10,wTop=bottom-lap*sc,emb=embedOf(w.dia),cut=Math.round(emb+lap+(v.noBlock?0:waitBendCm));
    if(v.noBlock)path(`M ${wx} ${wTop} L ${wx} ${bottom+emb*sc}`,blue,'none',2.5,g);
    else path(`M ${wx} ${wTop} L ${wx} ${waitBaseY-9} Q ${wx} ${waitBaseY-5} ${wx+5} ${waitBaseY-5} L ${wx+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
    el('rect',{x:wx-8,y:wTop,width:16,height:waitBaseY-wTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N3',style:'cursor:pointer'},g);
@@ -1366,7 +1372,7 @@ function drawPillarDetails(parent){
   });
   // Notas do pilar: um único bloco de texto, abaixo de todo o desenho.
   ty=Math.max(ty+30,waitBaseY+48);
-  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.noBlock?`80Ø RETOS ${v.fndNa} (SEM DOBRA)`:`${v.blockHeight} cm NO BLOCO`} + TRANSPASSE ${pillarArms.N3.lapFactor}Ø${v.noBlock?'':` + DOBRA ${waitBendCm} cm`}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.variable?'H VARIÁVEL (VER QUADRO)':v.height+' cm'} (ACIMA DA VB) · VB EMBUTIDA NA FUNDAÇÃO${v.noBlock?' · APOIO DIRETO '+v.fndNa+' (SEM BLOCO)':''}`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
+  for(const [str,size,color,attrs] of [[`ESPERAS — ${waits.reduce((t,w)=>t+w.qty,0)} BARRAS (${waits.map(w=>w.qty+' '+w.token+' Ø'+String(w.dia).replace('.',',')).join(' + ')}) · ${v.noBlock?`80Ø RETOS ${v.fndNa} (SEM DOBRA)`:`${v.blockHeight} cm NO BLOCO`} + TRANSPASSE ${lapFac()}Ø${v.noBlock?'':` + DOBRA ${waitBendCm} cm`}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer'}],[`SEÇÃO ${v.a} × ${v.b} cm · ALTURA ${v.variable?'H VARIÁVEL (VER QUADRO)':v.height+' cm'} (ACIMA DA VB) · VB EMBUTIDA NA FUNDAÇÃO${v.noBlock?' · APOIO DIRETO '+v.fndNa+' (SEM BLOCO)':''}`,10,ink,{}],['Armaduras e esperas do pilar: representação preliminar, sujeita à verificação estrutural.',8,gold,{}]]){txt(sx-12,ty,str,size,color,attrs);ty+=16}
   // QUADRO DE PILARES (altura variável): uma linha por pilar, com as posições e comprimentos
   // de cada um; é daqui que a relação de aço lê as quantidades (1 pilar por linha).
   if(v.variable){
@@ -1383,7 +1389,7 @@ function drawPillarDetails(parent){
     qt(cols[0]+1.5*QU,ry+4.6*QU,`P${pid}`,{'font-weight':'bold'});qt(cols[1]+1.5*QU,ry+4.6*QU,String(hh));qt(cols[2]+1.5*QU,ry+4.6*QU,levelFmt(ins.top));qt(cols[3]+1.5*QU,ry+4.6*QU,levelFmt(ins.base));
     groups.forEach((gr,k)=>qt(cols[4]+1.5*QU,ry+4.6*QU+k*lineH,`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C${gr.len?'≈':'='}${gr.len?Math.round(Math.min(gr.len,len)+(v.noBlock?80*gr.dia/10:v.blockHeight)+(v.noBlock?0:pillarArms.N3.bend)):len} cm`,{'data-pillar-arm':'N2',...(gr.len?{'data-shape':v.noBlock?'reta':'espera'}:{})}));
     qt(cols[5]+1.5*QU,ry+4.6*QU,`${nst} N1 Ø${pillarArms.N1.dia.toFixed(1).replace('.',',')} C≈${stirrupCut} cm`,{'data-pillar-arm':'N1'});
-    waits.forEach((w,k)=>{const emb=v.noBlock?80*w.dia/10:v.blockHeight,lap=pillarArms.N3.lapFactor*w.dia/10,cutW=Math.round(emb+lap+(v.noBlock?0:pillarArms.N3.bend));qt(cols[6]+1.5*QU,ry+4.6*QU+k*lineH,`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cutW} cm`,{'data-pillar-arm':'N3',...(v.noBlock?{'data-shape':'reta'}:{})})});
+    waits.forEach((w,k)=>{const emb=v.noBlock?80*w.dia/10:v.blockHeight,lap=lapFac()*w.dia/10,cutW=Math.round(emb+lap+(v.noBlock?0:pillarArms.N3.bend));qt(cols[6]+1.5*QU,ry+4.6*QU+k*lineH,`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cutW} cm`,{'data-pillar-arm':'N3',...(v.noBlock?{'data-shape':'reta'}:{})})});
     ry+=heights[r];
    });
    for(const xx of cols.slice(1,-1))ln(xx,ty,xx,ty+tblH,'#8198a8',.5);
@@ -2111,11 +2117,11 @@ function drawSteelTable(g,x,y,w,rows,u,title,maxH){
 }
 // V235 — Tabela de dobramento e transpasse (NBR 6118: 9.3.2 pinos de dobramento,
 // 9.4.6 ganchos de estribos). Bitolas da relação de aço da folha; valores em cm.
-function bendRows(rows){const dias=[...new Set(rows.map(r=>Number(r.dia)))].sort((a,b)=>a-b);const lap=Number(pillarArms.N3.lapFactor)||60;
+function bendRows(rows){const dias=[...new Set(rows.map(r=>Number(r.dia)))].sort((a,b)=>a-b);const lap=Number(lapFac())||60;
  return dias.map(d=>{const steel=d<=5?'CA60':'CA50',f=d/10;const pinB=steel==='CA60'?6*f:(d<20?5*f:8*f),pinE=d<=10?3*f:d<20?5*f:8*f;return {d,steel,pinB,pinE,hook90:8*f,hookE:Math.max(5*f,5),lap:lap*f}})}
 function bendTableHeight(rows,u){return (13+9+Math.max(1,bendRows(rows).length)*7+15)*u}
 function drawBendTable(g,x,y,w,rows,u){
- const br=bendRows(rows),lap=Number(pillarArms.N3.lapFactor)||60,h=bendTableHeight(rows,u);
+ const br=bendRows(rows),lap=Number(lapFac())||60,h=bendTableHeight(rows,u);
  sheetBox(g,x,y,w,h,'DOBRAMENTO E TRANSPASSE',u);
  const top=y+13*u,headH=9*u,rowH=7*u,cols=[0,11,22,36,50,64,78,92].map(v=>x+v/92*w);
  for(const xx of cols.slice(1,-1))el('line',{x1:xx,y1:top,x2:xx,y2:top+headH+br.length*rowH,stroke:'#8198a8','stroke-width':.6,'pointer-events':'none'},g);
@@ -2967,11 +2973,11 @@ Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados),
 
  <div style="overflow:auto"><table class="calc-t pil-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>Seção (cm)</th><th>Md (kN·m)</th><th>x/d</th><th>As nec (cm²)</th><th>As det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>VRd2 (kN)</th><th>Asw/s nec (cm²/m)</th><th>Asw/s det (cm²/m)</th><th>Cisalh.</th><th title="Regras construtivas NBR 6118 18.4 (armadura mín./máx., espaçamentos, estribo)">Regras</th><th title="Flecha no topo e fissuração">ELS</th></tr></thead><tbody>${tr}</tbody></table></div>
  <pre class="calc-mem">${mem}</pre>${(()=>{
-  const ru=r.rules,els=r.els,a2=pillarN2(),ratio=Math.min(1,r.AsReq/Math.max(1e-9,r.AsDet)),grp=pillarBarGroups(),lapNow=Number(pillarArms.N3.lapFactor)||60;
-  const LR=calcLapReq(rs),laps=LR.list,lapReq=LR.fac;
+  const ru=r.rules,els=r.els,a2=pillarN2(),ratio=Math.min(1,r.AsReq/Math.max(1e-9,r.AsDet)),grp=pillarBarGroups(),lapNow=Number(lapFac())||60;
+  const LR=calcLapReq(rs.filter(x=>pillarArmsFor(x.id)===pillarArmsFor(r.id))),laps=LR.list,lapReq=LR.fac;
   return `<h4 class="calc-h">Regras construtivas do pilar (NBR 6118, 18.4)</h4><table class="calc-t" style="max-width:900px"><tbody>${ru.items.map(([t,v,ok])=>`<tr><td style="text-align:left">${t}</td><td>${v}</td><td>${calcOk(ok)}</td></tr>`).join('')}</tbody></table>
   <h4 class="calc-h">Transpasse das esperas (NBR 6118, 9.5.2 — tardoz: ${calcFmt(LR.frac*100,0)}% das barras emendadas na seção, α0t = ${calcFmt(LR.a0t,1)})</h4><table class="calc-t" style="max-width:900px"><thead><tr><th>Barra</th><th>Ø (mm)</th><th>fbd (MPa)</th><th>lb (cm)</th><th>lb,nec (cm)</th><th>l0 (cm)</th><th>Necessário</th><th>Adotado</th></tr></thead><tbody>${laps.map(x=>`<tr><td>${x.kind}</td><td>${calcFmt(x.dia,1)}</td><td>${calcFmt(x.L.fbd,2)}</td><td>${calcFmt(x.L.lb/10,1)}</td><td>${calcFmt(x.L.lbnec/10,1)}</td><td>${calcFmt(x.l0/10,1)}</td><td>${x.fac}Ø</td><td>${lapNow}Ø ${calcOk(lapNow>=x.fac)}</td></tr>`).join('')}</tbody></table>
-  <p class="calc-hint">lb = (Ø/4)·(fyd/fbd) ≥ 25Ø · lb,nec = lb·As,calc/As,ef (= ${calcFmt(LR.ratio,2)}) ≥ máx(0,3·lb; 10Ø; 10 cm) · tração: l0t = α0t·lb,nec ≥ máx(0,3·α0t·lb; 15Ø; 20 cm) · compressão: l0c = lb,nec ≥ máx(0,6·lb; 15Ø; 20 cm). Arredondado para múltiplos de 5Ø. ${S.useCalc?'O "Aplicar" ajusta o fator de transpasse.':''}</p>
+  <p class="calc-hint">lb = (Ø/4)·(fyd/fbd) ≥ 25Ø · lb,nec = lb·As,calc/As,ef (= ${calcFmt(LR.ratio,2)}) ≥ máx(0,3·lb; 10Ø; 10 cm) · tração: l0t = α0t·lb,nec ≥ máx(0,3·α0t·lb; 15Ø; 20 cm) · compressão: l0c = lb,nec ≥ máx(0,6·lb; 15Ø; 20 cm). Arredondado para múltiplos de 5Ø. ${S.useCalc?'<b>Modo com cálculo: o transpasse adotado é o calculado (automático), por armadura de pilar.</b>':'Modo só detalhamento: vale o transpasse digitado; no modo com cálculo ele passa a ser automático.'}</p>
   ${els?`<h4 class="calc-h">ELS — deslocamento no topo e fissuração (${r.id})</h4><table class="calc-t" style="max-width:900px"><tbody>
   <tr><td style="text-align:left">Flecha no topo (comb. quase permanente, solo + ${calcFmt(els.psi2,1)}·q; Branson; fluência αf = ${calcFmt(els.af,2)})</td><td>imediata ${calcFmt(els.dIm,1)} mm · total <b>${calcFmt(els.dTot,1)} mm</b></td><td>≤ ${calcFmt(els.lim,1)} mm (H/${calcFmt(Number(S.defDen)||250,0)}${Number(S.defCap)>0?` e ${calcFmt(Number(S.defCap),0)} mm`:''}) ${calcOk(els.okD)}</td></tr>
   <tr><td style="text-align:left">Abertura de fissuras na base, face do tardoz (comb. frequente, solo + ${calcFmt(els.psi1,1)}·q)</td><td>σs = ${calcFmt(els.ss,0)} MPa · <b>wk = ${calcFmt(els.wk,3)} mm</b></td><td>≤ ${calcFmt(els.wlim,1)} mm (CAA ${esc2(stampData?.caa||'II')}) ${calcOk(els.okW)}</td></tr></tbody></table>
@@ -3774,7 +3780,7 @@ function ceEditPilar(sel,rs){const a=pillarN2(),N1=pillarArms.N1,N3=pillarArms.N
   <div class="ce-grid">
    <b>Tardoz</b>${c('p:N2:cornerDia','Ø cantos',a.cornerDia,'dia')}${c('p:N2:soloN','+ barras',a.soloN,'int')}${c('p:N2:soloDia','Ø barras',a.soloDia,'dia')}${c('p:N2:soloLen','compr. (0=todo)',a.soloLen??0,'num')}${c('p:N2:soloN2','2ª camada nº',a.soloN2??0,'int')}${c('p:N2:soloDia2','Ø 2ª camada',a.soloDia2??a.soloDia,'dia')}
    <b>Externa</b>${c('p:N2:cornerExtDia','Ø cantos',a.cornerExtDia,'dia')}${c('p:N2:extN','+ barras',a.extN,'int')}${c('p:N2:extDia','Ø barras',a.extDia,'dia')}${c('p:N2:latN','laterais + (cada)',a.latN,'int')}${c('p:N2:latDia','Ø laterais',a.latDia,'dia')}${e}
-   <b>Estribo</b>${c('p:N1:dia','Ø estribo',N1.dia,'dia')}${c('p:N1:spacing','c/ (cm)',N1.spacing,'num')}${c('p:N3:lapFactor','transpasse ×Ø',N3.lapFactor,'num')}${c('p:sec:wallColX','seção A (cm)',sg.wallColX,'num')}${c('p:sec:wallColY','seção B (cm)',sg.wallColY,'num')}<span class="ce-cell" style="align-self:end;font-size:9.5px;color:#7a6a40;padding-bottom:2px">seção: todos os pilares${S.wall==='all'?'':' do arrimo '+(Number(S.wall)+1)}</span>
+   <b>Estribo</b>${c('p:N1:dia','Ø estribo',N1.dia,'dia')}${c('p:N1:spacing','c/ (cm)',N1.spacing,'num')}${S.useCalc?`<span class="ce-cell" title="Modo com cálculo: transpasse calculado pela NBR 6118 (9.5.2)"><span>transpasse ×Ø</span><b style="height:23px;line-height:23px;color:#1e6b42">${lapFac()}Ø (auto)</b></span>`:c('p:N3:lapFactor','transpasse ×Ø',N3.lapFactor,'num')}${c('p:sec:wallColX','seção A (cm)',sg.wallColX,'num')}${c('p:sec:wallColY','seção B (cm)',sg.wallColY,'num')}<span class="ce-cell" style="align-self:end;font-size:9.5px;color:#7a6a40;padding-bottom:2px">seção: todos os pilares${S.wall==='all'?'':' do arrimo '+(Number(S.wall)+1)}</span>
   </div></div>
   <div class="ce-sec">${ceSectionSVG(sel)}</div></div></div>`;}
 function ceEditFundacao(){const F=calcFoundation(),codes=[...new Set(F.map(r=>r.code))];let B=[];try{B=calcBlock()}catch(e){}const bcodes=[...new Set(B.filter(b=>!b.noBlk).map(b=>b.bc||'B1'))];
@@ -3870,7 +3876,7 @@ function calcOpen(){
   $('cAlv').onchange=()=>{calcSettings.alvModel=$('cAlv').value;calcSettings.sel=null;calcRender()};
   $('cFront').onchange=()=>{calcSettings.useFront=$('cFront').value==='1';calcRender()};
   $('cMaxDia').onchange=()=>{calcSettings.maxDia=Number($('cMaxDia').value);calcRender()};
-  $('cUse').onchange=()=>{calcSettings.useCalc=$('cUse').value==='1';calcRender()};
+  $('cUse').onchange=()=>{calcSettings.useCalc=$('cUse').value==='1';try{draw()}catch(e){}calcRender()};
   $('cWall').onchange=()=>{calcSettings.wall=$('cWall').value;calcSettings.sel=null;calcRender()};
  }
  const S=calcSettings;
