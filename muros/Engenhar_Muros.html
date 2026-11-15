@@ -3726,18 +3726,53 @@ function ceCopy(to){const src=JSON.parse(JSON.stringify(pillarArmsFor(ceSelId)))
  else{const bad=[...new Set(rs.filter(r=>!(r.okM&&r.okV&&r.okRules&&r.okELS)).map(r=>r.id))];for(const id of bad)pillarArmsBy[id]=JSON.parse(JSON.stringify(src))}
  pillarArmsClean()}
 function ceI(k,label,v,kind){return `<span class="ce-i">${label}${ceF(k,'',v,kind).replace(/^<label>|<\/label>$/g,'')}</span>`}
+// V273 — Seção transversal do pilar no editor (tardoz em cima, como no detalhamento), atualizada a cada mudança.
+function ceSectionSVG(sel){const a=pillarN2(),N1=pillarArms.N1,cov=Number(N1.cover)||3,st=(Number(N1.dia)||5)/10,b=sel.b,h=sel.h;
+ const W=200,Hh=250,box=Math.min(150/b,170/h),sc=box,ox=(W-b*sc)/2,oy=40,bw=b*sc,bh=h*sc;
+ const cols={5:'#9aa7b1',6.3:'#7f8c8d',8:'#16a085',10:'#2980b9',12.5:'#8e44ad',16:'#d35400',20:'#c0392b',25:'#6d214f'},col=d=>cols[Number(d)]||'#333';
+ const R=d=>Math.max(2.2,(Number(d)||10)/20*sc),i0=cov+st;const bars=[];
+ const row=(n,dia,y,x0,x1)=>{for(let k=0;k<n;k++){const x=n===1?(x0+x1)/2:x0+(x1-x0)*k/(n-1);bars.push([x,y,dia])}};
+ const cT=Number(a.cornerDia)||10,cE=Number(a.cornerExtDia)||10,yT=i0+cT/20,yE=h-i0-cE/20,xL=i0+cT/20,xR=b-i0-cT/20;
+ // tardoz (topo): cantos + intermediárias
+ bars.push([xL,yT,cT],[xR,yT,cT]);const sN=Number(a.soloN)||0;if(sN)row(sN+2,a.soloDia,yT,xL,xR),bars.splice(-(sN+2),1),bars.pop();
+ // 2ª camada
+ const n2=Number(a.soloN2)||0,d2=Number(a.soloDia2)||Number(a.soloDia)||10;if(n2){const y2=yT+cT/20+Math.max(2,cT/10,d2/10)+d2/20;row(n2,d2,y2,xL,xR)}
+ // face externa (baixo)
+ const xLe=i0+cE/20,xRe=b-i0-cE/20;bars.push([xLe,yE,cE],[xRe,yE,cE]);const eN=Number(a.extN)||0;if(eN){const tmp=[];for(let k=1;k<=eN;k++)tmp.push([xLe+(xRe-xLe)*k/(eN+1),yE,a.extDia]);bars.push(...tmp)}
+ // laterais
+ const lN=Number(a.latN)||0;if(lN)for(let k=1;k<=lN;k++){const y=yT+(yE-yT)*k/(lN+1);bars.push([i0+(Number(a.latDia)||10)/20,y,a.latDia],[b-i0-(Number(a.latDia)||10)/20,y,a.latDia])}
+ const X=x=>ox+x*sc,Y=y=>oy+y*sc;
+ let svg=`<svg viewBox="0 0 ${W} ${Hh}" class="ce-sec-svg"><text x="${W/2}" y="13" text-anchor="middle" font-size="11" font-weight="bold" fill="#173a55">Seção ${sel.id} — ${calcFmt(b,0)}×${calcFmt(h,0)}</text>
+ <text x="${W/2}" y="${oy-16}" text-anchor="middle" font-size="9" fill="#7a4d00" font-weight="bold">TARDOZ (solo) — tracionado</text><text x="${W/2}" y="${oy+bh+14}" text-anchor="middle" font-size="9" fill="#556">FACE EXTERNA</text>
+ <rect x="${X(0)}" y="${Y(0)}" width="${bw}" height="${bh}" fill="#dfe6ec" stroke="#173a55" stroke-width="1.4"/>
+ <rect x="${X(cov+st/2)}" y="${Y(cov+st/2)}" width="${(b-2*cov-st)*sc}" height="${(h-2*cov-st)*sc}" rx="${2*sc}" fill="none" stroke="#2e86c1" stroke-width="${Math.max(1,st*sc)}"/>`;
+ for(const [x,y,d] of bars)svg+=`<circle cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="${R(d).toFixed(1)}" fill="${col(d)}" stroke="#111" stroke-width=".6"><title>Ø${ceDia(d)}</title></circle>`;
+ svg+=`<line x1="${X(0)}" y1="${oy-6}" x2="${X(b)}" y2="${oy-6}" stroke="#556" stroke-width=".7"/><text x="${W/2}" y="${oy-8}" text-anchor="middle" font-size="8" fill="#556">${calcFmt(b,0)}</text>`;
+ svg+=`<line x1="${X(b)+6}" y1="${Y(0)}" x2="${X(b)+6}" y2="${Y(h)}" stroke="#556" stroke-width=".7"/><text x="${X(b)+9}" y="${Y(h/2)}" font-size="8" fill="#556" transform="rotate(90 ${X(b)+9} ${Y(h/2)})" text-anchor="middle">${calcFmt(h,0)}</text>`;
+ const cnt=new Map();for(const [, ,d] of bars)cnt.set(Number(d),(cnt.get(Number(d))||0)+1);
+ let ly=oy+bh+28;svg+=`<text x="${W/2}" y="${ly}" text-anchor="middle" font-size="9.5" fill="#173a55" font-weight="bold">${[...cnt].sort((p,q)=>q[0]-p[0]).map(([d,n])=>`${n}Ø${ceDia(d)}`).join(' + ')} · estribo Ø${ceDia(N1.dia)} c/${ceDia(N1.spacing)}</text>`;
+ ly+=13;svg+=`<text x="${W/2}" y="${ly}" text-anchor="middle" font-size="9" fill="#556">As tardoz ${calcFmt(sel.AsDet)} / nec ${calcFmt(sel.AsReq)} cm²</text>`;
+ return svg.replace(`viewBox="0 0 ${W} ${Hh}"`,`viewBox="0 0 ${W} ${Math.max(Hh,ly+8)}"`)+'</svg>'}
 function ceEditPilar(sel,rs){const a=pillarN2(),N1=pillarArms.N1,N3=pillarArms.N3,sg=ceSegs()[0]?.[0]?.parameters||{},S=calcSettings;ceSelId=sel.id;
  const byId=new Map();for(const r of rs){const o=byId.get(r.id);const ok=r.okM&&r.okV&&r.okRules&&r.okELS;if(!o)byId.set(r.id,{r,ok});else o.ok=o.ok&&ok}
  const picks=[...byId.values()].map(({r,ok})=>`<button class="ce-pick${r.id===sel.id?' on':''}" data-cepick="p${r.key}" style="border-color:${ok?'#2e8b57':'#c0392b'};color:${ok?'#1e6b42':'#b0281a'}" title="${ok?'passa':'não passa'}${r.own?' · armadura própria':''}">${r.id}${r.own?'●':''}${ok?'✓':'✗'}</button>`).join('');
  const q=(act,txt,tt)=>`<button class="ce-q" data-cq="${act}" title="${tt||''}">${txt}</button>`;
  const w=[];if(!sel.okM)w.push('flexão');if(!sel.okV)w.push('cisalhamento');if(sel.rules&&!sel.rules.ok)w.push(...sel.rules.items.filter(x=>!x[2]).map(x=>'regra: '+x[0]+' ('+x[1]+')'));if(sel.els&&!sel.els.okD)w.push('flecha');if(sel.els&&!sel.els.okW)w.push('fissuração');
- return `<div class="calc-edit ce-c"><div class="ce-row"><b class="ce-h">✎ Editar</b>${picks}<select id="ceScope" title="Onde a mudança vale"><option value="one"${(S.ceScope||'one')==='one'?' selected':''}>só no ${sel.id}</option><option value="same"${S.ceScope==='same'?' selected':''}>${sel.id} e os de mesma armadura</option><option value="all"${S.ceScope==='all'?' selected':''}>todos os pilares</option></select></div>
- <div class="ce-row ce-st">${sel.id}${sel.own?'● (armadura própria)':''}: As det <b>${calcFmt(sel.AsDet)}</b> / nec <b>${calcFmt(sel.AsReq)}</b> cm² · Asw/s det ${calcFmt(sel.AswDet*100)} / nec ${calcFmt(sel.AswReq*100)} cm²/m · ${w.length?`<span style="color:#b0281a">✗ ${w.join(' · ')}</span>`:'<span style="color:#1e6b42">✓ passa em tudo</span>'}</div>
- <div class="ce-row"><b class="ce-h">Rápido</b>${q('sN+','＋1 tardoz','Acrescenta 1 barra na face do solo')}${q('sN-','－1 tardoz','Tira 1 barra da face do solo')}${q('td+','Ø tardoz ▲','Aumenta a bitola dos cantos e das barras do tardoz')}${q('td-','Ø tardoz ▼','')}${q('L2+','＋2ª camada','')}${q('L2-','－2ª camada','')}${q('eN+','＋1 externa','Face comprimida (armadura dupla)')}${q('st-','estribo c/ −2,5','Cisalhamento')}${q('st+','estribo c/ +2,5','')}${q('sd+','Ø estribo ▲','')}</div>
- <div class="ce-row"><b class="ce-h">Copiar ${sel.id}</b>${q('cp-bad','→ os que não passam')}${q('cp-all','→ todos')}${sel.own?q('cp-reset','voltar ao padrão'):''}</div>
- <div class="ce-row"><b class="ce-h">Tardoz</b>${ceI('p:N2:cornerDia','cantos',a.cornerDia,'dia')}${ceI('p:N2:soloN','+ barras',a.soloN,'int')}${ceI('p:N2:soloDia','Ø',a.soloDia,'dia')}${ceI('p:N2:soloLen','compr. (0=todo)',a.soloLen??0,'num')}${ceI('p:N2:soloN2','2ª cam.',a.soloN2??0,'int')}${ceI('p:N2:soloDia2','Ø',a.soloDia2??a.soloDia,'dia')}</div>
- <div class="ce-row"><b class="ce-h">Externa/lat.</b>${ceI('p:N2:cornerExtDia','cantos',a.cornerExtDia,'dia')}${ceI('p:N2:extN','+ barras',a.extN,'int')}${ceI('p:N2:extDia','Ø',a.extDia,'dia')}${ceI('p:N2:latN','laterais +',a.latN,'int')}${ceI('p:N2:latDia','Ø',a.latDia,'dia')}</div>
- <div class="ce-row"><b class="ce-h">Estribo</b>${ceI('p:N1:dia','Ø',N1.dia,'dia')}${ceI('p:N1:spacing','c/',N1.spacing,'num')}${ceI('p:N3:lapFactor','transpasse ×Ø',N3.lapFactor,'num')}<b class="ce-h" style="margin-left:10px">Seção</b>${ceI('p:sec:wallColX','A',sg.wallColX,'num')}${ceI('p:sec:wallColY','B',sg.wallColY,'num')}<small style="color:#7a6a40">(seção: todos${S.wall==='all'?'':' do arrimo '+(Number(S.wall)+1)})</small></div></div>`;}
+ const c=(k,label,v,kind)=>`<label class="ce-cell"><span>${label}</span>${ceF(k,'',v,kind).replace(/^<label>|<\/label>$/g,'')}</label>`,e='<span class="ce-cell"></span>';
+ const grp=(t,btns)=>`<div class="ce-qg"><span>${t}</span>${btns}</div>`;
+ return `<div class="calc-edit ce-c">
+ <div class="ce-row"><b class="ce-h">✎ Pilar</b>${picks}<select id="ceScope" title="Onde a mudança vale"><option value="one"${(S.ceScope||'one')==='one'?' selected':''}>mudar só no ${sel.id}</option><option value="same"${S.ceScope==='same'?' selected':''}>${sel.id} e os de mesma armadura</option><option value="all"${S.ceScope==='all'?' selected':''}>todos os pilares</option></select></div>
+ <div class="ce-st">${sel.id}${sel.own?'● (armadura própria)':''}: As det <b>${calcFmt(sel.AsDet)}</b> / nec <b>${calcFmt(sel.AsReq)}</b> cm² · Asw/s det ${calcFmt(sel.AswDet*100)} / nec ${calcFmt(sel.AswReq*100)} cm²/m<br>${w.length?`<span style="color:#b0281a">✗ ${w.join(' · ')}</span>`:'<span style="color:#1e6b42">✓ passa em tudo</span>'}</div>
+ <div class="ce-body"><div class="ce-left">
+  <div class="ce-sub">Ajuste rápido</div>
+  <div class="ce-qgrid">${grp('Tardoz',q('sN+','＋1 barra','Acrescenta 1 barra na face do solo')+q('sN-','－1 barra','')+q('td+','Ø ▲','Aumenta a bitola dos cantos e das barras do tardoz')+q('td-','Ø ▼',''))}${grp('2ª camada',q('L2+','＋1 barra','')+q('L2-','－1 barra',''))}${grp('Externa',q('eN+','＋1 barra','Face comprimida (armadura dupla)'))}${grp('Estribo',q('st-','c/ −2,5','Mais estribos: cisalhamento e regra 12Ø')+q('st+','c/ +2,5','')+q('sd+','Ø ▲',''))}${grp('Copiar '+sel.id,q('cp-bad','→ que não passam')+q('cp-all','→ todos')+(sel.own?q('cp-reset','padrão','Volta este pilar à armadura padrão'):''))}</div>
+  <div class="ce-sub">Armadura</div>
+  <div class="ce-grid">
+   <b>Tardoz</b>${c('p:N2:cornerDia','Ø cantos',a.cornerDia,'dia')}${c('p:N2:soloN','+ barras',a.soloN,'int')}${c('p:N2:soloDia','Ø barras',a.soloDia,'dia')}${c('p:N2:soloLen','compr. (0=todo)',a.soloLen??0,'num')}${c('p:N2:soloN2','2ª camada nº',a.soloN2??0,'int')}${c('p:N2:soloDia2','Ø 2ª camada',a.soloDia2??a.soloDia,'dia')}
+   <b>Externa</b>${c('p:N2:cornerExtDia','Ø cantos',a.cornerExtDia,'dia')}${c('p:N2:extN','+ barras',a.extN,'int')}${c('p:N2:extDia','Ø barras',a.extDia,'dia')}${c('p:N2:latN','laterais + (cada)',a.latN,'int')}${c('p:N2:latDia','Ø laterais',a.latDia,'dia')}${e}
+   <b>Estribo</b>${c('p:N1:dia','Ø estribo',N1.dia,'dia')}${c('p:N1:spacing','c/ (cm)',N1.spacing,'num')}${c('p:N3:lapFactor','transpasse ×Ø',N3.lapFactor,'num')}${c('p:sec:wallColX','seção A (cm)',sg.wallColX,'num')}${c('p:sec:wallColY','seção B (cm)',sg.wallColY,'num')}<span class="ce-cell" style="align-self:end;font-size:9.5px;color:#7a6a40;padding-bottom:2px">seção: todos os pilares${S.wall==='all'?'':' do arrimo '+(Number(S.wall)+1)}</span>
+  </div></div>
+  <div class="ce-sec">${ceSectionSVG(sel)}</div></div></div>`;}
 function ceEditFundacao(){const F=calcFoundation(),codes=[...new Set(F.map(r=>r.code))];let B=[];try{B=calcBlock()}catch(e){}const bcodes=[...new Set(B.filter(b=>!b.noBlk).map(b=>b.bc||'B1'))];
  const g=codes.map(c=>{const v=foundationValues('pile',c);return [`${c} (${Number(v.pileKind)===1?'estaca':'tubulão'} — ${F.filter(r=>r.code===c).map(r=>r.id).join(', ')})`,[ceF(`f:pile:${c}:shaft`,'Ø fuste (cm)',v.shaft,'num'),Number(v.pileKind)===1?'':ceF(`f:pile:${c}:base`,'Ø base (cm)',v.base,'num'),ceF(`f:pile:${c}:depth`,'Profundidade (cm)',v.depth,'num'),ceF(`f:pile:${c}:bars`,'Barras longitudinais',v.bars,'int'),ceF(`f:pile:${c}:barDia`,'Ø longitudinal',v.barDia,'dia'),ceF(`f:pile:${c}:barLen`,'Compr. das barras (cm)',v.barLen,'num'),ceF(`f:pile:${c}:stDia`,'Estribo Ø',v.stDia,'dia'),ceF(`f:pile:${c}:spacing`,'Estribo c/ (cm)',v.spacing,'num')]]});
  const gb=bcodes.map(c=>{const v=foundationValues('block',c);return [`Bloco ${c}`,[ceF(`f:block:${c}:blockX`,'Lado X (cm)',v.blockX,'num'),ceF(`f:block:${c}:blockY`,'Lado Y (cm)',v.blockY,'num'),ceF(`f:block:${c}:blockH`,'Altura (cm)',v.blockH,'num'),ceF(`f:block:${c}:blockDiaX`,'Estribo vertical Ø',v.blockDiaX,'dia')]]});
@@ -3854,6 +3889,11 @@ function calcOpen(){
 .ce-pick{background:#fff;border:2px solid;border-radius:5px;padding:3px 8px;font-weight:bold;cursor:pointer;font-size:12px}.ce-pick.on{background:#173a55;color:#fff!important}.ce-q{background:#fff;border:1px solid #c9a24c;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:11px;color:#5a3a00}.ce-q:hover{background:#ffe9b8}
 .pil-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:stretch;margin-bottom:8px}.pil-side{display:flex;flex-direction:column}.pil-side svg{max-width:300px!important;width:100%;height:auto;max-height:330px}.pil-ut{font-size:11px;margin-top:6px}.pil-ut .pil-t td:first-child{text-align:left}
 .pil-t th,.pil-t td{padding:2px 5px!important;font-size:11px}
+.ce-c{padding:8px 10px!important}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;margin-top:6px}.ce-sec{background:#fff;border:1px solid #e0c78a;border-radius:6px;padding:4px}.ce-sec-svg{width:100%;height:auto;display:block}
+.ce-sub{font-size:10.5px;font-weight:bold;color:#7a4d00;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #ecd9a8;margin:4px 0 4px;padding-bottom:2px}
+.ce-qgrid{display:flex;flex-wrap:wrap;gap:5px 16px}.ce-qg{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;white-space:nowrap}.ce-qg>span{font-size:11px;color:#7a4d00;font-weight:bold;margin-right:2px}.ce-c .ce-qg .ce-q{padding:2px 7px}
+.ce-grid{display:grid;grid-template-columns:62px repeat(6,minmax(0,1fr));gap:3px 6px;align-items:end}.ce-grid>b{font-size:11px;color:#7a4d00;padding-bottom:4px}.ce-cell{display:flex;flex-direction:column;gap:1px;font-size:9.5px;color:#5b6b76}.ce-cell input,.ce-cell select{width:100%;height:23px;border:1px solid #c9a24c;border-radius:4px;padding:0 3px;font-size:11.5px;background:#fff;box-sizing:border-box}
+.ce-st{font-size:11px;background:#fff;border-radius:4px;padding:3px 6px;margin-top:3px;line-height:1.35}
 .ce-c{padding:6px 8px!important}.ce-row{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;margin:3px 0}.ce-h{font-size:11px;color:#7a4d00;min-width:62px}.ce-st{font-size:11px;background:#fff;border-radius:4px;padding:3px 6px}
 .ce-c .ce-pick{padding:2px 6px;font-size:11px}.ce-c .ce-q{padding:2px 6px;font-size:11px}.ce-c select#ceScope{height:22px;font-size:11px;border:1px solid #c9a24c;border-radius:4px}
 .ce-i{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;color:#4a5a66}.ce-i input,.ce-i select{width:58px;height:22px;border:1px solid #c9a24c;border-radius:4px;padding:0 3px;font-size:11.5px;background:#fff}.ce-i select{width:66px}
