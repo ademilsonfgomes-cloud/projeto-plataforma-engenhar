@@ -2983,13 +2983,24 @@ Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados),
   <tr><td style="text-align:left">Abertura de fissuras na base, face do tardoz (comb. frequente, solo + ${calcFmt(els.psi1,1)}·q)</td><td>σs = ${calcFmt(els.ss,0)} MPa · <b>wk = ${calcFmt(els.wk,3)} mm</b></td><td>≤ ${calcFmt(els.wlim,1)} mm (CAA ${esc2(stampData?.caa||'II')}) ${calcOk(els.okW)}</td></tr></tbody></table>
   <p class="calc-hint">Ecs = 0,85·5600·√fck = ${calcFmt(els.Ecs*10,0)} MPa · Ic = ${calcFmt(els.Ic,0)} cm⁴ · III = ${calcFmt(els.I2,0)} cm⁴ · Mr = 1,5·fctm·Ic/(h/2) = ${calcFmt(els.Mr/100,2)} kN·m. Flecha pela integração da curvatura M/(E·Ie) ao longo da altura do balanço.</p>`:''}`})()}`;
 }
+// V275 — "Calcular tudo" (modo com cálculo): aplica pilar, fundação/bloco e vigas e mostra o que mudou no Resumo.
+let calcAllLog=null;
+function calcAll(){const btn=$('cCalcAll');if(btn)btn.textContent='Calculando…';setTimeout(()=>{const out=[];const step=(nome,fn)=>{try{fn();const m=$('status').textContent||'';out.push([nome,[...new Set(m.replace(/^(Pilar|Fundação|Vigas?)[^:]*:\s*/,'').split(' · ').map(x=>x.trim()).filter(Boolean))].join(' · ')])}catch(e){out.push([nome,'erro: '+e.message])}};
+ calcSettings.useCalc=true;step('Pilares',()=>calcApplyPillar());step('Fundações e blocos',()=>calcApplyFoundation());step('Vigas e alvenaria',()=>calcApplyBeams());
+ try{draw()}catch(e){}let fails=[];try{fails=[...calcFailures()].map(([k,v])=>k+': '+[...v].join(' / '))}catch(e){}
+ calcAllLog={t:new Date(),out,fails};calcSettings.tab='resumo';calcSettings.sel=null;calcRender();if(btn)btn.textContent='⚡ Calcular tudo';
+ status(fails.length?`Calcular tudo: ${fails.length} elemento(s) ainda não passam — veja o Resumo.`:'Calcular tudo: todos os elementos passam. Confira o Resumo e o detalhamento.')},30)}
+function calcAllBox(){const L=calcAllLog;if(!L)return '';const hh=L.t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+ return `<div class="calc-edit" style="background:${L.fails.length?'#fff1ee':'#eefaf1'};border-color:${L.fails.length?'#e0a090':'#8fcca5'}"><b>⚡ Calcular tudo — ${hh}</b> ${L.fails.length?'<span class="c-no">· ainda há elementos que não passam</span>':'<span class="c-ok">· todos os elementos passam</span>'}
+ <table class="calc-t pil-t" style="margin-top:5px"><tbody>${L.out.map(([n,m])=>`<tr><td style="text-align:left;width:150px"><b>${n}</b></td><td style="text-align:left;white-space:normal">${esc2(m)||'sem mudanças'}</td></tr>`).join('')}${L.fails.length?`<tr><td style="text-align:left"><b class="c-no">Não passam</b></td><td style="text-align:left;white-space:normal">${L.fails.map(esc2).join('<br>')}</td></tr>`:''}</tbody></table>
+ <p class="calc-hint" style="margin:4px 0 0">O programa grava a armadura no detalhamento; confira e ajuste nas abas Pilar, Fundação e Viga. Pilares: uma armadura para todos (a do pilar mais solicitado); ajuste pilar a pilar no editor da aba Pilar.</p></div>`}
 function calcTabResumo(){
  const S=calcSettings,P=calcPillar(),F=calcFoundation(),items=[];let BK=[];try{BK=calcBlock()}catch(e){}
  const pb=new Map();for(const r of P){const o=pb.get(r.pid)||{okM:true,okV:true};o.okM&&=r.okM;o.okV&&=r.okV;pb.set(r.pid,o)}
  for(const f of F){const p=pb.get(f.pid)||{okM:true,okV:true};const bk=BK.find(x=>x.pid===f.pid),pr=P.filter(x=>x.pid===f.pid);items.push({id:f.id,cells:[p.okM,p.okV,f.FSt>=S.fsTomb,f.FSd>=S.fsDesl,f.depth>=f.depthReq-1e-6,f.okFuste,f.okVert,pr.every(x=>x.okRules),pr.every(x=>x.okELS),!bk||(bk.okEsp&&bk.okPil&&bk.okTie&&calcPileShear(bk).ok)],fst:f.FSt,fsd:f.FSd,spt:f.hasSpt})}
  const B=calcBeams(),bOk=k=>B.filter(r=>k(r)).every(r=>r.okM&&r.okV),bTxt=k=>B.some(k)?calcOk(bOk(k)):'—';
  const all=items.every(i=>i.cells.every(Boolean))&&B.every(r=>r.okM&&r.okV);
- return `<div class="calc-k" style="font-size:14px">${all?'<span class="c-ok">✓ TODAS AS VERIFICAÇÕES PASSAM</span>':'<span class="c-no">✗ HÁ VERIFICAÇÕES QUE NÃO PASSAM</span>'} · modo: <b>${S.useCalc?'com cálculo do programa':'só detalhamento (conferência)'}</b></div>
+ return calcAllBox()+`<div class="calc-k" style="font-size:14px">${all?'<span class="c-ok">✓ TODAS AS VERIFICAÇÕES PASSAM</span>':'<span class="c-no">✗ HÁ VERIFICAÇÕES QUE NÃO PASSAM</span>'} · modo: <b>${S.useCalc?'com cálculo do programa':'só detalhamento (conferência)'}</b></div>
  <table class="calc-t calc-sum" style="max-width:900px"><thead><tr><th>Pilar</th><th>Pilar · flexão</th><th>Pilar · cisalhamento</th><th>Tombamento (FS)</th><th>Deslizamento (FS)</th><th>Profundidade</th><th>Fuste</th><th>Carga vertical</th><th>Regras pilar</th><th>ELS pilar</th><th>Bloco · ancoragem · cis. fuste</th></tr></thead><tbody>
  ${items.map(i=>`<tr><td>${i.id}</td><td>${calcOk(i.cells[0])}</td><td>${calcOk(i.cells[1])}</td><td>${calcOk(i.cells[2])} ${calcFmt(i.fst)}</td><td>${calcOk(i.cells[3])} ${calcFmt(i.fsd)}</td><td>${calcOk(i.cells[4])}</td><td>${calcOk(i.cells[5])}</td><td>${i.spt?calcOk(i.cells[6]):'<small>sem SPT</small>'}</td><td>${calcOk(i.cells[7])}</td><td>${calcOk(i.cells[8])}</td><td>${calcOk(i.cells[9])}</td></tr>`).join('')}</tbody></table>
  <table class="calc-t calc-sum" style="max-width:900px;margin-top:10px"><thead><tr><th>VB · vertical</th><th>VB · horizontal</th><th>VI · horizontal</th><th>VT · horizontal</th><th>Alvenaria</th></tr></thead><tbody><tr><td>${bTxt(r=>r.check==='vertical')}</td><td>${bTxt(r=>r.check==='horizontal'&&r.kind==='VB')}</td><td>${bTxt(r=>r.check==='horizontal'&&r.kind==='VI')}</td><td>${bTxt(r=>r.check==='horizontal'&&r.kind==='VT')}</td><td>${bTxt(r=>r.kind==='ALV')}</td></tr></tbody></table>
@@ -3814,7 +3825,7 @@ function ceBind(body){const d=body.querySelector('details.calc-edit');if(d)d.ont
  body.querySelectorAll('[data-ce]').forEach(el=>el.onchange=()=>{const k=el.dataset.ce,err=calcEditSet(k,el.value);if(err){status(err);el.focus();return}
   try{draw()}catch(e){}const sc=$('calcResults')?.scrollTop;calcRender();if(sc!=null)$('calcResults').scrollTop=sc;status('Detalhamento atualizado pelo painel de cálculo.')})}
 function calcRender(){
- const S=calcSettings,body=$('calcResults');if(!body)return;
+ const S=calcSettings,body=$('calcResults');if(!body)return;if($('cCalcAll'))$('cCalcAll').style.display=S.useCalc?'':'none';
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
  document.querySelectorAll('#calcDialog [data-for]').forEach(l=>l.style.display=l.dataset.for.split(' ').includes(S.tab)||l.dataset.for==='all'?'':'none');
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
@@ -3831,8 +3842,8 @@ function calcOpen(){
  let dlg=$('calcDialog');
  if(!dlg){
   dlg=document.createElement('dialog');dlg.id='calcDialog';
-  dlg.innerHTML=`<div class="calc-head"><strong>CÁLCULO — MURO DE ARRIMO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button><button data-tab="opt">Otimizar</button></nav>
-  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="calcReport" title="Memória de cálculo completa para imprimir ou salvar em PDF" style="background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Memória (PDF)</button><button id="calcCut" title="Lista de corte e dobra para a armação" style="background:#24506f;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Corte e dobra</button><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
+  dlg.innerHTML=`<div class="calc-head"><strong title="Cálculo do muro de arrimo">Σ CÁLCULO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button><button data-tab="opt">Otimizar</button></nav>
+  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="cCalcAll" title="Dimensiona pilares, fundações, blocos e vigas e grava tudo no detalhamento" style="background:#e67e22;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">⚡ Calcular tudo</button><button id="calcReport" title="Memória de cálculo completa para imprimir ou salvar em PDF" style="background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Memória (PDF)</button><button id="calcCut" title="Lista de corte e dobra para a armação" style="background:#24506f;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Corte e dobra</button><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
    <label data-for="all" style="flex:2;min-width:230px">Modelo de premissas<span style="display:flex;gap:4px;min-width:0"><select id="cPreset" style="flex:1;min-width:0;width:100%"></select><button type="button" id="cPresetSave" title="Salvar as premissas atuais como modelo" style="height:28px;border:1px solid #b5c9da;border-radius:4px;background:#fff;cursor:pointer">💾</button></span></label>
    <label data-for="all">Arrimo<select id="cWall"></select></label>
@@ -3876,6 +3887,7 @@ function calcOpen(){
   $('cAlv').onchange=()=>{calcSettings.alvModel=$('cAlv').value;calcSettings.sel=null;calcRender()};
   $('cFront').onchange=()=>{calcSettings.useFront=$('cFront').value==='1';calcRender()};
   $('cMaxDia').onchange=()=>{calcSettings.maxDia=Number($('cMaxDia').value);calcRender()};
+  $('cCalcAll').onclick=calcAll;
   $('cUse').onchange=()=>{calcSettings.useCalc=$('cUse').value==='1';try{draw()}catch(e){}calcRender()};
   $('cWall').onchange=()=>{calcSettings.wall=$('cWall').value;calcSettings.sel=null;calcRender()};
  }
@@ -3891,7 +3903,7 @@ function calcOpen(){
 #calcDialog::backdrop{background:#0008}
 .calc-head{display:flex;align-items:center;gap:16px;background:#173a55;color:#fff;padding:8px 14px;position:sticky;top:0;z-index:2;flex-wrap:wrap}
 .calc-tabs{display:flex;gap:4px;flex:1}.calc-tabs button{background:#24506f;color:#dcebf7;border:0;border-radius:5px 5px 0 0;padding:6px 10px;font-size:12px;cursor:pointer}
-#cUse{max-width:210px}.calc-head{gap:10px!important}
+#cUse{max-width:175px}.calc-head{padding-right:40px!important}#calcClose{position:absolute;right:8px;top:8px}.calc-tabs button{padding:6px 8px!important}#calcDialog .calc-head button{padding:6px 9px!important;font-size:12px}.calc-head{gap:10px!important}
 .calc-tabs button.on{background:#eaf3fa;color:#173a55;font-weight:bold}.calc-tabs button:disabled{opacity:.45;cursor:default}
 .calc-mode{font-size:11px;display:flex;align-items:center;gap:6px}.calc-mode select{height:26px;border-radius:4px;border:0;padding:2px 6px;font-size:12px}
 #calcClose{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
