@@ -1,0 +1,73 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><style>
+*{box-sizing:border-box}@page{size:A4 landscape;margin:12mm 11mm 13mm}body{margin:0;background:#fff;font:10.5px/1.35 Arial,Helvetica,sans-serif;color:#1d2b36}thead{display:table-header-group}tr{page-break-inside:avoid}.sec{page-break-after:avoid}
+h1{margin:0 0 3px;font-size:19px;color:#173a55}.sub{color:#5b6b76;font-size:10.5px;margin-bottom:14px}
+table{border-collapse:collapse;width:100%}th{background:#173a55;color:#fff;font-size:10px;padding:5px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact;text-align:left}
+td{border-bottom:1px solid #d5e0e8;padding:4px 6px;vertical-align:top;font-size:10.2px}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+tr.g td.h{border-left:6px solid #2e8b57}tr.y td.h{border-left:6px solid #e0a020}tr.r td.h{border-left:6px solid #c0392b}
+.sec td{background:#eef4f8;font-weight:bold;font-size:11px;color:#173a55;padding:5px 6px}
+.sec.g td{background:#e7f5ec;color:#1e6b42}.sec.y td{background:#fff5df;color:#8a5a00}.sec.r td{background:#fdecea;color:#a12a1c}
+td.h{font-weight:bold;width:15%}td.w{width:13%;color:#4a5a66;font-size:9.6px}td.p{width:7%;text-align:center}td.f{width:24%}
+td.e{width:12%;text-align:center;font-weight:bold}td.e.big{color:#1e6b42}td.e.mid{color:#4f7a2a}td.e.low{color:#7a8a96}td.e.no{color:#a12a1c}
+td.c{color:#4a5a66;font-size:9.8px}b.ok{color:#1e6b42}
+.foot{margin-top:8px;font-size:9.8px;color:#5b6b76;line-height:1.5}.box{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin:0 4px 0 12px}
+</style></head><body>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #173a55;padding-bottom:5px;margin-bottom:6px"><h1>Engenhar Muros — parâmetros que reduzem o aço e limites seguros</h1><span style="font-size:9.5px;color:#5b6b76">Guia de utilização · Anexo A · rev. 15/11/2026</span></div>
+<div class="sub">Redução medida no programa: muro de 13 m, H = 2,50 m, 6 pilares 20×40 (vão 2,60 m), VB 20×40 e VT, tubulão Ø60, fck 25. Base: Rankine, φ 30°, γ 18 kN/m³, q 10 kPa → 845 kg de aço (CA-50). Cada linha muda só aquele parâmetro e roda ⚡ Calcular tudo.</div>
+<table><thead><tr><th>Parâmetro</th><th>Onde fica</th><th>Padrão</th><th>Faixa segura para usar</th><th>Redução de aço (medida)</th><th>Cuidado / quando NÃO usar</th></tr></thead><tbody>
+
+<tr class="sec g"><td colspan="6">PODE AJUSTAR — depende só de conhecer a situação real da obra</td></tr>
+<tr class="g"><td class="h">Sobrecarga q</td><td class="w">Cálculo › Empuxo</td><td class="p">10 kPa</td><td class="f">Jardim / pedestres: 2,5 a 5 kPa<br>Garagem, carro leve junto ao muro: 10 kPa<br>Caminhão, rua, obra pesada: 15 a 20 kPa</td><td class="e big">10 → 5 kPa: −15%<br>sem q: −25%</td><td class="c">Nunca usar 0 se alguém pode circular ou estocar material atrás do muro. Pensar no uso futuro do terreno.</td></tr>
+<tr class="g"><td class="h">Sobrecarga afastada</td><td class="w">Cálculo › Empuxo</td><td class="p">0 m</td><td class="f">Distância real da borda da carga (rua, piso, construção vizinha) até o muro</td><td class="e big">1 m: −18%</td><td class="c">Só se a faixa junto ao muro ficar livre de carga de forma permanente (jardim, canteiro, recuo).</td></tr>
+<tr class="g"><td class="h">Empuxo: Coulomb</td><td class="w">Cálculo › Empuxo (campo Empuxo)</td><td class="p">Rankine</td><td class="f">Coulomb com atrito solo-muro δ = 2/3·φ para tardoz rugoso (bloco ou concreto, chapiscado)</td><td class="e big">−14%</td><td class="c">Não usar com manta lisa, geomembrana ou pintura betuminosa espessa no tardoz. Muro travado no topo: usar K0 (repouso).</td></tr>
+<tr class="g"><td class="h">Talude do aterro β</td><td class="w">Cálculo › Empuxo</td><td class="p">0°</td><td class="f">Inclinação real do terreno atrás do muro</td><td class="e low">(aumenta se β &gt; 0)</td><td class="c">Não deixar 0 se o terreno sobe atrás do muro — aí o padrão é contra a segurança.</td></tr>
+<tr class="g"><td class="h">Terreno da frente / VB enterrada</td><td class="w">Cálculo › Empuxo e Viga</td><td class="p">Descontar · Sim</td><td class="f">Manter quando o solo da frente é permanente e a VB fica toda abaixo dele</td><td class="e mid">alivia VB e fundação</td><td class="c">Desligar se a frente pode ser escavada no futuro (rua, rebaixo, vala).</td></tr>
+<tr class="g"><td class="h">Vão entre pilares</td><td class="w">Arrimos › Pilares neste arrimo</td><td class="p">—</td><td class="f">2,40 a 2,80 m (ótimo nos testes)</td><td class="e mid">varia; use 🔍 Procurar solução</td><td class="c">Vão maior economiza fundação mas aumenta pilar, VB e alvenaria; vão menor faz o contrário.</td></tr>
+<tr class="g"><td class="h">Lado B do pilar e VT</td><td class="w">Arrimos › Pilar lado B · Elevações › Viga superior</td><td class="p">20×40 · VT</td><td class="f">B de 40 a 60 cm; manter a viga de topo (VT)</td><td class="e mid">B maior: menos aço e flecha; VT: VB Ø16 → Ø12,5</td><td class="c">Concreto custa menos que aço; aumentar B costuma compensar.</td></tr>
+
+<tr class="sec y"><td colspan="6">SÓ COM SONDAGEM / ENSAIO OU CONDIÇÃO GARANTIDA</td></tr>
+<tr class="y"><td class="h">Ângulo de atrito φ</td><td class="w">Cálculo › Empuxo</td><td class="p">30°</td><td class="f">Areia fofa 28–30° · média 30–33° · compacta 33–36°<br>Aterro compactado 30–32° · Argila: 22–28° (sem c)<br>Sem ensaio: não passar de 32°; máximo 35°</td><td class="e big">30 → 33°: −15%</td><td class="c">Use o solo do ATERRO (atrás do muro), não o da fundação. Aterro lançado sem compactar: 28°.</td></tr>
+<tr class="y"><td class="h">Peso específico γ</td><td class="w">Cálculo › Empuxo</td><td class="p">18 kN/m³</td><td class="f">17 a 19 kN/m³ (aterro comum); 20 se saturado</td><td class="e low">18 → 17: −2%</td><td class="c">Ganho pequeno — não vale arriscar sem ensaio.</td></tr>
+<tr class="y"><td class="h">Nível d'água</td><td class="w">Cálculo › Empuxo</td><td class="p">sem água</td><td class="f">"Sem água" só com drenagem: barbacãs a cada 1,5–2 m, colchão de brita e manta geotêxtil</td><td class="e no">com água: até ~2× a carga</td><td class="c">Sem dreno, informe o nível d'água. É a causa mais comum de colapso de muro.</td></tr>
+<tr class="y"><td class="h">Coesão c</td><td class="w">Cálculo › Empuxo</td><td class="p">0</td><td class="f">Manter 0. Usar c só com ensaio e com redução (c/2)</td><td class="e mid">grande, mas arriscado</td><td class="c">A coesão some com chuva, saturação e fissuras de tração no aterro.</td></tr>
+<tr class="y"><td class="h">Limite de flecha</td><td class="w">Cálculo › Pilar</td><td class="p">H/250</td><td class="f">H/250 a H/150 com alvenaria. A NBR 6118 (13.3, aceitabilidade visual) admite 2H/250 = H/125 para balanço</td><td class="e low">só quando a flecha governa</td><td class="c">Flecha grande fissura a alvenaria e o reboco; com acabamento sensível, manter H/250.</td></tr>
+
+<tr class="sec r"><td colspan="6">NÃO REDUZIR — norma ou margem de segurança essencial</td></tr>
+<tr class="r"><td class="h">γf (majoração)</td><td class="w">Cálculo</td><td class="p">1,4</td><td class="f">Manter 1,4 (NBR 8681 / NBR 6118)</td><td class="e no">—</td><td class="c">Reduzir γf é reduzir a segurança diretamente.</td></tr>
+<tr class="r"><td class="h">FS tombamento · deslizamento</td><td class="w">Cálculo › Fundação</td><td class="p">2,0 · 1,5</td><td class="f">Manter 2,0 e 1,5 (NBR 11682 / prática de Broms)</td><td class="e low">1,5 no tomb.: só −0,4 m de estaca</td><td class="c">Ganho pequeno; Broms já é um método de ruptura.</td></tr>
+<tr class="r"><td class="h">fck</td><td class="w">Cálculo</td><td class="p">25 MPa</td><td class="f">Manter 25 MPa (realista para obra)</td><td class="e low">30 MPa: −2%</td><td class="c">Não compensa o controle extra de obra.</td></tr>
+<tr class="r"><td class="h">Cobrimento · estribo 12Ø · armadura mínima</td><td class="w">Editor do pilar</td><td class="p">norma</td><td class="f">Manter (NBR 6118: CAA II, 18.4)</td><td class="e no">—</td><td class="c">Durabilidade e flambagem das barras.</td></tr>
+</tbody></table>
+<div class="foot"><span class="box" style="background:#2e8b57;margin-left:0"></span>ajuste conforme a obra <span class="box" style="background:#e0a020"></span>exige dado de ensaio ou condição garantida <span class="box" style="background:#c0392b"></span>não reduzir.
+&nbsp; Combinação típica segura (Coulomb + φ 33° + sobrecarga afastada 1 m): 845 → 555 kg de aço (−34%), tudo passando. Valores de referência — a responsabilidade pelas premissas é do engenheiro, com base na sondagem e no uso real do terreno.</div>
+<div style="page-break-before:always"></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #173a55;padding-bottom:5px;margin-bottom:8px"><h1>Como aplicar no programa</h1><span style="font-size:9.5px;color:#5b6b76">Guia de utilização · Anexo A · rev. 15/11/2026</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:11px;line-height:1.5">
+<div><h3 style="font-size:13px;color:#173a55;margin:4px 0">Passo a passo</h3><ol style="margin:0;padding-left:18px">
+<li>Abra o painel <b>Σ Cálculo</b> e escolha o <b>Modo: Com cálculo do programa</b>.</li>
+<li>Na aba <b>Empuxo</b>, preencha as premissas reais da obra: sobrecarga (e sobrecarga afastada), tipo de empuxo, φ, γ, talude, nível d'água e terreno da frente.</li>
+<li>Na aba <b>Fundação</b>, informe a sondagem (SPT por metro) e o solo predominante.</li>
+<li>Clique em <b>⚡ Calcular tudo</b>. O quadro do Resumo mostra tudo o que mudou.</li>
+<li>Se algo não passar, clique em <b>🔍 Procurar solução</b> e escolha uma das opções (mais pilares, VI/VT ou seção maior).</li>
+<li>Confira e ajuste pilar a pilar na aba <b>Pilar</b> (pilares das pontas podem ficar mais leves).</li>
+<li>Para comparar alternativas, mude <b>um parâmetro por vez</b> e rode o Calcular tudo de novo, anotando o aço total na aba <b>Quantitativo</b>.</li></ol>
+<h3 style="font-size:13px;color:#173a55;margin:12px 0 4px">Modos de trabalho</h3><ul style="margin:0;padding-left:18px">
+<li><b>Só detalhamento (sem cálculo):</b> muro calculado à parte; o programa só desenha, sem nenhum aviso de verificação.</li>
+<li><b>Conferência:</b> calcula e mostra o que passa ou não, sem alterar o detalhamento.</li>
+<li><b>Com cálculo do programa:</b> calcula e aplica (Calcular tudo, Procurar solução, transpasse automático).</li></ul></div>
+<div><h3 style="font-size:13px;color:#173a55;margin:4px 0">Ordem recomendada para economizar</h3><ol style="margin:0;padding-left:18px">
+<li><b>Sobrecarga real</b> — maior impacto (10 → 5 kPa: −15%; sobrecarga afastada 1 m: −18%).</li>
+<li><b>Coulomb</b> com tardoz rugoso e drenado (−14%).</li>
+<li><b>φ da sondagem</b> do aterro (30 → 33°: −15%), sem passar de 32° sem ensaio.</li>
+<li><b>Vão entre pilares</b> de 2,40 a 2,80 m e <b>viga de topo</b> mantida.</li>
+<li><b>Lado B do pilar</b> maior, em vez de mais aço.</li></ol>
+<h3 style="font-size:13px;color:#173a55;margin:12px 0 4px">Exemplo medido</h3>
+<table style="width:100%"><thead><tr><th>Situação</th><th style="text-align:right">Md pilar</th><th style="text-align:right">Aço total</th><th style="text-align:right">Economia</th></tr></thead><tbody>
+<tr><td>Base: Rankine, φ 30°, γ 18, q 10 kPa</td><td style="text-align:right">94,8 kN·m</td><td style="text-align:right">845 kg</td><td style="text-align:right">—</td></tr>
+<tr><td>Coulomb</td><td style="text-align:right">79,5 kN·m</td><td style="text-align:right">727 kg</td><td style="text-align:right">−14%</td></tr>
+<tr><td>φ 33°</td><td style="text-align:right">83,8 kN·m</td><td style="text-align:right">716 kg</td><td style="text-align:right">−15%</td></tr>
+<tr><td>Sobrecarga afastada 1 m</td><td style="text-align:right">68,5 kN·m</td><td style="text-align:right">693 kg</td><td style="text-align:right">−18%</td></tr>
+<tr><td><b>Coulomb + φ 33° + sobrecarga afastada 1 m</b></td><td style="text-align:right"><b>49,4 kN·m</b></td><td style="text-align:right"><b>555 kg</b></td><td style="text-align:right"><b>−34%</b></td></tr></tbody></table>
+<p style="font-size:9.8px;color:#5b6b76;margin-top:6px">Muro de 13 m, H = 2,50 m, 6 pilares 20×40 (vão 2,60 m), VB 20×40 e VT, tubulão Ø60, fck 25 MPa. Todos os casos passam em todas as verificações após o Calcular tudo.</p>
+<h3 style="font-size:13px;color:#173a55;margin:12px 0 4px">Responsabilidade técnica</h3>
+<p style="margin:0">As faixas deste anexo são valores de referência. A escolha das premissas é do engenheiro responsável, com base na sondagem, no uso real do terreno e nas normas vigentes (NBR 6118, NBR 6122, NBR 8681, NBR 11682).</p></div></div>
+</body></html>
