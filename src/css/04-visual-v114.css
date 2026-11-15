@@ -1,0 +1,108 @@
+/* Visual "Engenhar Studio" (V114, feito no outro chat), restrito às telas de conteúdo (#engMain).
+   As barras da tela CAD e a área de desenho ficam de fora. Só aparência. */
+#engMain .eng-button-v112{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;white-space:normal;min-height:36px;padding:8px 12px!important;border-radius:9px!important;font-weight:600!important;transition:background .16s,box-shadow .16s,transform .16s}
+#engMain .eng-button-v112:hover:not(:disabled){box-shadow:0 4px 12px #163f6124;transform:translateY(-1px)}
+#engMain .eng-icon-v112{width:17px;height:17px;flex:none;vertical-align:middle}
+#engMain #newProject .eng-icon-v112,#engMain #generate .eng-icon-v112{width:19px;height:19px}
+#engMain #v48ProjectPanel .hdrGroup53{gap:8px!important}
+#engMain>section:not(#output){border:1px solid #dce8f1}
+#engMain h2{letter-spacing:-.35px}
+#engMain input:focus-visible,#engMain select:focus-visible{outline:2px solid #19a7b3;outline-offset:1px}
+@media(max-width:900px){#engMain .eng-button-v112{padding:8px 9px!important;font-size:12px!important}}
+@media screen{#engMain #controls>section{background:#fff;border:1px solid #e2eaf0;border-radius:17px;padding:26px 28px;margin:18px 0;box-shadow:0 5px 24px #123b5910;transition:box-shadow .2s}
+#engMain #controls>section:hover{box-shadow:0 9px 30px #123b5916}
+#engMain h2{font-size:19px;letter-spacing:-.4px;color:#123b57;margin:0 0 21px;display:flex;align-items:center;gap:11px;font-weight:750}
+#engMain h2:before{content:'';display:inline-block;width:5px;height:23px;border-radius:5px;background:linear-gradient(#20b4b8,#17618b);flex:none}
+#engMain h3{color:#194661;letter-spacing:-.2px}
+#engMain label{color:#526a7b;font-size:12px;font-weight:650;letter-spacing:.08px}
+#engMain input:not([type=checkbox]):not([type=radio]):not([type=file]),#engMain select,#engMain textarea{background:#fbfdff;border:1px solid #cfdae4;border-radius:9px;color:#213b50;min-height:39px;padding:9px 11px;font-family:inherit;transition:border-color .16s,box-shadow .16s}
+#engMain input:focus,#engMain select:focus,#engMain textarea:focus{outline:0;border-color:#2298a9!important;box-shadow:0 0 0 3px #1ba2ac22}
+#engMain input[type=checkbox],#engMain input[type=radio]{accent-color:#137d96}
+#engMain button,#engMain .btn{background:linear-gradient(135deg,#17658c,#154d73);border:1px solid transparent;border-radius:9px;padding:10px 15px;font-family:inherit;font-size:13px;font-weight:650;box-shadow:0 2px 5px #102b4316;transition:background .18s,transform .18s,box-shadow .18s}
+#engMain button:hover:not(:disabled),#engMain .btn:hover{transform:translateY(-1px);box-shadow:0 5px 12px #102b4325;filter:brightness(1.06)}
+#engMain button:active:not(:disabled){transform:translateY(0)}
+#engMain button.secondary{background:#eaf3f8;color:#155479;border:1px solid #d8e8f0}
+#engMain button.danger{background:#fff0ef;color:#a53535;border:1px solid #f5d9d7}
+#engMain #v48ProjectPanel{background:linear-gradient(115deg,#fff,#f8fcfd);border:1px solid #dce8ee;padding:20px 24px}
+#engMain #v48ProjectPanel .hdrPrimary53{background:linear-gradient(135deg,#0d344f,#16688b);border-radius:10px;padding:12px 19px;box-shadow:0 4px 12px #102b4325}
+#engMain #v48ProjectPanel .hdrBtn53{background:#16658a;border-radius:9px}
+#engMain #v48ProjectPanel .hdrTools53{border-left-color:#d8e5eb}
+#engMain .v48StatusLine{padding:12px 0;border-top:1px solid #e7eef3;margin-top:16px}
+#engMain .v48Stat{background:#f6fafc;border:1px solid #dfebf0;border-radius:11px;padding:15px 16px}
+#engMain .v48Stat b{font-size:21px;letter-spacing:-.6px}
+#engMain .v48Stat span{font-size:11px}
+#engMain .v48Overview{gap:12px}
+#engMain .row{gap:15px 17px}
+#engMain .row>label{min-width:155px}
+#engMain .toolbar{gap:9px;margin:14px 0}
+#engMain table{font-size:12px;border-collapse:separate;border-spacing:0}
+#engMain th{background:#eaf3f8;color:#174e70;font-weight:750;padding:11px 12px;border-bottom:1px solid #d4e4ee}
+#engMain td{padding:9px 11px;border-bottom:1px solid #e8edf2}
+#engMain tr:hover td{background:#f8fbfd}
+#engMain table tr:first-child th:first-child{border-top-left-radius:9px}
+#engMain table tr:first-child th:last-child{border-top-right-radius:9px}
+#engMain .note{color:#667d8e}
+#engMain .pill{border-radius:20px;background:#e5f4f6;color:#11647c;padding:6px 11px;font-weight:650}
+#engMain .warning{background:#fff8e9;border:1px solid #f1dfb9;border-left:4px solid #d8a044;border-radius:9px}
+#engMain .error{border-radius:9px}
+#engMain .good{border-radius:9px}
+#engMain summary{font-weight:700;color:#155e7d;padding:7px 0}
+#engMain details{border-radius:9px}
+#engMain .globalPlan{border-radius:10px;border-color:#d8e5ed}
+#engMain #plotPreview26{background:#e9f0f4;border-radius:11px}
+#engMain .steelDialog21{border:1px solid #d8e4eb;border-radius:17px;box-shadow:0 20px 65px #071c3655}
+@media(max-width:750px){#engMain #controls>section{padding:18px 15px;border-radius:13px}
+#engMain .hdr53{gap:10px}
+#engMain .hdrGroup53{gap:7px}
+#engMain .hdrGroup53 button,#engMain .hdrGroup53 .btn{font-size:12px!important;padding:9px 10px!important}
+#engMain .v48Overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+#engMain h2{font-size:17px}}}
+#engMain .eng-side-brand{display:flex;align-items:center;gap:9px;padding:20px 12px 22px;border-bottom:1px solid #ffffff24}
+#engMain .eng-brand-mark{font-size:24px;font-weight:900;color:#25d4c1}
+#engMain .eng-side-title{font-weight:800;font-size:15px;letter-spacing:.5px;flex:1}
+#engMain .eng-side-title small{display:block;font-size:9px;font-weight:500;letter-spacing:1.8px;color:#8ac9d8;margin-top:3px}
+#engMain .eng-side-footer{margin-top:auto;padding:15px;font-size:9px;letter-spacing:1.4px;color:#8bb3cb}
+#engMain .eng-action-icon{width:17px;height:17px;display:inline-flex;vertical-align:middle;margin-right:7px;align-items:center}
+#engMain .eng-action-icon svg{width:17px;height:17px}
+#engMain #v48ProjectPanel .hdr53{flex-wrap:wrap}
+#engMain #v48ProjectPanel .hdrGroup53{flex-wrap:wrap}
+@media(max-width:800px){#engMain .eng-side-title,#engMain .eng-side-footer,#engMain .eng-brand-mark{display:none}
+#engMain .eng-side-brand{padding:15px 4px;justify-content:center}}
+#engMain .eng-side-title,#engMain .eng-side-footer{display:none!important}
+#engMain .eng-side-brand{justify-content:center;padding:15px 4px;gap:3px;flex-wrap:wrap}
+#engMain .eng-brand-mark{font-size:19px}
+#engMain button,#engMain .btn{border-radius:9px!important;padding:9px 13px!important;min-height:36px;font-weight:650!important;letter-spacing:.05px;box-shadow:0 2px 5px #102e4b12;transition:background .18s,transform .18s,box-shadow .18s;display:inline-flex!important;align-items:center;justify-content:center;gap:7px;vertical-align:middle;max-width:100%}
+#engMain button:hover:not(:disabled),#engMain .btn:hover{transform:translateY(-1px);box-shadow:0 5px 12px #102e4b24}
+#engMain button:active:not(:disabled){transform:translateY(0)}
+#engMain button.secondary{background:#e8f4f8!important;color:#17618b!important;border:1px solid #cbe3ed!important}
+#engMain button.danger{background:#fff0ef!important;color:#b84d45!important;border:1px solid #f0d0ce!important}
+#engMain button#generate,#engMain button#newProject{background:linear-gradient(110deg,#0b777c,#13a69f)!important;color:white!important;border:1px solid #0e9290!important}
+#engMain button#openingBtn,#engMain button#addBlock,#engMain button#addWall{background:#17739d!important;color:white!important}
+#engMain button#deleteWall{background:#fff0ef!important;color:#ae3f40!important}
+#engMain button#zoomIn,#engMain button#zoomOut{min-width:38px;padding:8px!important}
+#engMain .engr-icon{display:inline-flex;width:17px;height:17px;flex:none;align-items:center;justify-content:center;pointer-events:none}
+#engMain .engr-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#engMain input,#engMain select,#engMain textarea{background:#f9fcff!important;border:1px solid #cddfe9!important;border-radius:9px!important;min-height:36px;transition:border-color .15s,box-shadow .15s}
+#engMain input:focus,#engMain select:focus,#engMain textarea:focus{outline:none!important;border-color:#0fa7a5!important;box-shadow:0 0 0 3px #0fa7a51e!important}
+#engMain label{font-weight:600!important;color:#536a7c!important}
+#engMain .toolbar,#engMain .hdrGroup53{gap:8px!important}
+#engMain .hdrTools53{border-left:1px solid #cce2e9!important}
+#engMain #v48ProjectPanel{background:linear-gradient(120deg,#fff,#f1fafb)!important;border:1px solid #cce5e9!important;border-left:5px solid #13a6a2!important}
+#engMain .v48Stat{border-radius:12px!important;background:#fff!important;border:1px solid #d7e8ed!important;padding:13px 15px!important;box-shadow:0 3px 12px #153f5710}
+#engMain .v48Stat b{color:#12577c!important;font-size:19px!important}
+#engMain .v48Stat:nth-child(2){border-top:3px solid #0caaa2!important}
+#engMain .v48Stat:nth-child(3){border-top:3px solid #e8a14a!important}
+#engMain .v48Stat:nth-child(4){border-top:3px solid #4a89bd!important}
+#engMain .scroll{border-radius:10px;border:1px solid #e1eaf0}
+#engMain th{background:#eaf4f9!important;color:#155477!important;padding:11px!important}
+#engMain td{padding:9px!important}
+#engMain tr:hover td{background:#f5fbfd}
+#engMain .pill{background:#e1f5f2!important;color:#087e7b!important;border-radius:20px!important;padding:6px 11px!important}
+#engMain summary{font-weight:650!important}
+#engMain details{border-radius:10px}
+#engMain .warning{border-radius:9px;border-left-color:#edac43}
+#engMain .good{border-radius:9px}
+@media(max-width:750px){#engMain button,#engMain .btn{font-size:12px!important;padding:8px 10px!important}
+#engMain .engr-icon{width:15px;height:15px}
+#engMain .engr-icon svg{width:15px;height:15px}
+#engMain .hdrTools53{border-left:0!important}}
