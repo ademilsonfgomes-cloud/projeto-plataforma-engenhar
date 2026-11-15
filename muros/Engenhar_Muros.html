@@ -1473,6 +1473,9 @@ svg.addEventListener('pointerdown',ev=>{
  let p=point(ev);
  if(mode==='wallDraw'){if(!$('wallMeasure').hidden)return;let q=wallConstrain(wallWorldPoint(p));if(!wallPoints.length){wallAddPoint(q)}else{wallShowMeasure(q,p)}draw();return}
  if(mode==='free'){let q=local(p);freePoints.push(q.map(v=>Math.round(v*10)/10));draw();return}
+ // V281 — relação de aço: arrasta dentro da folha; faixa da prancha: clique abre formato, arraste move a folha.
+ {const tb=ev.target.closest('[data-sheet-table]');if(tb){const sh=sheets.find(x=>x.id===Number(tb.getAttribute('data-sheet-table')));if(sh){ev.preventDefault();pointer={type:'sheetTable',sheetId:sh.id,x:p.x,y:p.y,ox:sh.tblDx||0,oy:sh.tblDy||0,id:ev.pointerId};svg.setPointerCapture(ev.pointerId);return}}
+  const hd=ev.target.closest('[data-sheet-header]');if(hd){const sh=sheets.find(x=>x.id===Number(hd.getAttribute('data-sheet-header')));if(sh){ev.preventDefault();sheetCurrent=sh.id;sheetSync();pointer={type:'sheet',sheetId:sh.id,x:p.x,y:p.y,ox:sh.x,oy:sh.y,id:ev.pointerId,hdr:{ex:ev.clientX,ey:ev.clientY}};svg.setPointerCapture(ev.pointerId);return}}}
  // V238 — Clique edita, arraste move. Sobre uma chamada editável o editor só abre
  // se o botão for solto sem movimento; arrastando mais de 5 px, o desenho inteiro se
  // move. No modo MOVER, qualquer clique sobre um desenho apenas o arrasta.
@@ -1515,7 +1518,7 @@ svg.addEventListener('pointerdown',ev=>{
  if(insideWall)setActiveEditor('muro');else if(insideBlock)setActiveEditor('bloco');else if(insideTubulo)setActiveEditor('tubulo');
  const sheetHandle=ev.target.closest('[data-sheet-frame]');
  const targetSheet=sheetHandle?sheets.find(sh=>sh.id===Number(sheetHandle.getAttribute('data-sheet-frame'))):null;
- if(targetSheet){sheetCurrent=targetSheet.id;sheetSync();if(ev.target.closest('[data-sheet-header]')){$('sheetRibbon').hidden=false;status('Prancha '+targetSheet.id+' selecionada. Altere formato, orientação ou escala na faixa superior.');return;}}
+ if(targetSheet){sheetCurrent=targetSheet.id;sheetSync();if(ev.target.closest('[data-sheet-header]')){const sh0=targetSheet,ex=ev.clientX,ey=ev.clientY;pointer={type:'sheet',sheetId:sh0.id,x:p.x,y:p.y,ox:sh0.x,oy:sh0.y,id:ev.pointerId,hdr:{ex,ey}};return;}}
  let type=insideWall?'wall':insideBlock?'block':insideTubulo?'tubulo':'pan';
  if(targetSheet)type='sheet';
  pointer={type,sheetId:targetSheet?.id,x:p.x,y:p.y,ox:type==='sheet'?targetSheet.x:type==='wall'?wallOffset.x:type==='block'?blockOffset.x:type==='tubulo'?tubuloOffset.x:view.x,
@@ -1533,7 +1536,8 @@ svg.addEventListener('pointermove',ev=>{
   const id=pillarIds()[i]?.[j];status(`P${id}: ${String(pos).replace('.',',')} cm do início do arrimo · vãos ${String(xs[j]-xs[j-1]).replace('.',',')} / ${String(xs[j+1]-xs[j]).replace('.',',')} cm — solte para fixar`);return}
  if(pointer.type==='pending'){if(Math.hypot(dx,dy)<5)return;const g=pointer.group;if(!g){pointer.type='idle';return}startGroupDrag(g,{x:pointer.x,y:pointer.y},ev);dx=p.x-pointer.x;dy=p.y-pointer.y}
  if(pointer.type==='idle')return;
- if(pointer.type==='sheet'){const sh=sheets.find(x=>x.id===pointer.sheetId);if(sh){sh.x=pointer.ox+dx/view.k;sh.y=pointer.oy+dy/view.k}}
+ if(pointer.type==='sheetTable'){const sh=sheets.find(x=>x.id===pointer.sheetId);if(sh){sh.tblDx=pointer.ox+dx/view.k;sh.tblDy=pointer.oy+dy/view.k}}
+ else if(pointer.type==='sheet'){if(pointer.hdr&&Math.hypot(dx,dy)>4)pointer.hdr.moved=true;const sh=sheets.find(x=>x.id===pointer.sheetId);if(sh){sh.x=pointer.ox+dx/view.k;sh.y=pointer.oy+dy/view.k}}
  else if(pointer.type==='wall'){wallOffset.x=pointer.ox+dx/view.k;wallOffset.y=pointer.oy+dy/view.k}
  else if(pointer.type==='extraDetail'){extraDetailOffsets[pointer.code]={x:pointer.ox+dx/view.k,y:pointer.oy+dy/view.k}}
  else if(pointer.type==='block'){blockOffset.x=pointer.ox+dx/view.k;blockOffset.y=pointer.oy+dy/view.k}
@@ -1542,7 +1546,7 @@ svg.addEventListener('pointermove',ev=>{
  draw();
  if(pointer.code){const g=findGroup(pointer.code);if(g)hoverBox(g,true)}
 });
-svg.addEventListener('pointerup',()=>{const pend=(pointer?.type==='pending'||pointer?.type==='pillarPending')?pointer.edit:null,moved=pointer?.type==='pillarMove';pointer=null;if(pend)pend();if(moved){draw();status($('status').textContent.replace(' — solte para fixar',' · confira o cálculo (Σ Calcular) e reorganize as pranchas'))}});svg.addEventListener('pointercancel',()=>{pointer=null});
+svg.addEventListener('pointerup',ev=>{if(pointer?.hdr&&!pointer.hdr.moved){const sh=sheets.find(x=>x.id===pointer.sheetId);const e2={clientX:pointer.hdr.ex,clientY:pointer.hdr.ey};if(sh)setTimeout(()=>sheetFmtPop(sh,e2),0)}const pend=(pointer?.type==='pending'||pointer?.type==='pillarPending')?pointer.edit:null,moved=pointer?.type==='pillarMove';pointer=null;if(pend)pend();if(moved){draw();status($('status').textContent.replace(' — solte para fixar',' · confira o cálculo (Σ Calcular) e reorganize as pranchas'))}});svg.addEventListener('pointercancel',()=>{pointer=null});
 svg.addEventListener('wheel',ev=>{ev.preventDefault();let p=point(ev),k=clamp(view.k*(ev.deltaY<0?1.12:1/1.12),.15,5),factor=k/view.k;view.x=p.x-(p.x-view.x)*factor;view.y=p.y-(p.y-view.y)*factor;view.k=k;draw()},{passive:false});
 document.addEventListener('keydown',ev=>{if(ev.key==='F8'){ev.preventDefault();wallToggleOrtho();return}if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;if(ev.key==='Escape'){if(foundationCopyMode){foundationCopyCancel();status('Cópia encerrada.');return}wallHideMeasure();if(mode==='wallDraw')wallPreview=null;freePoints=[];setMode('select');closePanels()}else if(ev.key.toLowerCase()==='m'){$('moveBlock').click()}else if(ev.key.toLowerCase()==='l'&&mode!=='free')setMode('free');else if(ev.key==='Enter'&&mode==='wallDraw'){ev.preventDefault();wallEnd()}else if(ev.key==='Enter'&&mode==='free'){if(freePoints.length>=2){addShape([...freePoints],'Barra livre');freePoints=[]}else status('Marque ao menos dois pontos para concluir.')}else if((ev.key==='Backspace'||ev.key==='Delete')&&mode==='free'){ev.preventDefault();freePoints.pop();draw()}});
 fields.forEach(id=>$(id).addEventListener('input',()=>{draw()}));
@@ -1866,6 +1870,8 @@ function organizeSheets(quiet=false){
  }
  if(best)specs.push(...best.specs);
  specs.sort((p,q)=>p.first-q.first);
+ // V281 — todas as folhas com a mesma moldura A1 no CAD: escala-base comum; desenhos em outra escala viram "escalas indicadas".
+ {const S0=Math.max(...specs.map(sp=>sp.scale));for(const sp of specs)sp.scale=S0}
  let x=0;lastValidSteelBySheet=new Map();
  // Título e categorias da folha a partir dos desenhos que ela realmente contém.
  for(const sp of specs){const ks=SHEET_PLAN.filter(c=>sp.items.some(i=>c.match(i.code))).map(c=>c.kind);if(ks.length)sp.kinds=ks;const pk=c=>{try{return Number(foundationValues('pile',c).pileKind)===1}catch(e){return false}};sp.hasE=sp.items.some(i=>/^E\d/.test(i.code)||(/^T\d/.test(i.code)&&pk(i.code)));sp.hasT=sp.items.some(i=>/^T\d/.test(i.code)&&!pk(i.code));sp.hasB=sp.items.some(i=>/^B\d/.test(i.code))}
@@ -1877,6 +1883,7 @@ function organizeSheets(quiet=false){
  specs.forEach((sp,i)=>{const sh=sheets[i],u=sheetDims(sh).unit;for(const it of sp.items){const g=findGroup(it.code);const b=sceneBox(g);if(!b)continue;shiftGroup(it.code,g,sh.x+it.x*u-b.x,sh.y+it.y*u-b.y)}});
  draw();
  if(typeof managerRefresh==='function')managerRefresh();
+ orgSig=detailSig();
  fitSheets();
  const dc=lastDeclutter;
  if(!quiet)status((dc.left?`ATENÇÃO: ${dc.left} sobreposição(ões) de texto sem solução automática em ${dc.where.join(', ')} — ajuste manual. `:'')+`Pranchas organizadas: ${sheets.length} folhas A1 (${sheets.map(s=>String(s.id).padStart(2,'0')+' '+(SHEET_KIND_TITLES[s.kind]||'').split(' ')[0]).join(' · ')}). Arraste qualquer desenho para ajustes finos; o botão refaz a organização.`);
@@ -2228,14 +2235,19 @@ function sheetDraw(sceneG){
       cy+=drawQuantTable(g,colX,cy,TW,unit)+4*unit;
       if(typeof projectRevisions!=='undefined'&&projectRevisions.length)cy+=drawRevTable(g,colX,cy,TW,unit);
       // Folha da locação com outros desenhos (ex.: estacas e blocos): relação de aço da própria folha.
-      if(rows.length)drawSteelTable(g,colX,cy,TW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',d.h-cy-14*unit);
+      if(rows.length)drawSteelTable(sheetTblG(g,sh),colX,cy,TW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',d.h-cy-14*unit-(sh.tblDy||0));
     }else if(rows.length){
-      drawSteelTable(g,colX,cy,TW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',d.h-cy-14*unit);
+      drawSteelTable(sheetTblG(g,sh),colX,cy,TW,rows,unit,steelRegistryFallback?'RELAÇÃO DE AÇO · CONFERIR':'RELAÇÃO DE AÇO',d.h-cy-14*unit-(sh.tblDy||0));
     }
   });
   // Molduras abaixo dos detalhamentos para não interceptar clique nas armaduras.
   sheets.forEach(sh=>{const n=sceneG.querySelector(`[data-sheet-id="${sh.id}"]`);if(n)sceneG.insertBefore(n,sceneG.firstChild)});
 }
+// V281 — relação de aço arrastável dentro da folha (deslocamento guardado na prancha).
+function sheetTblG(g,sh){const t=el('g',{transform:`translate(${sh.tblDx||0} ${sh.tblDy||0})`,'data-sheet-table':sh.id,style:'cursor:move'},g);setTimeout(()=>{try{if(!t.isConnected||t.querySelector('[data-tbl-hit]'))return;const b=t.getBBox();if(b.width>0){const r=el('rect',{x:b.x,y:b.y,width:b.width,height:b.height,fill:'transparent','data-tbl-hit':'1','data-screen-only':'1'},t);t.insertBefore(r,t.firstChild)}}catch(e){}},0);return t}
+function sheetFmtPop(sh,ev){$('sheetFmtPop')?.remove();const d=document.createElement('div');d.id='sheetFmtPop';d.style.cssText=`position:fixed;left:${Math.min(innerWidth-260,ev.clientX)}px;top:${ev.clientY+8}px;z-index:80;background:#eaf3fa;border:1px solid #5e93b4;border-radius:8px;box-shadow:0 8px 28px #0007;padding:10px 12px;font:12px Arial;color:#173a55;display:flex;flex-direction:column;gap:6px;width:240px`;
+ d.innerHTML=`<b>Prancha ${String(sheets.indexOf(sh)+1).padStart(2,'0')}</b><label>Formato <select id="sfF">${['A0','A1','A2','A3'].map(f=>`<option${f===sh.format?' selected':''}>${f}</option>`).join('')}</select></label><label>Orientação <select id="sfO"><option value="landscape"${sh.orientation!=='portrait'?' selected':''}>Paisagem</option><option value="portrait"${sh.orientation==='portrait'?' selected':''}>Retrato</option></select></label><small style="color:#5b6b76">Padrão: A1 paisagem. Arraste a faixa azul para mover a folha.</small><button id="sfOk">Fechar</button>`;document.body.appendChild(d);
+ const upd=()=>{sh.format=$('sfF').value;sh.orientation=$('sfO').value;sheetSync();draw();status(`Prancha ${sh.id}: ${sh.format} ${sh.orientation==='portrait'?'retrato':'paisagem'}. Use Organizar pranchas para redistribuir os desenhos, se precisar.`)};$('sfF').onchange=upd;$('sfO').onchange=upd;$('sfOk').onclick=()=>d.remove()}
 function sheetSync(){const sel=$('sheetActive');sel.innerHTML='';sheets.forEach(sh=>{let opt=document.createElement('option');opt.value=sh.id;opt.textContent=`Prancha ${sh.id} · ${sh.format}${sh.done?' ✓':''}`;sel.append(opt)});if(sheetCurrent!=null)sel.value=sheetCurrent;const sh=sheets.find(x=>x.id===sheetCurrent);if(sh){$('sheetFormat').value=sh.format;$('sheetOrientation').value=sh.orientation;$('sheetScale').value=String(sh.scale||50)}}
 function sheetOpen(){$('sheetRibbon').hidden=false;if(!sheets.length)sheetCreate();else sheetSync();draw();status('Pranchas integradas ao CAD. Arraste os desenhos existentes para dentro das folhas.')}
 function sheetCreate(){
@@ -3633,7 +3645,7 @@ function calcFailures(){
  return out;
 }
 function calcMarkFailures(){
- const root=sceneRoot();if(!root)return;root.querySelectorAll('[data-screen-only]').forEach(n=>n.remove());
+ const root=sceneRoot();if(!root)return;root.querySelectorAll('[data-screen-only]:not([data-tbl-hit])').forEach(n=>n.remove());
  if(calcSettings.noCalc)return; // V280 — só detalhamento: nenhuma verificação no desenho
  let fails;try{fails=calcFailures()}catch(e){return}
  for(const [code,msgs] of fails){const g=findGroup(code);if(!g)continue;const b=sceneBox(g);if(!b)continue;
@@ -3646,7 +3658,10 @@ function calcMarkFailures(){
  }
 }
 let calcDrawHold=false;
-(()=>{const d0=draw;draw=function(){if(calcDrawHold)return;const r=d0.apply(this,arguments);if(!renderingVariant){applyDetailSheetK();clearTimeout(calcMarkT);calcMarkT=setTimeout(calcMarkFailures,300)}return r}})();
+// V281 — quando surgem ou somem detalhes (ex.: pilar com armadura própria vira detalhe separado), as pranchas se reorganizam sozinhas.
+var orgSig=null,orgT=null;function detailSig(){try{return detailGroups().map(groupCode).sort().join(',')}catch(e){return null}}
+function orgWatch(){if(!sheets.length||!wallFinished)return;const sg=detailSig();if(sg==null)return;if(orgSig==null){orgSig=sg;return}if(sg===orgSig)return;clearTimeout(orgT);orgT=setTimeout(()=>{if(calcDrawHold)return;const s2=detailSig();if(s2==null||s2===orgSig)return;const st=$('status').textContent;if(organizeSheets(true)){orgSig=detailSig();status((st?st+' · ':'')+'Pranchas reorganizadas: os detalhes novos foram alinhados e os demais desenhos acomodados.')}},700)}
+(()=>{const d0=draw;draw=function(){if(calcDrawHold)return;const r=d0.apply(this,arguments);if(!renderingVariant){applyDetailSheetK();clearTimeout(calcMarkT);calcMarkT=setTimeout(calcMarkFailures,300);orgWatch()}return r}})();
 // ---------- NBR 6118 — aderência, ancoragem e transpasse (V257) ----------
 // fbd = η1·η2·η3·fctd (η1 = 2,25 CA-50; η2 = 1,0 boa aderência / 0,7 má; η3 = 1 para Ø < 32 mm)
 // lb = (Ø/4)·(fyd/fbd) ≥ 25Ø · lb,nec = α·lb·As,calc/As,ef ≥ máx(0,3·lb; 10Ø; 100 mm)
