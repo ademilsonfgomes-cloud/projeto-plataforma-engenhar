@@ -513,7 +513,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
  el('rect',{x:titleX-265,y:titleY-24,width:530,height:35,fill:'transparent','pointer-events':'all','data-wall-drag-handle':'1',style:'cursor:grab'},wg);
  text(titleX,titleY,'PLANTA DOS ARRIMOS — VIGAS DE BASE E PILARES',yellow,17,wg,{'font-weight':'bold','text-anchor':'middle','data-wall-drag-handle':'1',style:'cursor:grab','data-role':'title'});text(titleX,titleY+22,'ESC. 1:{s} · COTAS EM cm',yellow,9,wg,{'text-anchor':'middle','data-scale-label':'ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m'});
  }
- const junctionIds=new Map();const renderedFoundations=new Set();let nextP=1;const globalIds=pillarIds();
+ const junctionIds=new Map();const renderedFoundations=new Set();const elevMarks=[];let nextP=1;const globalIds=pillarIds();
  const PS=detailScale.PLANTA||50,mm=v=>v*unitFor(PS);
  // Tamanhos em altura de maiúscula (mm de papel).
  const ptext=(x,y,str,color,cap,attrs={})=>text(x,y,str,color,cap/CAP*unitFor(PS),wg,{'data-pt':'1',...attrs});
@@ -605,7 +605,9 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   for(let j=0;j<n-1;j++){const t0=wallT(idx,j,n),t1=wallT(idx,j+1,n);dimension(t0,t1,hw+mm(10),cmv(len*(t1-t0)))}
   // Marca de elevação: indica a vista e a folha onde ela está desenhada.
   if(elevationEnabled){
-   const mx=(a.x+b.x)/2+nx*dimSide*(hw+mm(48)),my=(a.y+b.y)/2+ny*dimSide*(hw+mm(48)),r=mm(5.5);
+   let mx=(a.x+b.x)/2+nx*dimSide*(hw+mm(48)),my=(a.y+b.y)/2+ny*dimSide*(hw+mm(48));const r=mm(5.5);
+   // Marcas de arrimos opostos (muro em U) não podem coincidir: desliza ao longo do arrimo.
+   {const L0=Math.hypot(b.x-a.x,b.y-a.y)||1,ux0=(b.x-a.x)/L0,uy0=(b.y-a.y)/L0;let k=0;while(k<12&&elevMarks.some(q=>Math.hypot(q.x-mx,q.y-my)<r*3.2)){const st=(k%2?-1:1)*Math.ceil((k+1)/2)*r*3.4;mx+=ux0*st;my+=uy0*st;k++}elevMarks.push({x:mx,y:my})}
    const sheetNo=lastSheetRefs.get('EL'+(idx+1));
    circle(mx,my,r,'#f5c845','none',.9,wg,{'data-layer':'eixos'});
    line(mx-r,my,mx+r,my,'#f5c845',.7,wg,{'data-layer':'eixos'});
@@ -2737,6 +2739,7 @@ function calcApplyFoundation(){
  const FR=calcFoundation(),mreq=new Map(),amin=new Map(),flen=new Map();for(const r of FR){mreq.set(r.code,Math.max(mreq.get(r.code)||0,r.Mdmax));amin.set(r.code,Math.max(amin.get(r.code)||0,r.AsMinF));flen.set(r.code,Math.max(flen.get(r.code)||0,r.f))}
  for(const [code,Md] of mreq){const v=foundationValues('pile',code),D=Number(v.shaft)||60,cov=Number(v.cover)||5,st=Number(v.stDia)||8;let best=null;
   for(const dia of [12.5,16,20])for(let n=6;n<=16;n++){const As=n*calcBar(dia);if(best&&As>=best.As)continue;if(As<(amin.get(code)||0)-1e-9)continue;if(calcCircleMRd(D,cov,n,dia,st)>=Md)best={n,dia,As}}
+  if(!best){const D2=Math.ceil(D*Math.cbrt(Md/Math.max(1e-9,calcCircleMRd(D,cov,16,20,st)))/10)*10;msg.push(`${code} fuste: nem 16Ø20 resistem a Md = ${calcFmt(Md,0)} kN·m na estaca Ø${D} — aumente o diâmetro (ordem de Ø${D2}) ou reduza o vão entre pilares`)}
   if(best&&(best.n!==Number(v.bars)||best.dia!==Number(v.barDia))){msg.push(`${code} fuste: ${v.bars}Ø${v.barDia} → ${best.n}Ø${String(best.dia).replace('.',',')}`);calcSetPile(code,'bars',best.n);calcSetPile(code,'barDia',best.dia)}
   // Comprimento da armadura: cobre a zona de momento (f + 60 cm) e o mínimo armado da estaca; nunca maior que a estaca.
   const dep=Number(foundationValues('pile',code).depth)||0,isE=Number(v.pileKind)===1,want=Math.min(dep,Math.max(isE?(Number(calcSettings.minArm)||0)*100:0,Math.ceil(((flen.get(code)||0)+.6)*10)*10,100));
