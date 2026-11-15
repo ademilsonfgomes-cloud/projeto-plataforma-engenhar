@@ -67,7 +67,7 @@ function lvTag(L){if(L.groups&&L.groups.length>1)return 'Blocos e graute por and
 function repAt(z){const D=compute();if(!D)return null;for(const L of D.levels){if(L.reps){const r=L.reps.find(r=>Math.abs(r.z-z)<.006);if(r)return {fbk:r.fbk,fgk:r.fgk,L};}if(Math.abs(L.v-z)<.006)return {fbk:L.fbk,fgk:L.fgk,L};}return null;}
 
 // tela: cada quantitativo por nível ganha o fbk; no fim, o resumo para compra
-{const rr=renderResults;renderResults=function(...a){const r=rr.apply(this,a);try{decorate();}catch(e){console.error('V96 quantitativos',e);}return r;};}
+{const rr=renderResults;renderResults=function(...a){const r=rr.apply(this,a);try{if(!window.adiar85?.())decorate();}catch(e){console.error('V96 quantitativos',e);}return r;};}
 function decorate(){const out=$('output');if(!out)return;out.querySelectorAll('.tag96,.buy96').forEach(e=>e.remove());const D=compute();if(!D)return;const G=groupsLv();
  const arts=[...out.querySelectorAll('article.levelQuant54')];
  if(arts.length){arts.forEach((a,k)=>{const L=matchLv(D,G[k]||{});if(!L)return;const h=[...a.querySelectorAll('h3')].find(x=>x.textContent.trim()==='Blocos');const p=document.createElement('p');p.className='tag96';p.innerHTML='<b>'+esc(lvTag(L))+'</b>';(h||a.querySelector('h3')).insertAdjacentElement('afterend',p);});}

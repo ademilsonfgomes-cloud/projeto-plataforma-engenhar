@@ -289,6 +289,7 @@ function badge(){// V108.3: contagem ao vivo, igual ao quadro “Resultado da mo
 // V85.1 — edição rápida: depois de editar, o desenho dos resultados (elevações, fiadas, quantitativos) só é refeito quando uma aba que o mostra é aberta
 let inInv=false,lazyArgs=null;const OUTV=new Set(['fiadas','elev','quant','plot']);
 try{const iv=invalidate;invalidate=function(...a){inInv=true;try{return iv.apply(this,a);}finally{inInv=false;}};}catch{}
+window.adiar85=()=>inInv&&!OUTV.has(curView)&&Array.isArray(state.results)&&!!$('output')?.querySelector('article[id^="wall-result-"]');
 const flush85=()=>{if(!lazyArgs)return;const a=lazyArgs;lazyArgs=null;try{renderResults(...a);}catch(e){console.error('V85 flush',e);}};window.flush85=flush85;
 try{const rr=renderResults;renderResults=function(...a){if(inInv&&!OUTV.has(curView)&&Array.isArray(state.results)&&$('output')?.querySelector('article[id^="wall-result-"]')){lazyArgs=a;try{card();upd();const g=$('genReport57');if(g&&g.style.display!=='none'&&!g.querySelector('.gr57stale'))g.insertAdjacentHTML('afterbegin','<p class="gr57stale">As entradas mudaram: gere a modulação de novo.</p>');}catch{}return;}lazyArgs=null;const r=rr.apply(this,a);try{if($('genReport57')&&!$('genBox85').contains($('genReport57')))$('genBox85').append($('genReport57'));card();upd();}catch{}return r;};}catch{}
 try{const rw=renderWalls;renderWalls=function(...a){const r=rw.apply(this,a);try{if(sel>=(state.walls?.length||0))sel=-1;card();upd();}catch{}return r;};}catch{}

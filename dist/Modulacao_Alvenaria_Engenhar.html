@@ -6721,6 +6721,7 @@ function badge(){// V108.3: contagem ao vivo, igual ao quadro “Resultado da mo
 // V85.1 — edição rápida: depois de editar, o desenho dos resultados (elevações, fiadas, quantitativos) só é refeito quando uma aba que o mostra é aberta
 let inInv=false,lazyArgs=null;const OUTV=new Set(['fiadas','elev','quant','plot']);
 try{const iv=invalidate;invalidate=function(...a){inInv=true;try{return iv.apply(this,a);}finally{inInv=false;}};}catch{}
+window.adiar85=()=>inInv&&!OUTV.has(curView)&&Array.isArray(state.results)&&!!$('output')?.querySelector('article[id^="wall-result-"]');
 const flush85=()=>{if(!lazyArgs)return;const a=lazyArgs;lazyArgs=null;try{renderResults(...a);}catch(e){console.error('V85 flush',e);}};window.flush85=flush85;
 try{const rr=renderResults;renderResults=function(...a){if(inInv&&!OUTV.has(curView)&&Array.isArray(state.results)&&$('output')?.querySelector('article[id^="wall-result-"]')){lazyArgs=a;try{card();upd();const g=$('genReport57');if(g&&g.style.display!=='none'&&!g.querySelector('.gr57stale'))g.insertAdjacentHTML('afterbegin','<p class="gr57stale">As entradas mudaram: gere a modulação de novo.</p>');}catch{}return;}lazyArgs=null;const r=rr.apply(this,a);try{if($('genReport57')&&!$('genBox85').contains($('genReport57')))$('genBox85').append($('genReport57'));card();upd();}catch{}return r;};}catch{}
 try{const rw=renderWalls;renderWalls=function(...a){const r=rw.apply(this,a);try{if(sel>=(state.walls?.length||0))sel=-1;card();upd();}catch{}return r;};}catch{}
@@ -7554,7 +7555,7 @@ function lvTag(L){if(L.groups&&L.groups.length>1)return 'Blocos e graute por and
 function repAt(z){const D=compute();if(!D)return null;for(const L of D.levels){if(L.reps){const r=L.reps.find(r=>Math.abs(r.z-z)<.006);if(r)return {fbk:r.fbk,fgk:r.fgk,L};}if(Math.abs(L.v-z)<.006)return {fbk:L.fbk,fgk:L.fgk,L};}return null;}
 
 // tela: cada quantitativo por nível ganha o fbk; no fim, o resumo para compra
-{const rr=renderResults;renderResults=function(...a){const r=rr.apply(this,a);try{decorate();}catch(e){console.error('V96 quantitativos',e);}return r;};}
+{const rr=renderResults;renderResults=function(...a){const r=rr.apply(this,a);try{if(!window.adiar85?.())decorate();}catch(e){console.error('V96 quantitativos',e);}return r;};}
 function decorate(){const out=$('output');if(!out)return;out.querySelectorAll('.tag96,.buy96').forEach(e=>e.remove());const D=compute();if(!D)return;const G=groupsLv();
  const arts=[...out.querySelectorAll('article.levelQuant54')];
  if(arts.length){arts.forEach((a,k)=>{const L=matchLv(D,G[k]||{});if(!L)return;const h=[...a.querySelectorAll('h3')].find(x=>x.textContent.trim()==='Blocos');const p=document.createElement('p');p.className='tag96';p.innerHTML='<b>'+esc(lvTag(L))+'</b>';(h||a.querySelector('h3')).insertAdjacentElement('afterend',p);});}
@@ -10911,6 +10912,8 @@ body.ui85 .v85:not(.on85){content-visibility:hidden}
     const rr = renderResults;
     renderResults = function (...a) {
       const out = $('output'), res = a[1];
+      // V144 — edição com a tela de resultados fora de vista: não recoloca nada agora (fica para quando a aba abrir)
+      try { if (window.adiar85?.()) return rr.apply(this, a); } catch {}
       let k = null; try { k = chave(res); } catch { k = null; }
       const c = k && cache.get(k);
       if (c && out) {

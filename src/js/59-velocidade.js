@@ -49,6 +49,8 @@ body.ui85 .v85:not(.on85){content-visibility:hidden}
     const rr = renderResults;
     renderResults = function (...a) {
       const out = $('output'), res = a[1];
+      // V144 — edição com a tela de resultados fora de vista: não recoloca nada agora (fica para quando a aba abrir)
+      try { if (window.adiar85?.()) return rr.apply(this, a); } catch {}
       let k = null; try { k = chave(res); } catch { k = null; }
       const c = k && cache.get(k);
       if (c && out) {
