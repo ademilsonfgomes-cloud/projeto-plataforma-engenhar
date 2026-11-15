@@ -3701,7 +3701,7 @@ function ceF(k,label,v,kind){if(kind==='dia'){const n=Number(v),opts=CE_DIAS.inc
 function ceBox(title,groups,note){return `<details class="calc-edit"${calcEditOpen?' open':''}><summary>✎ ${title}</summary>${groups.filter(Boolean).map(([h,fs])=>`<div class="ce-g"><b>${h}</b><div class="ce-f">${fs.join('')}</div></div>`).join('')}<p class="calc-hint" style="margin:6px 0 0">${note||''} Altere e tecle Enter (ou saia do campo): o desenho é atualizado e as verificações abaixo refazem na hora. Vale nos dois modos.</p></details>`}
 function ceSegs(){const S=calcSettings;return wallSegments.map((s,i)=>[s,i]).filter(([s,i])=>S.wall==='all'||Number(S.wall)===i)}
 function ceSetSeg(id,val){for(const [s,i] of ceSegs()){s.parameters[id]=String(val);if(i===wallActive&&$(id))$(id).value=String(val)}}
-let ceSelId=null;
+let ceSelId=null,ceCopyOpen=false;const ceCopySet=new Set();
 function cePillarIds(){return [...new Set(calcPillar().map(r=>r.id))]}
 function ceTargetIds(){const sc=calcSettings.ceScope||'one',all=cePillarIds();if(sc==='all')return all;if(sc==='same'){const g=pillarArmsNorm(pillarArmsFor(ceSelId));return all.filter(id=>pillarArmsNorm(pillarArmsFor(id))===g)}return [ceSelId]}
 function cePillarSet(pos,field,val){const ids=ceTargetIds(),all=cePillarIds();
@@ -3721,6 +3721,8 @@ function ceQuick(act){const A=withPillarArms(pillarArmsFor(ceSelId),()=>{pillarN
  if(act==='sd+')ch.push(['N1','dia',ceNextDia(N1.dia,true)]);
  for(const [pos,f,v] of ch)cePillarSet(pos,f,v)}
 function ceCopy(to){const src=JSON.parse(JSON.stringify(pillarArmsFor(ceSelId))),rs=calcPillar();
+ if(to==='pick'){ceCopyOpen=!ceCopyOpen;return}
+ if(to==='go'){const ids=[...ceCopySet].filter(id=>id!==ceSelId);if(!ids.length){status('Marque pelo menos um pilar para copiar.');return}for(const id of ids)pillarArmsBy[id]=JSON.parse(JSON.stringify(src));pillarArmsClean();status(`Armadura do ${ceSelId} copiada para ${ids.join(', ')}.`);ceCopySet.clear();ceCopyOpen=false;return 'done'}
  if(to==='reset')delete pillarArmsBy[ceSelId];
  else if(to==='all'){pillarArms=src;pillarArmsBy={}}
  else{const bad=[...new Set(rs.filter(r=>!(r.okM&&r.okV&&r.okRules&&r.okELS)).map(r=>r.id))];for(const id of bad)pillarArmsBy[id]=JSON.parse(JSON.stringify(src))}
@@ -3765,7 +3767,9 @@ function ceEditPilar(sel,rs){const a=pillarN2(),N1=pillarArms.N1,N3=pillarArms.N
  <div class="ce-st">${sel.id}${sel.own?'● (armadura própria)':''}: As det <b>${calcFmt(sel.AsDet)}</b> / nec <b>${calcFmt(sel.AsReq)}</b> cm² · Asw/s det ${calcFmt(sel.AswDet*100)} / nec ${calcFmt(sel.AswReq*100)} cm²/m<br>${w.length?`<span style="color:#b0281a">✗ ${w.join(' · ')}</span>`:'<span style="color:#1e6b42">✓ passa em tudo</span>'}</div>
  <div class="ce-body"><div class="ce-left">
   <div class="ce-sub">Ajuste rápido</div>
-  <div class="ce-qgrid">${grp('Tardoz',q('sN+','＋1 barra','Acrescenta 1 barra na face do solo')+q('sN-','－1 barra','')+q('td+','Ø ▲','Aumenta a bitola dos cantos e das barras do tardoz')+q('td-','Ø ▼',''))}${grp('2ª camada',q('L2+','＋1 barra','')+q('L2-','－1 barra',''))}${grp('Externa',q('eN+','＋1 barra','Face comprimida (armadura dupla)'))}${grp('Estribo',q('st-','c/ −2,5','Mais estribos: cisalhamento e regra 12Ø')+q('st+','c/ +2,5','')+q('sd+','Ø ▲',''))}${grp('Copiar '+sel.id,q('cp-bad','→ que não passam')+q('cp-all','→ todos')+(sel.own?q('cp-reset','padrão','Volta este pilar à armadura padrão'):''))}</div>
+  <div class="ce-qgrid">${grp('Tardoz',q('sN+','＋1 barra','Acrescenta 1 barra na face do solo')+q('sN-','－1 barra','')+q('td+','Ø ▲','Aumenta a bitola dos cantos e das barras do tardoz')+q('td-','Ø ▼',''))}${grp('2ª camada',q('L2+','＋1 barra','')+q('L2-','－1 barra',''))}${grp('Externa',q('eN+','＋1 barra','Face comprimida (armadura dupla)'))}${grp('Estribo',q('st-','c/ −2,5','Mais estribos: cisalhamento e regra 12Ø')+q('st+','c/ +2,5','')+q('sd+','Ø ▲',''))}${grp('Copiar '+sel.id,q('cp-pick',ceCopyOpen?'✕ fechar lista':'→ escolher pilares…','Marque os pilares que vão receber a armadura do '+sel.id)+(sel.own?q('cp-reset','padrão','Volta este pilar à armadura padrão'):''))}</div>
+  ${ceCopyOpen?`<div class="ce-copy"><span>Copiar a armadura do <b>${sel.id}</b> para:</span>${[...byId.values()].filter(({r})=>r.id!==sel.id).map(({r,ok})=>`<label style="color:${ok?'#1e6b42':'#b0281a'}"><input type="checkbox" data-cpid="${r.id}"${ceCopySet.has(r.id)?' checked':''}> ${r.id}${ok?'✓':'✗'}</label>`).join('')}
+   <span class="ce-copy-a"><a data-cpmark="bad">marcar os que não passam</a> · <a data-cpmark="all">todos</a> · <a data-cpmark="none">limpar</a></span>${q('cp-go','Copiar para os marcados ('+[...ceCopySet].filter(id=>id!==sel.id&&byId.has(id)).length+')','')}</div>`:''}
   <div class="ce-sub">Armadura</div>
   <div class="ce-grid">
    <b>Tardoz</b>${c('p:N2:cornerDia','Ø cantos',a.cornerDia,'dia')}${c('p:N2:soloN','+ barras',a.soloN,'int')}${c('p:N2:soloDia','Ø barras',a.soloDia,'dia')}${c('p:N2:soloLen','compr. (0=todo)',a.soloLen??0,'num')}${c('p:N2:soloN2','2ª camada nº',a.soloN2??0,'int')}${c('p:N2:soloDia2','Ø 2ª camada',a.soloDia2??a.soloDia,'dia')}
@@ -3798,7 +3802,9 @@ function ceAfter(msg){try{draw()}catch(e){}const sc=$('calcResults')?.scrollTop;
 function ceBind(body){const d=body.querySelector('details.calc-edit');if(d)d.ontoggle=()=>{calcEditOpen=d.open};
  if($('ceScope'))$('ceScope').onchange=()=>{calcSettings.ceScope=$('ceScope').value};
  body.querySelectorAll('[data-cepick]').forEach(b=>b.onclick=()=>{calcSettings.sel=b.dataset.cepick;const sc=$('calcResults').scrollTop;calcRender();$('calcResults').scrollTop=sc});
- body.querySelectorAll('[data-cq]').forEach(b=>b.onclick=()=>{const k=b.dataset.cq;if(k.startsWith('cp-'))ceCopy(k.slice(3));else ceQuick(k);ceAfter()});
+ body.querySelectorAll('[data-cq]').forEach(b=>b.onclick=()=>{const k=b.dataset.cq;if(k==='cp-pick'){ceCopy('pick');const sc=$('calcResults').scrollTop;calcRender();$('calcResults').scrollTop=sc;return}if(k==='cp-go'){const r=ceCopy('go');if(r==='done'){const m=$('status').textContent;ceAfter(m)}return}if(k.startsWith('cp-'))ceCopy(k.slice(3));else ceQuick(k);ceAfter()});
+ body.querySelectorAll('[data-cpid]').forEach(c=>c.onchange=()=>{c.checked?ceCopySet.add(c.dataset.cpid):ceCopySet.delete(c.dataset.cpid);const b=body.querySelector('[data-cq="cp-go"]');if(b)b.textContent=`Copiar para os marcados (${[...ceCopySet].filter(id=>id!==ceSelId).length})`});
+ body.querySelectorAll('[data-cpmark]').forEach(a=>a.onclick=()=>{const m=a.dataset.cpmark,rs=calcPillar();ceCopySet.clear();if(m!=='none')for(const r of rs){if(r.id===ceSelId)continue;if(m==='all'||!(r.okM&&r.okV&&r.okRules&&r.okELS))ceCopySet.add(r.id)}const sc=$('calcResults').scrollTop;calcRender();$('calcResults').scrollTop=sc});
  body.querySelectorAll('[data-ce]').forEach(el=>el.onchange=()=>{const k=el.dataset.ce,err=calcEditSet(k,el.value);if(err){status(err);el.focus();return}
   try{draw()}catch(e){}const sc=$('calcResults')?.scrollTop;calcRender();if(sc!=null)$('calcResults').scrollTop=sc;status('Detalhamento atualizado pelo painel de cálculo.')})}
 function calcRender(){
@@ -3890,6 +3896,7 @@ function calcOpen(){
 .pil-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:stretch;margin-bottom:8px}.pil-side{display:flex;flex-direction:column}.pil-side svg{max-width:300px!important;width:100%;height:auto;max-height:330px}.pil-ut{font-size:11px;margin-top:6px}.pil-ut .pil-t td:first-child{text-align:left}
 .pil-t th,.pil-t td{padding:2px 5px!important;font-size:11px}
 .ce-c{padding:8px 10px!important}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;margin-top:6px}.ce-sec{background:#fff;border:1px solid #e0c78a;border-radius:6px;padding:4px}.ce-sec-svg{width:100%;height:auto;display:block}
+.ce-copy{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;background:#fff;border:1px dashed #c9a24c;border-radius:5px;padding:5px 8px;margin-top:5px;font-size:11px}.ce-copy label{font-weight:bold;cursor:pointer;display:inline-flex;align-items:center;gap:2px}.ce-copy-a a{color:#1d5fa8;cursor:pointer;text-decoration:underline}
 .ce-sub{font-size:10.5px;font-weight:bold;color:#7a4d00;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #ecd9a8;margin:4px 0 4px;padding-bottom:2px}
 .ce-qgrid{display:flex;flex-wrap:wrap;gap:5px 16px}.ce-qg{display:flex;align-items:center;gap:3px;flex-wrap:nowrap;white-space:nowrap}.ce-qg>span{font-size:11px;color:#7a4d00;font-weight:bold;margin-right:2px}.ce-c .ce-qg .ce-q{padding:2px 7px}
 .ce-grid{display:grid;grid-template-columns:62px repeat(6,minmax(0,1fr));gap:3px 6px;align-items:end}.ce-grid>b{font-size:11px;color:#7a4d00;padding-bottom:4px}.ce-cell{display:flex;flex-direction:column;gap:1px;font-size:9.5px;color:#5b6b76}.ce-cell input,.ce-cell select{width:100%;height:23px;border:1px solid #c9a24c;border-radius:4px;padding:0 3px;font-size:11.5px;background:#fff;box-sizing:border-box}
