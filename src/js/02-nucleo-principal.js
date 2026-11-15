@@ -634,7 +634,9 @@ function startPlotDrag26(e){if(e.button!==0)return;const n=e.currentTarget,sheet
  if(ev.type!=='pointercancel'){for(const node of $('plotPreview26').querySelectorAll('.plotSheet26')){const r=node.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)continue;const ti=Number(node.dataset.sheet),f=r.width/sheetSize26()[0],x=(ev.clientX-r.left)/f-(start.x-sheetNode.getBoundingClientRect().left)/factor+start.ix,y=(ev.clientY-r.top)/f-(start.y-sheetNode.getBoundingClientRect().top)/factor+start.iy;moved=movePlotItem33(si,ii,ti,x,y);break;}}
  refreshPlotMove33();$('plotStatus26').textContent=moved?'Posição atualizada. Identificação das folhas atualizada.':'Movimento desfeito: sobreposição, posição fora da área útil ou destino inválido.';};
  n.addEventListener('pointermove',move);n.addEventListener('pointerup',end);n.addEventListener('pointercancel',end);}
-function ensurePlot26(){return plotSignature26===plotFingerprint26()&&plotSheets26.length?true:buildPlot26();}
+function ensurePlot26(){if(plotSignature26===plotFingerprint26()&&plotSheets26.length)return true;if(buildPlot26())return true;
+ // V142 — se a remontagem falhou só porque algum desenho não cabe, exporta as folhas como estão na tela (as que o projetista montou e organizou)
+ const st=$('plotStatus26'),msg=st?.textContent||'';if(plotSheets26.length&&/Não cabe/.test(msg)){if(st)st.textContent='Exportando as folhas como estão na tela. Atenção — '+msg;setTimeout(()=>{const s2=$('plotStatus26');if(s2&&!/Atenção/.test(s2.textContent))s2.textContent+=' · Atenção: as folhas foram exportadas como estão na tela, sem a última alteração — '+msg;},1200);return true;}return false;}
 function printPlot26(){if(!ensurePlot26())return;const [W,H]=sheetSize26();let css=$('plotPageCSS26');if(!css){css=document.createElement('style');css.id='plotPageCSS26';document.head.append(css);}css.textContent='@page {size:'+W+'mm '+H+'mm;margin:0}';document.body.classList.add('plotPrinting26');window.print();setTimeout(()=>document.body.classList.remove('plotPrinting26'),1000);}
 window.addEventListener('afterprint',()=>document.body.classList.remove('plotPrinting26'));
 function downloadPlot26(){if(!ensurePlot26())return;const [W,H]=sheetSize26();download('Pranchas_Modulacao_'+($('project').value||'Engenhar').replace(/[^a-zA-Z0-9_-]/g,'_')+'_V39.html','<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Pranchas · Engenhar</title><style>'+$('plotStyle26').textContent+'@page{size:'+W+'mm '+H+'mm;margin:0}body{margin:0;background:#edf2f7}.plotSheet26{margin:12px auto}@media print{body{background:white}.plotSheet26{margin:0;break-after:page}.plotSheet26:last-child{break-after:auto}.noPrint{display:none}}</style><div class="noPrint" style="padding:16px;font:14px Arial"><button onclick="window.print()">Imprimir / salvar PDF</button><p>Selecione '+plotSettings26().format+', escala de impressão 100%, margens nenhuma e desative cabeçalhos e rodapés.</p></div>'+plotSheets26.map((p,i)=>plotSheetHTML26(p,i,plotSheets26.length)).join('')+'</html>','text/html');}
@@ -1029,7 +1031,7 @@ function initLayout37(){
 }
 
 function makePlotDXF37(){
- if(!ensurePlot26())throw Error('Gere a modulação e monte as pranchas antes de exportar.');
+ if(!ensurePlot26())throw Error(($('plotStatus26')?.textContent||'').trim()||'Gere a modulação e monte as pranchas antes de exportar.');
  const host=document.createElement('div');host.style.cssText='position:absolute;left:-100000px;top:0';host.innerHTML=plotSheets26.map((s,i)=>plotSheetHTML26(s,i,plotSheets26.length)).join('');document.body.append(host);
  try{
  let tags=[],owner73=dxfTemplate37.owner,ps73=false,yo73=0;const put=(...p)=>{for(const v of p){if(typeof v==='number'&&!Number.isFinite(v))throw Error('Coordenada inválida na exportação.');tags.push(String(v));}},mm=25.4/96,[W,H]=sheetSize26();let handle=0x1000;
