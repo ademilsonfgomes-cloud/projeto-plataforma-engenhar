@@ -2983,17 +2983,39 @@ Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados),
   <tr><td style="text-align:left">Abertura de fissuras na base, face do tardoz (comb. frequente, solo + ${calcFmt(els.psi1,1)}·q)</td><td>σs = ${calcFmt(els.ss,0)} MPa · <b>wk = ${calcFmt(els.wk,3)} mm</b></td><td>≤ ${calcFmt(els.wlim,1)} mm (CAA ${esc2(stampData?.caa||'II')}) ${calcOk(els.okW)}</td></tr></tbody></table>
   <p class="calc-hint">Ecs = 0,85·5600·√fck = ${calcFmt(els.Ecs*10,0)} MPa · Ic = ${calcFmt(els.Ic,0)} cm⁴ · III = ${calcFmt(els.I2,0)} cm⁴ · Mr = 1,5·fctm·Ic/(h/2) = ${calcFmt(els.Mr/100,2)} kN·m. Flecha pela integração da curvatura M/(E·Ie) ao longo da altura do balanço.</p>`:''}`})()}`;
 }
+// V276 — Procurar solução: testa mais pilares, vigas intermediárias e seção maior, roda o cálculo completo em cada tentativa e lista as que passam.
+function calcFullSnap(){const dom={};document.querySelectorAll('input[id],select[id]').forEach(el=>{if(el.closest('#calcDialog'))return;dom[el.id]=el.type==='checkbox'?{c:el.checked}:{v:el.value}});
+ return JSON.stringify({seg:wallSegments.map(s=>({p:{...s.parameters},sp:s.spans??null})),fbm:foundationBaseModels,ft:foundationTypes,fo:foundationOverrides,ftc:foundationTypeCounter,pa:pillarArms,pab:pillarArmsBy,ba:beamArms,tba:topBeamArms,mba:midBeamArms,es:elevationSettings,ee:elevationEnabled,dom,st:$('status').textContent})}
+function calcFullRestore(j){const o=JSON.parse(j);wallSegments.forEach((s,i)=>{if(o.seg[i]){s.parameters={...o.seg[i].p};if(o.seg[i].sp)s.spans=o.seg[i].sp;else delete s.spans}});
+ foundationBaseModels=o.fbm;foundationTypes=o.ft;foundationOverrides=o.fo;foundationTypeCounter=o.ftc;pillarArms=o.pa;pillarArmsBy=o.pab;beamArms=o.ba;topBeamArms=o.tba;midBeamArms=o.mba;elevationSettings=o.es;elevationEnabled=o.ee;
+ for(const [id,v] of Object.entries(o.dom)){const el=$(id);if(!el)continue;if('c' in v)el.checked=v.c;else el.value=v.v}status(o.st)}
+function calcSugSet(c){const segs=ceSegs();for(const [s,i] of segs){if(c.dn){const n=Math.max(2,Math.round(Number(s.parameters.wallPillars)||4))+c.dn;s.parameters.wallPillars=String(n);delete s.spans}if(c.dB)s.parameters.wallColY=String((Number(s.parameters.wallColY)||40)+c.dB);if(i===wallActive)for(const id of ['wallPillars','wallColY'])if($(id))$(id).value=s.parameters[id]}
+ if(c.mid!=null){elevationSettings.mid=c.mid;if(c.mid>0)elevationEnabled=true;if($('elevMid'))$('elevMid').value=c.mid}}
+function calcSugDesc(c,base){const t=[];if(c.dn)t.push(`${c.dn>0?'+':''}${c.dn} pilar${Math.abs(c.dn)>1?'es':''} por arrimo (${base.n.map(n=>n+c.dn).join('/')} pilares, vão ≈ ${calcFmt(base.L/(base.n[0]+c.dn-1),2)} m)`);if(c.mid!=null&&c.mid!==base.mid)t.push(`${c.mid} VI`);if(c.dB)t.push(`pilar ${base.A}×${base.B+c.dB}`);return t.join(' + ')||'sem mudança'}
+let calcSugRes=null;
+function calcSuggest(){const btn=$('cSug');if(btn)btn.textContent='Procurando… (pode levar alguns segundos)';setTimeout(()=>{
+ const snap=calcFullSnap(),segs=ceSegs(),P0=wallProfile(segs[0][1]);const base={n:segs.map(([s])=>Math.max(2,Math.round(Number(s.parameters.wallPillars)||4))),L:P0?P0.L/100:0,mid:Math.round(elevationSettings.mid)||0,A:Number(segs[0][0].parameters.wallColX)||20,B:Number(segs[0][0].parameters.wallColY)||40};
+ const cands=[];for(const mid of [...new Set([base.mid,Math.max(base.mid,1),Math.max(base.mid,2)])])for(const dn of [0,1,2,3,4])for(const dB of [0,5,10,15,20]){if(!dn&&!dB&&mid===base.mid)continue;cands.push({dn,dB,mid})}
+ const ok=[];const was=calcSettings.useCalc;calcSettings.useCalc=true;let k=0;
+ const one=c=>{try{calcFullRestore(snap);calcSugSet(c);calcDrawHold=true;try{calcApplyPillar();calcApplyFoundation();calcApplyBeams()}finally{calcDrawHold=false}try{draw()}catch(e){}
+  const f=calcFailures();if(f.size)return;const q=calcQuant().tot;ok.push({c,desc:calcSugDesc(c,base),steel:q.ca50+(q.ca60||0),conc:q.conc,idx:q.ca50+(q.ca60||0)+(Number(calcSettings.optR)||60)*q.conc})}catch(e){}};
+ const tick=()=>{const t=performance.now();while(k<cands.length&&performance.now()-t<120)one(cands[k++]);const b=$('cSug');if(b)b.textContent=`Procurando… ${k}/${cands.length}`;if(k<cands.length){setTimeout(tick,0);return}
+  calcFullRestore(snap);calcSettings.useCalc=was;try{draw()}catch(e){}
+  ok.sort((a,b)=>a.idx-b.idx);calcSugRes={list:ok.slice(0,5),tested:cands.length};calcRender()};tick()},40)}
+function calcSugUse(k){const r=calcSugRes?.list?.[k];if(!r)return;calcSugSet(r.c);calcSugRes=null;calcAll()}
+function calcSugBox(){const R=calcSugRes;if(!R)return '';if(!R.list.length)return `<p class="c-no" style="margin:6px 0">Testei ${R.tested} combinações (até +4 pilares, até 2 VI, lado B até +20 cm) e nenhuma passou em tudo. Verifique as premissas (solo, sobrecarga) ou a altura do muro.</p>`;
+ return `<div style="margin-top:6px"><b>Soluções que passam em tudo</b> <small>(${R.tested} combinações testadas · ordenadas pelo custo: aço + ${calcFmt(Number(calcSettings.optR)||60,0)} kg por m³ de concreto)</small><table class="calc-t pil-t" style="margin-top:3px"><thead><tr><th style="text-align:left">Mudança</th><th>Aço (kg)</th><th>Concreto (m³)</th><th></th></tr></thead><tbody>${R.list.map((r,k)=>`<tr><td style="text-align:left;white-space:normal">${k===0?'<b>★ mais econômica: </b>':''}${esc2(r.desc)}</td><td>${calcFmt(r.steel,0)}</td><td>${calcFmt(r.conc,2)}</td><td><button class="ce-q" data-sug="${k}">Aplicar</button></td></tr>`).join('')}</tbody></table></div>`}
 // V275 — "Calcular tudo" (modo com cálculo): aplica pilar, fundação/bloco e vigas e mostra o que mudou no Resumo.
 let calcAllLog=null;
 function calcAll(){const btn=$('cCalcAll');if(btn)btn.textContent='Calculando…';setTimeout(()=>{const out=[];const step=(nome,fn)=>{try{fn();const m=$('status').textContent||'';out.push([nome,[...new Set(m.replace(/^(Pilar|Fundação|Vigas?)[^:]*:\s*/,'').split(' · ').map(x=>x.trim()).filter(Boolean))].join(' · ')])}catch(e){out.push([nome,'erro: '+e.message])}};
  calcSettings.useCalc=true;step('Pilares',()=>calcApplyPillar());step('Fundações e blocos',()=>calcApplyFoundation());step('Vigas e alvenaria',()=>calcApplyBeams());
  try{draw()}catch(e){}let fails=[];try{fails=[...calcFailures()].map(([k,v])=>k+': '+[...v].join(' / '))}catch(e){}
- calcAllLog={t:new Date(),out,fails};calcSettings.tab='resumo';calcSettings.sel=null;calcRender();if(btn)btn.textContent='⚡ Calcular tudo';
+ calcAllLog={t:new Date(),out,fails};calcSugRes=null;calcSettings.tab='resumo';calcSettings.sel=null;calcRender();if(btn)btn.textContent='⚡ Calcular tudo';
  status(fails.length?`Calcular tudo: ${fails.length} elemento(s) ainda não passam — veja o Resumo.`:'Calcular tudo: todos os elementos passam. Confira o Resumo e o detalhamento.')},30)}
 function calcAllBox(){const L=calcAllLog;if(!L)return '';const hh=L.t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
- return `<div class="calc-edit" style="background:${L.fails.length?'#fff1ee':'#eefaf1'};border-color:${L.fails.length?'#e0a090':'#8fcca5'}"><b>⚡ Calcular tudo — ${hh}</b> ${L.fails.length?'<span class="c-no">· ainda há elementos que não passam</span>':'<span class="c-ok">· todos os elementos passam</span>'}
+ return `<div class="calc-edit" style="background:${L.fails.length?'#fff1ee':'#eefaf1'};border-color:${L.fails.length?'#e0a090':'#8fcca5'}"><b>⚡ Calcular tudo — ${hh}</b> ${L.fails.length?'<span class="c-no">· ainda há elementos que não passam</span> <button class="c-apply" id="cSug" style="margin-left:10px;background:#1d5fa8">🔍 Procurar solução</button>':'<span class="c-ok">· todos os elementos passam</span>'}
  <table class="calc-t pil-t" style="margin-top:5px"><tbody>${L.out.map(([n,m])=>`<tr><td style="text-align:left;width:150px"><b>${n}</b></td><td style="text-align:left;white-space:normal">${esc2(m)||'sem mudanças'}</td></tr>`).join('')}${L.fails.length?`<tr><td style="text-align:left"><b class="c-no">Não passam</b></td><td style="text-align:left;white-space:normal">${L.fails.map(esc2).join('<br>')}</td></tr>`:''}</tbody></table>
- <p class="calc-hint" style="margin:4px 0 0">O programa grava a armadura no detalhamento; confira e ajuste nas abas Pilar, Fundação e Viga. Pilares: uma armadura para todos (a do pilar mais solicitado); ajuste pilar a pilar no editor da aba Pilar.</p></div>`}
+ <p class="calc-hint" style="margin:4px 0 0">O programa grava a armadura no detalhamento; confira e ajuste nas abas Pilar, Fundação e Viga. Pilares: uma armadura para todos (a do pilar mais solicitado); ajuste pilar a pilar no editor da aba Pilar.</p>${calcSugBox()}</div>`}
 function calcTabResumo(){
  const S=calcSettings,P=calcPillar(),F=calcFoundation(),items=[];let BK=[];try{BK=calcBlock()}catch(e){}
  const pb=new Map();for(const r of P){const o=pb.get(r.pid)||{okM:true,okV:true};o.okM&&=r.okM;o.okV&&=r.okV;pb.set(r.pid,o)}
@@ -3600,7 +3622,8 @@ function calcMarkFailures(){
   el('rect',{x:b.x-fs*.4,y:b.y-fs*.4,width:b.w+fs*.8,height:b.h+fs*.8,fill:'none',stroke:'#e74c3c','stroke-width':fs*.18,'stroke-dasharray':`${fs} ${fs*.6}`},mk);
  }
 }
-(()=>{const d0=draw;draw=function(){const r=d0.apply(this,arguments);if(!renderingVariant){applyDetailSheetK();clearTimeout(calcMarkT);calcMarkT=setTimeout(calcMarkFailures,300)}return r}})();
+let calcDrawHold=false;
+(()=>{const d0=draw;draw=function(){if(calcDrawHold)return;const r=d0.apply(this,arguments);if(!renderingVariant){applyDetailSheetK();clearTimeout(calcMarkT);calcMarkT=setTimeout(calcMarkFailures,300)}return r}})();
 // ---------- NBR 6118 — aderência, ancoragem e transpasse (V257) ----------
 // fbd = η1·η2·η3·fctd (η1 = 2,25 CA-50; η2 = 1,0 boa aderência / 0,7 má; η3 = 1 para Ø < 32 mm)
 // lb = (Ø/4)·(fyd/fbd) ≥ 25Ø · lb,nec = α·lb·As,calc/As,ef ≥ máx(0,3·lb; 10Ø; 100 mm)
@@ -3832,7 +3855,7 @@ function calcRender(){
  body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
  ceBind(body);
- if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
+ if($('cSug'))$('cSug').onclick=calcSuggest;body.querySelectorAll('[data-sug]').forEach(b=>b.onclick=()=>calcSugUse(Number(b.dataset.sug)));if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
  if($('cOptRun'))$('cOptRun').onclick=()=>{$('cOptRun').textContent='Calculando…';setTimeout(calcOptRun,30)};
  if($('cOptR'))$('cOptR').onchange=()=>{calcSettings.optR=Number($('cOptR').value)||0;if(calcOptResult){calcOptResult.ok.forEach(r=>r.idx=r.steel+calcSettings.optR*r.conc);calcOptResult.ok.sort((a,b)=>a.idx-b.idx)}calcRender()};
  body.querySelectorAll('[data-opt]').forEach(b=>b.onclick=()=>calcOptUse(Number(b.dataset.opt)));
