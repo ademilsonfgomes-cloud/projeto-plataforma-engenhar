@@ -191,10 +191,13 @@ const CAT141=[
  {id:'carga',nome:'Mapa de cargas',pad:null,test:q=>!!q.load77&&/^Mapa de cargas/.test(q.title||'')}];
 function esc141(id){if(id==='elev')return elevScale()||N($('plotScale26')?.value)||50;const v=N($('plotEsc141_'+id)?.value);return v>0?v:(N($('plotScale26')?.value)||50);}
 window.esc141=esc141;window.escDet141=()=>{const v=N($('plotEsc141_det')?.value);return v>0?v:10;};
-try{const cp=collectPlot26;collectPlot26=function(...a){const ps=N($('plotScale26')?.value);let d=cp.apply(this,a);
+try{const cp=collectPlot26;collectPlot26=function f146(...a){const ps=N($('plotScale26')?.value);
  const porEsc=new Map();for(const c of CAT141){const e=esc141(c.id);if(ps&&e&&e!==ps){if(!porEsc.has(e))porEsc.set(e,[]);porEsc.get(e).push(c);}}
+ // V146 — elevações em escala própria: a passada na escala geral não desenha as elevações (eram desenhadas e jogadas fora)
+ const pular=!window.__v146off&&[...porEsc.values()].some(cs=>cs.some(c=>c.id==='elev'));let d;
+ window.__semParedes146=pular;try{d=cp.apply(this,a);}finally{window.__semParedes146=false;}
  const inp=$('plotScale26'),old=inp?.value;
- for(const [e,cats] of porEsc){let d2;try{inp.value=e;d2=cp.apply(this,a);}catch(er){console.error('V141 escala',e,er);continue;}finally{inp.value=old;}
+ for(const [e,cats] of porEsc){let d2;try{inp.value=e;d2=cp.apply(this,a);}catch(er){console.error('V141 escala',e,er);if(pular&&cats.some(c=>c.id==='elev')){inp.value=old;window.__v146off=true;try{return f146.apply(this,a);}finally{window.__v146off=false;}}continue;}finally{inp.value=old;}
   for(const c of cats){const novos=d2.items.filter(c.test);novos.forEach(q=>{q.scale82=e;q.cat141=c.id;});
    const first=d.items.findIndex(c.test);const resto=d.items.filter(q=>!c.test(q));const at=first<0?resto.length:d.items.slice(0,first).filter(q=>!c.test(q)).length;
    d.items=[...resto.slice(0,at),...novos,...resto.slice(at)];}}

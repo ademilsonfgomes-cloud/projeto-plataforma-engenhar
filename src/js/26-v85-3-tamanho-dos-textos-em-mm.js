@@ -61,7 +61,7 @@ function markSubs(root){root.querySelectorAll('h3,h4').forEach(h=>{const tx=h.te
 // ---------- aplica em cada item das pranchas (antes de montar as folhas)
 const cache85=new Map();
 try{const cp=collectPlot26;collectPlot26=function(...a){applyCSS();const d=cp.apply(this,a);try{
- const host=document.createElement('div');host.style.cssText='position:absolute;left:-100000px;top:0;';document.body.append(host);
+ const host=document.createElement('div');host.style.cssText='position:absolute;left:-100000px;top:0;';(window.iso145?.()||document.body).append(host);
  const tOld=5,tNew=lh('titulo'),sOld=2.3*1.2+2,sNew=mm('escala')/CAP*1.2+2;let tot=0,hid=0;
  for(const it of d.items||[]){it.h=(N(it.h)||0)+Math.max(0,tNew-tOld)+(/^(Parede |Primeira fiada|Segunda fiada)/.test(it.title||'')?Math.max(0,sNew-sOld):0);
   if(!it.html||!/<svg/i.test(it.html))continue;

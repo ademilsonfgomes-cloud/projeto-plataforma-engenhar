@@ -28,9 +28,9 @@ function restoreLayout(){const L=LS107().plot107;if(fresh107||!L?.items?.length)
   for(let i=start;i<sheets.length&&!done;i++){const P=nearestFree(sheets[i],q,o&&i===o.s?o.x:10,o&&i===o.s?o.y:10);if(P){q.x=P.x;q.y=P.y;sheets[i].items.push(q);done=true;}}
   if(!done){const S={items:[]};const P=nearestFree(S,q,10,10)||{x:10,y:10};q.x=P.x;q.y=P.y;S.items.push(q);sheets.splice(Math.min(sheets.length,start+1),0,S);}}
  restoring=true;try{plotSheets26=sheets.filter(S=>S.items.length);}finally{restoring=false;}return {kept,moved:pending.length};}
-{const b0=buildPlot26;buildPlot26=function(...a){let r;restoring=true;try{r=b0.apply(this,a);}finally{restoring=false;}if(!r)return r;/* V142 — montagem falhou (ex.: quadro não cabe): mantém o aviso real */try{let k=0;for(const s of plotSheets26)for(const q of s.items)q.ord107=k++;
-  const R=restoreLayout();fresh107=false;if(R){previewPlot26();try{refreshPlotMove33();}catch{}$('plotStatus26').textContent='Pranchas atualizadas mantendo a sua organização: '+R.kept+' quadro(s) no mesmo lugar'+(R.moved?', '+R.moved+' novo(s)/alterado(s) encaixado(s) no espaço livre':'')+'. Para montar do zero: ↺ Montar do zero.';}
-  else saveLayout();}catch(e){console.error('V107.2 organização',e);}return r;};}
+{const b0=buildPlot26;buildPlot26=function(...a){let r;restoring=true;window.__semPrevia146=true;window.__previaPend146=false;try{r=b0.apply(this,a);}finally{restoring=false;window.__semPrevia146=false;}if(!r){if(window.__previaPend146)previewPlot26();return r;}/* V142 — montagem falhou (ex.: quadro não cabe): mantém o aviso real */try{let k=0;for(const s of plotSheets26)for(const q of s.items)q.ord107=k++;
+  const R=restoreLayout();fresh107=false;if(R){try{refreshPlotMove33();}catch{previewPlot26();}$('plotStatus26').textContent='Pranchas atualizadas mantendo a sua organização: '+R.kept+' quadro(s) no mesmo lugar'+(R.moved?', '+R.moved+' novo(s)/alterado(s) encaixado(s) no espaço livre':'')+'. Para montar do zero: ↺ Montar do zero.';}
+  else{previewPlot26();saveLayout();}}catch(e){console.error('V107.2 organização',e);try{previewPlot26();}catch{}}return r;};}
 {const p0=previewPlot26;previewPlot26=function(...a){const r=p0.apply(this,a);try{saveLayout();}catch{}return r;};}
 function fromScratch(){if(!confirm('Montar as pranchas do zero? A organização atual das folhas será descartada.'))return;fresh107=true;delete LS107().plot107;buildPlot26();}
 function curSheet(){if(selectedPlot33&&plotSheets26[selectedPlot33.si])return selectedPlot33.si;
