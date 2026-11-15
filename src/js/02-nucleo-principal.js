@@ -634,7 +634,11 @@ function startPlotDrag26(e){if(e.button!==0)return;const n=e.currentTarget,sheet
  if(ev.type!=='pointercancel'){for(const node of $('plotPreview26').querySelectorAll('.plotSheet26')){const r=node.getBoundingClientRect();if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom)continue;const ti=Number(node.dataset.sheet),f=r.width/sheetSize26()[0],x=(ev.clientX-r.left)/f-(start.x-sheetNode.getBoundingClientRect().left)/factor+start.ix,y=(ev.clientY-r.top)/f-(start.y-sheetNode.getBoundingClientRect().top)/factor+start.iy;moved=movePlotItem33(si,ii,ti,x,y);break;}}
  refreshPlotMove33();$('plotStatus26').textContent=moved?'Posição atualizada. Identificação das folhas atualizada.':'Movimento desfeito: sobreposição, posição fora da área útil ou destino inválido.';};
  n.addEventListener('pointermove',move);n.addEventListener('pointerup',end);n.addEventListener('pointercancel',end);}
-function ensurePlot26(){if(plotSignature26===plotFingerprint26()&&plotSheets26.length)return true;if(buildPlot26())return true;
+function ensurePlot26(){if(plotSheets26.length)return true;if(buildPlot26())return true;
+ // V143 — exportar (DXF/PDF/imprimir) usa sempre as folhas que estão na tela, como o projetista montou e organizou. Antes,
+ // trocar de nível/aba mudava a "assinatura" e a exportação remontava tudo a partir do nível aberto: demorava, mexia na
+ // organização e, conforme o nível, falhava com "Gere a modulação e monte as pranchas". Para atualizar: Montar.
+
  // V142 — se a remontagem falhou só porque algum desenho não cabe, exporta as folhas como estão na tela (as que o projetista montou e organizou)
  const st=$('plotStatus26'),msg=st?.textContent||'';if(plotSheets26.length&&/Não cabe/.test(msg)){if(st)st.textContent='Exportando as folhas como estão na tela. Atenção — '+msg;setTimeout(()=>{const s2=$('plotStatus26');if(s2&&!/Atenção/.test(s2.textContent))s2.textContent+=' · Atenção: as folhas foram exportadas como estão na tela, sem a última alteração — '+msg;},1200);return true;}return false;}
 function printPlot26(){if(!ensurePlot26())return;const [W,H]=sheetSize26();let css=$('plotPageCSS26');if(!css){css=document.createElement('style');css.id='plotPageCSS26';document.head.append(css);}css.textContent='@page {size:'+W+'mm '+H+'mm;margin:0}';document.body.classList.add('plotPrinting26');window.print();setTimeout(()=>document.body.classList.remove('plotPrinting26'),1000);}
