@@ -2755,7 +2755,7 @@ function calcSetBlock(code,field,val){
 function calcApplyBlock(msg){
  let B;try{B=calcBlock()}catch(e){return}const byCode=new Map();
  for(const b of B){if(b.noBlk)continue;const k=b.bc||'B1',o=byCode.get(k)||{req:0,needH:0,cov:b.cov,Hb:b.Hb};o.req=Math.max(o.req,b.tie?b.tie.AsReq:0);o.needH=Math.max(o.needH,b.esp.lbnec/10,b.pil.lbnec/10);byCode.set(k,o)}
- if(!byCode.size)return;let qty=Math.max(2,Number($('blockQtyX')?.value)||4);
+ if(!byCode.size)return;let qty=4;
  const maxReq=Math.max(...[...byCode.values()].map(o=>o.req));while(qty<8&&qty*calcBar(16)<maxReq-1e-9)qty++;
  if(qty!==Number($('blockQtyX').value)){msg.push(`bloco: estribos verticais ${$('blockQtyX').value} → ${qty} por direção`);$('blockQtyX').value=qty;if($('blockSameXY')?.checked&&$('blockQtyY'))$('blockQtyY').value=qty}
  for(const [code,o] of byCode){const v=foundationValues('block',code),dia=[10,12.5,16,20].find(d=>qty*calcBar(d)>=o.req-1e-9)||20;
@@ -2773,7 +2773,7 @@ function calcApplyFoundation(){
   if(best&&(best.n!==Number(v.bars)||best.dia!==Number(v.barDia))){msg.push(`${code} fuste: ${v.bars}Ø${v.barDia} → ${best.n}Ø${String(best.dia).replace('.',',')}`);calcSetPile(code,'bars',best.n);calcSetPile(code,'barDia',best.dia)}
   // Comprimento da armadura: cobre a zona de momento (f + 60 cm) e o mínimo armado da estaca; nunca maior que a estaca.
   const dep=Number(foundationValues('pile',code).depth)||0,isE=Number(v.pileKind)===1,want=Math.min(dep,Math.max(isE?(Number(calcSettings.minArm)||0)*100:0,Math.ceil(((flen.get(code)||0)+.6)*10)*10,100));
-  if(want>Number(v.barLen)){msg.push(`${code} armadura do fuste: C ${v.barLen} → ${want} cm`);calcSetPile(code,'barLen',want)}}
+  if(want!==Number(v.barLen)){msg.push(`${code} armadura do fuste: C ${v.barLen} → ${want} cm`);calcSetPile(code,'barLen',want)}}
  draw();calcApplyBlock(msg);draw();calcRender();status(msg.length?'Fundação: '+msg.join(' · '):'Fundação já atende ao cálculo.');
 }
 function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).length){pillarArmsBy={};prev.push('armaduras individuais dos pilares substituídas pela do cálculo')}
