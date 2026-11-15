@@ -182,17 +182,34 @@ function slabItems(availW,availH){let A;try{A=designAll();}catch(e){console.erro
 // escala das elevações: as paredes vêm de uma segunda montagem com a escala própria
 // V140 — padrão 1:75 para as elevações (cabem mais paredes por folha A1); o campo continua editável (50 = mesma escala da planta)
 function elevScale(){const el=$('plotElevScale82'),v=N(el?.value);return v>0?v:(el&&String(el.value).trim()===''?75:0);}
-try{const cp=collectPlot26;collectPlot26=function(...a){const es=elevScale(),ps=N($('plotScale26')?.value);let d;
- if(es&&ps&&es!==ps){d=cp.apply(this,a);const keep=d.items.filter(q=>!/^Parede \d+/.test(q.title||''));const inp=$('plotScale26'),old=inp.value;let walls=[];try{inp.value=es;const d2=cp.apply(this,a);walls=d2.items.filter(q=>/^Parede \d+/.test(q.title||''));walls.forEach(q=>q.scale82=es);}finally{inp.value=old;}
-  // mantém a ordem: plantas e demais quadros, paredes no lugar das originais
-  const first=d.items.findIndex(q=>/^Parede \d+/.test(q.title||''));const before=keep.slice(0,first<0?keep.length:first),after=first<0?[]:keep.slice(first);d.items=[...before,...walls,...after];}
- else d=cp.apply(this,a);
+// V141 — escala por tipo de desenho: plantas de fiada, elevações, lajes, mapa de cargas e detalhes de vigas/reforços.
+// Cada tipo é gerado de novo na escala dele (textos e cotas com o mesmo tamanho no papel); vazio = padrão.
+const CAT141=[
+ {id:'fiada',nome:'Plantas de 1ª e 2ª fiada',pad:null,test:q=>/^(Primeira|Segunda) fiada · planta/.test(q.title||'')},
+ {id:'elev',nome:'Elevações das paredes',pad:75,test:q=>/^Parede \d+/.test(q.title||'')},
+ {id:'laje',nome:'Lajes (planta e armação)',pad:null,test:q=>!!(q.slab95||q.slab82||q.arm106)&&!q.el97},
+ {id:'carga',nome:'Mapa de cargas',pad:null,test:q=>!!q.load77&&/^Mapa de cargas/.test(q.title||'')}];
+function esc141(id){if(id==='elev')return elevScale()||N($('plotScale26')?.value)||50;const v=N($('plotEsc141_'+id)?.value);return v>0?v:(N($('plotScale26')?.value)||50);}
+window.esc141=esc141;window.escDet141=()=>{const v=N($('plotEsc141_det')?.value);return v>0?v:10;};
+try{const cp=collectPlot26;collectPlot26=function(...a){const ps=N($('plotScale26')?.value);let d=cp.apply(this,a);
+ const porEsc=new Map();for(const c of CAT141){const e=esc141(c.id);if(ps&&e&&e!==ps){if(!porEsc.has(e))porEsc.set(e,[]);porEsc.get(e).push(c);}}
+ const inp=$('plotScale26'),old=inp?.value;
+ for(const [e,cats] of porEsc){let d2;try{inp.value=e;d2=cp.apply(this,a);}catch(er){console.error('V141 escala',e,er);continue;}finally{inp.value=old;}
+  for(const c of cats){const novos=d2.items.filter(c.test);novos.forEach(q=>{q.scale82=e;q.cat141=c.id;});
+   const first=d.items.findIndex(c.test);const resto=d.items.filter(q=>!c.test(q));const at=first<0?resto.length:d.items.slice(0,first).filter(q=>!c.test(q)).length;
+   d.items=[...resto.slice(0,at),...novos,...resto.slice(at)];}}
  try{const it=slabItems(d.availW,d.availH);if(it.length)d.items.push(...it);}catch(e){console.error('V82 pranchas de laje',e);}return d;};}catch(e){console.error('V82',e);}
-try{const sh=plotSheetHTML26;plotSheetHTML26=function(sheet,...a){let html=sh.call(this,sheet,...a);const es=elevScale();if(es&&sheet?.items?.some(q=>q.scale82))html=html.replace(/(<h3 class="plotItemTitle26">Parede [^<]*<\/h3><p class="drawingScale29">Escala 1:)(\d+(?:[.,]\d+)?)/g,'$1'+es);return html;};}catch(e){console.error('V82',e);}
-// campo na tela de pranchas e gravação junto com as configurações das pranchas
-{const ps=$('plotScale26');if(ps&&!$('plotElevScale82')){const lab=document.createElement('label');lab.innerHTML='Escala das elevações 1:<input id="plotElevScale82" type="number" min="1" max="1000" placeholder="75">';lab.title='Só as elevações das paredes. Padrão 1:75 (cabem mais elevações por folha). Para usar a mesma escala da planta, digite a escala da planta (ex.: 50).';ps.closest('label').after(lab);}}
-try{const pset=plotSettings26;plotSettings26=function(...a){const s=pset.apply(this,a);s.elevScale=elevScale()||null;return s;};const rps=restorePlotSettings26;restorePlotSettings26=function(...a){const r=rps.apply(this,a);try{const v=state.plot26?.elevScale;if($('plotElevScale82'))$('plotElevScale82').value=v||'';}catch{}return r;};}catch(e){console.error('V82',e);}
-try{const fp=plotFingerprint26;plotFingerprint26=function(...a){return fp.apply(this,a)+'|e'+elevScale()+'|l'+JSON.stringify(LD().S().cfg.slab82||{})+'|'+JSON.stringify(LD().S().lv)+JSON.stringify(LD().S().roof)+LD().S().items.length;};}catch{}
+try{const sh=plotSheetHTML26;plotSheetHTML26=function(sheet,...a){let html=sh.call(this,sheet,...a);for(const q of sheet?.items||[]){if(!q.scale82)continue;const t=String(q.title||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/&/g,'&amp;');html=html.replace(new RegExp('(<h3 class="plotItemTitle26">'+t+'</h3><p class="drawingScale29">Escala 1:)(\\d+(?:[.,]\\d+)?)','g'),'$1'+q.scale82);}return html;};}catch(e){console.error('V82',e);}
+// campos na tela de pranchas e gravação junto com as configurações das pranchas
+{const ps=$('plotScale26');if(ps&&!$('plotElevScale82')){const lab=document.createElement('label');lab.innerHTML='Escala das elevações 1:<input id="plotElevScale82" type="number" min="1" max="1000" placeholder="75">';lab.title='Só as elevações das paredes. Padrão 1:75 (cabem mais elevações por folha). Para usar a mesma escala da planta, digite a escala da planta (ex.: 50).';ps.closest('label').after(lab);}
+ if(ps&&!$('esc141')){const box=document.createElement('div');box.id='esc141';box.className='esc141';
+  box.innerHTML='<b>Escalas por tipo de desenho</b><span class="n141">vazio = padrão</span>'+[['fiada','Plantas de 1ª e 2ª fiada'],['laje','Lajes (planta e armação)'],['carga','Mapa de cargas'],['det','Detalhes de vigas e reforços']].map(([id,n])=>'<label>'+n+' 1:<input id="plotEsc141_'+id+'" type="number" min="1" max="1000" placeholder="'+(id==='det'?'10':'igual')+'"></label>').join('');
+  (($('plotElevScale82')?.closest('label'))||ps.closest('label')).after(box);
+  const st=document.createElement('style');st.textContent='.esc141{display:flex;flex-direction:column;gap:4px;margin:6px 0;padding:8px;border:1px solid #d8e2ec;border-radius:8px;background:#f7fafc;font-size:12px}.esc141 b{font-size:12.5px;color:#0f3354}.esc141 .n141{color:#6a7c8e;font-size:11px;margin-top:-3px}.esc141 label{display:flex;align-items:center;justify-content:space-between;gap:6px}.esc141 input{width:64px!important}';document.head.append(st);
+  box.addEventListener('change',()=>{try{state.plot26={...(state.plot26||{}),...plotSettings26()};}catch{}});
+  const ph=()=>{const v=$('plotScale26')?.value||'50';for(const id of ['fiada','laje','carga'])if($('plotEsc141_'+id))$('plotEsc141_'+id).placeholder=v;};ph();ps.addEventListener('input',ph);ps.addEventListener('change',ph);setInterval(ph,3000);}}
+try{const pset=plotSettings26;plotSettings26=function(...a){const s=pset.apply(this,a);s.elevScale=elevScale()||null;s.esc141={};for(const id of ['fiada','laje','carga','det']){const v=N($('plotEsc141_'+id)?.value);if(v>0)s.esc141[id]=v;}return s;};const rps=restorePlotSettings26;restorePlotSettings26=function(...a){const r=rps.apply(this,a);try{const v=state.plot26?.elevScale;if($('plotElevScale82'))$('plotElevScale82').value=v||'';const e=state.plot26?.esc141||{};for(const id of ['fiada','laje','carga','det'])if($('plotEsc141_'+id))$('plotEsc141_'+id).value=e[id]||'';}catch{}return r;};}catch(e){console.error('V82',e);}
+try{const fp=plotFingerprint26;plotFingerprint26=function(...a){return fp.apply(this,a)+'|e'+elevScale()+'|'+['fiada','laje','carga','det'].map(id=>$('plotEsc141_'+id)?.value||'').join(',')+'|l'+JSON.stringify(LD().S().cfg.slab82||{})+'|'+JSON.stringify(LD().S().lv)+JSON.stringify(LD().S().roof)+LD().S().items.length;};}catch{}
 
 // ---------- 8. Janela “Lajes maciças” e critérios
 function openSlabDlg(){let d=$('sl82dlg');if(!d){d=document.createElement('div');d.id='sl82dlg';d.className='noPrint';document.body.append(d);}d.style.display='flex';renderSlabDlg();}

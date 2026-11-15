@@ -77,6 +77,7 @@
     const lab = id => $id(id)?.closest('label');
     const esc = $id('pr121esc');
     for (const id of ['plotScale26', 'plotElevScale82']) { const l = lab(id); if (l && l.parentElement !== esc) esc.append(l); }
+    { const b = $id('esc141'); if (b && esc && b.parentElement !== esc.parentElement) esc.after(b); } // V141 — escalas por tipo de desenho
     const car = $id('pr121car');
     for (const id of ['st106tit', 'st106cli', 'plotEngineer26', 'plotCrea26', 'st106prof', 'plotRevision26', 'plotClient27', 'plotDate27', 'st106apr', 'st106lg']) { const l = lab(id); if (l && l.parentElement !== car) car.append(l); }
     const ig = $id('pr121ig');
