@@ -1279,7 +1279,7 @@ function drawPillarDetails(parent){
   const faceBars=(n,dia,face,p0,p1)=>{for(let m=1;m<=n;m++){const f=m/(n+1);bars.push({x:p0[0]+(p1[0]-p0[0])*f,y:p0[1]+(p1[1]-p0[1])*f,dia,face})}};
   const bs=inset(A2.soloDia),be=inset(A2.extDia),bl=inset(A2.latDia);
   faceBars(A2.soloN,A2.soloDia,'TARDOZ',[sx+bc,sy+bs],[sx+sw-bc,sy+bs]);
-  {const n2=Number(A2.soloN2)||0,d2=Number(A2.soloDia2)||A2.soloDia;if(n2>0){const y2=sy+inset(A2.cornerDia)+(A2.cornerDia/20+Math.max(2,A2.cornerDia/10,d2/10)+d2/20)*factor;for(let m=0;m<n2;m++){const f=n2===1?.5:m/(n2-1);bars.push({x:sx+bc+(sw-2*bc)*f,y:y2,dia:d2,face:'TARDOZ 2ª CAMADA'})}}}
+  {const n2=Number(A2.soloN2)||0,d2=Number(A2.soloDia2)||A2.soloDia;if(n2>0){const y2=sy+inset(A2.cornerDia)+(A2.cornerDia/20+Math.max(2,A2.cornerDia/10,d2/10)+d2/20)*factor;for(let m=0;m<n2;m++){const f=n2===1?0:m/(n2-1);bars.push({x:sx+bc+(sw-2*bc)*f,y:y2,dia:d2,face:'TARDOZ 2ª CAMADA'})}}}
   faceBars(A2.extN,A2.extDia,'EXTERNA',[sx+bcE,sy+sh-be],[sx+sw-bcE,sy+sh-be]);
   faceBars(A2.latN,A2.latDia,'LATERAIS',[sx+bl,sy+bc],[sx+bl,sy+sh-bc]);
   faceBars(A2.latN,A2.latDia,'LATERAIS',[sx+sw-bl,sy+bc],[sx+sw-bl,sy+sh-bc]);
@@ -2805,9 +2805,10 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
  // Para cada bitola: até 2 camadas no tardoz (n1 ≤ nMax por camada) e armadura de compressão na face externa.
  let pick=null;
  // 1ª passada: uma camada (menor bitola que caiba); 2ª passada: duas camadas no tardoz.
- for(const layers of [1,2])for(const dia of dias){if(pick)break;
+ for(const layers of [1,2,3])for(const dia of dias){if(pick)break;
   const sMin=Math.max(2,dia/10,2.28),bw=bMin-2*cover-2*(Number(N1.dia)||5)/10,nMax=Math.floor((bw+sMin)/(dia/10+sMin));if(nMax<2)continue;
-  for(let n2=layers===1?0:1;n2<=(layers===1?0:nMax)&&!pick;n2++){for(let n1=2;n1<=nMax;n1++){if(n2>0&&n1<nMax)continue;
+  // V283 — 2ª camada só em PAR, encostada nas pernas do estribo (sem barra solta no meio, sem tarugo).
+  for(const n2 of layers===1?[0]:layers===2?[2]:Array.from({length:Math.max(0,nMax-2)},(_,k)=>k+3)){if(pick)break;for(let n1=2;n1<=nMax;n1++){if(n2>0&&n1<nMax)continue;
    const t={...a,cornerDia:dia,soloN:n1-2,soloDia:dia,soloN2:n2,soloDia2:dia};let ok=true,nc=2,dc=10,need2=null;
    for(const r of rs){const G=calcPillarGeom({...t,cornerExtDia:dc,extN:0},r.h,cover,Number(N1.dia)||5),BN=calcBending(r.Md*100,r.b,G.d,G.dp,fcd,fyd),need=Math.max(BN.As,.0015*r.b*r.h);
     if(G.As<need-1e-9){ok=false;break}
@@ -2821,7 +2822,7 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
  if(!pick){status(`Pilar: nem com armadura dupla e 2 camadas (até Ø${String(dias.at(-1)||25).replace('.',',')}) a seção ${bMin}×${rs[0].h} atende. Aumente a seção ou reduza o vão entre pilares.`);calcRender();return}
  const old=`tardoz ${2+Number(a.soloN||0)}Ø${a.cornerDia}${Number(a.soloN2)?` + ${a.soloN2}Ø${a.soloDia2} (2ª camada)`:''} · face externa ${2+Number(a.extN||0)}Ø${a.cornerExtDia}`;
  a.cornerDia=pick.dia;a.soloDia=pick.dia;a.soloN=pick.n1-2;a.soloN2=pick.n2;a.soloDia2=pick.dia;a.cornerExtDia=pick.dc;a.extN=Math.max(0,pick.nc-2);a.extDia=pick.dc;
- if(pick.n2>0||pick.nc>2)a.soloLen=0;
+ if(pick.n2>0||pick.nc>2)a.soloLen=0;if(pick.n2>2)msg.push(`ATENÇÃO: ${pick.n2} barras na 2ª camada — as ${pick.n2-2} do meio não encostam no estribo; prever grampo/estribo suplementar ou aumentar a seção`);
  const now=`tardoz ${pick.n1}Ø${pick.dia}${pick.n2?` + ${pick.n2}Ø${pick.dia} (2ª camada)`:''} · face externa ${pick.nc}Ø${pick.dc}${pick.nc>2||rs.some(r=>r.dupla)?' (compressão)':''}`;
  if(now!==old)msg.push(`${old} → ${now}`);
  // V261 — Economia ao longo da altura: cantos do tardoz contínuos (bitola menor, até o topo) e reforço
@@ -2832,8 +2833,9 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
   const nMaxOf=dd=>{const sm=Math.max(2,dd/10,2.28);return Math.floor((bwF+sm)/(dd/10+sm))};
   const P=pick.dia,lapC=dd=>Math.max(60,calcLapReq(rs).fac)*dd/10;
   let best={w:2*calcBar(P)*(Hm*100+emb+lapC(P))+(pick.n1-2+pick.n2)*calcBar(P)*(Hm*100+emb+lapC(P)),cd:P,n1:pick.n1,n2:pick.n2,len:0};
-  for(const cd of [10,12.5,16,20,25].filter(x=>x<P&&x<=(Number(S.maxDia)||25)))
-   for(let n1=Math.max(3,pick.n1);n1<=nMaxOf(Math.max(cd,P));n1++)for(let n2=(n1<nMaxOf(P)?0:pick.n2);n2<=(n1<nMaxOf(P)?0:nMaxOf(P));n2++){
+  // V283 — mesma bitola em toda a camada tracionada: cantos e intermediárias com Ø do cálculo; só as intermediárias e a 2ª camada param na altura.
+  for(const cd of [P])
+   for(let n1=Math.max(3,pick.n1);n1<=nMaxOf(P);n1++)for(const n2 of (n1<nMaxOf(P)?[0]:[...new Set([pick.n2,0,2])])){if(n2===0&&n1===pick.n1&&pick.n2>0)continue;
     const t={...a,cornerDia:cd,soloN:n1-2,soloDia:P,soloN2:n2,soloDia2:P,cornerExtDia:pick.dc,extN:Math.max(0,pick.nc-2),extDia:pick.dc};let ok=true,need=0;
     for(const r of rs){const G=calcPillarGeom(t,r.h,cover,Number(N1.dia)||5),BN=calcBending(r.Md*100,r.b,G.d,G.dp,fcd,fyd);
      if(G.As<Math.max(BN.As,.0015*r.b*r.h)-1e-9||G.Asc<BN.Asc-1e-9){ok=false;break}
@@ -2843,7 +2845,7 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
     const w=2*calcBar(cd)*(Hm*100+emb+lapC(cd))+(n1-2+n2)*calcBar(P)*(len+emb+21);
     if(w<best.w-1e-9)best={w,cd,n1,n2,len}}
   if(best.len>0){a.cornerDia=best.cd;a.soloN=best.n1-2;a.soloN2=best.n2;a.soloLen=best.len;
-   msg.push(`economia na altura: cantos do tardoz 2Ø${String(best.cd).replace('.',',')} até o topo + reforço ${best.n1-2+best.n2}Ø${String(P).replace('.',',')} (descem no bloco e sobem ${best.len} cm)`)}
+   msg.push(`economia na altura: cantos do tardoz 2Ø${String(best.cd).replace('.',',')} até o topo + ${best.n1-2+best.n2}Ø${String(P).replace('.',',')} intermediárias${best.n2?' e 2ª camada':''} (mesma bitola; descem no bloco e sobem ${best.len} cm)`)}
   else a.soloLen=0;
  }
  // Estribos: mantém espaçamento ≥ 10 cm aumentando a bitola quando preciso.
@@ -3823,7 +3825,7 @@ function ceSectionSVG(sel){const a=pillarN2(),N1=pillarArms.N1,cov=Number(N1.cov
  // tardoz (topo): cantos + intermediárias
  bars.push([xL,yT,cT],[xR,yT,cT]);const sN=Number(a.soloN)||0;if(sN)row(sN+2,a.soloDia,yT,xL,xR),bars.splice(-(sN+2),1),bars.pop();
  // 2ª camada
- const n2=Number(a.soloN2)||0,d2=Number(a.soloDia2)||Number(a.soloDia)||10;if(n2){const y2=yT+cT/20+Math.max(2,cT/10,d2/10)+d2/20;row(n2,d2,y2,xL,xR)}
+ const n2=Number(a.soloN2)||0,d2=Number(a.soloDia2)||Number(a.soloDia)||10;if(n2){const y2=yT+cT/20+Math.max(2,cT/10,d2/10)+d2/20;if(n2===1)bars.push([xL,y2,d2]);else row(n2,d2,y2,xL,xR)}
  // face externa (baixo)
  const xLe=i0+cE/20,xRe=b-i0-cE/20;bars.push([xLe,yE,cE],[xRe,yE,cE]);const eN=Number(a.extN)||0;if(eN){const tmp=[];for(let k=1;k<=eN;k++)tmp.push([xLe+(xRe-xLe)*k/(eN+1),yE,a.extDia]);bars.push(...tmp)}
  // laterais
