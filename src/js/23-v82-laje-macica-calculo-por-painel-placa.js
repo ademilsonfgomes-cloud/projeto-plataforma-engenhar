@@ -180,7 +180,8 @@ function slabItems(availW,availH){let A;try{A=designAll();}catch(e){console.erro
   const tw=Math.min(availW,170);for(const[t,html]of[['Quadro das lajes · '+D.sl.name,'<h3>Quadro das lajes · '+esc(D.sl.name)+'</h3>'+tableQuadro(D)],['Tabela de aço da laje · '+D.sl.name,'<h3>Tabela de aço da laje · '+esc(D.sl.name)+'</h3>'+tableAco(D)]])items.push({title:t,w:tw,h:measureHTML26(html,tw-4)+13,html,slab82:true,lv77:gi});}
  return items;}
 // escala das elevações: as paredes vêm de uma segunda montagem com a escala própria
-function elevScale(){const v=N($('plotElevScale82')?.value);return v>0?v:0;}
+// V140 — padrão 1:75 para as elevações (cabem mais paredes por folha A1); o campo continua editável (50 = mesma escala da planta)
+function elevScale(){const el=$('plotElevScale82'),v=N(el?.value);return v>0?v:(el&&String(el.value).trim()===''?75:0);}
 try{const cp=collectPlot26;collectPlot26=function(...a){const es=elevScale(),ps=N($('plotScale26')?.value);let d;
  if(es&&ps&&es!==ps){d=cp.apply(this,a);const keep=d.items.filter(q=>!/^Parede \d+/.test(q.title||''));const inp=$('plotScale26'),old=inp.value;let walls=[];try{inp.value=es;const d2=cp.apply(this,a);walls=d2.items.filter(q=>/^Parede \d+/.test(q.title||''));walls.forEach(q=>q.scale82=es);}finally{inp.value=old;}
   // mantém a ordem: plantas e demais quadros, paredes no lugar das originais
@@ -189,7 +190,7 @@ try{const cp=collectPlot26;collectPlot26=function(...a){const es=elevScale(),ps=
  try{const it=slabItems(d.availW,d.availH);if(it.length)d.items.push(...it);}catch(e){console.error('V82 pranchas de laje',e);}return d;};}catch(e){console.error('V82',e);}
 try{const sh=plotSheetHTML26;plotSheetHTML26=function(sheet,...a){let html=sh.call(this,sheet,...a);const es=elevScale();if(es&&sheet?.items?.some(q=>q.scale82))html=html.replace(/(<h3 class="plotItemTitle26">Parede [^<]*<\/h3><p class="drawingScale29">Escala 1:)(\d+(?:[.,]\d+)?)/g,'$1'+es);return html;};}catch(e){console.error('V82',e);}
 // campo na tela de pranchas e gravação junto com as configurações das pranchas
-{const ps=$('plotScale26');if(ps&&!$('plotElevScale82')){const lab=document.createElement('label');lab.innerHTML='Escala das elevações 1:<input id="plotElevScale82" type="number" min="1" max="1000" placeholder="igual">';lab.title='Só as elevações das paredes. Vazio = mesma escala da planta (ex.: 75 para caber mais elevações por prancha).';ps.closest('label').after(lab);}}
+{const ps=$('plotScale26');if(ps&&!$('plotElevScale82')){const lab=document.createElement('label');lab.innerHTML='Escala das elevações 1:<input id="plotElevScale82" type="number" min="1" max="1000" placeholder="75">';lab.title='Só as elevações das paredes. Padrão 1:75 (cabem mais elevações por folha). Para usar a mesma escala da planta, digite a escala da planta (ex.: 50).';ps.closest('label').after(lab);}}
 try{const pset=plotSettings26;plotSettings26=function(...a){const s=pset.apply(this,a);s.elevScale=elevScale()||null;return s;};const rps=restorePlotSettings26;restorePlotSettings26=function(...a){const r=rps.apply(this,a);try{const v=state.plot26?.elevScale;if($('plotElevScale82'))$('plotElevScale82').value=v||'';}catch{}return r;};}catch(e){console.error('V82',e);}
 try{const fp=plotFingerprint26;plotFingerprint26=function(...a){return fp.apply(this,a)+'|e'+elevScale()+'|l'+JSON.stringify(LD().S().cfg.slab82||{})+'|'+JSON.stringify(LD().S().lv)+JSON.stringify(LD().S().roof)+LD().S().items.length;};}catch{}
 
