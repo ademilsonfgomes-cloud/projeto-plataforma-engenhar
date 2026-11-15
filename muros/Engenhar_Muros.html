@@ -3558,7 +3558,8 @@ function calcReportHtml(){
  }finally{Object.assign(S,sv)}
  return calcReportShell(html);
 }
-function calcReportOpen(){const w=window.open('','_blank');if(!w){alert('Permita janelas pop-up para abrir a memória de cálculo.');return}w.document.open();w.document.write(calcReportHtml());w.document.close()}
+function calcReportOpen(){const w=window.open('','_blank');if(!w){alert('Permita janelas pop-up para abrir a memória de cálculo.');return}w.document.open();w.document.write(unitsHtml(calcReportHtml()));w.document.close()}
+function unitsHtml(h){if(unitsIsSI())return h;try{const d=new DOMParser().parseFromString(h,'text/html');unitsApply(d.body);const note=d.createElement('p');note.style.cssText='font:11px Arial;color:#555;margin:4px 0';note.textContent=`Unidades de apresentação: forças em ${calcUnits.f}, tensões em ${calcUnits.s==='kgf'?'kgf/cm²':'MPa'} (1 tf = 9,80665 kN). Os valores substituídos nas fórmulas e os gráficos estão em kN e MPa, unidades em que o cálculo é feito.`;d.body.insertBefore(note,d.body.firstChild);return '<!doctype html>'+d.documentElement.outerHTML}catch(e){return h}}
 // ---------- Lista de corte e dobra (V249) ----------
 // A partir da relação de aço de cada prancha: posição, elementos, bitola, quantidade, comprimento de corte,
 // forma esquemática e peso. Subtotais por folha e totais por bitola (com e sem 10% de perdas).
@@ -3868,6 +3869,37 @@ function ceBind(body){const d=body.querySelector('details.calc-edit');if(d)d.ont
  body.querySelectorAll('[data-cpmark]').forEach(a=>a.onclick=()=>{const m=a.dataset.cpmark,rs=calcPillar();ceCopySet.clear();if(m!=='none')for(const r of rs){if(r.id===ceSelId)continue;if(m==='all'||!(r.okM&&r.okV&&r.okRules&&r.okELS))ceCopySet.add(r.id)}const sc=$('calcResults').scrollTop;calcRender();$('calcResults').scrollTop=sc});
  body.querySelectorAll('[data-ce]').forEach(el=>el.onchange=()=>{const k=el.dataset.ce,err=calcEditSet(k,el.value);if(err){status(err);el.focus();return}
   try{draw()}catch(e){}const sc=$('calcResults')?.scrollTop;calcRender();if(sc!=null)$('calcResults').scrollTop=sc;status('Detalhamento atualizado pelo painel de cálculo.')})}
+// V279 — Unidades de exibição (o cálculo interno continua em kN e MPa): forças kN · tf · kgf; tensões MPa · kgf/cm².
+let calcUnits=(()=>{try{const u=JSON.parse(localStorage.getItem('engenharUnits')||'{}');return {f:['kN','tf','kgf'].includes(u.f)?u.f:'kN',s:['MPa','kgf'].includes(u.s)?u.s:'MPa'}}catch(e){return {f:'kN',s:'MPa'}}})();
+const UN_G=9.80665;
+function unitsMap(){const f=calcUnits.f,kF=f==='tf'?1/UN_G:f==='kgf'?1000/UN_G:1,dF=f==='kgf'?0:null,ks=calcUnits.s==='kgf'?1000/UN_G/100*10:1;
+ // [unidade SI, nova unidade, fator, casas]
+ return [['kN·m/m',`${f}·m/m`,kF,dF],['kN·m',`${f}·m`,kF,dF],['kN/m³',`${f}/m³`,kF,dF],['kN/m²',`${f}/m²`,kF,dF],['kPa',`${f}/m²`,kF,dF],['kN/m',`${f}/m`,kF,dF],['kN',f,kF,dF],['MPa',calcUnits.s==='kgf'?'kgf/cm²':'MPa',ks,calcUnits.s==='kgf'?1:null]].filter(x=>x[0]!==x[1])}
+function unitsIsSI(){return calcUnits.f==='kN'&&calcUnits.s==='MPa'}
+const UN_RE=/(kN·m\/m|kN·m|kN\/m³|kN\/m²|kN\/m|kN|kPa|MPa)(?![A-Za-z²³·\/])/;
+function unitsNum(txt,fac,dec){return txt.replace(/(^|[^\dØ,.])(-?\d+(?:,\d+)?)(?![\d,]*Ø)/g,(m,pre,n)=>{const v=Number(n.replace(',','.'))*fac,d0=(n.split(',')[1]||'').length,d=dec!=null?dec:Math.max(2,d0);return pre+v.toFixed(d).replace('.',',')})}
+function unitsText(t,skipNums){const M=unitsMap();if(!M.length)return t;
+ t=t.replace(new RegExp('(-?\\d+(?:,\\d+)?)(\\s*)'+UN_RE.source,'g'),(m,n,sp,u)=>{const r=M.find(x=>x[0]===u);if(!r)return m;const v=Number(n.replace(',','.'))*r[2],d0=(n.split(',')[1]||'').length,d=r[3]!=null?r[3]:Math.max(2,d0);return v.toFixed(d).replace('.',',')+sp+r[1]});
+ return t.replace(new RegExp(UN_RE.source,'g'),u=>{const r=M.find(x=>x[0]===u);return r?r[1]:u})}
+function unitsApply(root){if(!root||unitsIsSI())return;const M=unitsMap();
+ // 1) tabelas: unidade no cabeçalho → converte os números da coluna
+ root.querySelectorAll('table').forEach(tb=>{if(tb.closest('svg'))return;const hr=tb.querySelector('thead tr')||tb.querySelector('tr');if(!hr)return;const heads=[...hr.children];const cols=heads.map(h=>{const m=(h.textContent||'').match(UN_RE);return m?M.find(x=>x[0]===m[1]):null});if(!cols.some(Boolean))return;
+  tb.querySelectorAll('tbody tr').forEach(tr=>{if(tr===hr)return;[...tr.children].forEach((td,i)=>{const r=cols[i];if(!r||UN_RE.test(td.textContent||''))return;const w=document.createTreeWalker(td,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))n.nodeValue=unitsNum(n.nodeValue,r[2],r[3])})})});
+ // 2) textos: número + unidade convertidos; unidade sozinha renomeada (gráficos SVG ficam em kN/MPa, com eixos coerentes)
+ const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const list=[];let n;while((n=w.nextNode()))list.push(n);
+ for(const t of list){if(t.parentElement?.closest('style,script,input,select,textarea'))continue;const inSvg=!!t.parentElement?.closest('svg');const v=t.nodeValue;if(!UN_RE.test(v))continue;
+  t.nodeValue=inSvg?v.replace(new RegExp('(-?\\d+(?:,\\d+)?)(\\s*)'+UN_RE.source,'g'),(m)=>unitsText(m)):unitsText(v)}}
+const UN_KEYS={gamma:'kN/m³',gsat:'kN/m³',q:'kN/m²',c:'kPa',gAlv:'kN/m²',fck:'MPa'};
+function unitsFac(k){const u=UN_KEYS[k];if(!u)return 1;const r=unitsMap().find(x=>x[0]===u);return r?r[2]:1}
+function unitsIn(k,v){const f=unitsFac(k);return f===1?v:Number((v*f).toFixed(f>50?0:f>5?1:3))}
+function unitsOut(k,v){return v/unitsFac(k)}
+function unitsLabels(){document.querySelectorAll('#calcDialog .calc-in label').forEach(l=>{const tn=[...l.childNodes].find(x=>x.nodeType===3);if(!tn)return;if(l.dataset.orig==null)l.dataset.orig=tn.nodeValue;tn.nodeValue=unitsIsSI()?l.dataset.orig:unitsText(l.dataset.orig)});
+ const b=$('cUnits');if(b)b.textContent=`⚙ ${calcUnits.f} · ${calcUnits.s==='kgf'?'kgf/cm²':'MPa'}`;b.title='Unidades de trabalho (clique para trocar)'}
+function unitsOpen(){let pop=$('unitsPop');if(pop){pop.remove();return}pop=document.createElement('div');pop.id='unitsPop';
+ pop.innerHTML=`<b>Unidades de trabalho</b><label>Forças, momentos, cargas e pressões<select id="unF"><option value="kN">kN · kN·m · kN/m² (SI)</option><option value="tf">tf · tf·m · tf/m²</option><option value="kgf">kgf · kgf·m · kgf/m²</option></select></label><label>Tensões (fck, fyd, σ)<select id="unS"><option value="MPa">MPa</option><option value="kgf">kgf/cm²</option></select></label><small>O cálculo é feito em kN e MPa; muda só a exibição e o que você digita. 1 tf = 9,80665 kN. Desenhos continuam com cotas em cm e níveis em m.</small>`;
+ $('calcDialog').appendChild(pop);$('unF').value=calcUnits.f;$('unS').value=calcUnits.s;
+ const set=()=>{calcUnits={f:$('unF').value,s:$('unS').value};try{localStorage.setItem('engenharUnits',JSON.stringify(calcUnits))}catch(e){}for(const [id,k] of Object.entries(calcInputs))if($(id))$(id).value=unitsIn(k,calcSettings[k]);calcRender()};
+ $('unF').onchange=set;$('unS').onchange=set}
 function calcRender(){
  const S=calcSettings,body=$('calcResults');if(!body)return;if($('cCalcAll'))$('cCalcAll').style.display=S.useCalc?'':'none';
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
@@ -3875,7 +3907,7 @@ function calcRender(){
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
  body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
- ceBind(body);
+ ceBind(body);unitsApply(body);unitsLabels();
  if($('cSug'))$('cSug').onclick=calcSuggest;body.querySelectorAll('[data-sug]').forEach(b=>b.onclick=()=>calcSugUse(Number(b.dataset.sug)));if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
  if($('cOptRun'))$('cOptRun').onclick=()=>{$('cOptRun').textContent='Calculando…';setTimeout(calcOptRun,30)};
  if($('cOptR'))$('cOptR').onchange=()=>{calcSettings.optR=Number($('cOptR').value)||0;if(calcOptResult){calcOptResult.ok.forEach(r=>r.idx=r.steel+calcSettings.optR*r.conc);calcOptResult.ok.sort((a,b)=>a.idx-b.idx)}calcRender()};
@@ -3887,7 +3919,7 @@ function calcOpen(){
  if(!dlg){
   dlg=document.createElement('dialog');dlg.id='calcDialog';
   dlg.innerHTML=`<div class="calc-head"><strong title="Cálculo do muro de arrimo">Σ CÁLCULO</strong><nav class="calc-tabs"><button data-tab="empuxo">Empuxo</button><button data-tab="fundacao">Fundação</button><button data-tab="pilar">Pilar</button><button data-tab="viga">Viga</button><button data-tab="resumo">Resumo</button><button data-tab="quant">Quantitativo</button><button data-tab="opt">Otimizar</button></nav>
-  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="cCalcAll" title="Dimensiona pilares, fundações, blocos e vigas e grava tudo no detalhamento" style="background:#e67e22;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">⚡ Calcular tudo</button><button id="calcReport" title="Memória de cálculo completa para imprimir ou salvar em PDF" style="background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Memória (PDF)</button><button id="calcCut" title="Lista de corte e dobra para a armação" style="background:#24506f;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Corte e dobra</button><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
+  <label class="calc-mode">Modo <select id="cUse"><option value="0">Só detalhamento (cálculo = conferência)</option><option value="1">Com cálculo do programa</option></select></label><button id="cCalcAll" title="Dimensiona pilares, fundações, blocos e vigas e grava tudo no detalhamento" style="background:#e67e22;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">⚡ Calcular tudo</button><button id="calcReport" title="Memória de cálculo completa para imprimir ou salvar em PDF" style="background:#2e8b57;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Memória (PDF)</button><button id="calcCut" title="Lista de corte e dobra para a armação" style="background:#24506f;color:#fff;border:0;border-radius:5px;padding:6px 12px;font-weight:bold;cursor:pointer">Corte e dobra</button><button id="cUnits" title="Escolher as unidades de trabalho" style="background:#24506f;color:#dcebf7;border:1px solid #4f7f9f;border-radius:5px;padding:4px 8px;font-size:11px;cursor:pointer">⚙ Unidades</button><button id="calcClose" title="Fechar e voltar ao detalhamento">✕</button></div>
   <div id="calcBody"><div class="calc-in">
    <label data-for="all" style="flex:2;min-width:230px">Modelo de premissas<span style="display:flex;gap:4px;min-width:0"><select id="cPreset" style="flex:1;min-width:0;width:100%"></select><button type="button" id="cPresetSave" title="Salvar as premissas atuais como modelo" style="height:28px;border:1px solid #b5c9da;border-radius:4px;background:#fff;cursor:pointer">💾</button></span></label>
    <label data-for="all">Arrimo<select id="cWall"></select></label>
@@ -3921,7 +3953,8 @@ function calcOpen(){
   document.body.appendChild(dlg);
   $('calcClose').onclick=()=>dlg.close();$('calcReport').onclick=calcReportOpen;$('calcCut').onclick=cutListOpen;
   dlg.querySelectorAll('.calc-tabs button[data-tab]').forEach(b=>b.onclick=()=>{calcSettings.tab=b.dataset.tab;calcSettings.sel=null;calcRender()});
-  for(const [id,k] of Object.entries(calcInputs))$(id).oninput=()=>{const v=Number($(id).value);if(Number.isFinite(v)&&$(id).value!==''){calcSettings[k]=v;calcRender()}};
+  for(const [id,k] of Object.entries(calcInputs))$(id).oninput=()=>{const v=Number($(id).value);if(Number.isFinite(v)&&$(id).value!==''){calcSettings[k]=unitsOut(k,v);calcRender()}};
+  $('cUnits').onclick=unitsOpen;
   $('cMode').onchange=()=>{calcSettings.mode=$('cMode').value;calcRender()};
   $('cMid').onchange=()=>{elevationSettings.mid=Number($('cMid').value);if(elevationSettings.mid>0)elevationEnabled=true;calcSettings.sel=null;try{draw()}catch(e){}calcRender()};
   $('cWater').oninput=()=>{calcSettings.water=$('cWater').value.trim();calcRender()};
@@ -3940,7 +3973,7 @@ function calcOpen(){
  $('cPreset').innerHTML=calcPresetOptions();
  $('cWall').innerHTML='<option value="all">Todos</option>'+wallSegments.map((_,i)=>`<option value="${i}">Arrimo ${i+1}</option>`).join('');
  if(S.wall!=='all'&&!(Number(S.wall)<wallSegments.length))S.wall='all';
- $('cWall').value=S.wall;for(const [id,k] of Object.entries(calcInputs))$(id).value=S[k];$('cMode').value=S.mode;$('cFront').value=S.useFront?'1':'0';$('cVbSoil').value=S.vbSoil===false?'0':'1';$('cAlv').value=S.alvModel;$('cSpt').value=S.spt||'';$('cWater').value=S.water||'';$('cSoil').value=S.soil;$('cMid').value=String(Math.min(3,Math.max(0,Math.round(elevationSettings.mid)||0)));$('cMaxDia').value=String(S.maxDia);$('cUse').value=S.useCalc?'1':'0';
+ $('cWall').value=S.wall;for(const [id,k] of Object.entries(calcInputs))$(id).value=unitsIn(k,S[k]);$('cMode').value=S.mode;$('cFront').value=S.useFront?'1':'0';$('cVbSoil').value=S.vbSoil===false?'0':'1';$('cAlv').value=S.alvModel;$('cSpt').value=S.spt||'';$('cWater').value=S.water||'';$('cSoil').value=S.soil;$('cMid').value=String(Math.min(3,Math.max(0,Math.round(elevationSettings.mid)||0)));$('cMaxDia').value=String(S.maxDia);$('cUse').value=S.useCalc?'1':'0';
  calcRender();if(!dlg.open)dlg.showModal();
 }
 (()=>{const css=document.createElement('style');css.textContent=`
@@ -3948,7 +3981,7 @@ function calcOpen(){
 #calcDialog::backdrop{background:#0008}
 .calc-head{display:flex;align-items:center;gap:16px;background:#173a55;color:#fff;padding:8px 14px;position:sticky;top:0;z-index:2;flex-wrap:wrap}
 .calc-tabs{display:flex;gap:4px;flex:1}.calc-tabs button{background:#24506f;color:#dcebf7;border:0;border-radius:5px 5px 0 0;padding:6px 10px;font-size:12px;cursor:pointer}
-#cUse{max-width:175px}.calc-head{padding-right:40px!important}#calcClose{position:absolute;right:8px;top:8px}.calc-tabs button{padding:6px 8px!important}#calcDialog .calc-head button{padding:6px 9px!important;font-size:12px}.calc-head{gap:10px!important}
+#cUse{max-width:175px}.calc-head{padding-right:40px!important}#calcClose{position:absolute;right:8px;top:8px}#cUnits{position:absolute;right:38px;top:10px}.calc-head{padding-right:165px!important}#unitsPop{position:absolute;right:10px;top:46px;z-index:9;background:#fff;border:1px solid #6a9aba;border-radius:8px;box-shadow:0 8px 30px #0005;padding:10px 12px;display:flex;flex-direction:column;gap:7px;width:290px;font-size:12px;color:#173a55}#unitsPop label{display:flex;flex-direction:column;gap:3px;font-size:11px}#unitsPop select{height:26px}#unitsPop small{color:#5b6b76;line-height:1.35}.calc-tabs button{padding:6px 8px!important}#calcDialog .calc-head button{padding:6px 9px!important;font-size:12px}.calc-head{gap:10px!important}
 .calc-tabs button.on{background:#eaf3fa;color:#173a55;font-weight:bold}.calc-tabs button:disabled{opacity:.45;cursor:default}
 .calc-mode{font-size:11px;display:flex;align-items:center;gap:6px}.calc-mode select{height:26px;border-radius:4px;border:0;padding:2px 6px;font-size:12px}
 #calcClose{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
