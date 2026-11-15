@@ -221,11 +221,11 @@ function setActiveEditor(target){
  $('tubuloRibbon').style.display=target==='tubulo'?'flex':'none';
  $('blockRibbon').style.display=target==='bloco'?'flex':'none';
  $('wallRibbon').style.display=target==='muro'?'flex':'none';
- $('editTubulo').classList.toggle('active',target==='tubulo');
+ $('editTubulo').classList.toggle('active',target==='tubulo'||target==='bloco');
  $('editBloco').classList.toggle('active',target==='bloco');
  $('editMuro').classList.toggle('active',target==='muro');
 }
-$('editTubulo').onclick=()=>setActiveEditor('tubulo');
+$('editTubulo').onclick=()=>{const t=activeEditor==='tubulo'?'bloco':'tubulo';setActiveEditor(t);status(t==='tubulo'?'Fundação — tubulão/estaca (tipo T1). Clique de novo em Fundação para o bloco de coroamento.':'Fundação — bloco de coroamento (tipo B1). Clique de novo em Fundação para o tubulão/estaca.')};
 $('editBloco').onclick=()=>setActiveEditor('bloco');
 $('editMuro').onclick=()=>{setActiveEditor('muro');focusWall()};
 $('sidePlanta').onclick=()=>{setActiveEditor('muro');focusWall()};
@@ -4035,7 +4035,11 @@ function calcOpen(){
 .calc-h{margin:12px 0 5px;font-size:12px}
 .calc-hint{font-size:10px;color:#4c6271;margin:4px 0}
 .calc-mem{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:10px;font:12px/1.55 Consolas,monospace;white-space:pre-wrap;margin-top:12px}`;document.head.appendChild(css);
- const aside=document.querySelector('aside'),b=document.createElement('button');b.id='sideCalc';b.type='button';b.title='Calcular / dimensionar — abre o painel de cálculo';b.innerHTML='Σ<br>Calcular';b.onclick=calcOpen;aside.insertBefore(b,$('sideSteel').nextSibling);
+ const aside=document.querySelector('aside'),b=document.createElement('button');b.id='sideCalc';b.type='button';b.title='Calcular / dimensionar — abre o painel de cálculo';b.innerHTML='Σ<br>Calcular';b.onclick=calcOpen;aside.insertBefore(b,aside.firstChild);
+ // V284 — barra lateral enxuta: o painel Σ concentra cálculo e edição; ficam Arrimos, Fundação, Elevações e Pranchas.
+ for(const id of ['sidePlanta','sidePilares','sideVigas','sideSteel','editBloco'])if($(id))$(id).style.display='none';
+ $('editTubulo').innerHTML='♙<br>Fundação';$('editTubulo').title='Tubulão/estaca e bloco: dados de detalhe (clique de novo para alternar)';
+ for(const x of document.querySelectorAll('header .nav button'))if(['Arquivo','Planta','Resultados'].includes(x.textContent.trim()))x.style.display='none';
  const nav=[...document.querySelectorAll('header .nav button')].find(x=>x.textContent.trim()==='Cálculo');if(nav)nav.onclick=calcOpen;
 })();
 </script></body></html>
