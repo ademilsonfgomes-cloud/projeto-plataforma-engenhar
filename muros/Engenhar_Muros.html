@@ -3004,7 +3004,7 @@ ${r.cut?`   Complementares do tardoz (descem na fundação, sem espera) até ${r
 Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados), engaste no topo da VB, γc = ${calcFmt(S.gc,2)}, γs = ${calcFmt(S.gs,2)}.`;
  return `<div class="calc-k">Armadura detalhada no tardoz: <b>${(()=>{const v=rs.map(x=>x.AsDet),lo=Math.min(...v),hi=Math.max(...v);return hi-lo>1e-6?calcFmt(lo)+' a '+calcFmt(hi):calcFmt(lo)})()} cm²</b> · maior As,nec: <b>${calcFmt(Math.max(...rs.map(x=>x.AsReq).filter(Number.isFinite)))} cm²</b> (${crit.id}) · ${rs.every(x=>x.okM&&x.okV)?'<span class="c-ok">todos os pilares passam</span>':'<span class="c-no">há pilar que não passa</span>'}
  ${S.useCalc?'<button class="c-apply" id="cApplyP">Aplicar armadura ao detalhamento</button>':''}</div>
- ${(()=>{const env=calcPillarEnvelope(sel);return `<div class="pil-top"><div>${ceEditPilar(sel,rs)}${env?`<div class="pil-ut"><b>Aproveitamento ${sel.id}: <span style="color:${utilColor(env.main[1])}">${Number.isFinite(env.main[1])?calcFmt(env.main[1]*100,0):"—"}% (${utilText(env.main[1])})</span></b>${utilBarsHTML(env,true)}</div>`:''}</div><div class="pil-side">${env?envSVG(env,"Área de aço necessária × detalhada — "+sel.id):''}</div></div>`})()}
+ ${(()=>{const env=calcPillarEnvelope(sel);return `<div class="pil-top"><div>${ceEditPilar(sel,rs)}${env?`<div class="pil-ut"><b>Aproveitamento ${sel.id}: <span style="color:${utilColor(env.main[1])}">${Number.isFinite(env.main[1])?calcFmt(env.main[1]*100,0):"—"}% (${utilText(env.main[1])})</span></b>${utilBarsHTML(env,true)}</div>`:''}</div><div class="pil-side">${env?envSVG(env,"Área de aço necessária × detalhada — "+sel.id,true)+ceEnvOptsHTML(sel):''}</div></div>`})()}
 
  <div style="overflow:auto"><table class="calc-t pil-t"><thead><tr><th>Pilar</th><th>Arrimo</th><th>Seção (cm)</th><th>Md (kN·m)</th><th>x/d</th><th>As nec (cm²)</th><th>As det (cm²)</th><th>Flexão</th><th>Vd (kN)</th><th>VRd2 (kN)</th><th>Asw/s nec (cm²/m)</th><th>Asw/s det (cm²/m)</th><th>Cisalh.</th><th title="Regras construtivas NBR 6118 18.4 (armadura mín./máx., espaçamentos, estribo)">Regras</th><th title="Flecha no topo e fissuração">ELS</th></tr></thead><tbody>${tr}</tbody></table></div><p class="calc-hint" style="margin:2px 0 6px">★ = pilar crítico (maior relação As,nec / As,det); vermelho com ✗ = não passa em alguma verificação.</p>
  <pre class="calc-mem">${mem}</pre>${(()=>{
@@ -3772,12 +3772,12 @@ function calcPillarEnvelope0(r){
  const items=[['Flexão (tardoz)',util,zc],['Cisalhamento',uV,0]];
  if(r.els){items.push(['Flecha no topo',r.els.dTot/r.els.lim,H]);items.push(['Fissuração',r.els.wk/r.els.wlim,0])}
  const main=items.reduce((x,y)=>y[1]>x[1]?y:x);
- return {pts,H,util,zc,uV,items,main,AsMin:.004*r.b*r.h};
+ return {pts,H,util,zc,uV,items,main,AsMin:.004*r.b*r.h,Abase:Acor+Acomp,Acor,len};
 }
 const utilColor=u=>u>1+1e-9?'#c0392b':u>=.8?'#1e7d3c':u>=.5?'#2d6a9a':'#d68910';
 const utilText=u=>u>1+1e-9?'NÃO PASSA':u>=.8?'bem dimensionado':u>=.5?'com folga':'folga excessiva';
 // Gráfico As(z) em SVG (aba Pilar e memória).
-function envSVG(env,title){
+function envSVG(env,title,inter){
  const W=300,Hh=320,ml=40,mr=16,mt=40,mb=46,pw=W-ml-mr,ph=Hh-mt-mb,Amax=Math.max(1,...env.pts.map(p=>Math.max(p.Anec,p.Adet)))*1.1;
  const X=v=>ml+v/Amax*pw,Y=z=>mt+ph-(z/env.H)*ph;
  let s=`<svg viewBox="0 0 ${W} ${Hh}" class="plot" style="max-width:${W}px;background:#fff;border:1px solid #b5c9da;border-radius:6px"><text x="${W/2}" y="15" text-anchor="middle" font-size="11" font-weight="bold" fill="#173a55">${title}</text><text x="${W/2}" y="28" text-anchor="middle" font-size="8.5" fill="#556">área de aço no tardoz (cm²) × altura acima da VB (m)</text>`;
@@ -3790,8 +3790,36 @@ function envSVG(env,title){
  s+=`<polyline points="${env.pts.map(p=>`${X(p.Adet).toFixed(1)},${Y(p.z).toFixed(1)}`).join(' ')}" fill="none" stroke="#1d5fa8" stroke-width="2.4"/>`;
  s+=`<line x1="${X(env.AsMin)}" y1="${mt}" x2="${X(env.AsMin)}" y2="${mt+ph}" stroke="#888" stroke-dasharray="3 3"/>`;
  s+=`<g font-size="8.5"><line x1="${ml}" y1="${Hh-18}" x2="${ml+16}" y2="${Hh-18}" stroke="#c0392b" stroke-width="2"/><text x="${ml+20}" y="${Hh-15}">As,nec</text><line x1="${ml+70}" y1="${Hh-18}" x2="${ml+86}" y2="${Hh-18}" stroke="#1d5fa8" stroke-width="2.4"/><text x="${ml+90}" y="${Hh-15}">As,det</text><line x1="${ml+140}" y1="${Hh-18}" x2="${ml+156}" y2="${Hh-18}" stroke="#888" stroke-dasharray="3 3"/><text x="${ml+160}" y="${Hh-15}">0,4% Ac (seção)</text></g>`;
+   if(inter){const xb=X(env.Abase),yl=env.len>0?Y(env.len):Y(env.H);
+  s+=`<rect data-envh="as" x="${xb-7}" y="${yl}" width="14" height="${Y(0)-yl}" fill="#1d5fa8" fill-opacity=".08" style="cursor:ew-resize"><title>Arraste para os lados: aço do tardoz</title></rect>`;
+  if(env.Abase>env.Acor+1e-6||env.len>0)s+=`<circle data-envh="len" cx="${env.len>0?X(env.Acor):xb}" cy="${yl}" r="6" fill="#1d5fa8" stroke="#fff" stroke-width="1.5" style="cursor:ns-resize"><title>Arraste para cima/baixo: até onde sobem as barras complementares</title></circle>`;
+  s+=`<line id="envPrev" x1="0" y1="0" x2="0" y2="0" stroke="#e67e22" stroke-width="2.4" stroke-dasharray="5 3" visibility="hidden"/><text id="envPrevT" x="${ml+4}" y="${mt-4}" font-size="9.5" font-weight="bold" fill="#e67e22"></text>`;
+  s=s.replace('<svg ',`<svg id="envChart" data-ml="${ml}" data-pw="${pw}" data-amax="${Amax}" data-mt="${mt}" data-ph="${ph}" data-h="${env.H}" `)}
  return s+'</svg>';
 }
+// V288 — Gráfico de área de aço interativo: combinações de barras (mesma bitola na camada, 2ª camada em par) que cabem na face.
+function ceArrOptions(b,maxD){const a=pillarArms.N1,cover=Number(a.cover)||3,st=(Number(a.dia)||5)/10,bw=b-2*cover-2*st,out=[];
+ for(const dia of [10,12.5,16,20,25].filter(x=>x<=(maxD||25))){const sm=Math.max(2,dia/10,2.28),nMax=Math.floor((bw+sm)/(dia/10+sm));if(nMax<2)continue;
+  for(let n1=2;n1<=nMax;n1++)out.push({dia,n1,n2:0,As:n1*calcBar(dia)});out.push({dia,n1:nMax,n2:2,As:(nMax+2)*calcBar(dia)})}
+ return out.sort((p,q)=>p.As-q.As||(p.n1+p.n2)-(q.n1+q.n2))}
+function ceArrCheck(o,sel){try{const S=calcSettings,a=withPillarArms(pillarArmsFor(sel.id),()=>({...pillarN2()})),N1=pillarArmsFor(sel.id).N1,cover=Number(N1.cover)||3,fcd=S.fck/S.gc/10,fyd=S.fyk/S.gs/10;const G=calcPillarGeom({...a,cornerDia:o.dia,soloDia:o.dia,soloN:o.n1-2,soloN2:o.n2,soloDia2:o.dia},sel.h,cover,Number(N1.dia)||5),BN=calcBending(sel.Md*100,sel.b,G.d,G.dp,fcd,fyd),need=Math.max(BN.As,.0015*sel.b*sel.h);return {ok:Number.isFinite(need)&&G.As>=need-1e-9&&!(BN.Asc>G.Asc+1e-9),need}}catch(e){return {ok:false,need:NaN}}}
+function ceArrLabel(o){return `${o.n1}Ø${ceDia(o.dia)}${o.n2?` + ${o.n2}Ø${ceDia(o.dia)} (2ª cam.)`:''} = ${calcFmt(o.As)} cm²`}
+function ceArrApply(o){for(const [f,v] of [['cornerDia',o.dia],['soloDia',o.dia],['soloDia2',o.dia],['soloN',o.n1-2],['soloN2',o.n2]])cePillarSet('N2',f,v);if(o.n1===2&&!o.n2)cePillarSet('N2','soloLen',0)}
+function ceEnvBind(body){const sv=body.querySelector('#envChart');if(!sv)return;const ml=+sv.dataset.ml,pw=+sv.dataset.pw,Am=+sv.dataset.amax,mt=+sv.dataset.mt,ph=+sv.dataset.ph,H=+sv.dataset.h;
+ const rs=calcPillar(),sel=rs.find(r=>r.id===ceSelId)||rs[0],opts=ceArrOptions(sel.b,Number(calcSettings.maxDia)||25),pv=sv.querySelector('#envPrev'),pt=sv.querySelector('#envPrevT');
+ const loc=e=>{const p=sv.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(sv.getScreenCTM().inverse())};
+ const pickAs=T=>opts.find(o=>o.As>=T-1e-9)||opts[opts.length-1];
+ let drag=null;
+ sv.querySelectorAll('[data-envh]').forEach(h=>h.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();drag={kind:h.dataset.envh};sv.setPointerCapture(e.pointerId)}));
+ sv.addEventListener('pointermove',e=>{if(!drag)return;const p=loc(e);pv.setAttribute('visibility','visible');
+  if(drag.kind==='as'){const T=Math.max(0,(p.x-ml)/pw*Am),o=pickAs(T);drag.o=o;const x=ml+Math.min(1,o.As/Am)*pw;pv.setAttribute('x1',x);pv.setAttribute('x2',x);pv.setAttribute('y1',mt);pv.setAttribute('y2',mt+ph);{const ck=ceArrCheck(o,sel);pt.textContent=ceArrLabel(o)+(ck.ok?' ✓ atende':' ✗ precisa '+calcFmt(ck.need)+' cm²')}}
+  else{let z=Math.max(0,Math.min(H,(mt+ph-p.y)/ph*H)),cm=Math.round(z*10)*10;if(cm>=Math.round(H*100)-10)cm=0;drag.len=cm;const y=mt+ph-(cm?cm/100:H)/H*ph;pv.setAttribute('x1',ml);pv.setAttribute('x2',ml+pw);pv.setAttribute('y1',y);pv.setAttribute('y2',y);pt.textContent=cm?`complementares sobem ${cm} cm acima da VB`:'complementares até o topo (altura toda)'}});
+ sv.addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;if(d.kind==='as'&&d.o)ceArrApply(d.o);else if(d.kind==='len'&&d.len!=null)cePillarSet('N2','soloLen',d.len);else return;ceAfter('Armadura do tardoz ajustada pelo gráfico.')});
+ body.querySelectorAll('[data-envopt]').forEach(bn=>bn.onclick=()=>{const o=opts[Number(bn.dataset.envopt)];if(o){ceArrApply(o);ceAfter('Armadura do tardoz: '+ceArrLabel(o))}})}
+function ceEnvOptsHTML(sel){const opts=ceArrOptions(sel.b,Number(calcSettings.maxDia)||25),T=sel.AsReq,seen=new Set(),list=[];
+ for(const [i,o] of opts.entries()){if(!(o.As>=T*0.9)||!ceArrCheck(o,sel).ok)continue;const k=o.dia+'|'+o.n2;if(seen.has(k))continue;seen.add(k);list.push([i,o]);if(list.length>=5)break}
+ if(!Number.isFinite(T))return '';
+ return `<div class="env-opts"><b>Combinações para As,nec = ${calcFmt(T)} cm²</b>${list.length?list.map(([i,o])=>`<button class="ce-q" data-envopt="${i}" title="Aplicar no tardoz">${ceArrLabel(o)}</button>`).join(''):'<span style="color:#b0281a">nenhuma cabe na face — aumente a seção ou a bitola máxima</span>'}<small>Arraste a linha azul (◀ ▶) ou a bolinha (▲ ▼) no gráfico.</small></div>`}
 function utilBarsHTML(env,compact){
  if(compact)return `<table class="calc-t pil-t" style="margin-top:3px"><tbody>${env.items.map(([t,u])=>`<tr><td style="text-align:left">${t}</td><td><b style="color:${utilColor(u)}">${Number.isFinite(u)?calcFmt(u*100,0)+'%':'—'}</b></td><td style="text-align:left;width:40%"><div style="height:8px;background:#e6edf2;border-radius:4px;overflow:hidden"><div style="height:8px;width:${Math.min(100,(Number.isFinite(u)?u:1.5)*66.7)}%;background:${utilColor(u)}"></div></div></td></tr>`).join('')}</tbody></table>`;
  return `<table class="calc-t" style="max-width:520px"><thead><tr><th style="text-align:left">Verificação</th><th>Aproveitamento</th><th style="width:45%"></th></tr></thead><tbody>${env.items.map(([t,u])=>`<tr><td style="text-align:left">${t}</td><td><b style="color:${utilColor(u)}">${Number.isFinite(u)?calcFmt(u*100,0)+'%':'—'}</b></td><td style="text-align:left"><div style="height:10px;background:#e6edf2;border-radius:5px;overflow:hidden"><div style="height:10px;width:${Math.min(100,(Number.isFinite(u)?u:1.5)*66.7)}%;background:${utilColor(u)}"></div></div></td></tr>`).join('')}</tbody></table><p class="calc-hint">Barra: 66,7% da largura = 100% de aproveitamento. Acima de 100% não passa · 80–100% bem dimensionado · 50–80% com folga · abaixo de 50% folga excessiva.</p>`;
@@ -3946,7 +3974,7 @@ function calcRender(){
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
  body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
- ceBind(body);unitsApply(body);unitsLabels();
+ ceBind(body);ceEnvBind(body);unitsApply(body);unitsLabels();
  if($('cSug'))$('cSug').onclick=calcSuggest;body.querySelectorAll('[data-sug]').forEach(b=>b.onclick=()=>calcSugUse(Number(b.dataset.sug)));if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
  if($('cOptRun'))$('cOptRun').onclick=()=>{$('cOptRun').textContent='Calculando…';setTimeout(calcOptRun,30)};
  if($('cOptR'))$('cOptR').onchange=()=>{calcSettings.optR=Number($('cOptR').value)||0;if(calcOptResult){calcOptResult.ok.forEach(r=>r.idx=r.steel+calcSettings.optR*r.conc);calcOptResult.ok.sort((a,b)=>a.idx-b.idx)}calcRender()};
@@ -4028,7 +4056,7 @@ function calcOpen(){
 .calc-in label{display:flex;flex-direction:column;gap:2px;font-size:10px;min-width:95px;max-width:190px;flex:1 1 95px}.calc-in input,.calc-in select{height:24px;border:1px solid #b5c9da;border-radius:4px;padding:3px 6px;font-size:12px}
 .calc-k{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ce-pick{background:#fff;border:2px solid;border-radius:5px;padding:3px 8px;font-weight:bold;cursor:pointer;font-size:12px}.ce-pick.on{background:#173a55;color:#fff!important}.ce-q{background:#fff;border:1px solid #c9a24c;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:11px;color:#5a3a00}.ce-q:hover{background:#ffe9b8}
-.pil-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:stretch;margin-bottom:8px}.pil-side{display:flex;flex-direction:column}.pil-side svg{max-width:300px!important;width:100%;height:auto;max-height:330px}.pil-ut{font-size:11px;margin-top:6px}.pil-ut .pil-t td:first-child{text-align:left}
+.pil-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:stretch;margin-bottom:8px}.pil-side{display:flex;flex-direction:column}.pil-side svg{max-width:300px!important;width:100%;height:auto;max-height:330px}.pil-ut{font-size:11px;margin-top:6px}.env-opts{display:flex;flex-direction:column;gap:3px;margin-top:5px;font-size:11px}.env-opts .ce-q{text-align:left;padding:3px 7px;font-size:11px}.env-opts small{color:#5b6b76}.pil-ut .pil-t td:first-child{text-align:left}
 .pil-t th,.pil-t td{padding:2px 5px!important;font-size:11px}
 .ce-c{padding:8px 10px!important}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;margin-top:6px}.ce-sec{background:#fff;border:1px solid #e0c78a;border-radius:6px;padding:4px}.ce-sec-svg{width:100%;height:auto;display:block}
 .ce-copy{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;background:#fff;border:1px dashed #c9a24c;border-radius:5px;padding:5px 8px;margin-top:5px;font-size:11px}.ce-copy label{font-weight:bold;cursor:pointer;display:inline-flex;align-items:center;gap:2px}.ce-copy-a a{color:#1d5fa8;cursor:pointer;text-decoration:underline}
