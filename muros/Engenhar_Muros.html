@@ -2796,6 +2796,12 @@ function calcApplyFoundation(){
   // Comprimento da armadura: cobre a zona de momento (f + 60 cm) e o mínimo armado da estaca; nunca maior que a estaca.
   const dep=Number(foundationValues('pile',code).depth)||0,isE=Number(v.pileKind)===1,want=Math.min(dep,Math.max(isE?(Number(calcSettings.minArm)||0)*100:0,Math.ceil(((flen.get(code)||0)+.6)*10)*10,100));
   if(want!==Number(v.barLen)){msg.push(`${code} armadura do fuste: C ${v.barLen} → ${want} cm`);calcSetPile(code,'barLen',want)}}
+ // V285 — Estribo do fuste pelo cisalhamento (seção retangular equivalente): menor Asw/s que atende, Ø6,3 a Ø12,5, c/10 a c/20.
+ {const FR2=calcFoundation(),byC=new Map();for(const r of FR2){const o=byC.get(r.code);if(!o||r.H>o.H)byC.set(r.code,r)}
+  for(const [code,r] of byC){const v=foundationValues('pile',code),D=r.D*100;let best=null;
+   for(const st of [6.3,8,10,12.5])for(const sp of [20,15,12.5,10]){const sh=calcShear(calcSettings.gf*r.H,D,.72*D,st,sp,2,true);if(!sh.ok)continue;const A=calcBar(st)/sp;if(!best||A<best.A-1e-9)best={st,sp,A}}
+   if(!best){msg.push(`${code} fuste: cisalhamento não atende nem com Ø12,5 c/10 — aumente o diâmetro`);continue}
+   if(best.st!==Number(v.stDia)||best.sp!==Number(v.spacing)){msg.push(`${code} estribo do fuste: Ø${v.stDia} c/${v.spacing} → Ø${String(best.st).replace('.',',')} c/${String(best.sp).replace('.',',')}`);calcSetPile(code,'stDia',best.st);calcSetPile(code,'spacing',best.sp)}}}
  draw();calcApplyBlock(msg);draw();calcRender();status(msg.length?'Fundação: '+msg.join(' · '):'Fundação já atende ao cálculo.');
 }
 function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).length){pillarArmsBy={};prev.push('armaduras individuais dos pilares substituídas pela do cálculo')}
