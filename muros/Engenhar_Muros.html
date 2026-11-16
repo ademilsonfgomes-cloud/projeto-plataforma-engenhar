@@ -1264,11 +1264,12 @@ function drawPillarDetails(parent){
   const ln=(x1,y1,x2,y2,c=ink,w=1,attrs={})=>line(x1,y1,x2,y2,c,w,g,attrs);
   const rect=(x,y,w,h,fill,stroke=ink)=>el('rect',{x,y,width:w,height:h,fill,stroke,'stroke-width':1},g);
   const cover=pillarArms.N1.cover;
+  const HR=Math.max(1,unitFor(detailScale[code]||25)/unitFor(25)),hY=y=>25+(y-25)*HR;
   txt(12,25,`PILARES ${idRange([...v.ids])} — ${v.variable?'DETALHE TÍPICO (ALTURA VARIÁVEL — VER QUADRO)':'DETALHAMENTO'} · ${v.count} UN.`,17,gold,{'font-weight':'bold','data-role':'title'});
-  txt(12,47,'',10,'#a9c7da',{'data-scale-label':'SEÇÃO E ESTRIBO ESC. 1:{s2} · VISTAS ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m'});
+  txt(12,hY(47),'',10,'#a9c7da',{'data-scale-label':'SEÇÃO E ESTRIBO ESC. 1:{s2} · VISTAS ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m'});
   // Seção transversal ampliada 2,5× em relação às vistas (ex.: vistas 1:25 → seção 1:10).
-  const factor=1.95,sw=v.a*factor,sh=v.b*factor,sx=40,sy=110;
-  txt(sx-12,74,'SEÇÃO TRANSVERSAL',12,cyan,{'font-weight':'bold'});
+  const factor=1.95,sw=v.a*factor,sh=v.b*factor,sx=40,sy=hY(110);
+  txt(sx-12,hY(74),'SEÇÃO TRANSVERSAL',12,cyan,{'font-weight':'bold'});
   rect(sx,sy,sw,sh,'#334657');
   const ci=cover*factor;
   rect(sx+ci,sy+ci,Math.max(4,sw-2*ci),Math.max(4,sh-2*ci),'none',blue);
@@ -1328,10 +1329,10 @@ function drawPillarDetails(parent){
   {const cg=groups.find(g=>g.len);if(cg){ty+=6.5*PL;txt(sx-12,ty,`COMPL.: descem no bloco e sobem ${cg.len} cm (sem espera)`,9,ink,{'data-pt':'1','font-size':(2.5/CAP*PL).toFixed(2)})}}
   if(crowd.length){ty+=6.5*PL;txt(sx-12,ty,`ATENÇÃO: espaço livre entre barras < 2 cm na(s) face(s) ${crowd.join(', ')}`,9,'#ff7777')}
   // Vistas em escala real do desenho (0,78 unidade por cm), com nível +0,00 no topo do bloco.
-  const sc=.78,colX=Math.max(sx+sw+120,sx+ew+120),top=110,drawH=v.height*sc,bottom=top+drawH;
-  const wH=v.b*sc,wB=v.a*sc,xH=colX,n2X=xH+wH+30,xB=n2X+groups.length*26+30,waitX=xB+wB+44;
+  const sc=.78,colX=Math.max(sx+sw+120,sx+ew+120,sx-12+92*PL),top=hY(110),drawH=v.height*sc,bottom=top+drawH;
+  const wH=v.b*sc,wB=v.a*sc,xH=colX,n2X=xH+wH+30*HR,xB=n2X+groups.length*26*HR+30*HR,waitX=xB+wB+44*HR;
   const waits=pillarArms.N3.follow?[...groups.filter(gr=>!gr.len).reduce((m,gr)=>{const w=m.get(gr.dia)||{dia:gr.dia,qty:0,token:gr.waitToken};w.qty+=gr.qty;m.set(gr.dia,w);return m},new Map()).values()]:[{dia:pillarArms.N3.dia,qty:pillarArms.N3.qty,token:'N3'}];
-  txt(xH,74,'VISTA H',12,cyan,{'font-weight':'bold'});txt(xB,74,'VISTA B',12,cyan,{'font-weight':'bold'});
+  txt(xH,hY(74),'VISTA H',12,cyan,{'font-weight':'bold'});txt(xB,hY(74),'VISTA B',12,cyan,{'font-weight':'bold'});
   function elevation(x,w){
    rect(x,top,w,drawH,'#334657');
    ln(x+cover*sc,top+3,x+cover*sc,bottom-3,blue,1.6);ln(x+w-cover*sc,top+3,x+w-cover*sc,bottom-3,blue,1.6);
@@ -1356,7 +1357,7 @@ function drawPillarDetails(parent){
   if(v.noBlock){el('rect',{x:xH-6,y:bottom,width:(waitX+(waits.length-1)*24+20)-(xH-6),height:maxEmbed*sc,fill:'#c9aa7d','fill-opacity':.07,stroke:'#c9aa7d','stroke-width':.6,'stroke-dasharray':'5 3'},g);txt(xH,bottom+maxEmbed*sc/2,v.fndName,9,'#c9aa7d')}
   // Uma barra isolada por posição (bitola) entre as vistas.
   const barLength=Math.max(0,v.height-pillarArms.N2.topCover-pillarArms.N2.bottomCover);
-  groups.forEach((gr,k)=>{const bx=n2X+k*26;
+  groups.forEach((gr,k)=>{const bx=n2X+k*26*HR;
    // Complementares: descem na fundação como as esperas (dobra no pé com bloco; 80Ø retas sem bloco) e sobem gl.
    const gl=gr.len?Math.min(gr.len,barLength):barLength,emb=gr.len?embedOf(gr.dia):0,yB=gr.len?bottom+emb*sc:bottom-pillarArms.N2.bottomCover*sc,yT=gr.len?bottom-gl*sc:top+pillarArms.N2.topCover*sc,ym=gr.len?(yT+bottom)/2:(yT+yB)/2;
    const cutC=gr.len?Math.round(gl+emb+(v.noBlock?0:waitBendCm)):gl;
@@ -1373,7 +1374,7 @@ function drawPillarDetails(parent){
    else path(`M ${wx} ${wTop} L ${wx} ${waitBaseY-9} Q ${wx} ${waitBaseY-5} ${wx+5} ${waitBaseY-5} L ${wx+waitBend} ${waitBaseY-5}`,blue,'none',2.5,g);
    el('rect',{x:wx-8,y:wTop,width:16,height:waitBaseY-wTop,fill:'transparent','pointer-events':'all','data-pillar-arm':'N3',style:'cursor:pointer'},g);
    if(k===0){dimV(wTop,bottom,wx-16,wx,String(lap),g);dimV(bottom,bottom+emb*sc,wx-16,wx,`${emb}`,g);if(!v.noBlock)txt(wx+waitBend/2,waitBaseY+14,`${waitBendCm}`,9,ink,{'text-anchor':'middle'})}
-   const wly=minTop-9*PU-(waits.length-1-k)*7.5*PU;
+   let wly=minTop-9*PU-(waits.length-1-k)*7.5*PU;if(wly<top+9*PU)wly=top+9*PU+k*7.5*PU; // pilar baixo: legenda abaixo da linha do topo
    path(`M${wx} ${wTop+2*PU} L${wx+4*PU} ${wly+1.5*PU} H${wx+7*PU}`,ink,'none',.6,g,{'data-layer':'cotas'});
    txt(wx+8*PU,wly+2.5*PU,v.variable?`${w.qty} Ø${w.dia.toFixed(1).replace('.',',')} · C≈${cut} cm (QUADRO)`:`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cut} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N3',style:'cursor:pointer',...(v.noBlock?{'data-shape':'reta'}:{})});
   });
@@ -1661,7 +1662,7 @@ const SHEET_KIND_TITLES={planta:'PLANTA DE LOCAÇÃO DOS ARRIMOS',fundacoes:'FUN
 const SHEET_PLAN=[
  {kind:'planta',scales:[50,75,100],newSheet:true,match:c=>c==='PLANTA'},
  {kind:'fundacoes',scales:[25,50,75],newSheet:true,match:c=>/^[TBE]\d+$/.test(c)},
- {kind:'pilares',scales:[25,50,75],newSheet:false,match:c=>/^P\d+$/.test(c)},
+ {kind:'pilares',scales:[50,75,25],newSheet:false,match:c=>/^P\d+$/.test(c)},
  {kind:'vigas',scales:[50,75,100],newSheet:true,match:c=>/^(V[BT]\d+|VI\d+-\d+)$/.test(c)},
  {kind:'elevacoes',scales:[50,75,100],newSheet:true,match:c=>/^EL\d+$/.test(c)}
 ];
