@@ -12,7 +12,7 @@
     "cover": "5",
     "bars": "6",
     "barDia": "12.5",
-    "barLen": "140",
+    "barLen": "120",
     "stDia": "6.3",
     "ringLen": "154.6",
     "spacing": "10",
@@ -26,59 +26,14 @@
     "points": [
       {
         "x": 0,
-        "y": -750
+        "y": -650
       },
       {
-        "x": 0,
-        "y": 0
-      },
-      {
-        "x": 1290,
-        "y": 0
-      },
-      {
-        "x": 1290,
-        "y": -750
+        "x": 1260,
+        "y": -650
       }
     ],
     "segments": [
-      {
-        "parameters": {
-          "wallLength": "9",
-          "wallPillars": "4",
-          "wallBeamWidth": "20",
-          "wallBeamHeight": "40",
-          "wallColX": "20",
-          "wallColY": "40",
-          "wallHeight": "380",
-          "wallSlope": "0",
-          "wallSoil": "left",
-          "wallSoilLevel": "",
-          "wallFrontLevel": "",
-          "wallNum": "3",
-          "wallSoilMax": "150"
-        },
-        "profile": {
-          "top": [
-            40,
-            40,
-            40,
-            40
-          ],
-          "base": [
-            -380,
-            -300,
-            -200
-          ],
-          "pts": []
-        },
-        "_H": [
-          380,
-          283.3333333333333,
-          186.66666666666666,
-          90
-        ]
-      },
       {
         "parameters": {
           "wallLength": "9",
@@ -87,89 +42,44 @@
           "wallBeamHeight": "40",
           "wallColX": "20",
           "wallColY": "40",
-          "wallHeight": "380",
+          "wallHeight": "100",
           "wallSlope": "0",
           "wallSoil": "left",
           "wallSoilLevel": "",
           "wallFrontLevel": "",
-          "wallNum": "2",
+          "wallNum": "1",
           "wallSoilMax": ""
         },
         "profile": {
           "top": [
-            40,
-            40,
-            40,
-            40,
-            40,
-            40
-          ],
-          "base": [
-            -120,
-            -120,
-            -140,
-            -160,
-            -160
-          ],
-          "pts": []
-        },
-        "_H": [
-          90,
-          104,
-          118,
-          132,
-          146,
-          160
-        ]
-      },
-      {
-        "parameters": {
-          "wallLength": "9",
-          "wallPillars": "4",
-          "wallBeamWidth": "20",
-          "wallBeamHeight": "40",
-          "wallColX": "20",
-          "wallColY": "40",
-          "wallHeight": "380",
-          "wallSlope": "0",
-          "wallSoil": "left",
-          "wallSoilLevel": "",
-          "wallFrontLevel": "",
-          "wallNum": "4",
-          "wallSoilMax": "150"
-        },
-        "profile": {
-          "top": [
-            40,
-            40,
-            40,
-            40
-          ],
-          "base": [
             -240,
-            -320,
+            -240,
+            -240,
+            -240,
+            -240,
+            -240
+          ],
+          "base": [
+            -380,
+            -380,
+            -380,
+            -380,
             -380
           ],
           "pts": []
-        },
-        "_H": [
-          160,
-          233.33333333333331,
-          306.66666666666663,
-          380
-        ]
+        }
       }
     ],
-    "active": 2,
+    "active": 0,
     "finished": true,
     "parameters": {
       "wallLength": "9",
-      "wallPillars": "4",
+      "wallPillars": "6",
       "wallBeamWidth": "20",
       "wallBeamHeight": "40",
       "wallColX": "20",
       "wallColY": "40",
-      "wallHeight": "380",
+      "wallHeight": "100",
       "wallSlope": "0",
       "wallSoil": "left",
       "wallSoilLevel": "",
@@ -179,16 +89,16 @@
     }
   },
   "blockOffset": {
-    "x": 3382.4083251953125,
-    "y": 339.88363151550294
+    "x": -205.1226562500001,
+    "y": 534.203003692627
   },
   "tubuloOffset": {
-    "x": 3633.731805419922,
-    "y": 43.48363151550293
+    "x": 58.320002746582034,
+    "y": 534.203003692627
   },
   "wallOffset": {
-    "x": 251.1518127441406,
-    "y": 283.0836547851562
+    "x": 105.40000076293946,
+    "y": 204.70000305175782
   },
   "wallOrtho": false,
   "detailsPlaced": true,
@@ -214,10 +124,10 @@
       "bottomCover": 3,
       "cornerDia": 10,
       "cornerExtDia": 10,
-      "soloLen": 80,
+      "soloLen": 0,
       "soloN2": 0,
       "soloDia2": 10,
-      "soloN": 2,
+      "soloN": 0,
       "soloDia": 10,
       "extN": 0,
       "extDia": 10,
@@ -227,7 +137,7 @@
     "N3": {
       "dia": 10,
       "qty": 6,
-      "lapFactor": 55,
+      "lapFactor": 60,
       "bend": 21,
       "follow": 1
     }
@@ -276,7 +186,7 @@
     "mid": 0,
     "course": 20,
     "hDia": 8,
-    "vDia": 12.5,
+    "vDia": 8,
     "vSpace": 60,
     "found": true
   },
@@ -316,7 +226,7 @@
     "minArm": 2,
     "water": "",
     "gsat": 20,
-    "beta": 0
+    "beta": 10
   },
   "projectRevisions": [],
   "beamCompact": [],
@@ -335,7 +245,7 @@
       "skirt": "35",
       "bars": "6",
       "barDia": "12.5",
-      "barLen": "140",
+      "barLen": "120",
       "stDia": "6.3",
       "spacing": "10",
       "topZone": "70",
@@ -358,68 +268,20 @@
   },
   "extraDetailOffsets": {
     "P1": {
-      "x": 7270.511810302734,
-      "y": 64.48363056182862
+      "x": 3685.740007019043,
+      "y": 64.10000123977662
     },
     "VB1": {
-      "x": 7252.644540786743,
-      "y": 1488.0791395187377
-    },
-    "VB2": {
-      "x": 8206.985214614868,
-      "y": 1488.0791395187377
-    },
-    "VB3": {
-      "x": 7252.644540786743,
-      "y": 1891.4045850753782
-    },
-    "VB4": {
-      "x": 8206.985214614868,
-      "y": 1891.4045850753782
-    },
-    "VB5": {
-      "x": 10832.544540786745,
-      "y": 58.28363170623779
-    },
-    "VB6": {
-      "x": 11786.88521461487,
-      "y": 327.3836317062378
-    },
-    "VB7": {
-      "x": 10832.544540786745,
-      "y": 707.309083366394
-    },
-    "VB8": {
-      "x": 11786.88521461487,
-      "y": 707.309083366394
-    },
-    "VB9": {
-      "x": 10832.544540786745,
-      "y": 1110.6345289230346
+      "x": 3677.3130489349364,
+      "y": 759.3250253677369
     },
     "VT1": {
-      "x": 11786.88521461487,
-      "y": 1110.6345289230346
-    },
-    "VT2": {
-      "x": 14412.444540786744,
-      "y": 58.28363170623779
-    },
-    "VT3": {
-      "x": 14412.444540786744,
-      "y": 586.4090650558471
+      "x": 3677.3130489349364,
+      "y": 1280.1999704360962
     },
     "EL1": {
-      "x": 14409.300000000001,
-      "y": 966.3345167160033
-    },
-    "EL2": {
-      "x": 17989.2,
-      "y": 58.28363170623779
-    },
-    "EL3": {
-      "x": 17989.2,
-      "y": 992.0090711593629
+      "x": 7249.5,
+      "y": 57.900000953674315
     }
   },
   "detailScale": {
@@ -428,20 +290,8 @@
     "B1": 25,
     "P1": 50,
     "VB1": 50,
-    "VB2": 50,
-    "VB3": 50,
-    "VB4": 50,
-    "VB5": 50,
-    "VB6": 50,
-    "VB7": 50,
-    "VB8": 50,
-    "VB9": 50,
     "VT1": 50,
-    "VT2": 50,
-    "VT3": 50,
-    "EL1": 50,
-    "EL2": 50,
-    "EL3": 50
+    "EL1": 50
   },
   "block": {
     "blockEnabled": true,
@@ -496,10 +346,11 @@
         "done": false,
         "kind": "planta",
         "kinds": [
-          "planta"
+          "planta",
+          "fundacoes"
         ],
-        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS",
-        "mixed": false
+        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · FUNDAÇÕES — TUBULÕES E BLOCOS",
+        "mixed": true
       },
       {
         "id": 2,
@@ -507,21 +358,6 @@
         "orientation": "landscape",
         "scale": 50,
         "x": 3579.9,
-        "y": 0,
-        "done": false,
-        "kind": "fundacoes",
-        "kinds": [
-          "fundacoes"
-        ],
-        "title": "FUNDAÇÕES — TUBULÕES E BLOCOS",
-        "mixed": false
-      },
-      {
-        "id": 3,
-        "format": "A1",
-        "orientation": "landscape",
-        "scale": 50,
-        "x": 7159.8,
         "y": 0,
         "done": false,
         "kind": "pilares",
@@ -533,42 +369,11 @@
         "mixed": false
       },
       {
-        "id": 4,
+        "id": 3,
         "format": "A1",
         "orientation": "landscape",
         "scale": 50,
-        "x": 10739.7,
-        "y": 0,
-        "done": false,
-        "kind": "vigas",
-        "kinds": [
-          "vigas"
-        ],
-        "title": "VIGAS BALDRAME E CINTAS DE TOPO",
-        "mixed": false
-      },
-      {
-        "id": 5,
-        "format": "A1",
-        "orientation": "landscape",
-        "scale": 50,
-        "x": 14319.6,
-        "y": 0,
-        "done": false,
-        "kind": "vigas",
-        "kinds": [
-          "vigas",
-          "elevacoes"
-        ],
-        "title": "VIGAS BALDRAME E CINTAS DE TOPO · ELEVAÇÕES DOS ARRIMOS",
-        "mixed": false
-      },
-      {
-        "id": 6,
-        "format": "A1",
-        "orientation": "landscape",
-        "scale": 50,
-        "x": 17899.5,
+        "x": 7159.8,
         "y": 0,
         "done": false,
         "kind": "elevacoes",
@@ -580,6 +385,6 @@
       }
     ],
     "active": 1,
-    "next": 7
+    "next": 4
   }
 }
