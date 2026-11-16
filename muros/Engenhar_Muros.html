@@ -55,7 +55,7 @@ main.ribbons-min #tubuloRibbon,main.ribbons-min #blockRibbon,main.ribbons-min #w
 <label>Pilar — lado B (cm) <input id="wallColY" type="number" min="10" value="40" style="width:44px"></label>
 <label>Altura muro (cm) <input id="wallHeight" type="number" min="30" value="250" style="width:52px"></label>
 <label hidden>Declive (%) <input id="wallSlope" type="number" step="0.1" value="0" style="width:48px"></label><button id="profileBtn" type="button" style="background:#f7d979;border:1px solid #c79b26;font-weight:bold" title="Topo e base do arrimo pilar a pilar: topo inclinado, base em degraus">▤ Perfil do arrimo</button>
-<label title="Nível do aterro no tardoz, em cm, a partir do ±0,00 (topo da VB). Vazio = topo do muro">Nível aterro (cm) <input id="wallSoilLevel" type="number" step="1" placeholder="topo" style="width:52px"></label><label title="Nível do terreno na face externa, em cm, a partir do ±0,00 (topo da VB). Vazio = topo da VB">Nível frente (cm) <input id="wallFrontLevel" type="number" step="1" placeholder="VB" style="width:52px"></label><label>Solo <select id="wallSoil"><option value="left">À esquerda do traçado</option><option value="right">À direita do traçado</option><option value="none">Não definido</option></select></label>
+<label title="Nível do aterro no tardoz, em cm, a partir do ±0,00 (topo da VB). Vazio = topo do muro">Nível aterro (cm) <input id="wallSoilLevel" type="number" step="1" placeholder="topo" style="width:52px"></label><label title="Nível do terreno na face externa, em cm, a partir do ±0,00 (topo da VB). Vazio = topo da VB">Nível frente (cm) <input id="wallFrontLevel" type="number" step="1" placeholder="VB" style="width:52px"></label><label title="Número do arrimo nos desenhos e no cálculo (vazio = ordem do traçado)">Nº arrimo <input id="wallNum" type="number" step="1" min="1" placeholder="auto" style="width:44px"></label><label title="Altura máxima de terra acima do topo da VB, em cm (talude que contorna). Vazio = até o nível do aterro/topo">Terra máx. (cm) <input id="wallSoilMax" type="number" step="10" min="0" placeholder="topo" style="width:52px"></label><label>Solo <select id="wallSoil"><option value="left">À esquerda do traçado</option><option value="right">À direita do traçado</option><option value="none">Não definido</option></select></label>
 <span style="font-size:10px;color:#48647a">Clique o início e depois o ponto final: confirme a medida ou digite um comprimento na caixa do CAD. Enter conclui; Esc cancela. Dimensões em planta, sem dimensionamento estrutural.</span>
 </div>
 <div id="sheetRibbon" hidden><strong>PRANCHAS NO CAD</strong><label>Formato <select id="sheetFormat"><option>A0</option><option selected>A1</option><option>A2</option><option>A3</option></select></label><label style="display:none">Escala visual <select id="sheetScale"><option value="25">1:25</option><option value="50" selected>1:50</option><option value="75">1:75</option><option value="100">1:100</option></select></label><label>Orientação <select id="sheetOrientation"><option value="landscape">Horizontal</option><option value="portrait">Vertical</option></select></label><button id="sheetCreate">+ Nova prancha</button><label>Ativa <select id="sheetActive"></select></label><button id="sheetFinish">Concluir prancha</button><button id="sheetReopen">Reabrir</button><button id="sheetDelete">Excluir prancha</button><button id="sheetClose">Ocultar faixa</button><span style="color:#4d667a">Clique na faixa superior da folha para mudar seu formato. Novas pranchas são adicionadas à direita; arraste a borda para mover.</span></div>
@@ -153,9 +153,11 @@ function foundationClose(){foundationEditing=null;$('foundationEditor').hidden=t
 $('foundationCancel').onclick=foundationClose;
 $('foundationApply').onclick=()=>{if(!foundationEditing)return;const {kind,key}=foundationEditing;const vals={};for(const input of $('foundationEditorFields').querySelectorAll('input,select')){const id=input.dataset.foundationField;if(input.localName==='select'){vals[id]=String(Number(input.value)||0);continue}const zeroOk=['skirt'].includes(id);if(!Number.isFinite(Number(input.value))||Number(input.value)<0||(!zeroOk&&Number(input.value)<=0)){input.focus();return}vals[id]=String(Number(input.value))}const code=foundationAssign(kind,key,vals);if(kind==='block')$('blockEnabled').checked=true;foundationClose();draw();const revealed=(code!=='T1'&&code!=='B1')?revealFoundationDetail(code):false;status(`${code} aplicado SOMENTE nesta posição. ${Object.entries(foundationCounts(kind)).map(([c,n])=>c+': '+n+' un.').join(' | ')}. ${revealed?'Novo detalhamento enquadrado no CAD.':'Detalhamento atualizado.'}`)};
 
-const wallIds=['wallLength','wallPillars','wallBeamWidth','wallBeamHeight','wallColX','wallColY','wallHeight','wallSlope','wallSoil','wallSoilLevel','wallFrontLevel'];
+const wallIds=['wallLength','wallPillars','wallBeamWidth','wallBeamHeight','wallColX','wallColY','wallHeight','wallSlope','wallSoil','wallSoilLevel','wallFrontLevel','wallNum','wallSoilMax'];
+// V294 — número do arrimo escolhido pelo usuário e altura máxima de terra acima do topo da VB (talude que contorna).
+function wallNum(i){const v=Math.round(Number(wallSegments?.[i]?.parameters?.wallNum));return v>0?v:i+1}
 function wallDefaults(){return Object.fromEntries(wallIds.map(id=>[id,$(id).value]))}
-function wallSyncOptions(){const sel=$('wallActive');sel.innerHTML='';wallSegments.forEach((seg,i)=>{const o=document.createElement('option');o.value=i;o.textContent='Arrimo '+(i+1);sel.appendChild(o)});if(wallSegments.length){wallActive=Math.max(0,Math.min(wallActive,wallSegments.length-1));sel.value=String(wallActive)}}
+function wallSyncOptions(){const sel=$('wallActive');sel.innerHTML='';wallSegments.forEach((seg,i)=>{const o=document.createElement('option');o.value=i;o.textContent='Arrimo '+wallNum(i);sel.appendChild(o)});if(wallSegments.length){wallActive=Math.max(0,Math.min(wallActive,wallSegments.length-1));sel.value=String(wallActive)}}
 function wallSelect(i){if(!wallSegments[i])return;wallActive=i;wallIds.forEach(id=>{if(wallSegments[i].parameters[id]!=null)$(id).value=wallSegments[i].parameters[id]});wallSyncOptions();draw()}
 function wallUpdateActive(){if(!wallSegments[wallActive])return;wallSegments[wallActive].parameters=wallDefaults();draw()}
 function wallRebuild(){wallSegments=[];for(let i=1;i<wallPoints.length;i++)wallSegments.push({parameters:wallDefaults()});wallActive=Math.max(0,wallSegments.length-1);wallSyncOptions()}
@@ -624,7 +626,7 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
   }
   // Rótulo do arrimo além das chamadas de fundação (que são horizontais em muros verticais).
   const off=segReach+mm(19)+(Math.abs(uy)>Math.abs(ux)?mm(16):0);
-  rtext((a.x+b.x)/2+nx*sgn*off,(a.y+b.y)/2+ny*sgn*off,`ARRIMO ${idx+1} · ${(()=>{const nm=vbNames(),rs=vbRuns(idx).sort((p,q)=>q.base-p.base).map(r=>nm.get(`${idx}:${r.r}`));return rs.length>1?rs[0]+' A '+rs[rs.length-1]:rs[0]||'VB'+(idx+1)})()} ${num('wallBeamWidth')}×${num('wallBeamHeight')} · PILARES ${num('wallColX')}×${num('wallColY')} cm`,yellow,3.5,{'font-weight':'bold'});
+  rtext((a.x+b.x)/2+nx*sgn*off,(a.y+b.y)/2+ny*sgn*off,`ARRIMO ${wallNum(idx)} · ${(()=>{const nm=vbNames(),rs=vbRuns(idx).sort((p,q)=>q.base-p.base).map(r=>nm.get(`${idx}:${r.r}`));return rs.length>1?rs[0]+' A '+rs[rs.length-1]:rs[0]||'VB'+(idx+1)})()} ${num('wallBeamWidth')}×${num('wallBeamHeight')} · PILARES ${num('wallColX')}×${num('wallColY')} cm`,yellow,3.5,{'font-weight':'bold'});
  }
  for(let i=1;i<pts.length;i++)drawSegment(pts[i-1],pts[i],i-1);
  if(preview)drawSegment(pts[pts.length-1],preview,pts.length-1,true);
@@ -920,7 +922,7 @@ function drawWallElevations(parent){
   const topH=S.top?bh:0,zMax=Math.max(...P.nodes.map(q=>q.z)),zTopMin=Math.min(...P.nodes.map(q=>q.z));
   const x=75*U,W=L*sc,top=82*U,zeroY=top+zMax*sc,X=c=>x+c*sc,Y=z=>zeroY-z*sc;
   const cm=v=>String(Math.round(v*10)/10).replace('.',',');
-  t(x,8*U,`ELEVAÇÃO DO ARRIMO ${i+1} — VISTA PELA FACE EXTERNA`,gold,15,{'font-weight':'bold','data-role':'title'});
+  t(x,8*U,`ELEVAÇÃO DO ARRIMO ${wallNum(i)} — VISTA PELA FACE EXTERNA`,gold,15,{'font-weight':'bold','data-role':'title'});
   t(x,15*U,'',cyan,10,{'data-scale-label':`ALVENARIA DE BLOCOS GRAUTEADOS · FIADAS DE ${course} cm · ESC. 1:{s} · COTAS EM cm · NÍVEIS EM m`});
   // Linha superior da alvenaria (abaixo da VT), com os vértices do perfil.
   const topLine=(x0,x1,off)=>{const ps=[x0,...P.nodes.map(q=>q.x).filter(v=>v>x0&&v<x1),x1];return ps.map(v=>[X(v),Y(T(v)-off)])};
@@ -1146,7 +1148,7 @@ function drawBeamDetails(parent,kind="VB"){
    if(!signatures.has(signature))signatures.set(signature,`N${nextCode++}`);
    return signatures.get(signature);
   }
-  txt(x,8*U,kind==="VI"?`VI${level} — VIGA INTERMEDIÁRIA · ${level}º NÍVEL · ARRIMO ${i+1} · 1 UN.`:`${code} — ${kind==="VT"?"DETALHAMENTO DA VIGA DE TOPO":"DETALHAMENTO DA VIGA DE BASE"}${piece.note?' · '+piece.note:''} · 1 UN.`,16,gold,{'font-weight':'bold','data-role':'title'});txt(x,15*U,'ESC. 1:{s} · COTAS EM cm',10,'#a9c7da',{'data-scale-label':`VISTA LONGITUDINAL E CORTE A–A · SEÇÃO ${width}×${height} cm · ESC. 1:{s} · COTAS EM cm`});
+  txt(x,8*U,kind==="VI"?`VI${level} — VIGA INTERMEDIÁRIA · ${level}º NÍVEL · ARRIMO ${wallNum(i)} · 1 UN.`:`${code} — ${kind==="VT"?"DETALHAMENTO DA VIGA DE TOPO":"DETALHAMENTO DA VIGA DE BASE"}${piece.note?' · '+piece.note:''} · 1 UN.`,16,gold,{'font-weight':'bold','data-role':'title'});txt(x,15*U,'ESC. 1:{s} · COTAS EM cm',10,'#a9c7da',{'data-scale-label':`VISTA LONGITUDINAL E CORTE A–A · SEÇÃO ${width}×${height} cm · ESC. 1:{s} · COTAS EM cm`});
   el('rect',{x,y,width:L,height:H,fill:'#9ab5c4','fill-opacity':.12,stroke:ink,'stroke-width':1.2},g);
   for(const [position,barY,sign,pieces] of [['N2',topY,1,upper],['N3',bottomY,-1,lower]]){
    const arm=arms[position],bend=Math.min(H*.7,arm.bend*sc);
@@ -2654,11 +2656,11 @@ function calcEarth(){
  for(let i=0;i<wallPoints.length-1;i++){
   if(S.wall!=='all'&&String(i)!==String(S.wall))continue;
   const P=wallProfile(i);if(!P)continue;
-  const soilV=levelIn(P.d.wallSoilLevel),frontV=levelIn(P.d.wallFrontLevel),soil=x=>soilV==null?P.T(x):soilV;
+  const soilV=levelIn(P.d.wallSoilLevel),frontV=levelIn(P.d.wallFrontLevel),soil0=x=>soilV==null?P.T(x):soilV;
   const dx0=P.b.x-P.a.x,dy0=P.b.y-P.a.y,sgn=P.d.wallSoil==='right'?-1:1,nx=-dy0/P.L*sgn,ny=dx0/P.L*sgn;
   for(let j=0;j<P.n;j++){
    const xa=j>0?(P.xs[j-1]+P.xs[j])/2:0,xb=j<P.n-1?(P.xs[j]+P.xs[j+1])/2:P.L;
-   const zb=P.foundTop[j]+P.bh,zF=S.useFront&&frontV!=null?Math.max(zb,frontV):zb;
+   const zb=P.foundTop[j]+P.bh,zF=S.useFront&&frontV!=null?Math.max(zb,frontV):zb,smx=Number(P.d.wallSoilMax)>0?Number(P.d.wallSoilMax):0,soil=x=>{const v=soil0(x);return smx>0?Math.min(v,zb+smx):v};
    const hf=x=>Math.max(0,soil(x)-zF)/100;
    const steps=Math.max(4,Math.ceil((xb-xa)/5)),dx=(xb-xa)/steps;let E=0,M=0,Hmax=0;
    for(let k=0;k<steps;k++){const x=xa+(k+.5)*dx,H=Math.max(0,soil(x)-zb)/100,r=calcStrip(H,S,K,hf(x),calcZwAt(S,soil(x)));E+=r.E*dx/100;M+=r.M*dx/100;Hmax=Math.max(Hmax,H)}
@@ -2954,7 +2956,7 @@ function calcTabEmpuxo(){
  const ka=S.mode==='k0'?(calcBeta(S)>0?`K0 = (1 − sen φ)·(1 + sen β) = (1 − sen ${calcFmt(S.phi,1)}°)·(1 + sen ${calcFmt(calcBeta(S)*180/Math.PI,1)}°) = ${calcFmt(K,3)}`:`K0 = 1 − sen φ = 1 − sen ${calcFmt(S.phi,1)}° = ${calcFmt(K,3)}`):S.mode==='coulomb'?`δ = 2/3·φ = ${calcFmt(dl*180/Math.PI,1)}°${calcBeta(S)>0?`, β = ${calcFmt(calcBeta(S)*180/Math.PI,1)}°`:''} → Ka = cos²φ / {cos δ·[1 + √(sen(φ+δ)·sen(φ−β) / (cos δ·cos β))]²} = ${calcFmt(calcKaCoulomb(fr,dl,calcBeta(S)),3)} → Kah = Ka·cos δ = <b>${calcFmt(K,3)}</b>`:calcBeta(S)>0?`Rankine com aterro inclinado β = ${calcFmt(calcBeta(S)*180/Math.PI,1)}°: K = cosβ·(cosβ − √(cos²β − cos²φ))/(cosβ + √(cos²β − cos²φ)) → Kh = K·cosβ = <b>${calcFmt(K,3)}</b>`:`Ka = tg²(45° − φ/2) = tg²(${calcFmt(45-S.phi/2,1)}°) = ${calcFmt(K,3)}`;
  const tr=rows.map(r=>`<tr data-key="${r.key}" class="${r.key===sel.key?'sel':''}${r.key===crit.key?' crit':''}"><td>${r.id}${r.corner?' <small title="Pilar de canto: recebe empuxo das duas direções">↱</small>':''}</td><td>${r.wall+1}</td><td>${calcFmt(r.b)}</td><td>${calcFmt(r.H)}</td><td>${calcFmt(r.strip.pTop)}</td><td>${calcFmt(r.strip.pBase)}</td><td>${calcFmt(r.E)}</td><td>${calcFmt(r.y)}</td><td>${calcFmt(r.M)}</td><td><b>${calcFmt(r.Vd)}</b></td><td><b>${calcFmt(r.Md)}</b></td></tr>`).join('');
  const st=sel.strip;
- const mem=`<b>Memória de cálculo — ${sel.id} (Arrimo ${sel.wall+1})</b>
+ const mem=`<b>Memória de cálculo — ${sel.id} (Arrimo ${wallNum(sel.wall)})</b>
 1) Coeficiente de empuxo horizontal (${mName}): ${ka}
 2) Altura de solo contida no eixo do pilar: H = ${calcFmt(sel.H)} m (do aterro até o topo da VB, ${levelFmtSafe(sel.zb)})${sel.Hf<sel.H-1e-3?`
    Terreno da frente acima da VB: altura contida Hf = ${calcFmt(sel.Hf)} m; abaixo dela o solo da frente reage com K0·γ·(z − Hf), K0 = 1 − sen φ = ${calcFmt(1-Math.sin(fr),3)} (passivo pleno desprezado)`:''}
@@ -3018,7 +3020,7 @@ function calcTabPilar0(){
  const S=calcSettings,rs=calcPillar();if(!rs.length)return '';const a=pillarN2(),N1=pillarArms.N1;
  const crit=rs.reduce((p,q)=>(q.AsReq/q.AsDet)>(p.AsReq/p.AsDet)||!Number.isFinite(q.AsReq)?q:p,rs[0]),sel=rs.find(r=>'p'+r.key===S.sel)||crit;
  const tr=rs.map(r=>`<tr data-key="p${r.key}" class="${r===sel?'sel':''}${r===crit?' crit':''}${!(r.okM&&r.okV&&r.okRules&&r.okELS)?' fail':''}"><td>${r.id}${r.own?' <small title="armadura própria">●</small>':''}</td><td>${r.wall+1}</td><td>${calcFmt(r.b,0)}×${calcFmt(r.h,0)}</td><td>${calcFmt(r.Md)}</td><td>${calcFmt(r.xd,3)}</td><td>${calcFmt(r.AsReq)}</td><td>${calcFmt(r.AsDet)}</td><td>${calcOk(r.okM)}</td><td>${calcFmt(r.Vd)}</td><td>${calcFmt(r.VRd2)}</td><td>${calcFmt(r.AswReq*100)}</td><td>${calcFmt(r.AswDet*100)}</td><td>${calcOk(r.okV)}</td><td title="${esc2(r.rules?r.rules.items.filter(x=>!x[2]).map(x=>x[0]+": "+x[1]).join(" | ")||"todas as regras atendidas":"")}">${calcOk(r.okRules)}</td><td title="${r.els?`flecha ${calcFmt(r.els.dTot,1)} / ${calcFmt(r.els.lim,1)} mm · wk ${calcFmt(r.els.wk,3)} / ${calcFmt(r.els.wlim,1)} mm`:""}">${calcOk(r.okELS)}</td></tr>`).join('');
- const r=sel,mem=`<b>Memória de cálculo — ${r.id} (Arrimo ${r.wall+1}) · seção ${calcFmt(r.b,0)} × ${calcFmt(r.h,0)} cm (h = lado perpendicular ao muro)</b>
+ const r=sel,mem=`<b>Memória de cálculo — ${r.id} (Arrimo ${wallNum(r.wall)}) · seção ${calcFmt(r.b,0)} × ${calcFmt(r.h,0)} cm (h = lado perpendicular ao muro)</b>
 1) Materiais: fck = ${S.fck} MPa → fcd = ${calcFmt(r.fcd*10)} MPa · CA-50 fyd = ${calcFmt(r.fyd*10,1)} MPa · fctd = ${calcFmt(r.fctd*10,3)} MPa
 2) Altura útil: d = h − c − Øt − Ø/2 = ${calcFmt(r.h,0)} − ${calcFmt(Number(N1.cover)||3,1)} − ${calcFmt((Number(N1.dia)||5)/10,1)} − ${calcFmt((Number(a.cornerDia)||10)/20,1)} = ${calcFmt(r.d,1)} cm
 3) Flexão (tração no tardoz): Md = ${calcFmt(r.Md)} kN·m${r.dupla?` > Mlim (x/d = 0,45) = ${calcFmt(r.Mlim)} kN·m → ARMADURA DUPLA\n   d' = ${calcFmt(r.dp,1)} cm · σ's = ${calcFmt(r.sc*10,0)} MPa · A's,nec = (Md − Mlim)/(σ's·(d − d')) = <b>${calcFmt(r.AscReq)} cm²</b> · detalhado na face externa ${calcFmt(r.AscDet)} cm² ${r.AscDet>=r.AscReq-1e-6?'✓':'✗'}\n   As,nec = Mlim/(fyd·(d − 0,4·x)) + (Md − Mlim)/(fyd·(d − d'))`:''}
@@ -3144,7 +3146,7 @@ function calcBeams(){
   const b=Math.max(10,Number(P.d.wallBeamWidth)||20),bh=P.bh,nS=P.n-1,cf=calcContCoef(nS),zones=elevationEnabled?elevationBeamZones(P):[],hasTop=!!(elevationEnabled&&ES.top);
   const runs=vbRuns(i);
   for(let k=0;k<nS;k++){
-   const L=(P.xs[k+1]-P.xs[k])/100,xm=(P.xs[k]+P.xs[k+1])/2,base=P.spanBase[k],zb=base+bh,top=P.T(xm),s=soil(xm);
+   const L=(P.xs[k+1]-P.xs[k])/100,xm=(P.xs[k]+P.xs[k+1])/2,base=P.spanBase[k],zb=base+bh,top=P.T(xm),s=(()=>{const v=soil(xm),m=Number(P.d.wallSoilMax)>0?Number(P.d.wallSoilMax):0;return m>0?Math.min(v,zb+m):v})();
    const zF=S.useFront&&frontV!=null?Math.max(zb,frontV):zb,Hf=Math.max(0,s-zF)/100;calcZwCur=calcZwAt(S,s);
    const vis=zones.filter(([z0,z1])=>z0>=zb-1&&z1<=top-(hasTop?bh:0)+1);
    const beams=[{kind:'VB',z0:base,z1:zb},...vis.map(([z0,z1],q)=>({kind:'VI',lvl:zones.indexOf(zones.find(zz=>zz[0]===z0))+1,z0,z1})),...(hasTop?[{kind:'VT',z0:top-bh,z1:top}]:[])];
@@ -3238,21 +3240,21 @@ function calcTabViga(){
  const t3=al.map(r=>row(r,`<td>${r.name}</td><td>${r.wall+1}/${r.span+1}</td><td>${levelFmtSafe(r.z0)} a ${levelFmtSafe(r.z1)}</td><td>${calcFmt(r.L)}</td><td>${calcFmt(r.load)}</td><td>${calcFmt(r.Md)}</td><td>${calcFmt(r.MRd)}</td><td>${calcOk(r.okM)}</td>`)).join('');
  const ES=elevationSettings,arms=beamArmsOf(sel.arms||'VB');
  let mem='';
- if(sel.check==='vertical')mem=`<b>Memória — ${sel.name} · vão ${sel.span+1} do Arrimo ${sel.wall+1} · flexão vertical</b>
+ if(sel.check==='vertical')mem=`<b>Memória — ${sel.name} · vão ${sel.span+1} do Arrimo ${wallNum(sel.wall)} · flexão vertical</b>
 1) Carga: alvenaria ${calcFmt(S.gAlv,1)} kN/m² × ${calcFmt(sel.hMas)} m + vigas (25 kN/m³) = p = <b>${calcFmt(sel.load)} kN/m</b>
 2) Viga contínua de vãos iguais, L = ${calcFmt(sel.L)} m: Md+ = ${calcFmt(sel.Mdp)} kN·m · Md− = ${calcFmt(sel.Mdn)} kN·m · Vd = ${calcFmt(sel.Vd)} kN
 3) Seção ${sel.sec} cm, d = ${calcFmt(sel.d,1)} cm · As,mín = 0,15%·b·h
    inferior (N3): nec ${calcFmt(sel.reqB)} cm² · det ${arms.N3.qty}Ø${arms.N3.dia} = ${calcFmt(sel.detB)} cm² ${sel.detB>=sel.reqB-1e-9?'✓':'✗'}
    superior (N2): nec ${calcFmt(sel.reqT)} cm² · det ${arms.N2.qty}Ø${arms.N2.dia} = ${calcFmt(sel.detT)} cm² ${sel.detT>=sel.reqT-1e-9?'✓':'✗'}
 4) Cisalhamento: VRd2 = ${calcFmt(sel.sh.VRd2)} kN · Asw/s nec ${calcFmt(sel.sh.req*100)} cm²/m · det Ø${arms.N1.dia} c/${arms.N1.spacing} = ${calcFmt(sel.sh.det*100)} cm²/m ${sel.okV?'✓':'✗'}`;
- else if(sel.check==='horizontal')mem=`<b>Memória — ${sel.name} · vão ${sel.span+1} do Arrimo ${sel.wall+1} · flexão horizontal (empuxo)</b>
+ else if(sel.check==='horizontal')mem=`<b>Memória — ${sel.name} · vão ${sel.span+1} do Arrimo ${wallNum(sel.wall)} · flexão horizontal (empuxo)</b>
 1) ${sel.placa?`Alvenaria como placa (método das faixas): própria altura ${levelFmtSafe(sel.band[0])} a ${levelFmtSafe(sel.band[1])} + parcela vertical dos painéis vizinhos ${(sel.parts||[]).map(x=>`${calcFmt(x.ky*100,0)}% de meio painel (h = ${calcFmt(x.hp)} m${x.free?', topo livre':''}) = ${calcFmt(x.w)} kN/m`).join(' + ')||'—'}; o restante do painel vai na horizontal direto aos pilares`:`Faixa de empuxo ${sel.cintas?'até a metade da distância às vigas vizinhas':'na altura da própria viga'}: ${levelFmtSafe(sel.band[0])} a ${levelFmtSafe(sel.band[1])}`} → w = ${sel.soilR>0?`${calcFmt(sel.wG)} − solo da frente ${calcFmt(sel.soilR)} (VB enterrada ${calcFmt(sel.hb*100,0)} cm: ½·(Kp/2)·γ·h²) = `:''}<b>${calcFmt(sel.load)} kN/m</b>
 2) Vence na horizontal entre pilares (contínua), L = ${calcFmt(sel.L)} m: Md = ${calcFmt(sel.Md)} kN·m · Vd = ${calcFmt(sel.Vd)} kN
 3) Seção girada: largura ${calcFmt(sel.b,0)} cm (altura da viga), altura útil d = ${calcFmt(sel.d,1)} cm (na espessura do muro)
    As por face = 1 barra superior + 1 inferior (cantos): nec ${calcFmt(sel.req)} cm² · det Ø${arms.N2.dia} + Ø${arms.N3.dia} = ${calcFmt(sel.det)} cm² ${sel.okM?'✓':'✗'}
 4) Cisalhamento: Asw/s nec ${calcFmt(sel.sh.req*100)} cm²/m · det ${calcFmt(sel.sh.det*100)} cm²/m ${sel.okV?'✓':'✗'}
 Modelo: ${sel.cintas?'alvenaria vence na vertical entre as vigas; as vigas levam o empuxo aos pilares':'faixas horizontais apoiadas nos pilares'}. A VB trabalha como viga e não depende de estar enterrada.`;
- else mem=`<b>Memória — ${sel.name} · vão ${sel.span+1} do Arrimo ${sel.wall+1} · alvenaria armada (vence na ${sel.dir})</b>
+ else mem=`<b>Memória — ${sel.name} · vão ${sel.span+1} do Arrimo ${wallNum(sel.wall)} · alvenaria armada (vence na ${sel.dir})</b>
 1) Painel de ${levelFmtSafe(sel.z0)} a ${levelFmtSafe(sel.z1)} (h = ${calcFmt(sel.hp)} m) · pressão máxima no pé do painel p = ${calcFmt(sel.load)} kPa
 2) Faixa de 1 m ${sel.spanTxt}: Md = <b>${calcFmt(sel.Md)} kN·m/m</b>
 3) ${sel.dir==='vertical'?`Barras verticais Ø${ES.vDia} c/${ES.vSpace}`:`Uma barra Ø${ES.hDia} por fiada de ${ES.course} cm`} = ${calcFmt(sel.As)} cm²/m, no centro do bloco (d = t/2 = ${calcFmt(sel.dm,1)} cm)
@@ -3591,7 +3593,7 @@ function calcReportHtml(){
   const label=rows=>idRange(rows.map(r=>r.pid));
   // 1 Figuras do projeto
   const figs=[rptFigure('PLANTA','Figura 1 — Planta de locação dos arrimos'),...wallSegments.map((_,i)=>rptFigure(`EL${i+1}`,`Figura — Elevação do arrimo ${i+1} (vista pela face externa)`)),rptFigure('P1','Figura — Detalhamento dos pilares'),rptFigure('T1','Figura — Estaca/tubulão'),rptFigure('B1','Figura — Bloco de coroamento')].filter(Boolean);
-  const geo=wallSegments.map((s,i)=>{const P0=wallProfile(i),d=s.parameters;return `<tr><td>Arrimo ${i+1}</td><td>${rf(P0.L/100)} m</td><td>${P0.n}</td><td>${rf(P0.L/100/(P0.n-1))} m</td><td>${d.wallColX}×${d.wallColY} cm</td><td>${rf(d.wallHeight/100)} m</td><td>${d.wallBeamWidth}×${d.wallBeamHeight} cm</td><td>${d.wallSoilLevel?levelFmt(levelIn(d.wallSoilLevel)):'topo do muro'}</td></tr>`}).join('');
+  const geo=wallSegments.map((s,i)=>{const P0=wallProfile(i),d=s.parameters;return `<tr><td>Arrimo ${wallNum(i)}</td><td>${rf(P0.L/100)} m</td><td>${P0.n}</td><td>${rf(P0.L/100/(P0.n-1))} m</td><td>${d.wallColX}×${d.wallColY} cm</td><td>${rf(d.wallHeight/100)} m</td><td>${d.wallBeamWidth}×${d.wallBeamHeight} cm</td><td>${d.wallSoilLevel?levelFmt(levelIn(d.wallSoilLevel)):'topo do muro'}</td></tr>`}).join('');
   html+=sec(1,'Descrição da estrutura e geometria',`<p>Muro de arrimo em alvenaria armada com pilares de concreto armado engastados na fundação (topo da viga baldrame = ±0,00). O empuxo do aterro é resistido pela alvenaria e pelas vigas (VB, VI, VT), que o transmitem aos pilares; os pilares, em balanço, levam os esforços às ${F[0]?.kind==='Estaca'?'estacas':'fundações'} por meio dos blocos de coroamento.</p>
    <table><thead><tr><th>Trecho</th><th>Comprimento</th><th>Pilares</th><th>Vão</th><th>Pilar</th><th>Altura</th><th>VB/VI/VT</th><th>Aterro</th></tr></thead><tbody>${geo}</tbody></table>${figs.join('')}`);
   html+=sec(2,'Premissas de cálculo',calcReportPremisses());
@@ -3602,7 +3604,7 @@ function calcReportHtml(){
   emp=emp.replace(/<div>\s*<svg[\s\S]*?<\/svg><\/div><\/div>/,'</div>');
   for(const gR of pGroups){const r=E.find(x=>x.key===gR[0].key)||E[0];S.sel=r.key;
    const m=memOf(clean(calcTabEmpuxo()));
-   emp+=sub(`Pilares ${label(gR)} — Arrimo ${r.wall+1}`,`<div class="row">${calcDiagramSVG(r,K)}${(()=>{const pr=rptPillarProfiles(r);return rptProfile('Pressão no tardoz','kPa (por metro de muro)',r.H,[{pts:pr.pts.map(p=>[p.p,p.z]),color:RPT_C.o,label:'p(z)',fill:1}])})()}</div>${m}`)}
+   emp+=sub(`Pilares ${label(gR)} — Arrimo ${wallNum(r.wall)}`,`<div class="row">${calcDiagramSVG(r,K)}${(()=>{const pr=rptPillarProfiles(r);return rptProfile('Pressão no tardoz','kPa (por metro de muro)',r.H,[{pts:pr.pts.map(p=>[p.p,p.z]),color:RPT_C.o,label:'p(z)',fill:1}])})()}</div>${m}`)}
   html+=sec(5,'Empuxo de terra',emp);
   // 6 Pilares
   let pil=clean(calcTabPilar()).replace(/<pre class="calc-mem">[\s\S]*$/,'');
@@ -4090,7 +4092,7 @@ function calcOpen(){
  }
  const S=calcSettings;
  $('cPreset').innerHTML=calcPresetOptions();
- $('cWall').innerHTML='<option value="all">Todos</option>'+wallSegments.map((_,i)=>`<option value="${i}">Arrimo ${i+1}</option>`).join('');
+ $('cWall').innerHTML='<option value="all">Todos</option>'+wallSegments.map((_,i)=>`<option value="${i}">Arrimo ${wallNum(i)}</option>`).join('');
  if(S.wall!=='all'&&!(Number(S.wall)<wallSegments.length))S.wall='all';
  $('cWall').value=S.wall;for(const [id,k] of Object.entries(calcInputs))$(id).value=unitsIn(k,S[k]);$('cMode').value=S.mode;$('cFront').value=S.useFront?'1':'0';$('cVbSoil').value=S.vbSoil===false?'0':'1';$('cAlv').value=S.alvModel;$('cSpt').value=S.spt||'';$('cWater').value=S.water||'';$('cSoil').value=S.soil;$('cMid').value=String(Math.min(3,Math.max(0,Math.round(elevationSettings.mid)||0)));$('cMaxDia').value=String(S.maxDia);$('cUse').value=S.noCalc?'2':S.useCalc?'1':'0';
  calcRender();if(!dlg.open)dlg.showModal();

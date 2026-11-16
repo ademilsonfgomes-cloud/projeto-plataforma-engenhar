@@ -12,7 +12,7 @@
     "cover": "5",
     "bars": "6",
     "barDia": "12.5",
-    "barLen": "130",
+    "barLen": "120",
     "stDia": "6.3",
     "ringLen": "154.6",
     "spacing": "10",
@@ -26,11 +26,11 @@
     "points": [
       {
         "x": 0,
-        "y": -540
+        "y": -650
       },
       {
         "x": 1290,
-        "y": -540
+        "y": -650
       }
     ],
     "segments": [
@@ -42,20 +42,22 @@
           "wallBeamHeight": "40",
           "wallColX": "20",
           "wallColY": "40",
-          "wallHeight": "120",
+          "wallHeight": "100",
           "wallSlope": "0",
           "wallSoil": "left",
           "wallSoilLevel": "",
-          "wallFrontLevel": ""
+          "wallFrontLevel": "",
+          "wallNum": "1",
+          "wallSoilMax": ""
         },
         "profile": {
           "top": [
-            -220,
-            -220,
-            -220,
-            -220,
-            -220,
-            -220
+            -240,
+            -240,
+            -240,
+            -240,
+            -240,
+            -240
           ],
           "base": [
             -380,
@@ -77,15 +79,17 @@
       "wallBeamHeight": "40",
       "wallColX": "20",
       "wallColY": "40",
-      "wallHeight": "120",
+      "wallHeight": "100",
       "wallSlope": "0",
       "wallSoil": "left",
       "wallSoilLevel": "",
-      "wallFrontLevel": ""
+      "wallFrontLevel": "",
+      "wallNum": "",
+      "wallSoilMax": ""
     }
   },
   "blockOffset": {
-    "x": -204.5466064453126,
+    "x": -205.1226562500001,
     "y": 534.203003692627
   },
   "tubuloOffset": {
@@ -94,7 +98,7 @@
   },
   "wallOffset": {
     "x": 105.40000076293946,
-    "y": 118.9
+    "y": 204.70000305175782
   },
   "wallOrtho": false,
   "detailsPlaced": true,
@@ -241,7 +245,7 @@
       "skirt": "35",
       "bars": "6",
       "barDia": "12.5",
-      "barLen": "130",
+      "barLen": "120",
       "stDia": "6.3",
       "spacing": "10",
       "topZone": "70",
