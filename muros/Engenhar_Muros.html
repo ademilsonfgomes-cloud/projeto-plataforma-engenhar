@@ -2785,8 +2785,11 @@ function calcSetBlock(code,field,val){
 function calcApplyBlock(msg){
  let B;try{B=calcBlock()}catch(e){return}const byCode=new Map();
  for(const b of B){if(b.noBlk)continue;const k=b.bc||'B1',o=byCode.get(k)||{req:0,needH:0,cov:b.cov,Hb:b.Hb};o.req=Math.max(o.req,b.tie?b.tie.AsReq:0);o.needH=Math.max(o.needH,b.esp.lbnec/10,b.pil.lbnec/10);byCode.set(k,o)}
- if(!byCode.size)return;let qty=4;
- const maxReq=Math.max(...[...byCode.values()].map(o=>o.req));while(qty<8&&qty*calcBar(16)<maxReq-1e-9)qty++;
+ if(!byCode.size)return;
+ // V292 — prioriza até Ø16 com mais estribos (até 12 por direção); Ø20 só se nem 12Ø16 bastarem.
+ const maxReq=Math.max(...[...byCode.values()].map(o=>o.req));let qty=4;
+ {let sel=null;for(const dia of [10,12.5,16])for(let q=4;q<=12;q++){const A=q*calcBar(dia);if(A>=maxReq-1e-9){if(!sel||A<sel.A-1e-9)sel={q,A,dia};break}}
+  if(!sel)for(let q=4;q<=12;q++){if(q*calcBar(20)>=maxReq-1e-9){sel={q,dia:20};break}}qty=sel?sel.q:12}
  if(qty!==Number($('blockQtyX').value)){msg.push(`bloco: estribos verticais ${$('blockQtyX').value} → ${qty} por direção`);$('blockQtyX').value=qty;if($('blockSameXY')?.checked&&$('blockQtyY'))$('blockQtyY').value=qty}
  for(const [code,o] of byCode){const v=foundationValues('block',code),dia=[10,12.5,16,20].find(d=>qty*calcBar(d)>=o.req-1e-9)||20;
   if(dia!==Number(v.blockDiaX)){msg.push(`${code}: estribo vertical Ø${v.blockDiaX} → Ø${String(dia).replace('.',',')}`);calcSetBlock(code,'blockDiaX',dia);if($('blockSameXY')?.checked)calcSetBlock(code,'blockDiaY',dia)}
