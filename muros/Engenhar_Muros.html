@@ -2836,7 +2836,7 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
     if(G.As<need-1e-9){ok=false;break}
     if(BN.Asc>0){if(!Number.isFinite(BN.Asc)){ok=false;break}
      // Face comprimida: a combinação de MENOR ÁREA (independe da bitola do tardoz), mínimo Ø10.
-     let best=null;for(const dcc of [10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25))){const sm=Math.max(2,dcc/10,2.28),nm=Math.floor((bw+sm)/(dcc/10+sm)),n=Math.max(2,Math.ceil(BN.Asc/calcBar(dcc)-1e-9));if(n<=nm&&(!best||n*calcBar(dcc)<best.A-1e-9))best={dcc,n,A:n*calcBar(dcc)}}
+     let best=null;for(const dcc of [10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25))){const sm=Math.max(2,dcc/10,2.28),nm=Math.floor((bw+sm)/(dcc/10+sm)),n=Math.max(2,Math.ceil(BN.Asc*1.03/calcBar(dcc)-1e-9));if(n<=nm&&(!best||n*calcBar(dcc)<best.A-1e-9))best={dcc,n,A:n*calcBar(dcc)}}
      if(!best){ok=false;break}if(!need2||best.A>need2.A)need2=best}}
    if(ok&&need2){dc=need2.dcc;nc=need2.n}
    if(ok){const pk={dia,n1,n2,dc,nc,layers};if(SC){SC.list.push(pk);break}pick=pk;break}}}
