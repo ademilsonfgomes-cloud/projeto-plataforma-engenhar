@@ -4045,7 +4045,21 @@ function calcOpen(){
  // V284 — barra lateral enxuta: o painel Σ concentra cálculo e edição; ficam Arrimos, Fundação, Elevações e Pranchas.
  for(const id of ['sidePlanta','sidePilares','sideVigas','sideSteel','editBloco'])if($(id))$(id).style.display='none';
  $('editTubulo').innerHTML='♙<br>Fundação';$('editTubulo').title='Tubulão/estaca e bloco: dados de detalhe (clique de novo para alternar)';
- for(const x of document.querySelectorAll('header .nav button'))if(['Arquivo','Planta','Resultados'].includes(x.textContent.trim()))x.style.display='none';
+ // V286 — tudo na barra lateral: Arquivo · Arrimos · Σ Calcular · Fundação · Elevações · Pranchas (menus suspensos); faixa de botões e menu do topo saem.
+ for(const x of document.querySelectorAll('header .nav button'))x.style.display='none';
+ const tb=document.querySelector('.toolbar');if(tb)tb.style.display='none';
+ {const fit=()=>{const sh=document.querySelector('.shell');if(!sh)return;const top=sh.getBoundingClientRect().top+window.scrollY,ft=document.querySelector('footer');const fh=ft?ft.getBoundingClientRect().height:0;sh.style.height=Math.max(440,innerHeight-top-fh)+'px';try{draw()}catch(e){}};fit();addEventListener('resize',fit)}
+ for(const id of ['libraryBtn','freeBtn','undoBtn','exportBtn'])if($(id))$(id).style.display='none';
+ const clk=id=>()=>{const e=$(id);if(e)e.click()};
+ const menu=(btn,items)=>{document.querySelectorAll('.side-menu').forEach(m=>m.remove());const r=btn.getBoundingClientRect(),m=document.createElement('div');m.className='side-menu';m.style.cssText=`position:fixed;left:${r.right+6}px;top:${r.top}px;z-index:90;background:#eaf3fa;border:1px solid #5e93b4;border-radius:8px;box-shadow:0 10px 30px #0008;padding:6px;display:flex;flex-direction:column;min-width:230px;font:13px Arial`;
+  for(const it of items){if(it==='-'){const h=document.createElement('hr');h.style.cssText='border:0;border-top:1px solid #b5c9da;margin:4px 2px';m.append(h);continue}const [label,fn,hint]=it;const b=document.createElement('button');b.type='button';b.textContent=label;if(hint)b.title=hint;b.style.cssText='text-align:left;background:transparent;border:0;border-radius:5px;padding:7px 10px;cursor:pointer;color:#173a55;font-size:13px';b.onmouseenter=()=>b.style.background='#cfe3f1';b.onmouseleave=()=>b.style.background='transparent';b.onclick=()=>{m.remove();fn()};m.append(b)}
+  document.body.append(m);const r2=m.getBoundingClientRect();if(r2.bottom>innerHeight-8)m.style.top=Math.max(8,innerHeight-8-r2.height)+'px';
+  setTimeout(()=>{const off=e=>{if(!m.contains(e.target)&&e.target!==btn){m.remove();document.removeEventListener('pointerdown',off,true)}};document.addEventListener('pointerdown',off,true)},0)};
+ const fileBtn=document.createElement('button');fileBtn.id='sideFile';fileBtn.type='button';fileBtn.innerHTML='☰<br>Arquivo';fileBtn.title='Novo, abrir, salvar e exportar';
+ fileBtn.onclick=()=>menu(fileBtn,[['📄 Novo projeto',clk('new')],['📂 Abrir projeto (JSON)',clk('open')],['💾 Salvar projeto (JSON)',clk('save')],'-',['🖼 Exportar desenho (SVG)',clk('exportBtn')],'-',['✏ Barra livre (desenho à mão)',clk('freeBtn')],['↶ Desfazer ponto da barra livre',clk('undoBtn')],['▦ Biblioteca de detalhes',clk('libraryBtn')],'-',['# Mostrar/ocultar grade',()=>{const g=$('grade');if(g){g.checked=!g.checked;g.dispatchEvent(new Event('change',{bubbles:true}));g.dispatchEvent(new Event('input',{bubbles:true}));draw()}}]]);
+ aside.insertBefore(fileBtn,aside.firstChild);aside.insertBefore($('editMuro'),fileBtn.nextSibling);aside.insertBefore(b,$('editMuro').nextSibling);
+ $('editTubulo').onclick=()=>menu($('editTubulo'),[['♙ Tubulão / estaca (tipo T1)',()=>{setActiveEditor('tubulo');status('Fundação — tubulão/estaca: dados de detalhe do tipo T1.')}],['▣ Bloco de coroamento (tipo B1)',()=>{setActiveEditor('bloco');status('Fundação — bloco de coroamento: dados de detalhe do tipo B1.')}],'-',['🖌 Copiar características entre fundações',clk('copyFoundation'),'Clique na fundação de origem e depois nas de destino; Esc para sair']]);
+ $('sideSheets').onclick=()=>menu($('sideSheets'),[['▦ Organizar pranchas',clk('organizeSheets')],['📑 Gerenciar e exportar (PDF / DXF)',()=>managerOpen()],'-',['▤ Editar carimbo',clk('editStamp')],['◫ Layers e penas',clk('layerSettings')],['＋ Adicionar prancha',clk('quickNewSheet')],['▤ Faixa de pranchas no CAD',clk('sheetOpen')]]);
  const nav=[...document.querySelectorAll('header .nav button')].find(x=>x.textContent.trim()==='Cálculo');if(nav)nav.onclick=calcOpen;
 })();
 </script></body></html>
