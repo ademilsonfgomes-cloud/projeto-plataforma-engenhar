@@ -1339,7 +1339,7 @@ function drawPillarDetails(parent){
    else{const steps=Math.max(3,Math.ceil(v.height/stirrupSpacing));for(let j=1;j<steps;j++){const y=top+j*drawH/steps;ln(x+2,y,x+w-2,y,blue,.85)}}
   }
   elevation(xH,wH);elevation(xB,wB);
-  if(SZ.two){const yz=bottom-SZ.z*sc;ln(xH-6,yz,xH+wH+6,yz,'#e0a020',1,{'stroke-dasharray':'4 3'});txt(xH+wH+8,(yz+bottom)/2,`Ø${ceDia(SZ.d1)} c/${ceDia(SZ.s1)}`,9,gold,{'data-pillar-arm':'N1'});txt(xH+wH+8,(top+yz)/2,`Ø${ceDia(SZ.d2)} c/${ceDia(SZ.s2)}`,9,gold,{'data-pillar-arm':'N1'});dimV(yz,bottom,xH-34,xH,String(SZ.z),g)}
+  if(SZ.two){const yz=bottom-SZ.z*sc;ln(xH-6,yz,xH+wH+6,yz,'#e0a020',1,{'stroke-dasharray':'4 3'});txt(xH+wH+8,(yz+bottom)/2,`Ø${ceDia(SZ.d1)} c/${ceDia(SZ.s1)}`,9,gold,{'data-pillar-arm':'N1'});txt(xH+wH+8,(top+yz)/2,`Ø${ceDia(SZ.d2)} c/${ceDia(SZ.s2)}`,9,gold,{'data-pillar-arm':'N1'});dimV(yz,bottom,xH-40,xH,`N1 · 0 a ${SZ.z}`,g);dimV(top,yz,xH-40,xH,`${SZ.difDia?'N19':'N1'} · ${SZ.z} a ${v.height}`,g)}
   dimV(top,bottom,xH-22,xH,v.variable?'H':String(v.height),g);
   // Sem bloco: espera reta, ancorada 80Ø dentro da estaca/tubulão (sem dobra no pé).
   const embedOf=dia=>v.noBlock?80*dia/10:v.blockHeight,maxEmbed=Math.max(...waits.map(w=>embedOf(w.dia)));
@@ -2800,7 +2800,9 @@ function calcApplyFoundation(){
  for(const [code,Md] of mreq){const v=foundationValues('pile',code),D=Number(v.shaft)||60,cov=Number(v.cover)||5,st=Number(v.stDia)||8;let best=null;
   // V289 — até Ø25 e 30 barras, com espaçamento livre ≥ máx(2 cm; Ø) no círculo das barras.
   const fitN=(dia,n)=>Math.PI*(D-2*cov-2*st/10-dia/10)/n-dia/10>=Math.max(2,dia/10);
-  for(const dia of [12.5,16,20,25])for(let n=6;n<=30;n++){if(!fitN(dia,n))break;const As=n*calcBar(dia);if(As>.04*Math.PI*D*D/4)break;if(best&&As>=best.As)continue;if(As<(amin.get(code)||0)-1e-9)continue;if(calcCircleMRd(D,cov,n,dia,st)>=Md)best={n,dia,As}}
+  const SCf=calcSolCtx&&calcSolCtx.tab==='fundacao'?calcSolCtx:null,fopts=[];
+  for(const dia of SCf?SCf.dias:[12.5,16,20,25])for(let n=6;n<=30;n++){if(!fitN(dia,n))break;const As=n*calcBar(dia);if(As>.04*Math.PI*D*D/4)break;if(As<(amin.get(code)||0)-1e-9)continue;if(calcCircleMRd(D,cov,n,dia,st)>=Md){fopts.push({n,dia,As});break}}
+  fopts.sort((p,q)=>p.As-q.As);if(SCf){SCf.n=Math.max(SCf.n||0,fopts.length);if(!fopts.length)SCf.none=true;else{best=fopts[SCf.idx%fopts.length];SCf.cur=(SCf.cur?SCf.cur+' · ':'')+`${code}: ${best.n}Ø${ceDia(best.dia)}`}}else best=fopts[0]||null;
   if(!best){const D2=Math.ceil(D*Math.cbrt(Md/Math.max(1e-9,calcCircleMRd(D,cov,Math.max(6,Math.floor(Math.PI*(D-2*cov-3)/4.5)),20,st)))/10)*10;msg.push(`${code} fuste: nenhuma armadura que caiba (até Ø25) resiste a Md = ${calcFmt(Md,0)} kN·m no fuste Ø${D} — aumente o diâmetro (ordem de Ø${D2}) ou reduza o vão entre pilares`)}
   if(best&&(best.n!==Number(v.bars)||best.dia!==Number(v.barDia))){msg.push(`${code} fuste: ${v.bars}Ø${v.barDia} → ${best.n}Ø${String(best.dia).replace('.',',')}`);calcSetPile(code,'bars',best.n);calcSetPile(code,'barDia',best.dia)}
   // Comprimento da armadura: cobre a zona de momento (f + 60 cm) e o mínimo armado da estaca; nunca maior que a estaca.
@@ -2817,14 +2819,15 @@ function calcApplyFoundation(){
 function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).length){pillarArmsBy={};prev.push('armaduras individuais dos pilares substituídas pela do cálculo')}
  const rs=calcPillar();if(!rs.length)return;const a=pillarN2(),N1=pillarArms.N1,cover=Number(N1.cover)||3,S=calcSettings;
  const Asw=Math.max(...rs.map(r=>r.AswReq)),bMin=Math.min(...rs.map(r=>r.b)),msg=prev;
- const fcd=S.fck/S.gc/10,fyd=S.fyk/S.gs/10,dias=[10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25)&&x>=(Number(S.minDia)||10));
+ const SC=calcSolCtx&&calcSolCtx.tab==='pilar'?calcSolCtx:null;if(SC)SC.list=[];
+ const fcd=S.fck/S.gc/10,fyd=S.fyk/S.gs/10,dias=SC?[...SC.dias].sort((p,q)=>p-q):[10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25)&&x>=(Number(S.minDia)||10));
  // Para cada bitola: até 2 camadas no tardoz (n1 ≤ nMax por camada) e armadura de compressão na face externa.
  let pick=null;
  // 1ª passada: uma camada (menor bitola que caiba); 2ª passada: duas camadas no tardoz.
- for(const layers of [1,2,3])for(const dia of dias){if(pick)break;
+ for(const layers of [1,2,3])for(const dia of dias){if(pick&&!SC)break;
   const sMin=Math.max(2,dia/10,2.28),bw=bMin-2*cover-2*(Number(N1.dia)||5)/10,nMax=Math.floor((bw+sMin)/(dia/10+sMin));if(nMax<2)continue;
   // V283 — 2ª camada só em PAR, encostada nas pernas do estribo (sem barra solta no meio, sem tarugo).
-  for(const n2 of layers===1?[0]:layers===2?[2]:Array.from({length:Math.max(0,nMax-2)},(_,k)=>k+3)){if(pick)break;for(let n1=2;n1<=nMax;n1++){if(n2>0&&n1<nMax)continue;
+  for(const n2 of layers===1?[0]:layers===2?[2]:Array.from({length:Math.max(0,nMax-2)},(_,k)=>k+3)){if(pick&&!SC)break;if(SC&&SC.list.some(x=>x.dia===dia&&x.layers===layers))break;for(let n1=2;n1<=nMax;n1++){if(n2>0&&n1<nMax)continue;
    const t={...a,cornerDia:dia,soloN:n1-2,soloDia:dia,soloN2:n2,soloDia2:dia};let ok=true,nc=2,dc=10,need2=null;
    for(const r of rs){const G=calcPillarGeom({...t,cornerExtDia:dc,extN:0},r.h,cover,Number(N1.dia)||5),BN=calcBending(r.Md*100,r.b,G.d,G.dp,fcd,fyd),need=Math.max(BN.As,.0015*r.b*r.h);
     if(G.As<need-1e-9){ok=false;break}
@@ -2833,8 +2836,9 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
      let best=null;for(const dcc of [10,12.5,16,20,25].filter(x=>x<=(Number(S.maxDia)||25))){const sm=Math.max(2,dcc/10,2.28),nm=Math.floor((bw+sm)/(dcc/10+sm)),n=Math.max(2,Math.ceil(BN.Asc/calcBar(dcc)-1e-9));if(n<=nm&&(!best||n*calcBar(dcc)<best.A-1e-9))best={dcc,n,A:n*calcBar(dcc)}}
      if(!best){ok=false;break}if(!need2||best.A>need2.A)need2=best}}
    if(ok&&need2){dc=need2.dcc;nc=need2.n}
-   if(ok){pick={dia,n1,n2,dc,nc};break}}}
+   if(ok){const pk={dia,n1,n2,dc,nc,layers};if(SC){SC.list.push(pk);break}pick=pk;break}}}
  }
+ if(SC){SC.list.sort((p,q)=>(p.n1+p.n2)*calcBar(p.dia)+p.nc*calcBar(p.dc)-((q.n1+q.n2)*calcBar(q.dia)+q.nc*calcBar(q.dc)));SC.n=SC.list.length;if(!SC.n){SC.none=true;return}pick=SC.list[SC.idx%SC.n];SC.cur=`tardoz ${pick.n1}Ø${ceDia(pick.dia)}${pick.n2?` + ${pick.n2}Ø${ceDia(pick.dia)} (2ª camada)`:''} · face externa ${pick.nc}Ø${ceDia(pick.dc)}`}
  // V287 — sem solução: aplica a MAIOR armadura que cabe (bitola máxima, camada cheia + par na 2ª) e avisa quanto falta.
  if(!pick){const dmax=dias.at(-1)||16,sm=Math.max(2,dmax/10,2.28),bw0=bMin-2*cover-2*(Number(N1.dia)||5)/10,nM=Math.max(2,Math.floor((bw0+sm)/(dmax/10+sm)));
   const crit=rs.reduce((x,y)=>y.AsReq>x.AsReq?y:x),Amax=(nM+2)*calcBar(dmax);
@@ -3048,6 +3052,15 @@ function calcSugSet(c){if(c.md)calcSettings.maxDia=c.md;if(c.dD){foundationFreez
  if(c.mid!=null){elevationSettings.mid=c.mid;if(c.mid>0)elevationEnabled=true;if($('elevMid'))$('elevMid').value=c.mid}}
 function calcSugDesc(c,base){const t=[];if(c.dn)t.push(`${c.dn>0?'+':''}${c.dn} pilar${Math.abs(c.dn)>1?'es':''} por arrimo (${base.n.map(n=>n+c.dn).join('/')} pilares, vão ≈ ${calcFmt(base.L/(base.n[0]+c.dn-1),2)} m)`);if(c.top&&!base.top)t.push('ligar viga de topo (VT)');if(c.mid!=null&&c.mid!==base.mid)t.push(`${c.mid} VI`);if(c.dB||c.dA)t.push(`pilar ${base.A+(c.dA||0)}×${base.B+(c.dB||0)}`);if(c.md&&c.md!==base.md)t.push(`bitola máx. Ø${String(c.md).replace('.',',')}`);if(c.dD)t.push(`tubulão/estaca Ø${base.D+c.dD}`);return t.join(' + ')||'sem mudança'}
 let calcSugRes=null;
+// V291 — "Procurar solução" por aba (Fundação, Pilar, Viga): mantém a seção, usa as bitolas marcadas e alterna entre as soluções a cada clique.
+let calcSolCtx=null;const calcSolState={pilar:{idx:-1,dias:[10,12.5,16,20]},fundacao:{idx:-1,dias:[12.5,16,20,25]},viga:{idx:-1,dias:[10,12.5,16]}};
+function solBarHTML(tab){const st=calcSolState[tab];return `<div class="sol-bar"><b>Bitolas:</b>${[10,12.5,16,20,25].map(d=>`<button class="sol-d${st.dias.includes(d)?' on':''}" data-sold="${d}">Ø${ceDia(d)}</button>`).join('')}<button id="cSol" class="c-apply" style="margin-left:8px;background:#1d5fa8">🔍 Procurar solução</button><span id="cSolInfo">${st.info||'mantém a seção atual; cada clique traz outra solução'}</span></div>`}
+function calcSolve(tab){const st=calcSolState[tab];if(!st.dias.length){status('Marque pelo menos uma bitola.');return}st.idx++;calcSolCtx={tab,dias:[...st.dias],idx:st.idx,list:[],n:0,cur:''};const was=calcSettings.useCalc;let ctx;
+ try{calcSettings.useCalc=true;if(tab==='pilar')calcApplyPillar();else if(tab==='fundacao')calcApplyFoundation();else calcApplyBeams()}finally{ctx=calcSolCtx;calcSolCtx=null;calcSettings.useCalc=was}
+ try{draw()}catch(e){}
+ if(ctx.none&&!ctx.n){st.idx=-1;st.info=`<span class="c-no">Nenhuma solução com ${st.dias.map(d=>'Ø'+ceDia(d)).join(', ')} nesta seção — aumente a seção ou libere outra bitola.</span>`;status('Procurar solução: nenhuma solução com as bitolas marcadas e a seção atual.')}
+ else{const k=(st.idx%Math.max(1,ctx.n))+1;st.info=`<b>Solução ${k} de ${ctx.n}</b>: ${esc2(ctx.cur||'aplicada')}${ctx.n>1?' · clique de novo para a próxima':''}`;status(`Procurar solução (${tab}): solução ${k} de ${ctx.n} — ${ctx.cur}`)}
+ calcRender()}
 function calcQuickOk(){try{const P=calcPillar(),F=calcFoundation(),B=calcBeams();let BK=[];try{BK=calcBlock()}catch(e){}
  return P.every(r=>r.okM&&r.okV&&r.okRules&&r.okELS)&&F.every(f=>f.ok&&f.okFuste&&f.depth>=f.depthReq-1e-6&&f.okVert!==false&&f.okMin!==false)&&B.every(r=>r.okM&&r.okV)&&BK.every(b=>b.okEsp&&b.okPil&&b.okTie&&calcPileShear(b).ok)}catch(e){return false}}
 function calcSuggest(){const btn=$('cSug');if(btn)btn.textContent='Procurando… (pode levar alguns segundos)';setTimeout(()=>{
@@ -3181,8 +3194,9 @@ function calcApplyBeams(){
  for(const kind of ['VB','VI','VT']){
   const R=rs.filter(r=>r.arms===kind);if(!R.length)continue;const arms=beamArmsOf(kind),b=R[0].kind==='VB'&&R[0].check==='vertical'?R[0].b:R[0].h;
   const reqH=Math.max(0,...R.filter(r=>r.check==='horizontal').map(r=>r.req)),reqB=Math.max(0,...R.filter(r=>r.check==='vertical').map(r=>r.reqB)),reqT=Math.max(0,...R.filter(r=>r.check==='vertical').map(r=>r.reqT));
-  let pick=null;for(const dia of [10,12.5,16]){const A=calcBar(dia);if(2*A<reqH-1e-9)continue; // Ø10 mínimo construtivo
- const qb=Math.max(2,Math.ceil(reqB/A-1e-9)),qt=Math.max(2,Math.ceil(reqT/A-1e-9));if(Math.max(qb,qt)<=4){pick={dia,qb,qt};break}}
+  let pick=null;const SCv=calcSolCtx&&calcSolCtx.tab==='viga'?calcSolCtx:null,vopts=[];for(const dia of SCv?SCv.dias:[10,12.5,16]){const A=calcBar(dia);if(2*A<reqH-1e-9)continue; // Ø10 mínimo construtivo
+ const qb=Math.max(2,Math.ceil(reqB/A-1e-9)),qt=Math.max(2,Math.ceil(reqT/A-1e-9));if(Math.max(qb,qt)<=4){vopts.push({dia,qb,qt});if(!SCv)break}}
+  if(SCv){SCv.n=Math.max(SCv.n||0,vopts.length);if(vopts.length){pick=vopts[SCv.idx%vopts.length];SCv.cur=(SCv.cur?SCv.cur+' · ':'')+`${kind}: ${pick.qt}Ø${ceDia(pick.dia)} sup / ${pick.qb}Ø${ceDia(pick.dia)} inf`}else SCv.none=true}else pick=vopts[0]||null;
   if(!pick){msg.push(`${kind}: armadura necessária acima de 4Ø16 — aumente a seção`);continue}
   const old=`${arms.N2.qty}Ø${arms.N2.dia}/${arms.N3.qty}Ø${arms.N3.dia}`;arms.N2.dia=pick.dia;arms.N3.dia=pick.dia;arms.N2.qty=pick.qt;arms.N3.qty=pick.qb;
   const now=`${arms.N2.qty}Ø${arms.N2.dia}/${arms.N3.qty}Ø${arms.N3.dia}`;if(now!==old)msg.push(`${kind} sup/inf: ${old} → ${now}`);
@@ -3992,7 +4006,9 @@ function calcRender(){
  document.querySelectorAll('#calcDialog .calc-tabs button[data-tab]').forEach(b=>b.classList.toggle('on',b.dataset.tab===S.tab));
  document.querySelectorAll('#calcDialog [data-for]').forEach(l=>l.style.display=l.dataset.for.split(' ').includes(S.tab)||l.dataset.for==='all'?'':'none');
  if(!calcEarth().rows.length){body.innerHTML='<p style="padding:20px">Lance e conclua o muro (aba Arrimos) para calcular.</p>';return}
- body.innerHTML=S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo();
+ body.innerHTML=(['pilar','fundacao','viga'].includes(S.tab)?solBarHTML(S.tab):'')+(S.tab==='opt'?calcTabOpt():S.tab==='quant'?calcTabQuant():S.tab==='viga'?calcTabViga():S.tab==='fundacao'?calcTabFundacao():S.tab==='pilar'?calcTabPilar():S.tab==='resumo'?calcTabResumo():calcTabEmpuxo());
+ body.querySelectorAll('[data-sold]').forEach(b=>b.onclick=()=>{const st=calcSolState[S.tab],d=Number(b.dataset.sold),i=st.dias.indexOf(d);if(i>=0)st.dias.splice(i,1);else st.dias.push(d);st.idx=-1;st.info='';calcRender()});
+ if($('cSol'))$('cSol').onclick=()=>calcSolve(S.tab);
  body.querySelectorAll('tr[data-key]').forEach(tr=>tr.onclick=()=>{calcSettings.sel=tr.dataset.key;calcRender()});
  ceBind(body);ceEnvBind(body);unitsApply(body);unitsLabels();
  if($('cSug'))$('cSug').onclick=calcSuggest;body.querySelectorAll('[data-sug]').forEach(b=>b.onclick=()=>calcSugUse(Number(b.dataset.sug)));if($('cApplyF'))$('cApplyF').onclick=()=>calcApplyFoundation();if($('cApplyP'))$('cApplyP').onclick=()=>calcApplyPillar();if($('cApplyV'))$('cApplyV').onclick=()=>calcApplyBeams();
@@ -4076,7 +4092,7 @@ function calcOpen(){
 .calc-in label{display:flex;flex-direction:column;gap:2px;font-size:10px;min-width:95px;max-width:190px;flex:1 1 95px}.calc-in input,.calc-in select{height:24px;border:1px solid #b5c9da;border-radius:4px;padding:3px 6px;font-size:12px}
 .calc-k{background:#fff;border:1px solid #b5c9da;border-radius:6px;padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ce-pick{background:#fff;border:2px solid;border-radius:5px;padding:3px 8px;font-weight:bold;cursor:pointer;font-size:12px}.ce-pick.on{background:#173a55;color:#fff!important}.ce-q{background:#fff;border:1px solid #c9a24c;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:11px;color:#5a3a00}.ce-q:hover{background:#ffe9b8}
-.pil-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:stretch;margin-bottom:8px}.pil-side{display:flex;flex-direction:column}.pil-side svg{max-width:300px!important;width:100%;height:auto;max-height:330px}.pil-ut{font-size:11px;margin-top:6px}.env-opts{display:flex;flex-direction:column;gap:3px;margin-top:5px;font-size:11px}.env-opts .ce-q{text-align:left;padding:3px 7px;font-size:11px}.env-opts small{color:#5b6b76}.pil-ut .pil-t td:first-child{text-align:left}
+.pil-top{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;align-items:stretch;margin-bottom:8px}.pil-side{display:flex;flex-direction:column}.pil-side svg{max-width:300px!important;width:100%;height:auto;max-height:330px}.pil-ut{font-size:11px;margin-top:6px}.sol-bar{display:flex;align-items:center;flex-wrap:wrap;gap:4px;background:#eef4fa;border:1px solid #b5c9da;border-radius:6px;padding:5px 8px;margin-bottom:8px;font-size:12px}.sol-d{background:#fff;border:1px solid #9bb6ca;border-radius:12px;padding:2px 9px;cursor:pointer;color:#56697a;font-size:11.5px}.sol-d.on{background:#173a55;color:#fff;border-color:#173a55;font-weight:bold}#cSolInfo{margin-left:8px;font-size:11.5px;color:#34495a}.env-opts{display:flex;flex-direction:column;gap:3px;margin-top:5px;font-size:11px}.env-opts .ce-q{text-align:left;padding:3px 7px;font-size:11px}.env-opts small{color:#5b6b76}.pil-ut .pil-t td:first-child{text-align:left}
 .pil-t th,.pil-t td{padding:2px 5px!important;font-size:11px}
 .ce-c{padding:8px 10px!important}.ce-body{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;margin-top:6px}.ce-sec{background:#fff;border:1px solid #e0c78a;border-radius:6px;padding:4px}.ce-sec-svg{width:100%;height:auto;display:block}
 .ce-copy{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;background:#fff;border:1px dashed #c9a24c;border-radius:5px;padding:5px 8px;margin-top:5px;font-size:11px}.ce-copy label{font-weight:bold;cursor:pointer;display:inline-flex;align-items:center;gap:2px}.ce-copy-a a{color:#1d5fa8;cursor:pointer;text-decoration:underline}
