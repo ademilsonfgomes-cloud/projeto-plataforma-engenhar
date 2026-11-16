@@ -42,7 +42,7 @@
           "wallBeamHeight": "40",
           "wallColX": "20",
           "wallColY": "40",
-          "wallHeight": "130",
+          "wallHeight": "120",
           "wallSlope": "0",
           "wallSoil": "left",
           "wallSoilLevel": "",
@@ -50,19 +50,19 @@
         },
         "profile": {
           "top": [
-            -130,
-            -130,
-            -130,
-            -130,
-            -130,
-            -130
+            -220,
+            -220,
+            -220,
+            -220,
+            -220,
+            -220
           ],
           "base": [
-            -300,
-            -300,
-            -300,
-            -300,
-            -300
+            -380,
+            -380,
+            -380,
+            -380,
+            -380
           ],
           "pts": []
         }
@@ -77,7 +77,7 @@
       "wallBeamHeight": "40",
       "wallColX": "20",
       "wallColY": "40",
-      "wallHeight": "130",
+      "wallHeight": "120",
       "wallSlope": "0",
       "wallSoil": "left",
       "wallSoilLevel": "",

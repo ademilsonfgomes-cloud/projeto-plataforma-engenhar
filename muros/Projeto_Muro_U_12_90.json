@@ -4,16 +4,16 @@
   "module": "tubuloes",
   "parameters": {
     "id": "T1",
-    "shaft": "60",
+    "shaft": "80",
     "base": "120",
-    "depth": "360",
+    "depth": "390",
     "baseHeight": "50",
     "skirt": "35",
     "cover": "5",
-    "bars": "11",
+    "bars": "14",
     "barDia": "16",
-    "barLen": "190",
-    "stDia": "6.3",
+    "barLen": "200",
+    "stDia": "8",
     "ringLen": "154.6",
     "spacing": "10",
     "pileKind": "0",
@@ -49,8 +49,8 @@
           "wallBeamWidth": "20",
           "wallBeamHeight": "40",
           "wallColX": "20",
-          "wallColY": "50",
-          "wallHeight": "290",
+          "wallColY": "60",
+          "wallHeight": "380",
           "wallSlope": "0",
           "wallSoil": "left",
           "wallSoilLevel": "",
@@ -64,16 +64,16 @@
             40
           ],
           "base": [
+            -380,
             -300,
-            -240,
-            -160
+            -200
           ],
           "pts": []
         },
         "_H": [
-          290,
-          223.33333333333331,
-          156.66666666666666,
+          380,
+          283.3333333333333,
+          186.66666666666666,
           90
         ]
       },
@@ -84,8 +84,8 @@
           "wallBeamWidth": "20",
           "wallBeamHeight": "40",
           "wallColX": "20",
-          "wallColY": "50",
-          "wallHeight": "290",
+          "wallColY": "60",
+          "wallHeight": "380",
           "wallSlope": "0",
           "wallSoil": "left",
           "wallSoilLevel": "",
@@ -125,8 +125,8 @@
           "wallBeamWidth": "20",
           "wallBeamHeight": "40",
           "wallColX": "20",
-          "wallColY": "50",
-          "wallHeight": "290",
+          "wallColY": "60",
+          "wallHeight": "380",
           "wallSlope": "0",
           "wallSoil": "left",
           "wallSoilLevel": "",
@@ -140,17 +140,17 @@
             40
           ],
           "base": [
-            -220,
-            -260,
-            -300
+            -240,
+            -320,
+            -380
           ],
           "pts": []
         },
         "_H": [
           160,
-          203.33333333333334,
-          246.66666666666669,
-          290
+          233.33333333333331,
+          306.66666666666663,
+          380
         ]
       }
     ],
@@ -162,8 +162,8 @@
       "wallBeamWidth": "20",
       "wallBeamHeight": "40",
       "wallColX": "20",
-      "wallColY": "50",
-      "wallHeight": "290",
+      "wallColY": "60",
+      "wallHeight": "380",
       "wallSlope": "0",
       "wallSoil": "left",
       "wallSoilLevel": "",
@@ -171,11 +171,11 @@
     }
   },
   "blockOffset": {
-    "x": 3389.8424072265625,
+    "x": 3422.08837890625,
     "y": 339.88363151550294
   },
   "tubuloOffset": {
-    "x": 3633.731805419922,
+    "x": 3649.331777191162,
     "y": 43.48363151550293
   },
   "wallOffset": {
@@ -192,7 +192,7 @@
   "pillarArms": {
     "N1": {
       "dia": 5,
-      "spacing": 12,
+      "spacing": 10,
       "cover": 3,
       "hook": 10,
       "zone": 0,
@@ -206,8 +206,8 @@
       "bottomCover": 3,
       "cornerDia": 20,
       "cornerExtDia": 10,
-      "soloLen": 90,
-      "soloN2": 0,
+      "soloLen": 150,
+      "soloN2": 2,
       "soloDia2": 20,
       "soloN": 1,
       "soloDia": 20,
@@ -267,7 +267,7 @@
     "top": true,
     "mid": 0,
     "course": 20,
-    "hDia": 8,
+    "hDia": 10,
     "vDia": 12.5,
     "vSpace": 40,
     "found": true
@@ -320,15 +320,15 @@
     "pile": {
       "pileKind": "0",
       "noBlock": "0",
-      "shaft": "60",
+      "shaft": "80",
       "base": "120",
-      "depth": "360",
+      "depth": "390",
       "baseHeight": "50",
       "skirt": "35",
-      "bars": "11",
+      "bars": "14",
       "barDia": "16",
-      "barLen": "190",
-      "stDia": "6.3",
+      "barLen": "200",
+      "stDia": "8",
       "spacing": "10",
       "topZone": "70",
       "topSpacing": "10"
@@ -339,8 +339,8 @@
       "blockH": "80",
       "blockPile": "50",
       "blockCover": "5",
-      "blockDiaX": "10",
-      "blockDiaY": "10",
+      "blockDiaX": "12.5",
+      "blockDiaY": "12.5",
       "blockDiaC": "8"
     }
   },
@@ -355,11 +355,11 @@
     },
     "VB1": {
       "x": 7252.644540786743,
-      "y": 1805.1490858078002
+      "y": 1865.5990369796752
     },
     "VB2": {
       "x": 8206.985214614868,
-      "y": 1805.1490858078002
+      "y": 1865.5990369796752
     },
     "VB3": {
       "x": 10832.544540786745,
@@ -411,7 +411,7 @@
     },
     "EL3": {
       "x": 17989.2,
-      "y": 1023.2090223312377
+      "y": 1062.2089612960817
     }
   },
   "detailScale": {
@@ -444,11 +444,11 @@
     "blockPile": "50",
     "blockCover": "5",
     "blockSameXY": true,
-    "blockDiaX": "10",
-    "blockDiaY": "10",
+    "blockDiaX": "12.5",
+    "blockDiaY": "12.5",
     "blockDiaC": "8",
-    "blockQtyX": "6",
-    "blockQtyY": "6",
+    "blockQtyX": "7",
+    "blockQtyY": "7",
     "blockQtyC": "3",
     "blockSpX": "15",
     "blockSpY": "15",
