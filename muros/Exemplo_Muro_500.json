@@ -1,0 +1,399 @@
+{
+  "app": "Engenhar Muros",
+  "version": "V125",
+  "module": "tubuloes",
+  "parameters": {
+    "id": "E1",
+    "shaft": "60",
+    "base": "60",
+    "depth": "480",
+    "baseHeight": "10",
+    "skirt": "0",
+    "cover": "5",
+    "bars": "8",
+    "barDia": "16",
+    "barLen": "260",
+    "stDia": "8",
+    "ringLen": "154.6",
+    "spacing": "15",
+    "pileKind": "1",
+    "noBlock": "0",
+    "topZone": "70",
+    "topSpacing": "10"
+  },
+  "printScale": "25",
+  "wall": {
+    "points": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 960,
+        "y": 0
+      }
+    ],
+    "segments": [
+      {
+        "parameters": {
+          "wallLength": "9",
+          "wallPillars": "5",
+          "wallBeamWidth": "20",
+          "wallBeamHeight": "40",
+          "wallColX": "20",
+          "wallColY": "50",
+          "wallHeight": "500",
+          "wallSlope": "0",
+          "wallSoil": "left",
+          "wallSoilLevel": "",
+          "wallFrontLevel": ""
+        }
+      }
+    ],
+    "active": 0,
+    "finished": true,
+    "parameters": {
+      "wallLength": "9",
+      "wallPillars": "5",
+      "wallBeamWidth": "20",
+      "wallBeamHeight": "40",
+      "wallColX": "20",
+      "wallColY": "50",
+      "wallHeight": "500",
+      "wallSlope": "0",
+      "wallSoil": "left",
+      "wallSoilLevel": "",
+      "wallFrontLevel": ""
+    }
+  },
+  "blockOffset": {
+    "x": -226.06308593749998,
+    "y": 526.2947986602783
+  },
+  "tubuloOffset": {
+    "x": 52.54109497070313,
+    "y": 526.2947986602783
+  },
+  "wallOffset": {
+    "x": 105.40000076293946,
+    "y": -304.49773559570315
+  },
+  "wallOrtho": false,
+  "detailsPlaced": true,
+  "foundationOverrides": {},
+  "foundationTypes": {
+    "pile": {},
+    "block": {}
+  },
+  "pillarArms": {
+    "N1": {
+      "dia": 5,
+      "spacing": 15,
+      "cover": 3,
+      "hook": 10
+    },
+    "N2": {
+      "dia": 10,
+      "qty": 6,
+      "topCover": 3,
+      "bottomCover": 3,
+      "cornerDia": 10,
+      "cornerExtDia": 10,
+      "soloLen": 0,
+      "soloN": 0,
+      "soloDia": 10,
+      "extN": 0,
+      "extDia": 10,
+      "latN": 1,
+      "latDia": 10
+    },
+    "N3": {
+      "dia": 10,
+      "qty": 6,
+      "lapFactor": 60,
+      "bend": 21,
+      "follow": 1
+    }
+  },
+  "beamArms": {
+    "N1": {
+      "dia": 5,
+      "spacing": 15,
+      "cover": 3,
+      "hook": 10
+    },
+    "N2": {
+      "dia": 16,
+      "qty": 2,
+      "bend": 15
+    },
+    "N3": {
+      "dia": 16,
+      "qty": 2,
+      "bend": 15
+    }
+  },
+  "topBeamArms": {
+    "N1": {
+      "dia": 5,
+      "spacing": 15,
+      "cover": 3,
+      "hook": 10
+    },
+    "N2": {
+      "dia": 10,
+      "qty": 2,
+      "bend": 15
+    },
+    "N3": {
+      "dia": 10,
+      "qty": 2,
+      "bend": 15
+    }
+  },
+  "midBeamArms": {
+    "N1": {
+      "dia": 5,
+      "spacing": 15,
+      "cover": 3,
+      "hook": 10
+    },
+    "N2": {
+      "dia": 16,
+      "qty": 2,
+      "bend": 15
+    },
+    "N3": {
+      "dia": 16,
+      "qty": 2,
+      "bend": 15
+    }
+  },
+  "elevationEnabled": true,
+  "elevationSettings": {
+    "top": true,
+    "mid": 2,
+    "course": 20,
+    "hDia": 8,
+    "vDia": 12.5,
+    "vSpace": 60,
+    "found": true
+  },
+  "calcSettings": {
+    "gamma": 18,
+    "phi": 33,
+    "c": 0,
+    "q": 10,
+    "mode": "coulomb",
+    "gf": 1.4,
+    "wall": "all",
+    "sel": null,
+    "useCalc": true,
+    "tab": "resumo",
+    "fsTomb": 2,
+    "fsDesl": 1.5,
+    "fck": 25,
+    "fyk": 500,
+    "gc": 1.4,
+    "gs": 1.15,
+    "qDist": 1.5,
+    "useFront": true,
+    "maxDia": 16,
+    "stagger": true,
+    "gAlv": 3,
+    "optR": 60,
+    "alvModel": "cintas",
+    "spt": "",
+    "soil": "areia",
+    "minDepth": 3,
+    "fsVert": 2,
+    "asMinPile": 0.4,
+    "minArm": 2,
+    "water": "",
+    "gsat": 20,
+    "beta": 0
+  },
+  "projectRevisions": [],
+  "beamCompact": [],
+  "detailSheetK": {
+    "T1": 2,
+    "B1": 2
+  },
+  "foundationBaseModels": {
+    "pile": {
+      "pileKind": "1",
+      "noBlock": "0",
+      "shaft": "60",
+      "base": "60",
+      "depth": "480",
+      "baseHeight": "10",
+      "skirt": "0",
+      "bars": "8",
+      "barDia": "16",
+      "barLen": "260",
+      "stDia": "8",
+      "spacing": "15",
+      "topZone": "70",
+      "topSpacing": "10"
+    },
+    "block": {
+      "blockX": "80",
+      "blockY": "80",
+      "blockH": "80",
+      "blockPile": "60",
+      "blockCover": "5",
+      "blockDiaX": "10",
+      "blockDiaY": "10",
+      "blockDiaC": "8"
+    }
+  },
+  "foundationTypeCounter": {
+    "pile": 2,
+    "block": 2
+  },
+  "extraDetailOffsets": {
+    "P1": {
+      "x": 3622.5,
+      "y": 18.45113773345947
+    },
+    "VB1": {
+      "x": 5612.582497406006,
+      "y": 55.702273750305174
+    },
+    "VI1-1": {
+      "x": 5612.582497406006,
+      "y": 422.5673616409302
+    },
+    "VI2-1": {
+      "x": 5612.582497406006,
+      "y": 789.4324495315551
+    },
+    "VT1": {
+      "x": 5612.582497406006,
+      "y": 1156.29753742218
+    },
+    "EL1": {
+      "x": 9189.45,
+      "y": 55.70227375030517
+    }
+  },
+  "detailScale": {
+    "PLANTA": 50,
+    "T1": 25,
+    "B1": 25,
+    "P1": 25,
+    "VB1": 50,
+    "VI1-1": 50,
+    "VI2-1": 50,
+    "VT1": 50,
+    "EL1": 50
+  },
+  "block": {
+    "blockEnabled": true,
+    "blockId": "B1",
+    "blockX": "80",
+    "blockY": "80",
+    "blockH": "80",
+    "blockPile": "60",
+    "blockCover": "5",
+    "blockSameXY": true,
+    "blockDiaX": "10",
+    "blockDiaY": "10",
+    "blockDiaC": "8",
+    "blockQtyX": "4",
+    "blockQtyY": "4",
+    "blockQtyC": "3",
+    "blockSpX": "15",
+    "blockSpY": "15",
+    "blockSpC": "15"
+  },
+  "extra": [],
+  "seq": 3,
+  "stampData": {
+    "contractor": "",
+    "taxid": "",
+    "address": "",
+    "district": "",
+    "complement": "",
+    "lot": "",
+    "block": "",
+    "city": "",
+    "state": "",
+    "responsible": "ADEMILSON FIGUEIREDO GOMES",
+    "crea": "CREA-MG 229.868/D",
+    "revision": "00",
+    "date": "14/11/2026",
+    "email": "ademilsonfgomes@gmail.com",
+    "phone": "",
+    "fck": "",
+    "coverNominal": "",
+    "caa": ""
+  },
+  "sheet": {
+    "sheets": [
+      {
+        "id": 1,
+        "format": "A1",
+        "orientation": "landscape",
+        "scale": 50,
+        "x": 0,
+        "y": 0,
+        "done": false,
+        "kind": "planta",
+        "kinds": [
+          "planta",
+          "fundacoes"
+        ],
+        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · FUNDAÇÕES — ESTACAS E BLOCOS",
+        "mixed": true
+      },
+      {
+        "id": 2,
+        "format": "A1",
+        "orientation": "landscape",
+        "scale": 25,
+        "x": 3579.9,
+        "y": 0,
+        "done": false,
+        "kind": "pilares",
+        "kinds": [
+          "pilares"
+        ],
+        "title": "PILARES",
+        "mixed": false
+      },
+      {
+        "id": 3,
+        "format": "A1",
+        "orientation": "landscape",
+        "scale": 50,
+        "x": 5519.85,
+        "y": 0,
+        "done": false,
+        "kind": "vigas",
+        "kinds": [
+          "vigas"
+        ],
+        "title": "VIGAS BALDRAME E CINTAS DE TOPO",
+        "mixed": false
+      },
+      {
+        "id": 4,
+        "format": "A1",
+        "orientation": "landscape",
+        "scale": 50,
+        "x": 9099.75,
+        "y": 0,
+        "done": false,
+        "kind": "elevacoes",
+        "kinds": [
+          "elevacoes"
+        ],
+        "title": "ELEVAÇÕES DOS ARRIMOS",
+        "mixed": false
+      }
+    ],
+    "active": 1,
+    "next": 5
+  }
+}
