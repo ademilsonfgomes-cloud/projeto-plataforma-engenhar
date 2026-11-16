@@ -1316,8 +1316,8 @@ function drawPillarDetails(parent){
   const SZ=stirZones(pillarArms.N1,v.height),stirrupQty=SZ.qty;
   const stirrupCut=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*(10*stirrupDiameter/10));
   let ty=ey+eh+38;
-  txt(sx-12,ty,v.variable?`ESTRIBOS Ø${stirrupDiameter.toFixed(1).replace('.',',')} ${SZ.txt} · COMPR. ${stirrupCut} cm · QTD. NO QUADRO`:SZ.difDia?`N1 · ${SZ.q1} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${ceDia(SZ.s1)} até ${SZ.z} cm`:`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm ${SZ.txt}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
-  if(SZ.difDia&&!v.variable){const cut2=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*SZ.d2);txt(sx-12,ty,`N19 · ${SZ.q2} Ø${ceDia(SZ.d2)} C≈${cut2} cm c/${ceDia(SZ.s2)} acima`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15}
+  txt(sx-12,ty,v.variable?`ESTRIBOS Ø${stirrupDiameter.toFixed(1).replace('.',',')} ${SZ.txt} · COMPR. ${stirrupCut} cm · QTD. NO QUADRO`:SZ.difDia?`N1 · ${SZ.q1} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${ceDia(SZ.s1)}`:`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm ${SZ.txt}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
+  if(SZ.difDia&&!v.variable){const cut2=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*SZ.d2);txt(sx-12,ty,`N19 · ${SZ.q2} Ø${ceDia(SZ.d2)} C≈${cut2} cm c/${ceDia(SZ.s2)}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15}
   txt(sx-12,ty,`Cobrimento: ${cover} cm · corte e quantidade preliminares`,8,gold);
   // Composição das barras longitudinais por face (face superior da seção = tardoz/solo).
   ty+=18;txt(sx-12,ty,'BARRAS LONGITUDINAIS POR FACE',10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
