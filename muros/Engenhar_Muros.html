@@ -1025,10 +1025,15 @@ function drawWallElevations(parent){
 // Edição compartilhada do modelo P1; individualização P2/P3 será etapa posterior.
 // V234 — Armadura longitudinal do pilar por faces: 4 barras de canto + barras adicionais
 // em cada face (tardoz/solo, externa, laterais), cada grupo com quantidade e bitola próprias.
-const pillarArmsDefault=()=>({N1:{dia:5,spacing:15,cover:3,hook:10},N2:{dia:10,qty:6,topCover:3,bottomCover:3,cornerDia:10,cornerExtDia:10,soloLen:0,soloN2:0,soloDia2:10,soloN:0,soloDia:10,extN:0,extDia:10,latN:1,latDia:10},N3:{dia:10,qty:6,lapFactor:60,bend:21,follow:1}});
+const pillarArmsDefault=()=>({N1:{dia:5,spacing:15,cover:3,hook:10,zone:0,spacing2:0,dia2:0},N2:{dia:10,qty:6,topCover:3,bottomCover:3,cornerDia:10,cornerExtDia:10,soloLen:0,soloN2:0,soloDia2:10,soloN:0,soloDia:10,extN:0,extDia:10,latN:1,latDia:10},N3:{dia:10,qty:6,lapFactor:60,bend:21,follow:1}});
 let pillarArms=pillarArmsDefault();
 // V271 — Armadura individual por pilar (como no CPCAD): pillarArmsBy['P3'] = armadura completa só daquele pilar; sem entrada = armadura padrão.
 let pillarArmsBy={};const __paStack=[];
+// V290 — estribo do pilar em duas zonas: denso na base (cortante máximo) e espaçamento máximo da norma acima.
+function stirZones(N1,h){const s1=Math.max(1,Number(N1.spacing)||15),z=Math.max(0,Number(N1.zone)||0),d1=Number(N1.dia)||5,s2r=Number(N1.spacing2)||0,s2=s2r>0?s2r:s1,d2=Number(N1.dia2)||d1;
+ const two=z>0&&z<h-1&&(Math.abs(s2-s1)>1e-9||Math.abs(d2-d1)>1e-9);
+ if(!two)return {two:false,s1,s2:s1,d1,d2:d1,z:0,q1:Math.ceil(h/s1)+1,q2:0,qty:Math.ceil(h/s1)+1,txt:`c/${ceDia(s1)} cm`};
+ const q1=Math.ceil(z/s1)+1,q2=Math.ceil(Math.max(0,h-z)/s2);return {two,s1,s2,d1,d2,z,q1,q2,qty:q1+q2,difDia:Math.abs(d2-d1)>1e-9,txt:`c/${ceDia(s1)} até ${z} cm + ${Math.abs(d2-d1)>1e-9?'Ø'+ceDia(d2)+' ':''}c/${ceDia(s2)} acima`}}
 function pillarArmsRoot(){return __paStack.length?__paStack[0]:pillarArms}
 function pillarArmsFor(id){return (id&&pillarArmsBy[id])||pillarArmsRoot()}
 function withPillarArms(arms,fn){__paStack.push(pillarArms);pillarArms=arms||pillarArms;try{return fn()}finally{pillarArms=__paStack.pop()}}
@@ -1046,8 +1051,8 @@ function pillarN2(){const a=pillarArms.N2;if(a.cornerDia==null){const extra=Math
 // medido a partir do topo da fundação; formam posição própria (comprimento diferente das contínuas).
 function pillarBarGroups(){const a=pillarN2(),soloLen=Math.max(0,Number(a.soloLen)||0),faces=[...(Number(a.cornerExtDia)===Number(a.cornerDia)?[['CANTOS',4,a.cornerDia]]:[['CANTOS TARDOZ',2,a.cornerDia],['CANTOS EXTERNA',2,a.cornerExtDia]]),['TARDOZ',a.soloN,a.soloDia],['TARDOZ 2ª CAMADA',Number(a.soloN2)||0,Number(a.soloDia2)||a.soloDia],['EXTERNA',a.extN,a.extDia],['LATERAIS',2*a.latN,a.latDia]].filter(f=>f[1]>0);const map=new Map();for(const [name,n,dia] of faces){const len=(name==='TARDOZ'||name==='TARDOZ 2ª CAMADA')&&soloLen>0?soloLen:null,k=Number(dia)+'|'+(len||'');if(!map.has(k))map.set(k,{dia:Number(dia),qty:0,parts:[],len});const gr=map.get(k);gr.qty+=n;gr.parts.push(name==='LATERAIS'?`${a.latN}+${a.latN} LATERAIS`:len?`${n} ${name} (COMPL.)`:`${n} ${name}`)}const tokens=['N2','N4','N5','N6','N10','N11'],wt=['N3','N7','N8','N9','N12','N13'];const list=[...map.values()].sort((p,q)=>(p.len?1:0)-(q.len?1:0));const wmap=new Map();list.forEach(gr=>{if(!wmap.has(gr.dia))wmap.set(gr.dia,wt[wmap.size]||'N3')});return list.map((gr,i)=>({...gr,token:tokens[i]||'N2',waitToken:wmap.get(gr.dia)}))}
 let pillarArmEditing=null,pillarArmEditIds=null;
-const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento (cm)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['cornerDia','Cantos do TARDOZ (2 barras, lado do solo) — Ø (mm)'],['cornerExtDia','Cantos da face EXTERNA (2 barras) — Ø (mm)'],['soloN','Face do TARDOZ (solo): barras além dos cantos'],['soloDia','Face do tardoz — Ø (mm)'],['soloLen','Tardoz: comprimento das intermediárias a partir da base (cm, 0 = altura toda)'],['soloN2','Tardoz — 2ª CAMADA: número de barras'],['soloDia2','Tardoz 2ª camada — Ø (mm)'],['extN','Face EXTERNA: barras além dos cantos'],['extDia','Face externa — Ø (mm)'],['latN','CADA face LATERAL: barras além dos cantos'],['latDia','Faces laterais — Ø (mm)'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['follow','Esperas iguais às barras do pilar (1 = sim, 0 = não)'],['dia','Ø se independentes (mm)'],['qty','Quantidade se independentes'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
-const pillarZeroOk=['soloN','extN','latN','follow','soloLen','soloN2'];
+const pillarArmFields={N1:[['dia','Bitola (mm)'],['spacing','Espaçamento na base (cm)'],['zone','Zona da base com esse espaçamento (cm, 0 = altura toda)'],['spacing2','Espaçamento acima da zona (cm)'],['dia2','Bitola acima da zona (mm, 0 = mesma)'],['cover','Cobrimento (cm)'],['hook','Gancho (cm)']],N2:[['cornerDia','Cantos do TARDOZ (2 barras, lado do solo) — Ø (mm)'],['cornerExtDia','Cantos da face EXTERNA (2 barras) — Ø (mm)'],['soloN','Face do TARDOZ (solo): barras além dos cantos'],['soloDia','Face do tardoz — Ø (mm)'],['soloLen','Tardoz: comprimento das intermediárias a partir da base (cm, 0 = altura toda)'],['soloN2','Tardoz — 2ª CAMADA: número de barras'],['soloDia2','Tardoz 2ª camada — Ø (mm)'],['extN','Face EXTERNA: barras além dos cantos'],['extDia','Face externa — Ø (mm)'],['latN','CADA face LATERAL: barras além dos cantos'],['latDia','Faces laterais — Ø (mm)'],['topCover','Desconto superior (cm)'],['bottomCover','Desconto inferior (cm)']],N3:[['follow','Esperas iguais às barras do pilar (1 = sim, 0 = não)'],['dia','Ø se independentes (mm)'],['qty','Quantidade se independentes'],['lapFactor','Transpasse (vezes Ø)'],['bend','Dobra inferior (cm)']]};
+const pillarZeroOk=['soloN','extN','latN','follow','soloLen','soloN2','zone','spacing2','dia2'];
 function openPillarArm(pos,ids,gEl){if(!pillarArmFields[pos])return;pillarArmEditIds=ids&&ids.length?ids:null;const PA=pillarArmsFor(pillarArmEditIds?.[0]);withPillarArms(PA,pillarN2);pillarArmEditing=pos;
  // V272 — Mostra as posições como aparecem no desenho (N9, N11…): N1/N2/N3 são só o tipo de armadura editado.
  const drawn=(()=>{if(!gEl)return '';const out=[],seen=new Set();for(const t of gEl.querySelectorAll(`[data-pillar-arm="${pos}"]`)){for(const m of (t.textContent||'').matchAll(/(\d+)\s*(N\d+)\s*Ø\s*([\d.,]+)/g)){const d=parseFloat(m[3].replace(',','.')),k=m[2]+'|'+d;if(!seen.has(k)){seen.add(k);out.push(`${m[1]} ${m[2]} Ø${String(d).replace('.',',')}`)}}}return out.join(' + ')})();
@@ -1308,10 +1313,11 @@ function drawPillarDetails(parent){
   txt(ex-8,ey+eh/2+3,String(Math.max(0,v.b-2*cover)),10,ink,{'text-anchor':'end'});
   txt(ex+ew/2,ey+eh+14,String(Math.max(0,v.a-2*cover)),10,ink,{'text-anchor':'middle'});
   const stirrupSpacing=pillarArms.N1.spacing,stirrupDiameter=pillarArms.N1.dia;
-  const stirrupQty=Math.ceil(v.height/stirrupSpacing)+1;
+  const SZ=stirZones(pillarArms.N1,v.height),stirrupQty=SZ.qty;
   const stirrupCut=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*(10*stirrupDiameter/10));
   let ty=ey+eh+38;
-  txt(sx-12,ty,v.variable?`ESTRIBOS Ø${stirrupDiameter.toFixed(1).replace('.',',')} c/${stirrupSpacing} cm · COMPR. ${stirrupCut} cm · QTD. NO QUADRO`:`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${stirrupSpacing} cm`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
+  txt(sx-12,ty,v.variable?`ESTRIBOS Ø${stirrupDiameter.toFixed(1).replace('.',',')} ${SZ.txt} · COMPR. ${stirrupCut} cm · QTD. NO QUADRO`:SZ.difDia?`N1 · ${SZ.q1} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${ceDia(SZ.s1)} até ${SZ.z} cm`:`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm ${SZ.txt}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
+  if(SZ.difDia&&!v.variable){const cut2=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*SZ.d2);txt(sx-12,ty,`N19 · ${SZ.q2} Ø${ceDia(SZ.d2)} C≈${cut2} cm c/${ceDia(SZ.s2)} acima`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15}
   txt(sx-12,ty,`Cobrimento: ${cover} cm · corte e quantidade preliminares`,8,gold);
   // Composição das barras longitudinais por face (face superior da seção = tardoz/solo).
   ty+=18;txt(sx-12,ty,'BARRAS LONGITUDINAIS POR FACE',10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
@@ -1329,10 +1335,11 @@ function drawPillarDetails(parent){
   function elevation(x,w){
    rect(x,top,w,drawH,'#334657');
    ln(x+cover*sc,top+3,x+cover*sc,bottom-3,blue,1.6);ln(x+w-cover*sc,top+3,x+w-cover*sc,bottom-3,blue,1.6);
-   const steps=Math.max(3,Math.ceil(v.height/stirrupSpacing));
-   for(let j=1;j<steps;j++){const y=top+j*drawH/steps;ln(x+2,y,x+w-2,y,blue,.85)}
+   if(SZ.two){for(let zz=SZ.s1;zz<SZ.z;zz+=SZ.s1){const y=bottom-zz*sc;ln(x+2,y,x+w-2,y,blue,.85)}for(let zz=SZ.z;zz<v.height-1;zz+=SZ.s2){const y=bottom-zz*sc;ln(x+2,y,x+w-2,y,blue,.85)}}
+   else{const steps=Math.max(3,Math.ceil(v.height/stirrupSpacing));for(let j=1;j<steps;j++){const y=top+j*drawH/steps;ln(x+2,y,x+w-2,y,blue,.85)}}
   }
   elevation(xH,wH);elevation(xB,wB);
+  if(SZ.two){const yz=bottom-SZ.z*sc;ln(xH-6,yz,xH+wH+6,yz,'#e0a020',1,{'stroke-dasharray':'4 3'});txt(xH+wH+8,(yz+bottom)/2,`Ø${ceDia(SZ.d1)} c/${ceDia(SZ.s1)}`,9,gold,{'data-pillar-arm':'N1'});txt(xH+wH+8,(top+yz)/2,`Ø${ceDia(SZ.d2)} c/${ceDia(SZ.s2)}`,9,gold,{'data-pillar-arm':'N1'});dimV(yz,bottom,xH-34,xH,String(SZ.z),g)}
   dimV(top,bottom,xH-22,xH,v.variable?'H':String(v.height),g);
   // Sem bloco: espera reta, ancorada 80Ø dentro da estaca/tubulão (sem dobra no pé).
   const embedOf=dia=>v.noBlock?80*dia/10:v.blockHeight,maxEmbed=Math.max(...waits.map(w=>embedOf(w.dia)));
@@ -1385,10 +1392,10 @@ function drawPillarDetails(parent){
    head.forEach((h,k)=>qt(cols[k]+1.5*QU,ty+5*QU,h,{fill:'#7ce3fa'}));
    let ry=ty+7*QU;
    rowsQ.forEach(([pid,ins],r)=>{ln(cols[0],ry,cols[7],ry,'#8198a8',.5);
-    const hh=ins.h,len=Math.max(0,hh-pillarArms.N2.topCover-pillarArms.N2.bottomCover),nst=Math.ceil(hh/pillarArms.N1.spacing)+1;
+    const hh=ins.h,len=Math.max(0,hh-pillarArms.N2.topCover-pillarArms.N2.bottomCover),SZq=stirZones(pillarArms.N1,hh),nst=SZq.difDia?SZq.q1:SZq.qty;
     qt(cols[0]+1.5*QU,ry+4.6*QU,`P${pid}`,{'font-weight':'bold'});qt(cols[1]+1.5*QU,ry+4.6*QU,String(hh));qt(cols[2]+1.5*QU,ry+4.6*QU,levelFmt(ins.top));qt(cols[3]+1.5*QU,ry+4.6*QU,levelFmt(ins.base));
     groups.forEach((gr,k)=>qt(cols[4]+1.5*QU,ry+4.6*QU+k*lineH,`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C${gr.len?'≈':'='}${gr.len?Math.round(Math.min(gr.len,len)+(v.noBlock?80*gr.dia/10:v.blockHeight)+(v.noBlock?0:pillarArms.N3.bend)):len} cm`,{'data-pillar-arm':'N2',...(gr.len?{'data-shape':v.noBlock?'reta':'espera'}:{})}));
-    qt(cols[5]+1.5*QU,ry+4.6*QU,`${nst} N1 Ø${pillarArms.N1.dia.toFixed(1).replace('.',',')} C≈${stirrupCut} cm`,{'data-pillar-arm':'N1'});
+    qt(cols[5]+1.5*QU,ry+4.6*QU,`${nst} N1 Ø${pillarArms.N1.dia.toFixed(1).replace('.',',')} C≈${stirrupCut} cm`,{'data-pillar-arm':'N1'});if(SZq.difDia)qt(cols[5]+1.5*QU,ry+4.6*QU+lineH,`${SZq.q2} N19 Ø${ceDia(SZq.d2)} C≈${Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*SZq.d2)} cm`,{'data-pillar-arm':'N1'});
     waits.forEach((w,k)=>{const emb=v.noBlock?80*w.dia/10:v.blockHeight,lap=lapFac()*w.dia/10,cutW=Math.round(emb+lap+(v.noBlock?0:pillarArms.N3.bend));qt(cols[6]+1.5*QU,ry+4.6*QU+k*lineH,`${w.qty} ${w.token} Ø${w.dia.toFixed(1).replace('.',',')} C≈${cutW} cm`,{'data-pillar-arm':'N3',...(v.noBlock?{'data-shape':'reta'}:{})})});
     ry+=heights[r];
    });
@@ -2752,12 +2759,13 @@ function calcPillar(){
   const BN=calcBending(Md,b,d,G.dp,fcd,fyd),AsMin=.0015*b*h,AsCalc=BN.As,AsReq=Math.max(AsCalc,AsMin),AscReq=BN.Asc,x=BN.x,xd=BN.xd;
   const disc=Number.isFinite(AscReq)&&AsReq+AscReq<=.04*b*h?1:-1;
   const Vd=r.Vd,VRd2=.27*(1-S.fck/250)*fcd*b*d,Vc=.6*fctd*b*d,AswMin=.2*fctm/S.fyk*b,AswCalc=Math.max(0,(Vd-Vc)/(.9*d*fywd)),AswReq=Math.max(AswCalc,AswMin);
-  let okM=disc>0&&AsDet>=AsReq-1e-6&&AscDet>=AscReq-1e-6;const okV=Vd<=VRd2&&AswDet>=AswReq-1e-6;
+  let okM=disc>0&&AsDet>=AsReq-1e-6&&AscDet>=AscReq-1e-6;let okV=Vd<=VRd2&&AswDet>=AswReq-1e-6;
+  let zoneChk=null;{const SZ=stirZones(N1,r.H*100);if(SZ.two&&r.strip.E>0){const zH=SZ.z/100,Ez=calcStrip(Math.max(0,r.H-zH),S,calcK(S),r.strip.Hf,r.strip.zw).E,Vz=Vd*Ez/r.strip.E,Asw2=2*calcBar(SZ.d2)/SZ.s2,req2=Math.max(Math.max(0,(Vz-Vc)/(.9*d*fywd)),AswMin);zoneChk={z:zH,Vz,Asw2,req2,s2:SZ.s2,d2:SZ.d2,ok:Asw2>=req2-1e-9};okV=okV&&zoneChk.ok}}
   const soloLen=Math.max(0,Number(a.soloLen)||0);let cut=null;
   if(soloLen>0&&(Number(a.soloN)>0||G.n2>0)&&r.H>0){const lb=40*(Number(a.soloDia)||10)/10,z0=Math.max(0,(soloLen-lb)/100),H2=Math.max(0,r.H-z0);
    const K=calcK(S),Mz=r.strip.M>0?r.Md*calcStrip(H2,S,K,r.strip.Hf,r.strip.zw).M/r.strip.M:0,As2=2*calcBar(a.cornerDia),dc1=G.d1,x2=As2*fyd/(.68*b*fcd),MRd2=As2*fyd*(dc1-.4*x2)/100;
    cut={soloLen,lb,z0,Mz,MRd2,ok:MRd2>=Mz-1e-9};okM=okM&&cut.ok}
-  const row={...r,b,h,d,dp:G.dp,G,x,xd,AsCalc,AsMin,AsReq,AsDet,AscReq,AscDet,dupla:BN.dupla,Mlim:BN.Mlim/100,sc:BN.sc,VRd2,Vc,AswReq,AswDet,okM,okV,fcd,fyd,fctd,fywd,fctm,disc,cut};
+  const row={...r,zoneChk,b,h,d,dp:G.dp,G,x,xd,AsCalc,AsMin,AsReq,AsDet,AscReq,AscDet,dupla:BN.dupla,Mlim:BN.Mlim/100,sc:BN.sc,VRd2,Vc,AswReq,AswDet,okM,okV,fcd,fyd,fctd,fywd,fctm,disc,cut};
   row.rules=calcPillarRules(row);row.els=calcPillarELS(row,AsDet,Number(a.cornerDia)||10);row.okRules=row.rules.ok;row.okELS=!row.els||(row.els.okD&&row.els.okW);row.own=!!pillarArmsBy[r.id];
   return row;
  }));
@@ -2869,7 +2877,15 @@ function calcApplyPillar(depth=0,prev=[]){if(!depth&&Object.keys(pillarArmsBy).l
  // Regras do pilar: espaçamento máximo do estribo; transpasse calculado (NBR 6118) com mínimos.
  {const R=calcPillarRules(rs[0]);if(Number(N1.spacing)>R.sMax){const ns=Math.floor(R.sMax);msg.push(`estribo do pilar c/${N1.spacing} → c/${ns} (regra 12Ø / 20 cm)`);N1.spacing=ns}
   const fac=calcLapReq(calcPillar()).fac;
-  if(fac!==Number(pillarArms.N3.lapFactor)){msg.push(`transpasse das esperas ${pillarArms.N3.lapFactor}Ø → ${fac}Ø (calculado)`);pillarArms.N3.lapFactor=fac}}
+  if(fac!==Number(pillarArms.N3.lapFactor)){msg.push(`transpasse das esperas ${pillarArms.N3.lapFactor}Ø → ${fac}Ø (calculado)`);pillarArms.N3.lapFactor=fac}
+  {const R2=calcPillarRules(rs[0]),s1=Number(N1.spacing),s2=Math.max(s1,Math.floor(Math.min(R2.sMax,20)/2.5)*2.5);N1.zone=0;N1.spacing2=0;N1.dia2=0;
+   const aL=pillarN2(),maxL=Math.max(Number(aL.cornerDia)||10,Number(aL.cornerExtDia)||10,Number(aL.soloN)?Number(aL.soloDia)||10:0,Number(aL.soloN2)?Number(aL.soloDia2)||10:0,Number(aL.extN)?Number(aL.extDia)||10:0,Number(aL.latN)?Number(aL.latDia)||10:0);
+   const aMin=Math.max(...rs.map(r=>.2*r.fctm/S.fyk*r.b)),d2=[5,6.3,8,10,12.5].find(x=>x>=maxL/4-1e-9&&2*calcBar(x)/s2>=aMin-1e-9&&x<=Number(N1.dia))||Number(N1.dia);
+   if(s2>s1+1e-9||d2<Number(N1.dia)-1e-9){let zc=0;const fywd=Math.min(S.fyk/S.gs/10,43.5),Asw2=2*calcBar(d2)/s2;
+    for(const r of calcPillar()){if(!(r.H>0)||!(r.strip.E>0))continue;const AswMin=.2*r.fctm/S.fyk*r.b;let zr=r.H*100;
+     for(let z=0;z<=r.H*100;z+=10){const Ez=calcStrip(Math.max(0,r.H-z/100),S,calcK(S),r.strip.Hf,r.strip.zw).E,Vz=r.Vd*Ez/r.strip.E,req=Math.max(Math.max(0,(Vz-r.Vc)/(.9*r.d*fywd)),AswMin);if(Asw2>=req-1e-9){zr=z;break}}zc=Math.max(zc,zr)}
+    const Hm=Math.max(...rs.map(r=>r.H))*100;zc=Math.ceil(zc/10)*10;
+    if(zc<Hm-30){N1.zone=Math.max(zc,30);N1.spacing2=s2;N1.dia2=d2<Number(N1.dia)?d2:0;msg.push(`estribo em duas zonas: Ø${ceDia(N1.dia)} c/${ceDia(s1)} até ${N1.zone} cm e Ø${ceDia(d2)} c/${ceDia(s2)} acima`)}}}}
  draw();
  // A troca de bitola altera d: repete até estabilizar.
  if(depth<3&&calcPillar().some(r=>!r.okM||!r.okV))return calcApplyPillar(depth+1,msg);
@@ -3002,7 +3018,7 @@ function calcTabPilar0(){
 ${r.cut?`   Complementares do tardoz (descem na fundação, sem espera) até ${r.cut.soloLen} cm acima da base (ancoragem 40Ø = ${calcFmt(r.cut.lb,0)} cm): acima de ${calcFmt(r.cut.z0)} m só os 2 cantos Ø${a.cornerDia}\n   Md nesse ponto = ${calcFmt(r.cut.Mz)} kN·m · MRd dos cantos = ${calcFmt(r.cut.MRd2)} kN·m ${r.cut.ok?'✓':'✗'}\n`:''}   Detalhado no tardoz: 2 cantos Ø${a.cornerDia}${Number(a.soloN)?` + ${a.soloN} Ø${a.soloDia}`:''} = <b>${calcFmt(r.AsDet)} cm²</b> ${r.okM?'✓':'✗'}
 4) Cisalhamento: Vd = ${calcFmt(r.Vd)} kN · VRd2 = 0,27·(1 − fck/250)·fcd·b·d = ${calcFmt(r.VRd2)} kN ${r.Vd<=r.VRd2?'✓':'✗'}
    Vc = 0,6·fctd·b·d = ${calcFmt(r.Vc)} kN → Asw/s nec = máx[(Vd − Vc)/(0,9·d·fywd); 0,2·fctm/fywk·b] = <b>${calcFmt(r.AswReq*100)} cm²/m</b>
-   Detalhado: estribo Ø${N1.dia} c/${N1.spacing} (2 ramos) = <b>${calcFmt(r.AswDet*100)} cm²/m</b> ${r.AswDet>=r.AswReq-1e-6?'✓':'✗'}
+   Detalhado: estribo Ø${N1.dia} c/${N1.spacing} (2 ramos) = <b>${calcFmt(r.AswDet*100)} cm²/m</b> ${r.AswDet>=r.AswReq-1e-6?'✓':'✗'}${r.zoneChk?`\n   Acima de ${calcFmt(r.zoneChk.z,2)} m: Vd = ${calcFmt(r.zoneChk.Vz)} kN → Asw/s nec ${calcFmt(r.zoneChk.req2*100)} cm²/m · ${r.zoneChk.d2?'Ø'+ceDia(r.zoneChk.d2)+' ':''}c/${ceDia(r.zoneChk.s2)} = <b>${calcFmt(r.zoneChk.Asw2*100)} cm²/m</b> ${r.zoneChk.ok?'✓':'✗'}`:''}
 Hipóteses: flexão simples (peso próprio do pilar e da alvenaria desprezados), engaste no topo da VB, γc = ${calcFmt(S.gc,2)}, γs = ${calcFmt(S.gs,2)}.`;
  return `<div class="calc-k">Armadura detalhada no tardoz: <b>${(()=>{const v=rs.map(x=>x.AsDet),lo=Math.min(...v),hi=Math.max(...v);return hi-lo>1e-6?calcFmt(lo)+' a '+calcFmt(hi):calcFmt(lo)})()} cm²</b> · maior As,nec: <b>${calcFmt(Math.max(...rs.map(x=>x.AsReq).filter(Number.isFinite)))} cm²</b> (${crit.id}) · ${rs.every(x=>x.okM&&x.okV)?'<span class="c-ok">todos os pilares passam</span>':'<span class="c-no">há pilar que não passa</span>'}
  ${S.useCalc?'<button class="c-apply" id="cApplyP">Aplicar armadura ao detalhamento</button>':''}</div>
@@ -3748,7 +3764,7 @@ function calcPillarRules(r){
   ['Armadura longitudinal máxima (4% Ac fora da emenda; 8% na emenda)',`${calcFmt(AsTot)} ≤ ${calcFmt(AsMax)} cm²`,AsTot<=AsMax+1e-9],
   ['Bitola longitudinal mínima (10 mm)',`Ø${calcFmt(dMin,1)} mm`,dMin>=10-1e-9],
   ['Bitola do estribo ≥ máx(5 mm; Ø/4)',`Ø${calcFmt(Number(N1.dia),1)} ≥ ${calcFmt(tMin,1)} mm`,Number(N1.dia)>=tMin-1e-9],
-  ['Espaçamento do estribo ≤ mín(20 cm; menor lado; 12Ø long.)',`c/${N1.spacing} ≤ ${calcFmt(sMax,1)} cm`,Number(N1.spacing)<=sMax+1e-9]];
+  ['Espaçamento do estribo ≤ mín(20 cm; menor lado; 12Ø long.)',`c/${Math.max(Number(N1.spacing),Number(N1.zone)>0?Number(N1.spacing2)||0:0)} ≤ ${calcFmt(sMax,1)} cm`,Math.max(Number(N1.spacing),Number(N1.zone)>0?Number(N1.spacing2)||0:0)<=sMax+1e-9]];
  return {items,ok:items.every(i=>i[2]),AsTot,AsMin,AsMax,sMax,tMin};
 }
 // ---------- Fuste: cisalhamento (seção circular → retangular equivalente bw = D, d = 0,72·D) ----------
@@ -3908,7 +3924,8 @@ function ceEditPilar(sel,rs){const a=pillarN2(),N1=pillarArms.N1,N3=pillarArms.N
   <div class="ce-grid">
    <b>Tardoz</b>${c('p:N2:cornerDia','Ø cantos',a.cornerDia,'dia')}${c('p:N2:soloN','+ barras',a.soloN,'int')}${c('p:N2:soloDia','Ø barras',a.soloDia,'dia')}${c('p:N2:soloLen','compr. (0=todo)',a.soloLen??0,'num')}${c('p:N2:soloN2','2ª camada nº',a.soloN2??0,'int')}${c('p:N2:soloDia2','Ø 2ª camada',a.soloDia2??a.soloDia,'dia')}
    <b>Externa</b>${c('p:N2:cornerExtDia','Ø cantos',a.cornerExtDia,'dia')}${c('p:N2:extN','+ barras',a.extN,'int')}${c('p:N2:extDia','Ø barras',a.extDia,'dia')}${c('p:N2:latN','laterais + (cada)',a.latN,'int')}${c('p:N2:latDia','Ø laterais',a.latDia,'dia')}${e}
-   <b>Estribo</b>${c('p:N1:dia','Ø estribo',N1.dia,'dia')}${c('p:N1:spacing','c/ (cm)',N1.spacing,'num')}${S.useCalc?`<span class="ce-cell" title="Modo com cálculo: transpasse calculado pela NBR 6118 (9.5.2)"><span>transpasse ×Ø</span><b style="height:23px;line-height:23px;color:#1e6b42">${lapFac()}Ø (auto)</b></span>`:c('p:N3:lapFactor','transpasse ×Ø',N3.lapFactor,'num')}${c('p:sec:wallColX','seção A (cm)',sg.wallColX,'num')}${c('p:sec:wallColY','seção B (cm)',sg.wallColY,'num')}<span class="ce-cell" style="align-self:end;font-size:9.5px;color:#7a6a40;padding-bottom:2px">seção: todos os pilares${S.wall==='all'?'':' do arrimo '+(Number(S.wall)+1)}</span>
+   <b>Estribo</b>${c('p:N1:dia','Ø estribo',N1.dia,'dia')}${c('p:N1:spacing','c/ base (cm)',N1.spacing,'num')}${S.useCalc?`<span class="ce-cell" title="Modo com cálculo: transpasse calculado pela NBR 6118 (9.5.2)"><span>transpasse ×Ø</span><b style="height:23px;line-height:23px;color:#1e6b42">${lapFac()}Ø (auto)</b></span>`:c('p:N3:lapFactor','transpasse ×Ø',N3.lapFactor,'num')}${c('p:sec:wallColX','seção A (cm)',sg.wallColX,'num')}${c('p:sec:wallColY','seção B (cm)',sg.wallColY,'num')}<span class="ce-cell" style="align-self:end;font-size:9.5px;color:#7a6a40;padding-bottom:2px">seção: todos os pilares${S.wall==='all'?'':' do arrimo '+(Number(S.wall)+1)}</span>
+   <b>Estribo 2</b>${c('p:N1:zone','zona base até (cm, 0 = toda)',N1.zone??0,'num')}${c('p:N1:spacing2','c/ acima (cm)',N1.spacing2??0,'num')}${c('p:N1:dia2','Ø acima (0 = mesmo)',N1.dia2??0,'num')}${e}${e}${e}
   </div></div>
   <div class="ce-sec">${ceSectionSVG(sel)}</div></div></div>`;}
 function ceEditFundacao(){const F=calcFoundation(),codes=[...new Set(F.map(r=>r.code))];let B=[];try{B=calcBlock()}catch(e){}const bcodes=[...new Set(B.filter(b=>!b.noBlk).map(b=>b.bc||'B1'))];
@@ -3922,7 +3939,7 @@ function ceEditViga(){const rs=calcBeams(),kinds=[...new Set(rs.filter(r=>r.kind
  g.unshift(['Seção da VB',[ceF('v:sec:wallBeamWidth','Largura (cm)',sg.wallBeamWidth,'num'),ceF('v:sec:wallBeamHeight','Altura (cm)',sg.wallBeamHeight,'num')]]);
  if(rs.some(r=>r.kind==='ALV'))g.push(['Alvenaria armada',[ceF('v:alv:vDia','Vertical Ø',ES.vDia,'dia'),ceF('v:alv:vSpace','Vertical c/ (cm)',ES.vSpace,'num'),ceF('v:alv:hDia','Horizontal Ø (por fiada)',ES.hDia,'dia')]]);
  return ceBox('Editar as vigas aqui (armadura e seção)',g);}
-const CE_ZERO=['soloN','soloN2','extN','latN','soloLen'];
+const CE_ZERO=['soloN','soloN2','extN','latN','soloLen','zone','spacing2'];
 function calcEditSet(key,raw){const v=Number(raw),[t,a,b,c]=key.split(':');
  if(!Number.isFinite(v)||v<0)return 'Valor inválido.';const f=c||b;
  const isCount=/^(soloN|soloN2|extN|latN|bars|qty|blockQtyX)$/.test(f);if(!CE_ZERO.includes(f)&&v<=0)return 'Informe um valor maior que zero.';
