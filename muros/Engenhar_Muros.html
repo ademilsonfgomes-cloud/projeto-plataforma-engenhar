@@ -2790,8 +2790,10 @@ function calcApplyFoundation(){
  // Armadura do fuste: a combinação de menor área (mín. 6 barras) com MRd ≥ Md máximo das estacas do tipo.
  const FR=calcFoundation(),mreq=new Map(),amin=new Map(),flen=new Map();for(const r of FR){mreq.set(r.code,Math.max(mreq.get(r.code)||0,r.Mdmax));amin.set(r.code,Math.max(amin.get(r.code)||0,r.AsMinF));flen.set(r.code,Math.max(flen.get(r.code)||0,r.f))}
  for(const [code,Md] of mreq){const v=foundationValues('pile',code),D=Number(v.shaft)||60,cov=Number(v.cover)||5,st=Number(v.stDia)||8;let best=null;
-  for(const dia of [12.5,16,20])for(let n=6;n<=16;n++){const As=n*calcBar(dia);if(best&&As>=best.As)continue;if(As<(amin.get(code)||0)-1e-9)continue;if(calcCircleMRd(D,cov,n,dia,st)>=Md)best={n,dia,As}}
-  if(!best){const D2=Math.ceil(D*Math.cbrt(Md/Math.max(1e-9,calcCircleMRd(D,cov,16,20,st)))/10)*10;msg.push(`${code} fuste: nem 16Ø20 resistem a Md = ${calcFmt(Md,0)} kN·m na estaca Ø${D} — aumente o diâmetro (ordem de Ø${D2}) ou reduza o vão entre pilares`)}
+  // V289 — até Ø25 e 30 barras, com espaçamento livre ≥ máx(2 cm; Ø) no círculo das barras.
+  const fitN=(dia,n)=>Math.PI*(D-2*cov-2*st/10-dia/10)/n-dia/10>=Math.max(2,dia/10);
+  for(const dia of [12.5,16,20,25])for(let n=6;n<=30;n++){if(!fitN(dia,n))break;const As=n*calcBar(dia);if(As>.04*Math.PI*D*D/4)break;if(best&&As>=best.As)continue;if(As<(amin.get(code)||0)-1e-9)continue;if(calcCircleMRd(D,cov,n,dia,st)>=Md)best={n,dia,As}}
+  if(!best){const D2=Math.ceil(D*Math.cbrt(Md/Math.max(1e-9,calcCircleMRd(D,cov,Math.max(6,Math.floor(Math.PI*(D-2*cov-3)/4.5)),20,st)))/10)*10;msg.push(`${code} fuste: nenhuma armadura que caiba (até Ø25) resiste a Md = ${calcFmt(Md,0)} kN·m no fuste Ø${D} — aumente o diâmetro (ordem de Ø${D2}) ou reduza o vão entre pilares`)}
   if(best&&(best.n!==Number(v.bars)||best.dia!==Number(v.barDia))){msg.push(`${code} fuste: ${v.bars}Ø${v.barDia} → ${best.n}Ø${String(best.dia).replace('.',',')}`);calcSetPile(code,'bars',best.n);calcSetPile(code,'barDia',best.dia)}
   // Comprimento da armadura: cobre a zona de momento (f + 60 cm) e o mínimo armado da estaca; nunca maior que a estaca.
   const dep=Number(foundationValues('pile',code).depth)||0,isE=Number(v.pileKind)===1,want=Math.min(dep,Math.max(isE?(Number(calcSettings.minArm)||0)*100:0,Math.ceil(((flen.get(code)||0)+.6)*10)*10,100));
@@ -3339,7 +3341,7 @@ function calcOptEval(cb,ch,sp,D){
  // Fundação
  const F=calcFoundation();let kgF=0,concE=0,depthMax=0,fBars='';
  for(const r of F){const dep=Math.max(100,Math.ceil(r.depthReq*10)*10);depthMax=Math.max(depthMax,dep);
-  let best=null;for(const dia of [12.5,16,20])for(let n=6;n<=16;n++){const A=n*calcBar(dia);if(best&&A>=best.A)continue;if(A<r.AsMinF-1e-9)continue;if(calcCircleMRd(D,Number(r.fCov)||5,n,dia,8)>=r.Mdmax)best={n,dia,A}}
+  let best=null;for(const dia of [12.5,16,20,25])for(let n=6;n<=30;n++){if(Math.PI*(D-2*(Number(r.fCov)||5)-1.6-dia/10)/n-dia/10<Math.max(2,dia/10))break;const A=n*calcBar(dia);if(A>.04*Math.PI*D*D/4)break;if(best&&A>=best.A)continue;if(A<r.AsMinF-1e-9)continue;if(calcCircleMRd(D,Number(r.fCov)||5,n,dia,8)>=r.Mdmax)best={n,dia,A}}
   if(!best)return {cb,ch,sp,D,fail:'fuste sem armadura viável'};
   const bl=Math.min(dep,Math.max(r.kind==='Estaca'?(Number(S.minArm)||0)*100:0,Math.ceil((r.f+.6)*10)*10,100));
   kgF+=best.n*kgm(best.dia)*bl/100+Math.ceil(dep/15)*kgm(8)*Math.PI*(D-10)/100;concE+=Math.PI*D*D/4*dep/1e6;fBars=`${best.n}Ø${String(best.dia).replace('.',',')}`}
