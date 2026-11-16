@@ -3055,10 +3055,20 @@ let calcSugRes=null;
 // V291 — "Procurar solução" por aba (Fundação, Pilar, Viga): mantém a seção, usa as bitolas marcadas e alterna entre as soluções a cada clique.
 let calcSolCtx=null;const calcSolState={pilar:{idx:-1,dias:[10,12.5,16,20]},fundacao:{idx:-1,dias:[12.5,16,20,25]},viga:{idx:-1,dias:[10,12.5,16]}};
 function solBarHTML(tab){const st=calcSolState[tab];return `<div class="sol-bar"><b>Bitolas:</b>${[10,12.5,16,20,25].map(d=>`<button class="sol-d${st.dias.includes(d)?' on':''}" data-sold="${d}">Ø${ceDia(d)}</button>`).join('')}<button id="cSol" class="c-apply" style="margin-left:8px;background:#1d5fa8">🔍 Procurar solução</button><span id="cSolInfo">${st.info||'mantém a seção atual; cada clique traz outra solução'}</span></div>`}
+// Sem solução: testa (1) liberar outra bitola e (2) aumentar a seção/diâmetro, sem alterar o projeto, e devolve o caminho.
+function calcSolTry(tab,dias){const snap=calcFullSnap();calcDrawHold=true;calcSolCtx={tab,dias,idx:0,list:[],n:0,cur:''};let r=null;
+ try{if(tab==='pilar')calcApplyPillar();else if(tab==='fundacao')calcApplyFoundation();else calcApplyBeams();if(calcSolCtx.n&&!calcSolCtx.none)r=calcSolCtx.cur}catch(e){}finally{calcSolCtx=null;calcDrawHold=false;calcFullRestore(snap)}return r}
+function calcSolHint(tab,dias){const out=[];const all=[10,12.5,16,20,25];
+ const extra=all.filter(d=>!dias.includes(d));for(const d of extra){const r=calcSolTry(tab,[...dias,d].sort((p,q)=>p-q));if(r){out.push(`liberando <b>Ø${ceDia(d)}</b> há solução (${esc2(r)})`);break}}
+ const snap=calcFullSnap();
+ try{if(tab==='pilar'){const B0=Number(ceSegs()[0]?.[0]?.parameters.wallColY)||40;for(const dB of [5,10,15,20,25,30,40]){ceSetSeg('wallColY',B0+dB);const r=calcSolTry(tab,dias);if(r){out.push(`com <b>lado B = ${B0+dB} cm</b> há solução com as bitolas marcadas (${esc2(r)})`);break}}}
+  else if(tab==='fundacao'){const D0=Number(foundationValues('pile','T1').shaft)||60;for(const dD of [10,20,30,40]){calcSugSet({dD});const r=calcSolTry(tab,dias);calcFullRestore(snap);if(r){out.push(`com <b>fuste Ø${D0+dD}</b> há solução com as bitolas marcadas (${esc2(r)})`);break}}}
+  else{out.push('aumente a seção da viga ou acrescente uma VI/VT (a faixa de empuxo de cada viga diminui)')}}finally{calcFullRestore(snap)}
+ return out.length?out.join(' · ou '):'nem liberando todas as bitolas nem aumentando a seção — reveja vão entre pilares e premissas'}
 function calcSolve(tab){const st=calcSolState[tab];if(!st.dias.length){status('Marque pelo menos uma bitola.');return}st.idx++;calcSolCtx={tab,dias:[...st.dias],idx:st.idx,list:[],n:0,cur:''};const was=calcSettings.useCalc;let ctx;
  try{calcSettings.useCalc=true;if(tab==='pilar')calcApplyPillar();else if(tab==='fundacao')calcApplyFoundation();else calcApplyBeams()}finally{ctx=calcSolCtx;calcSolCtx=null;calcSettings.useCalc=was}
  try{draw()}catch(e){}
- if(ctx.none&&!ctx.n){st.idx=-1;st.info=`<span class="c-no">Nenhuma solução com ${st.dias.map(d=>'Ø'+ceDia(d)).join(', ')} nesta seção — aumente a seção ou libere outra bitola.</span>`;status('Procurar solução: nenhuma solução com as bitolas marcadas e a seção atual.')}
+ if(ctx.none&&!ctx.n){st.idx=-1;st.info=`<span class="c-no">Nenhuma solução com ${st.dias.map(d=>'Ø'+ceDia(d)).join(', ')} nesta seção.</span> Caminho: ${calcSolHint(tab,[...st.dias])}`;status('Procurar solução: nenhuma solução com as bitolas marcadas e a seção atual.')}
  else{const k=(st.idx%Math.max(1,ctx.n))+1;st.info=`<b>Solução ${k} de ${ctx.n}</b>: ${esc2(ctx.cur||'aplicada')}${ctx.n>1?' · clique de novo para a próxima':''}`;status(`Procurar solução (${tab}): solução ${k} de ${ctx.n} — ${ctx.cur}`)}
  calcRender()}
 function calcQuickOk(){try{const P=calcPillar(),F=calcFoundation(),B=calcBeams();let BK=[];try{BK=calcBlock()}catch(e){}
