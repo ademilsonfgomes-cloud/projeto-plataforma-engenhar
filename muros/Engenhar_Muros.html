@@ -1316,12 +1316,12 @@ function drawPillarDetails(parent){
   const stirrupSpacing=pillarArms.N1.spacing,stirrupDiameter=pillarArms.N1.dia;
   const SZ=stirZones(pillarArms.N1,v.height),stirrupQty=SZ.qty;
   const stirrupCut=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*(10*stirrupDiameter/10));
-  let ty=ey+eh+38;
-  txt(sx-12,ty,v.variable?`ESTRIBOS Ø${stirrupDiameter.toFixed(1).replace('.',',')} ${SZ.txt} · COMPR. ${stirrupCut} cm · QTD. NO QUADRO`:SZ.difDia?`N1 · ${SZ.q1} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${ceDia(SZ.s1)}`:`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm ${SZ.txt}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15;
-  if(SZ.difDia&&!v.variable){const cut2=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*SZ.d2);txt(sx-12,ty,`N19 · ${SZ.q2} Ø${ceDia(SZ.d2)} C≈${cut2} cm c/${ceDia(SZ.s2)}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15}
+  let ty=ey+eh+38*HR;
+  txt(sx-12,ty,v.variable?`ESTRIBOS Ø${stirrupDiameter.toFixed(1).replace('.',',')} ${SZ.txt} · COMPR. ${stirrupCut} cm · QTD. NO QUADRO`:SZ.difDia?`N1 · ${SZ.q1} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm c/${ceDia(SZ.s1)}`:`N1 · ${stirrupQty} Ø${stirrupDiameter.toFixed(1).replace('.',',')} C≈${stirrupCut} cm ${SZ.txt}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15*HR;
+  if(SZ.difDia&&!v.variable){const cut2=Math.round(2*((v.a-2*cover)+(v.b-2*cover))+2*SZ.d2);txt(sx-12,ty,`N19 · ${SZ.q2} Ø${ceDia(SZ.d2)} C≈${cut2} cm c/${ceDia(SZ.s2)}`,10,cyan,{'font-weight':'bold','data-pillar-arm':'N1',style:'cursor:pointer'});ty+=15*HR}
   txt(sx-12,ty,`Cobrimento: ${cover} cm · corte e quantidade preliminares`,8,gold);
   // Composição das barras longitudinais por face (face superior da seção = tardoz/solo).
-  ty+=18;txt(sx-12,ty,'BARRAS LONGITUDINAIS POR FACE',10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
+  ty+=18*HR;txt(sx-12,ty,'BARRAS LONGITUDINAIS POR FACE',10,blue,{'font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer'});
   const PL=unitFor(detailScale[code]||25);
   for(const gr of groups){const head=`${TK(gr.token)}— ${gr.qty} Ø${String(gr.dia).replace('.',',')}: `,one=head+gr.parts.join(' + '),fs=(2.5/CAP*PL).toFixed(2);
    if(one.length<=44||gr.parts.length<2){ty+=6.5*PL;txt(sx-12,ty,one,9,ink,{'data-pillar-arm':'N2',style:'cursor:pointer','data-pt':'1','font-size':fs})}
@@ -2464,7 +2464,8 @@ function managerDxf(selected){
     const scaleX=Math.hypot(dx[0]-pos[0],dx[1]-pos[1]);
     const scaleY=Math.hypot(dy[0]-pos[0],dy[1]-pos[1]);
     const size=parseFloat(n.getAttribute('font-size')||getComputedStyle(n).fontSize)||10;
-    const h=Math.max(.8,size*scaleY);
+    // V293 — altura do TEXT no DXF = altura da maiúscula (≈ 0,716 do tamanho de fonte do SVG/Arial), como no PDF.
+    const h=Math.max(.5,size*scaleY*CAP);
     const angle=Math.atan2(dx[1]-pos[1],dx[0]-pos[0])*180/Math.PI;
     const anchor=n.getAttribute('text-anchor')||'start';
     const fields=[[8,layer],[10,num(pos[0])],[20,num(pos[1])],[30,'0'],[40,num(h)],[1,esc(t)],[50,num(angle)],[7,'STANDARD']];
