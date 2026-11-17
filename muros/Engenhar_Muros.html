@@ -2410,12 +2410,18 @@ function managerDxf(selected){
  draw();
  // Exportação em unidades de papel (mm), sem transformações de viewport/zoom.
  // Cada folha ocupa uma região independente do mesmo DXF.
- const out=['0','SECTION','2','HEADER','9','$ACADVER','1','AC1015','9','$INSUNITS','70','4','9','$MEASUREMENT','70','1','0','ENDSEC','0','SECTION','2','TABLES','0','TABLE','2','LAYER','70','0'];
+ // V301 — DXF R12 (AC1009): o formato mais aceito (AutoCAD de qualquer versão, ZWCAD, LibreCAD…). Não exige handles;
+ // traz as tabelas que as entidades usam (LTYPE CONTINUOUS, LAYER, STYLE STANDARD) e a seção BLOCKS vazia.
+ const out=['0','SECTION','2','HEADER','9','$ACADVER','1','AC1009','9','$DWGCODEPAGE','3','ANSI_1252','9','$INSBASE','10','0','20','0','30','0','9','$LIMMIN','10','0','20','0','9','$LIMMAX','10','841','20','594','9','$TEXTSTYLE','7','STANDARD','9','$CLAYER','8','0','0','ENDSEC',
+  '0','SECTION','2','TABLES',
+  '0','TABLE','2','LTYPE','70','1','0','LTYPE','2','CONTINUOUS','70','0','3','Solid line','72','65','73','0','40','0.0','0','ENDTAB',
+  '0','TABLE','2','STYLE','70','1','0','STYLE','2','STANDARD','70','0','40','0.0','41','1.0','50','0.0','71','0','42','2.5','3','txt','4','','0','ENDTAB',
+  '0','TABLE','2','LAYER','70','12','0','LAYER','2','0','70','0','62','7','6','CONTINUOUS'];
  const layers=['MOLDURA','DESENHOS','FORMAS','SECUNDARIAS','ARMADURAS','ESTRIBOS','COTAS','TEXTOS','EIXOS','ALVENARIA','NOTAS'];
  const layerColors={MOLDURA:7,DESENHOS:7,FORMAS:7,SECUNDARIAS:8,ARMADURAS:1,ESTRIBOS:30,COTAS:4,TEXTOS:2,EIXOS:6,ALVENARIA:8,NOTAS:3};
  const dxfLayerMap={formas:'FORMAS',secundarias:'SECUNDARIAS',armaduras:'ARMADURAS',estribos:'ESTRIBOS',cotas:'COTAS',textos:'TEXTOS',eixos:'EIXOS',alvenaria:'ALVENARIA',carimbo:'MOLDURA'};
  for(const name of layers)out.push('0','LAYER','2',name,'70','0','62',String(layerColors[name]),'6','CONTINUOUS');
- out.push('0','ENDTAB','0','ENDSEC','0','SECTION','2','ENTITIES');
+ out.push('0','ENDTAB','0','ENDSEC','0','SECTION','2','BLOCKS','0','ENDSEC','0','SECTION','2','ENTITIES');
  const num=n=>Number.isFinite(n)?(+n.toFixed(5)).toString():'0';
  const ent=(type,fields)=>{out.push('0',type);for(const [k,v] of fields)out.push(String(k),String(v))};
  const esc=t=>[...String(t)].map(ch=>ch.charCodeAt(0)>126?'\\U+'+ch.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0'):ch).join('');
