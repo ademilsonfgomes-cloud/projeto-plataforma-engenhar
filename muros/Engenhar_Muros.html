@@ -1822,29 +1822,30 @@ function shiftGroup(code,g,dx,dy){
 }
 function organizeSheets(quiet=false){
  if(!wallFinished||wallPoints.length<2){if(!quiet)status('Conclua o lançamento do muro antes de organizar as pranchas.');return false}
- const format='A1',orientation='landscape',area=layoutArea(format,orientation),gap=16;
+ const format='A1',orientation='landscape',area=layoutArea(format,orientation),gap=8;
  const specs=[];let cur=null;
  // Coluna de tabelas à esquerda da faixa técnica, no alto (relação de aço; na planta:
  // índice, quadro de fundações e resumo geral). Os desenhos não podem invadi-la.
  const TW=TABLE_COL_W,hits=(sp,x,y,w,h)=>y<sp.resH+6&&x+w>area.w-TW-6;
  const newSpec=(kind,scale)=>{cur={kinds:[kind],scale,items:[],cx:0,cy:0,rowH:0,resH:0};specs.push(cur);return cur};
+ // V299 — Encaixe "mais acima, mais à esquerda": testa posições junto às bordas dos desenhos já colocados
+ // e preenche os vazios (em vez de fileiras fixas). A coluna de tabelas (alto, à direita) continua reservada.
  const place=(sp,it)=>{
   const resH=kindTableHeight(sp.kinds,[...sp.items.map(i=>i.code),it.code]);
-  if(sp.items.some(i=>hits({resH},i.x-area.x0,i.y-area.y0,i.w,i.h)))return false;
-  const save={cx:sp.cx,cy:sp.cy,rowH:sp.rowH};sp.resH=resH;
-  for(let guard=0;guard<60;guard++){
-   if(sp.cx>0&&sp.cx+it.w>area.w){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0;continue}
-   if(hits(sp,sp.cx,sp.cy,it.w,it.h)){
-    if(it.alt&&!it.useAlt&&!hits(sp,sp.cx,sp.cy,it.alt.w,it.alt.h)&&sp.cy+it.alt.h<=area.h){it.useAlt=true;it.w=it.alt.w;it.h=it.alt.h;continue}
-    // Desce só o necessário na mesma fileira (abaixo da coluna de tabelas) se couber na folha.
-    const dy=sp.resH+6+gap;
-    if(sp.cx>0&&sp.cx+it.w<=area.w&&dy+it.h<=area.h){sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+dy,w:it.w,h:it.h,compact:!!it.useAlt,scale:it.scale});sp.cx+=it.w+gap;sp.rowH=Math.max(sp.rowH,dy-sp.cy+it.h);return true}
-    if(sp.cx>0){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}else{sp.cy=Math.max(sp.cy,dy)}continue}
-   break;
-  }
-  if(sp.items.length&&sp.cy+it.h>area.h){Object.assign(sp,save);sp.resH=kindTableHeight(sp.kinds,sp.items.map(i=>i.code));return false}
-  sp.items.push({code:it.code,x:area.x0+sp.cx,y:area.y0+sp.cy,w:it.w,h:it.h,compact:!!it.useAlt,scale:it.scale});
-  sp.cx+=it.w+gap;sp.rowH=Math.max(sp.rowH,it.h);return true;
+  const tbl={x:area.w-TW-6,y:0,w:TW+6,h:resH+6};
+  const rel=sp.items.map(i=>({x:i.x-area.x0,y:i.y-area.y0,w:i.w,h:i.h}));
+  if(rel.some(r=>r.x<tbl.x+tbl.w&&r.x+r.w>tbl.x&&r.y<tbl.y+tbl.h&&r.y+r.h>tbl.y))return false;
+  const fits=(x,y,w,h)=>{if(x<-1e-6||y<-1e-6||x+w>area.w+1e-6||y+h>area.h+1e-6)return false;
+   if(x<tbl.x+tbl.w&&x+w>tbl.x&&y<tbl.y+tbl.h&&y+h>tbl.y)return false;
+   for(const r of rel)if(x<r.x+r.w+gap&&x+w+gap>r.x&&y<r.y+r.h+gap&&y+h+gap>r.y)return false;return true};
+  const xs=[0,...rel.map(r=>r.x+r.w+gap)],ys=[0,tbl.h+gap,...rel.map(r=>r.y+r.h+gap)];
+  let bestP=null;
+  for(const v of [{w:it.w,h:it.h,alt:false},...(it.alt?[{w:it.alt.w,h:it.alt.h,alt:true}]:[])])
+   for(const y of ys)for(const x of xs){if(!fits(x,y,v.w,v.h))continue;const sc=y+v.h*.001+x*1e-6;if(!bestP||sc<bestP.sc)bestP={x,y,sc,...v}}
+  if(!bestP)return false;
+  sp.resH=resH;if(bestP.alt){it.useAlt=true;it.w=bestP.w;it.h=bestP.h}
+  sp.items.push({code:it.code,x:area.x0+bestP.x,y:area.y0+bestP.y,w:bestP.w,h:bestP.h,compact:!!bestP.alt,scale:it.scale});
+  return true;
  };
  detailSheetK={};
  // V254 — Medição de cada tipo de elemento (escala e tamanho de cada desenho).
@@ -1891,7 +1892,8 @@ function organizeSheets(quiet=false){
   for(let i=1;i<cats.length;i++){if(mask&(1<<(i-1)))curB.push(cats[i]);else{blocks.push(curB);curB=[cats[i]]}}
   blocks.push(curB);
   const r=simulate(blocks);
-  if(!best||r.splits<best.splits||(r.splits===best.splits&&(r.n<best.n||(r.n===best.n&&r.minFill>best.minFill+1e-9))))best=r;
+  // V299 — menos folhas primeiro (economia de papel); depois menos tipos divididos; depois folhas mais equilibradas.
+  if(!best||r.n<best.n||(r.n===best.n&&(r.splits<best.splits||(r.splits===best.splits&&r.minFill>best.minFill+1e-9))))best=r;
  }
  if(best)specs.push(...best.specs);
  specs.sort((p,q)=>p.first-q.first);

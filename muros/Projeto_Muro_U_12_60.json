@@ -179,8 +179,8 @@
     }
   },
   "blockOffset": {
-    "x": 3382.4083251953125,
-    "y": 339.88363151550294
+    "x": 3351.2083251953127,
+    "y": 43.48363151550293
   },
   "tubuloOffset": {
     "x": 3633.731805419922,
@@ -232,7 +232,253 @@
       "follow": 1
     }
   },
-  "pillarArmsBy": {},
+  "pillarArmsBy": {
+    "P1": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    },
+    "P2": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    },
+    "P3": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    },
+    "P9": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    },
+    "P10": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    },
+    "P11": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    },
+    "P12": {
+      "N1": {
+        "dia": 5,
+        "spacing": 12,
+        "cover": 3,
+        "hook": 10,
+        "zone": 0,
+        "spacing2": 0,
+        "dia2": 0
+      },
+      "N2": {
+        "dia": 10,
+        "qty": 6,
+        "topCover": 3,
+        "bottomCover": 3,
+        "cornerDia": 12.5,
+        "cornerExtDia": 12.5,
+        "soloLen": 80,
+        "soloN2": 0,
+        "soloDia2": 12.5,
+        "soloN": 1,
+        "soloDia": 12.5,
+        "extN": 0,
+        "extDia": 12.5,
+        "latN": 1,
+        "latDia": 12.5
+      },
+      "N3": {
+        "dia": 12.5,
+        "qty": 6,
+        "lapFactor": 75,
+        "bend": 21,
+        "follow": 1
+      }
+    }
+  },
   "planRefs": [
     {
       "a": {
@@ -347,7 +593,9 @@
     "beta": 0
   },
   "projectRevisions": [],
-  "beamCompact": [],
+  "beamCompact": [
+    "VT2"
+  ],
   "detailSheetK": {
     "T1": 2,
     "B1": 2
@@ -390,56 +638,56 @@
       "y": 64.48363056182862
     },
     "VB1": {
-      "x": 7252.644540786743,
-      "y": 1488.0791395187377
+      "x": 8516.710141372681,
+      "y": 623.7836317062378
     },
     "VB2": {
-      "x": 8206.985214614868,
-      "y": 1488.0791395187377
+      "x": 8516.710141372681,
+      "y": 994.4680982589722
     },
     "VB3": {
-      "x": 7252.644540786743,
-      "y": 1889.9636060714722
+      "x": 8439.401059341431,
+      "y": 1365.1525648117067
     },
     "VB4": {
-      "x": 8206.985214614868,
-      "y": 1889.9636060714722
+      "x": 8439.401059341431,
+      "y": 1735.8370313644411
     },
     "VB5": {
       "x": 10832.544540786745,
       "y": 58.28363170623779
     },
     "VB6": {
-      "x": 11786.88521461487,
-      "y": 327.3836317062378
+      "x": 11755.685214614869,
+      "y": 296.1836317062378
     },
     "VB7": {
       "x": 10832.544540786745,
-      "y": 729.2680982589723
+      "y": 428.9680982589722
     },
     "VB8": {
-      "x": 11786.88521461487,
-      "y": 729.2680982589723
+      "x": 11755.685214614869,
+      "y": 666.8680982589722
     },
     "VB9": {
       "x": 10832.544540786745,
-      "y": 1131.1525648117067
+      "y": 799.6525648117065
     },
     "VT1": {
-      "x": 11786.88521461487,
-      "y": 1131.1525648117067
-    },
-    "VT2": {
       "x": 14412.444540786744,
       "y": 58.28363170623779
     },
+    "VT2": {
+      "x": 15574.30164527893,
+      "y": 323.48363170623776
+    },
     "VT3": {
       "x": 14412.444540786744,
-      "y": 586.4090650558471
+      "y": 407.00908336639407
     },
     "EL1": {
       "x": 14409.300000000001,
-      "y": 966.3345167160033
+      "y": 988.1090467453004
     },
     "EL2": {
       "x": 17989.2,
@@ -447,7 +695,11 @@
     },
     "EL3": {
       "x": 17989.2,
-      "y": 992.0090711593629
+      "y": 960.8090711593628
+    },
+    "P2": {
+      "x": 7270.511810302734,
+      "y": 1213.4790407180787
     }
   },
   "detailScale": {
@@ -469,7 +721,8 @@
     "VT3": 50,
     "EL1": 50,
     "EL2": 50,
-    "EL3": 50
+    "EL3": 50,
+    "P2": 50
   },
   "block": {
     "blockEnabled": true,
