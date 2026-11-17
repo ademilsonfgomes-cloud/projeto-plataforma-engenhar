@@ -1211,14 +1211,14 @@ function drawBeamDetails(parent,kind="VB"){
     el('path',{d,fill:'none',stroke:orange,'stroke-width':2.2,'stroke-linejoin':'round','stroke-linecap':'round','data-beam-arm':position,style:'cursor:pointer'},g);
     const straight=piece.end-piece.start,total=straight+(piece.first?arm.bend:0)+(piece.last?arm.bend:0);
     // Comprimento reto na ponta direita da peça (a chamada fica à esquerda).
-    txt(x1-3*U,partY+(position==='N2'?-1.5*U:4.8*U),`${Math.round(straight*100)/100}`,9,ink,{'text-anchor':'end','data-dim':'1'});
+    txt((x0+x1)/2,partY+(position==='N2'?-1.5*U:4.8*U),`${Math.round(straight*100)/100}`,9,ink,{'text-anchor':'middle','data-dim':'1'});
     for(const [xx,hasBend,side] of [[x0,piece.first,-1],[x1,piece.last,1]])if(hasBend){
      const dx=xx+side*3*U;ln(dx,partY,dx,partY+dir*b,ink,.55,{'data-layer':'cotas'});
      ln(dx-1.1*U,partY+1.1*U,dx+1.1*U,partY-1.1*U,ink,1,{'data-layer':'cotas'});ln(dx-1.1*U,partY+dir*b+1.1*U,dx+1.1*U,partY+dir*b-1.1*U,ink,1,{'data-layer':'cotas'});
      txt(dx+side*1.5*U,partY+dir*b/2+1.25*U,`${arm.bend}`,8,ink,{'text-anchor':side<0?'end':'start','data-dim':'1'});
     }
     // Peça curta: a chamada sobe (ou desce) uma linha para não disputar espaço com o comprimento.
-    const callLen=(`${arm.qty} N0 Ø${fmtDia(arm.dia)} — C=${Math.round(total*100)/100} cm`).length*(3.5/CAP)*U*.6,short=callLen+12*U>(x1-x0);if(short)shortPiece=true;
+    const callLen=(`${arm.qty} N0 Ø${fmtDia(arm.dia)} — C=${Math.round(total*100)/100} cm`).length*(3.5/CAP)*U*.6,short=callLen+12*U>(x1-x0)/2; // V297 — a cota do comprimento fica no meio da barra; a chamada sobe de linha se alcançar o meioif(short)shortPiece=true;
     const labelY=partY+(position==='N2'?(short?-7*U:-1.5*U):(short?11*U:5.5*U));
     txt(x0+3*U,labelY,`${arm.qty} ${getCode(arm,piece)} Ø${fmtDia(arm.dia)} — C=${Math.round(total*100)/100} cm`,10,orange,{'data-beam-arm':position,style:'cursor:pointer'});
     if(!piece.last){const axisX=x+piece.axis*sc;txt(axisX,partY+(position==='N2'?-8*U:11*U),`EMENDA ${Math.round(piece.lap*100)/100} cm (${Math.round(piece.lap*50)/100}+${Math.round(piece.lap*50)/100}) · EIXO PILAR`,8,gold,{'text-anchor':'middle'});}
@@ -1377,7 +1377,8 @@ function drawPillarDetails(parent){
    else ln(bx,yT,bx,yB,blue,2.7);
    if(gr.len)dimV(yT,bottom,bx-14,bx,String(gl),g);
    el('rect',{x:bx-9,y:yT,width:18,height:yB-yT,fill:'transparent','pointer-events':'all','data-pillar-arm':'N2',style:'cursor:pointer'},g);
-   txt(bx+12,ym,v.variable&&!gr.len?`${gr.qty} Ø${gr.dia.toFixed(1).replace('.',',')} · C VARIÁVEL (QUADRO)`:`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C${gr.len?'≈':'='}${cutC} cm`,10,blue,{'text-anchor':'middle','font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 ${bx+12} ${ym})`,...(gr.len?{'data-shape':v.noBlock?'reta':'espera'}:{})});
+   const lbC=v.variable&&!gr.len?`${gr.qty} Ø${gr.dia.toFixed(1).replace('.',',')} · C VARIÁVEL (QUADRO)`:`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C${gr.len?'≈':'='}${cutC} cm`,lbW=lbC.length*10*.6,lyC=gr.len&&lbW>(bottom-yT)-4?yT-4-lbW/2:ym; // V298 — complementar curta: texto acima da ponta
+   txt(bx+12,lyC,v.variable&&!gr.len?`${gr.qty} Ø${gr.dia.toFixed(1).replace('.',',')} · C VARIÁVEL (QUADRO)`:`${gr.qty} ${gr.token} Ø${gr.dia.toFixed(1).replace('.',',')} C${gr.len?'≈':'='}${cutC} cm`,10,blue,{'text-anchor':'middle','font-weight':'bold','data-pillar-arm':'N2',style:'cursor:pointer',transform:`rotate(-90 ${bx+12} ${lyC})`,...(gr.len?{'data-shape':v.noBlock?'reta':'espera'}:{})});
   });
   // Esperas: uma barra por posição; transpasse pela bitola de cada uma.
   const PU=unitFor(detailScale[code]||25),minTop=Math.min(...waits.map(w=>bottom-lapFac()*w.dia/10*sc));
@@ -1398,7 +1399,7 @@ function drawPillarDetails(parent){
   if(v.variable){
    const QU=unitFor(detailScale[code]||25),F=c=>(c/CAP*QU).toFixed(2),qt=(x,y,str,attrs={})=>text(x,y,str,ink,9,g,{'data-pt':'1','font-size':F(2.5),...attrs});
    ty+=6*QU;txt(sx-12,ty,'QUADRO DE PILARES',12,cyan,{'font-weight':'bold'});ty+=4*QU;
-   const cols=[0,16,30,46,62,118,170,222].map(v=>sx-12+v*QU),head=['PILAR','H (cm)','TOPO','TOPO FUND.','LONGITUDINAIS','ESTRIBOS','ESPERAS'];
+   const cols=[0,16,30,46,62,118,170,222].map(v=>sx-12+v*QU),head=['PILAR','H (cm)','TOPO','BASE','LONGITUDINAIS','ESTRIBOS','ESPERAS'];
    const rowsQ=[...v.inst].sort((p,q)=>p[0]-q[0]);
    const lineH=5.4*QU,heights=rowsQ.map(()=>Math.max(groups.length,waits.length,1)*lineH+2*QU),tblH=7*QU+heights.reduce((a,b)=>a+b,0);
    el('rect',{x:cols[0],y:ty,width:cols[7]-cols[0],height:tblH,fill:'none',stroke:'#8198a8','stroke-width':.8},g);
@@ -3232,7 +3233,7 @@ function calcApplyBeams(){
  }
  // Alvenaria: barras verticais (células a cada 20 cm, Ø ≤ 12,5) ou barra horizontal por fiada.
  const A0=rs.filter(r=>r.kind==='ALV');for(const A of [A0.filter(r=>r.dir==='vertical'),A0.filter(r=>r.dir==='horizontal')]){if(!A.length)continue;const ES=elevationSettings,need=Math.max(...A.map(r=>r.need));
-  if(A[0].dir==='vertical'){let best=null;for(const dia of [8,10,12.5])for(const sp of [60,40,20])if(calcBar(dia)*100/sp>=need-1e-9&&(!best||sp>best.sp||(sp===best.sp&&dia<best.dia)))best={dia,sp};
+  if(A[0].dir==='vertical'){let best=null;for(const dia of [8,10,12.5]){if(best)break;for(const sp of [60,40,20])if(calcBar(dia)*100/sp>=need-1e-9){best={dia,sp};break}} // V296 — menor bitola primeiro (Ø8), depois o maior espaçamento
    if(!best)msg.push(`alvenaria: precisa de ${calcFmt(need)} cm²/m na vertical — acrescente uma VI (campo Vigas intermediárias)`);
    else if(best.dia!==Number(ES.vDia)||best.sp!==Number(ES.vSpace)){msg.push(`alvenaria vertical Ø${ES.vDia} c/${ES.vSpace} → Ø${best.dia} c/${best.sp}`);ES.vDia=best.dia;ES.vSpace=best.sp}}
   else{const course=Math.max(10,Number(ES.course)||20),dia=[8,10,12.5].find(x=>calcBar(x)*100/course>=need-1e-9);
