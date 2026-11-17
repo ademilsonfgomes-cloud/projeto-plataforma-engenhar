@@ -5,18 +5,18 @@
   "parameters": {
     "id": "T1",
     "shaft": "60",
-    "base": "120",
+    "base": "60",
     "depth": "300",
     "baseHeight": "50",
     "skirt": "35",
     "cover": "5",
     "bars": "6",
-    "barDia": "12.5",
-    "barLen": "120",
+    "barDia": "16",
+    "barLen": "200",
     "stDia": "6.3",
     "ringLen": "154.6",
     "spacing": "10",
-    "pileKind": "0",
+    "pileKind": "1",
     "noBlock": "0",
     "topZone": "70",
     "topSpacing": "10"
@@ -89,7 +89,7 @@
     }
   },
   "blockOffset": {
-    "x": -205.1226562500001,
+    "x": -204.5466064453126,
     "y": 534.203003692627
   },
   "tubuloOffset": {
@@ -143,6 +143,7 @@
     }
   },
   "pillarArmsBy": {},
+  "planRefs": [],
   "beamArms": {
     "N1": {
       "dia": 5,
@@ -236,16 +237,16 @@
   },
   "foundationBaseModels": {
     "pile": {
-      "pileKind": "0",
+      "pileKind": "1",
       "noBlock": "0",
       "shaft": "60",
-      "base": "120",
+      "base": "60",
       "depth": "300",
       "baseHeight": "50",
       "skirt": "35",
       "bars": "6",
-      "barDia": "12.5",
-      "barLen": "120",
+      "barDia": "16",
+      "barLen": "200",
       "stDia": "6.3",
       "spacing": "10",
       "topZone": "70",
@@ -255,7 +256,7 @@
       "blockX": "80",
       "blockY": "80",
       "blockH": "80",
-      "blockPile": "50",
+      "blockPile": "60",
       "blockCover": "5",
       "blockDiaX": "10",
       "blockDiaY": "10",
@@ -299,7 +300,7 @@
     "blockX": "80",
     "blockY": "80",
     "blockH": "80",
-    "blockPile": "50",
+    "blockPile": "60",
     "blockCover": "5",
     "blockSameXY": true,
     "blockDiaX": "10",
@@ -327,7 +328,7 @@
     "responsible": "ADEMILSON FIGUEIREDO GOMES",
     "crea": "CREA-MG 229.868/D",
     "revision": "00",
-    "date": "16/11/2026",
+    "date": "17/11/2026",
     "email": "ademilsonfgomes@gmail.com",
     "phone": "",
     "fck": "",
@@ -349,7 +350,7 @@
           "planta",
           "fundacoes"
         ],
-        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · FUNDAÇÕES — TUBULÕES E BLOCOS",
+        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · FUNDAÇÕES — ESTACAS E BLOCOS",
         "mixed": true
       },
       {

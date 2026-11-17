@@ -5,18 +5,18 @@
   "parameters": {
     "id": "T1",
     "shaft": "60",
-    "base": "120",
+    "base": "60",
     "depth": "300",
     "baseHeight": "50",
     "skirt": "35",
     "cover": "5",
     "bars": "6",
-    "barDia": "12.5",
-    "barLen": "140",
+    "barDia": "16",
+    "barLen": "200",
     "stDia": "6.3",
     "ringLen": "154.6",
     "spacing": "10",
-    "pileKind": "0",
+    "pileKind": "1",
     "noBlock": "0",
     "topZone": "70",
     "topSpacing": "10"
@@ -244,6 +244,7 @@
         "y": -650
       },
       "label": "ARRIMO 1 · NÍVEL −3,80 (VER PRANCHAS DO ARRIMO 1)",
+      "w": 20,
       "dims": [
         {
           "a": {
@@ -255,7 +256,7 @@
             "y": -750
           },
           "label": "100",
-          "off": 38
+          "off": 58
         }
       ]
     }
@@ -353,16 +354,16 @@
   },
   "foundationBaseModels": {
     "pile": {
-      "pileKind": "0",
+      "pileKind": "1",
       "noBlock": "0",
       "shaft": "60",
-      "base": "120",
+      "base": "60",
       "depth": "300",
       "baseHeight": "50",
       "skirt": "35",
       "bars": "6",
-      "barDia": "12.5",
-      "barLen": "140",
+      "barDia": "16",
+      "barLen": "200",
       "stDia": "6.3",
       "spacing": "10",
       "topZone": "70",
@@ -372,7 +373,7 @@
       "blockX": "80",
       "blockY": "80",
       "blockH": "80",
-      "blockPile": "50",
+      "blockPile": "60",
       "blockCover": "5",
       "blockDiaX": "10",
       "blockDiaY": "10",
@@ -476,7 +477,7 @@
     "blockX": "80",
     "blockY": "80",
     "blockH": "80",
-    "blockPile": "50",
+    "blockPile": "60",
     "blockCover": "5",
     "blockSameXY": true,
     "blockDiaX": "10",
@@ -540,7 +541,7 @@
         "kinds": [
           "fundacoes"
         ],
-        "title": "FUNDAÇÕES — TUBULÕES E BLOCOS",
+        "title": "FUNDAÇÕES — ESTACAS E BLOCOS",
         "mixed": false
       },
       {

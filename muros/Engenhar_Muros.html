@@ -632,8 +632,10 @@ for(let item of extra){let grp=el('g',{},g);let d=item.points.map((p,i)=>(i?'L':
  if(preview)drawSegment(pts[pts.length-1],preview,pts.length-1,true);
  for(const p of pts)circle(p.x,p.y,2.4,yellow,yellow,.6,wg);
  if(wallPoints.length>=2)for(const R of planRefs||[]){const P=q=>({x:ox+Number(q.x)*scaleW,y:oy+Number(q.y)*scaleW}),A=P(R.a),B=P(R.b),red='#f06b76';
-  line(A.x,A.y,B.x,B.y,red,2.2,wg,{'stroke-dasharray':`${mm(4)} ${mm(2)}`,'data-layer':'secundarias'});
-  if(R.label){const vert=Math.abs(B.y-A.y)>Math.abs(B.x-A.x),mx=(A.x+B.x)/2,my=(A.y+B.y)/2;ptext(mx,my-mm(2),R.label,red,2.5,{'text-anchor':'middle','font-weight':'bold','data-layer':'textos',...(vert?{transform:`rotate(-90 ${mx} ${my})`}:{})})}
+  {const W=(Number(R.w)||0)*scaleW/2,L=Math.hypot(B.x-A.x,B.y-A.y)||1,qx=-(B.y-A.y)/L*W,qy=(B.x-A.x)/L*W,da={'stroke-dasharray':`${mm(4)} ${mm(2)}`,'data-layer':'secundarias'};
+   if(W>0){line(A.x+qx,A.y+qy,B.x+qx,B.y+qy,red,1.6,wg,da);line(A.x-qx,A.y-qy,B.x-qx,B.y-qy,red,1.6,wg,da);line(A.x+qx,A.y+qy,A.x-qx,A.y-qy,red,1.6,wg,da);line(B.x+qx,B.y+qy,B.x-qx,B.y-qy,red,1.6,wg,da)}
+   else line(A.x,A.y,B.x,B.y,red,2.2,wg,da)}
+  if(R.label){const vert=Math.abs(B.y-A.y)>Math.abs(B.x-A.x),mx=(A.x+B.x)/2,my=(A.y+B.y)/2;ptext(mx,my-mm(2)-(Number(R.w)||0)*scaleW/2,R.label,red,2.5,{'text-anchor':'middle','font-weight':'bold','data-layer':'textos',...(vert?{transform:`rotate(-90 ${mx} ${my})`}:{})})}
   for(const D of R.dims||[]){const a2=P(D.a),b2=P(D.b),L=Math.hypot(b2.x-a2.x,b2.y-a2.y)||1,ux=(b2.x-a2.x)/L,uy=(b2.y-a2.y)/L,nx=-uy,ny=ux,o=mm(Number(D.off)||6),x0=a2.x+nx*o,y0=a2.y+ny*o,x1=b2.x+nx*o,y1=b2.y+ny*o;
    line(x0,y0,x1,y1,'#d9e9f2',.8,wg,{'data-layer':'cotas'});for(const [x,y] of [[x0,y0],[x1,y1]])line(x-(ux+nx)*mm(1),y-(uy+ny)*mm(1),x+(ux+nx)*mm(1),y+(uy+ny)*mm(1),'#d9e9f2',.8,wg,{'data-layer':'cotas'});
    const tx=(x0+x1)/2+nx*mm(1.5),ty=(y0+y1)/2+ny*mm(1.5),ang=Math.atan2(uy,ux)*180/Math.PI,rot=ang>90?ang-180:ang<-90?ang+180:ang;ptext(tx,ty,D.label,'#d9e9f2',2.5,{'text-anchor':'middle','data-layer':'cotas',transform:`rotate(${rot} ${tx} ${ty})`})}}
