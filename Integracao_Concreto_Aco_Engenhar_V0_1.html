@@ -119,6 +119,8 @@ main{min-width:0;display:grid;gap:12px}
 .zones{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}.zones button{padding:4px 10px;font:600 13px var(--f-disp);letter-spacing:.04em;min-height:30px}
 .zones button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 .pk{display:flex;flex-wrap:wrap;gap:6px}.pk button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.schema{margin:4px 0 10px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--sheet)}.schema svg{display:block;width:100%;height:auto}
+.schema figcaption{font-size:12px;color:var(--muted);margin-top:2px}.schema figcaption.vals{font:600 12px var(--f-mono);color:var(--d-cota)}
 .tbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}
 .tbar h3{margin:0;font:600 16px var(--f-disp);text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
 select{font:13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink)}
@@ -192,12 +194,13 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <h2>Estrutura metálica</h2>
       <p class="note">Lançamento automático sobre o concreto lido. Ajuste e clique em Gerar. Para mover ou remover uma tesoura, ou trocar o perfil de uma linha de terças, clique na peça no 3D.</p>
       <fieldset><legend>Cobertura com tesouras</legend>
+        <figure class="schema" id="tsSchema" aria-label="Esquema das medidas da tesoura"></figure>
         <label class="chk"><input type="checkbox" id="g_tOn" checked> Gerar tesouras e terças</label>
         <div class="f"><label for="g_zs">Cota de apoio (m), vazio = automática</label><input id="g_zs" type="number" step="0.01" placeholder="auto"></div>
-        <div class="f"><label for="g_incl">Inclinação (%)</label><input id="g_incl" type="number" step="1" value="10"></div>
-        <div class="f"><label for="g_h0">Altura da tesoura no apoio (m)</label><input id="g_h0" type="number" step="0.05" value="0.5"></div>
-        <div class="f"><label for="g_pT">Espaçamento máximo das terças (m)</label><input id="g_pT" type="number" step="0.1" value="1.5"></div>
-        <div class="f"><label for="g_nP">Painéis por tesoura (0 = pelo espaçamento das terças)</label><input id="g_nP" type="number" step="2" min="0" value="0"></div>
+        <div class="f"><label for="g_incl">i · inclinação (%)</label><input id="g_incl" type="number" step="1" value="10"></div>
+        <div class="f"><label for="g_h0">H · altura da tesoura no apoio (m)</label><input id="g_h0" type="number" step="0.05" value="0.5"></div>
+        <div class="f"><label for="g_pT">e · espaçamento máximo das terças (m)</label><input id="g_pT" type="number" step="0.1" value="1.5"></div>
+        <div class="f"><label for="g_nP">n · painéis por tesoura (0 = pelo espaçamento das terças)</label><input id="g_nP" type="number" step="2" min="0" value="0"></div>
         <div class="f"><label for="g_tTipo">Perfis das treliças</label><select id="g_tTipo"><option value="enc">U simples encaixado</option><option value="ue">Ue (almas sobrepostas)</option><option value="L">Cantoneira + gusset</option></select></div>
         <div class="f" data-tEnc><label for="g_fab">Fabricação da tesoura</label><select id="g_fab"><option value="obra">Na obra (toda soldada)</option><option value="fabrica">Em fábrica (2 metades, emenda parafusada)</option></select></div>
         <div class="f"><label for="g_lBar">Comprimento da barra comprada (m), 0 = sem limite</label><input id="g_lBar" type="number" step="0.5" min="0" value="6"></div>
@@ -210,16 +213,17 @@ svg text{font-family:var(--f-disp);font-weight:500}
       </fieldset>
       <fieldset><legend>Marquise em balanço</legend>
         <label class="chk"><input type="checkbox" id="g_mOn" checked> Gerar marquise</label>
+        <figure class="schema" id="mqSchema" aria-label="Esquema das medidas da marquise"></figure>
         <div class="f"><label for="g_mLanc">Onde lançar</label><select id="g_mLanc"><option value="auto">Automático: uma lateral inteira</option><option value="pts">Por pontos clicados no 3D</option></select></div>
         <div class="f w" data-pts hidden><div class="pk"><button type="button" id="mqPick" aria-pressed="false">Marcar pontos no 3D</button><button type="button" id="mqUndo">Desfazer último</button><button type="button" id="mqClr">Limpar pontos</button></div>
           <p class="note" id="mqInfo">Clique em “Marcar pontos no 3D” e depois na face de cada pilar (ou viga, ou parede) onde vai uma treliça. A partir de 2 pontos as terças aparecem sozinhas.</p></div>
         <div class="f" data-auto><label for="g_side">Lateral</label><select id="g_side"><option value="A">A (menor coordenada)</option><option value="B">B (maior coordenada)</option></select></div>
-        <div class="f"><label for="g_zm">Cota da marquise (m)</label><input id="g_zm" type="number" step="0.05" value="4"></div>
-        <div class="f"><label for="g_proj">Balanço (m)</label><input id="g_proj" type="number" step="0.1" value="2"></div>
-        <div class="f"><label for="g_incM">Caimento para fora (%), negativo sobe</label><input id="g_incM" type="number" step="1" value="3"></div>
+        <div class="f"><label for="g_zm">Z · cota da marquise (m)</label><input id="g_zm" type="number" step="0.05" value="4"></div>
+        <div class="f"><label for="g_proj">B · balanço (m)</label><input id="g_proj" type="number" step="0.1" value="2"></div>
+        <div class="f"><label for="g_incM">i · caimento para fora (%), negativo sobe</label><input id="g_incM" type="number" step="1" value="3"></div>
         <div class="f"><label for="g_mTipo">Modelo</label><select id="g_mTipo"><option value="trelica">Treliça cônica: maior no pilar, menor na ponta</option><option value="paralela">Treliça de altura constante, inclinada</option><option value="arco">Treliça em arco: bem menor na ponta</option><option value="w">Console em perfil W</option></select></div>
-        <div class="f" data-tre><label for="g_hS">Altura da treliça no pilar (m)</label><input id="g_hS" type="number" step="0.05" value="0.6"></div>
-        <div class="f" data-tre data-hT><label for="g_hT">Altura da treliça na ponta (m)</label><input id="g_hT" type="number" step="0.05" value="0.15"></div>
+        <div class="f" data-tre><label for="g_hS">H1 · altura da treliça no pilar (m)</label><input id="g_hS" type="number" step="0.05" value="0.6"></div>
+        <div class="f" data-tre data-hT><label for="g_hT">H2 · altura da treliça na ponta (m)</label><input id="g_hT" type="number" step="0.05" value="0.15"></div>
         <div class="f w" data-tre><label for="g_pMB">Banzos da treliça</label><select id="g_pMB"></select></div>
         <div class="f w" data-tre><label for="g_pMA">Montantes e diagonais da treliça</label><select id="g_pMA"></select></div>
         <div class="f w" data-w hidden><label for="g_pCon">Perfil do console</label><select id="g_pCon"></select></div>
@@ -638,6 +642,36 @@ function bindPick(cv){
     selectSteel(null);select(hit?hit.object.userData.el:null);});
 }
 let selSteel=null,PICK=false;
+// esquemas explicativos ao lado dos campos (atualizam com os valores digitados)
+const sv=id=>{const e=document.getElementById(id);return e?parseFloat(String(e.value).replace(',','.')):NaN;},fm=(v,d=2)=>isFinite(v)?v.toFixed(d).replace('.',','):'?';
+function dimH(x1,x2,y,t){return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="sd"/><line x1="${x1}" y1="${y-4}" x2="${x1}" y2="${y+4}" class="sd"/><line x1="${x2}" y1="${y-4}" x2="${x2}" y2="${y+4}" class="sd"/><text x="${(x1+x2)/2}" y="${y-4}" text-anchor="middle" class="st">${t}</text>`;}
+function dimV(x,y1,y2,t,an='start'){return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="sd"/><line x1="${x-4}" y1="${y1}" x2="${x+4}" y2="${y1}" class="sd"/><line x1="${x-4}" y1="${y2}" x2="${x+4}" y2="${y2}" class="sd"/><text x="${x+(an==='end'?-6:6)}" y="${(y1+y2)/2+4}" text-anchor="${an}" class="st">${t}</text>`;}
+const SCH_CSS=`<style>.sa{stroke:var(--c-aco);stroke-width:2.6;fill:none;stroke-linejoin:round}.sw{stroke:var(--c-aco);stroke-width:1.4;fill:none}.sd{stroke:var(--d-cota);stroke-width:1}.st{fill:var(--d-cota);font:600 11px var(--f-mono)}.sc{fill:var(--c-pilar);opacity:.55}.sg{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}.sl{fill:var(--muted);font:11px var(--f-mono)}</style>`;
+function mqSchema(){const el=$('#mqSchema');if(!el)return;const mod=$('#g_mTipo').value,B=sv('g_proj'),H1=sv('g_hS'),i=sv('g_incM')/100||0,Z=sv('g_zm');
+  const H2=mod==='paralela'?H1:Math.min(sv('g_hT'),H1),x0=58,x1=262,W=x1-x0,h1=Math.max(34,Math.min(70,H1/Math.max(B,.5)*W)),h2=mod==='paralela'?h1:Math.max(5,h1*(H2/H1||0)),dz=Math.max(-26,Math.min(26,i*W*(Math.abs(i)<.06?3:1)));
+  const yT=46,top=x=>yT+dz*(x-x0)/W;let g='',tops,bots;const xs=[0,1/3,2/3,1].map(f=>x0+f*W);
+  if(mod==='w'){g=`<path class="sa" d="M${x0} ${yT} L${x1} ${top(x1)}" style="stroke-width:9"/>`;}
+  else{let tp;if(mod==='arco'){const yE=yT+h1+dz-h2;tp=x=>yT+(yE-yT)*Math.pow((x-x0)/W,2);}else tp=top;
+    const bt=mod==='paralela'?(x=>tp(x)+h1):mod==='arco'?(x=>yT+h1+dz*(x-x0)/W):(x=>tp(x)+h1+(h2-h1)*(x-x0)/W);
+    const samp=Array.from({length:21},(_,k)=>x0+k*W/20);g+=`<path class="sa" d="M${samp.map(x=>`${x} ${tp(x)}`).join(' L')}"/><path class="sa" d="M${x0} ${bt(x0)} L${x1} ${bt(x1)}"/>`;
+    for(let k=1;k<xs.length;k++)g+=`<path class="sw" d="M${xs[k]} ${bt(xs[k])} L${xs[k]} ${tp(xs[k])} M${xs[k-1]} ${tp(xs[k-1])} L${xs[k]} ${bt(xs[k])}"/>`;tops=tp;bots=bt;}
+  const yG=158;let d='';
+  d+=dimH(x0,x1,yG-14,'B');
+  if(mod!=='w'){d+=dimV(x0+9,tops(x0),bots(x0),'H1');if(mod!=='paralela')d+=dimV(x1+9,tops(x1),bots(x1),'H2');}
+  d+=`<text x="${x0+W*.45}" y="${top(x0+W*.45)-10}" class="st">i</text>`;
+  d+=dimV(10,yG,yT,'Z');
+  el.innerHTML=`<svg viewBox="0 0 300 170" role="img">${SCH_CSS}<rect x="24" y="8" width="${x0-24}" height="${yG-8}" class="sc"/><line x1="0" y1="${yG}" x2="300" y2="${yG}" class="sg"/>
+    <text x="27" y="22" class="sl">pilar</text>${g}${d}<text x="${x0+4}" y="${yG+10}" class="sl">piso</text></svg>
+    <figcaption class="vals">B = ${fm(B)} m · ${mod==='w'?'':`H1 = ${fm(H1)} m · ${mod==='paralela'?'':`H2 = ${fm(H2)} m · `}`}i = ${fm(i*100,0)}% · Z = ${fm(Z)} m (piso ao topo do banzo no pilar)</figcaption><figcaption>${{trelica:'Treliça cônica: H1 no pilar maior que H2 na ponta.',paralela:'Altura constante: banzos paralelos; a treliça toda inclina com i.',arco:'Em arco: banzo superior curvo, de H1 no pilar até H2 (bem menor) na ponta.',w:'Console em perfil W: viga em balanço, inclinada com i.'}[mod]||''}</figcaption>`;}
+function tsSchema(){const el=$('#tsSchema');if(!el)return;const H=sv('g_h0'),i=sv('g_incl')/100||0,e=sv('g_pT'),n0=sv('g_nP');const T=STEEL&&STEEL.trusses&&STEEL.trusses[0];
+  const L=T?T.L/1000:NaN,n=T?T.n:(n0>=2?n0:8),x0=22,x1=278,W=x1-x0,yB=118,h=Math.max(16,Math.min(34,H*40)),rise=Math.max(10,Math.min(52,i*W/2*(i<.08?3:1.6)));
+  const top=x=>yB-h-rise*(1-Math.abs(x-(x0+W/2))/(W/2)),xs=Array.from({length:n+1},(_,k)=>x0+k*W/n);let g=`<path class="sa" d="M${x0} ${yB} L${x1} ${yB} M${x0} ${top(x0)} L${x0+W/2} ${top(x0+W/2)} L${x1} ${top(x1)}"/>`;
+  xs.forEach((x,k)=>{g+=`<path class="sw" d="M${x} ${yB} L${x} ${top(x)}"/>`;if(k<n){const a=xs[k],b=xs[k+1];g+=k<n/2?`<path class="sw" d="M${a} ${top(a)} L${b} ${yB}"/>`:`<path class="sw" d="M${a} ${yB} L${b} ${top(b)}"/>`;}});
+  let d=dimV(x0+6,top(x0),yB,'H')+dimH(x0,x1,yB+22,'L');
+  d+=`<text x="${x0+W*.22}" y="${top(x0+W*.22)-8}" class="st">i</text>`;
+  d+=dimH(xs[Math.floor(n/2)-1],xs[Math.floor(n/2)],top(xs[Math.floor(n/2)])-14,`e`);
+  el.innerHTML=`<svg viewBox="0 0 300 150" role="img">${SCH_CSS}<rect x="${x0-6}" y="${yB+2}" width="12" height="10" class="sc"/><rect x="${x1-6}" y="${yB+2}" width="12" height="10" class="sc"/>${g}${d}</svg>
+    <figcaption class="vals">L = ${isFinite(L)?fm(L)+' m (vão lido do IFC)':'vão lido do IFC'} · H = ${fm(H)} m · i = ${fm(i*100,0)}% · e = ${fm(e)} m · n = ${n}</figcaption><figcaption>${n0>=2?'Número de painéis (n) informado':'Painéis (n) calculados pelo espaçamento e'}; terças nos nós do banzo superior.</figcaption>`;}
 function mqPickOn(on){PICK=!!on;const b=$('#mqPick');if(b){b.setAttribute('aria-pressed',PICK);b.textContent=PICK?'Terminar de marcar':'Marcar pontos no 3D';}
   const h=document.querySelector('.hint');if(h){if(!h.dataset.t)h.dataset.t=h.textContent;h.textContent=PICK?'MARCANDO PONTOS DA MARQUISE: clique na face lateral de cada pilar, viga ou parede, do lado para onde a marquise sai':h.dataset.t;h.classList.toggle('on',PICK);}
   if(PICK&&typeof setView==='function'&&VIEW!=='3d')setView('3d');}
@@ -1007,7 +1041,7 @@ function loadOVR(){OVR={t:{},tc:{}};try{const o=JSON.parse(localStorage.getItem(
 function saveOVR(){try{localStorage.setItem(ovrKey(),JSON.stringify(OVR));}catch(e){}}
 const nOVR=()=>Object.keys(OVR.t).length+Object.keys(OVR.tc).length;
 function editSteel(fn){fn();Object.keys(OVR.t).forEach(k=>{const o=OVR.t[k];if(!o.off&&!+o.dv)delete OVR.t[k];});saveOVR();selectSteel(null);runSteel();}
-function runSteel(){setTimeout(mqInfo,0);const G=readG();G.ovr=OVR;STEEL=genSteel(G);if(STEEL.edits.length)STEEL.notes.unshift('Edições manuais: '+STEEL.edits.join('; ')+'.');detailSteel(STEEL,G);if(STEEL.det){STEEL.pre.push(...STEEL.det.pre);if(STEEL.det.notesUe)STEEL.notes.push(STEEL.det.notesUe);if(STEEL.det.fit)STEEL.notes.push(STEEL.det.fit);if(STEEL.det.notesShop)STEEL.notes.push(STEEL.det.notesShop);}renderSteel();renderSteelTables();renderSheet();}
+function runSteel(){setTimeout(()=>{mqInfo();mqSchema();tsSchema();},0);const G=readG();G.ovr=OVR;STEEL=genSteel(G);if(STEEL.edits.length)STEEL.notes.unshift('Edições manuais: '+STEEL.edits.join('; ')+'.');detailSteel(STEEL,G);if(STEEL.det){STEEL.pre.push(...STEEL.det.pre);if(STEEL.det.notesUe)STEEL.notes.push(STEEL.det.notesUe);if(STEEL.det.fit)STEEL.notes.push(STEEL.det.fit);if(STEEL.det.notesShop)STEEL.notes.push(STEEL.det.notesShop);}renderSteel();renderSteelTables();renderSheet();}
 
 /* ================= Desenhos 2D (mm, y para cima): SVG na tela e DXF ================= */
 const nint=v=>String(Math.round(v));
@@ -1782,14 +1816,15 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
    $('label[for=g_pMA]').textContent=t==='enc'?'Montantes e diagonais da treliça (aba e espessura; largura sob medida)':'Montantes e diagonais da treliça';};
  $('#g_tTipo').value=GP.tTipo;fillT(GP.tTipo);$('#g_tTipo').addEventListener('change',e=>{fillT(e.target.value);selectSteel(null);runSteel();});$('#g_fEnc').addEventListener('change',()=>{selectSteel(null);runSteel();});opt('g_pTerca',['Ue200x2.65','Ue150x2.65','Ue150x2.00'],GP.pTerca);
  opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);
- const mqForm=()=>{const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
+ const mqForm=()=>{mqSchema();const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
    if(t)document.querySelectorAll('[data-hT]').forEach(x=>x.hidden=v==='paralela');const pts=$('#g_mLanc').value==='pts';
    document.querySelectorAll('[data-pts]').forEach(x=>x.hidden=!pts);document.querySelectorAll('[data-auto]').forEach(x=>x.hidden=pts);if(!pts)mqPickOn(false);};
  $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});$('#g_mLanc').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});
  $('#mqPick').onclick=()=>mqPickOn(!PICK);
  $('#mqUndo').onclick=()=>{if(OVR.mq&&OVR.mq.length){OVR.mq.pop();saveOVR();runSteel();}};
  $('#mqClr').onclick=()=>{OVR.mq=[];saveOVR();runSteel();};
- setTimeout(mqForm,0);opt('g_pTm',['Ue150x2.00','Ue150x2.65','Ue200x2.65'],GP.pTm);}
+ setTimeout(()=>{mqForm();mqSchema();tsSchema();},0);
+ ['g_zm','g_proj','g_incM','g_hS','g_hT','g_mTipo'].forEach(id=>$('#'+id).addEventListener('input',mqSchema));['g_h0','g_incl','g_pT','g_nP'].forEach(id=>$('#'+id).addEventListener('input',tsSchema));opt('g_pTm',['Ue150x2.00','Ue150x2.65','Ue200x2.65'],GP.pTm);}
 $('#g_run').onclick=()=>{selectSteel(null);runSteel();};
 $('#g_clear').onclick=()=>{selectSteel(null);STEEL=null;renderSteel();renderSteelTables();renderSheet();};
 $('#bFit').onclick=()=>fit(false);$('#bTop').onclick=()=>fit(true);
