@@ -1057,7 +1057,7 @@ function drawMarquise(S){
   // terças da marquise em corte
   S.mem.filter(m=>(m.type==='TM'||m.type==='VB')&&Math.abs(Vv2(m)-C.v0)<1).forEach(()=>{});
   const tops=[...new Set(S.mem.filter(m=>m.type==='TM'||m.type==='VB').map(m=>Math.round(pr(m.a)[0])))];
-  tops.forEach(o=>{const z=(C.tre?C.zTop(o)+C.MB.h/2:-C.im*o)-C.zm;secBox(d,o,z+C.Tm.h/2,C.Tm.w,C.Tm.h,'ACO');});
+  tops.forEach(o=>{const z=C.tre?C.zTop(o)+C.MB.h/2-C.zm:-C.im*o;secBox(d,o,z+C.Tm.h/2,C.Tm.w,C.Tm.h,'ACO');});
   // chapas e barras passantes
   nds.filter(n=>n.el&&n.el.name.split(' (')[0]===C.cols[0]).forEach(n=>{const z=n.pos[2]-C.zm;
     d.R(0,z-n.Hp/2,n.t,n.Hp,'CHAPA');d.R(-dc-n.t,z-n.Hp/2,n.t,n.Hp,'CHAPA');
@@ -1071,7 +1071,7 @@ function drawMarquise(S){
   d.notes(-dc,ybot-ts*4,[
     C.tre?`Banzos ${C.MB.label}; montantes e diagonais ${C.MA.label}. Cotas de altura entre eixos dos banzos.`:`Console ${C.Co.label}.`,
     `Pilares: ${C.cols.join(', ')}. Ligação no pilar com barras roscadas passantes ø16 e contraplaca na face interna.`,
-    'Terças e viga de borda apoiadas nos nós do banzo superior.'],
+    C.tre?'Terças e viga de borda apoiadas nos nós do banzo superior.':'Terças e viga de borda apoiadas sobre a mesa superior do console.'],
     `MARQUISE · ${C.tre?'TRELIÇA EM BALANÇO':'CONSOLE'} · ${C.cols.length} UNIDADES`,sub());
   return d;}
 function Vv2(){return 0;}
