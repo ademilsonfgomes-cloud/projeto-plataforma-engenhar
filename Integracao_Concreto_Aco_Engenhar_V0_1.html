@@ -228,7 +228,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f" data-tL><label for="g_tg">Chapa gusset dos nós (mm)</label><select id="g_tg"><option value="6.3">6,3</option><option value="8">8,0</option><option value="9.5">9,5</option></select></div>
       </fieldset>
       <fieldset><legend>Marquise em balanço</legend>
-        <label class="chk"><input type="checkbox" id="g_mOn" checked> Gerar marquise</label>
+        <label class="chk"><input type="checkbox" id="g_mOn"> Gerar marquise (clique para incluir)</label>
         <figure class="schema" id="mqSchema" aria-label="Esquema das medidas da marquise"></figure>
         <div class="f"><label for="g_mLanc">Onde lançar</label><select id="g_mLanc"><option value="auto">Automático: uma lateral inteira</option><option value="pts">Por pontos clicados no 3D</option></select></div>
         <div class="f w" data-pts hidden><div class="pk"><button type="button" id="mqPick" aria-pressed="false">Marcar pontos no 3D</button><button type="button" id="mqUndo">Desfazer último</button><button type="button" id="mqClr">Limpar pontos</button></div>
@@ -822,7 +822,7 @@ const STP={
 const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
 const TORD=['BI','BS','MO','DG','LP','LR','TC','PT','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
 const GP={tOn:true,tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
-  tg:6.3,mOn:true,mLanc:'auto',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
+  tg:6.3,mOn:false,mLanc:'auto',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
   const Ix=t*(h**3/12+2*b*(h/2)**2+2*(c**3/12+c*(h/2-c/2)**2)),Iy=t*(h*xc*xc+2*(b**3/12+b*(b/2-xc)**2)+2*c*(b-xc)**2);
@@ -2219,8 +2219,8 @@ function sampleGalpao(){
 }
 function loadExample(){ORIGIN=null;select(null);selectSteel(null);const ex=$('#exSel').value;
   if(MODELS.arq){scene.remove(MODELS.arq.group);MODELS.arq=null;}
-  if(ex==='garagem'){$('#g_tOn').checked=false;$('#g_mOn').checked=false;loadText('est',sampleEst(),'exemplo-garagem.ifc',true);setTimeout(()=>loadText('arq',sampleArq(),'exemplo-arquitetonico.ifc',true),60);}
-  else{$('#g_tOn').checked=true;$('#g_mOn').checked=true;loadText('est',sampleGalpao(),'exemplo-galpao.ifc',true);}}
+  if(ex==='garagem'){$('#g_tOn').checked=false;loadText('est',sampleEst(),'exemplo-garagem.ifc',true);setTimeout(()=>loadText('arq',sampleArq(),'exemplo-arquitetonico.ifc',true),60);}
+  else{$('#g_tOn').checked=true;loadText('est',sampleGalpao(),'exemplo-galpao.ifc',true);}}
 $('#bEx').onclick=loadExample;
 
 if(!window.THREE||!THREE.OrbitControls){$('#msgs').innerHTML='<div class="msg al">Não consegui carregar a biblioteca 3D (three.js). Confira a conexão com a internet e recarregue a página.</div>';return;}
