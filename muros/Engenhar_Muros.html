@@ -1812,7 +1812,9 @@ function sheetIndexOf(code){const g=findGroup(code);const sh=g?groupOwner(g):nul
 const TABLE_COL_W=150;
 // Altura (mm) da coluna de tabelas de uma folha, estimada a partir das chamadas de armadura
 // dos desenhos que ela contém (limite superior das posições da relação de aço).
-function steelRowsEstimate(codes){const set=new Set();for(const c of codes){const g=findGroup(c);if(!g)continue;for(const t of g.querySelectorAll('text')){const p=steelParseLabel(t.textContent||'');if(p)set.add(p.dia+'|'+p.len)}}return set.size}
+function steelRowsEstimate(codes){const set=new Set();for(const c of codes){const g=findGroup(c);if(!g)continue;for(const t of g.querySelectorAll('text')){const s=t.textContent||'',p=steelParseLabel(s);if(p)set.add(p.dia+'|'+p.len);
+  // V302 — elevações: "N5 A N7 … COMPRIMENTOS VARIÁVEIS" gera uma linha por posição na relação.
+  const r=s.match(/\bN(\d+)\s+A\s+N(\d+)\b/);if(r)for(let k=+r[1];k<=+r[2]&&k-+r[1]<40;k++)set.add(c+'|R'+k)}}return set.size}
 function kindTableHeight(kinds,codes){
  if(kinds.includes('planta')){const types=Object.keys(foundationCounts('pile')).length+($('blockEnabled').checked?Object.keys(foundationCounts('block')).length:0);return (17+7*6.6+5)+4+(24+Math.max(1,types)*6.6+5)+4+(27+6*7+10)+4+(17+6*6.6+5)+((typeof projectRevisions!=='undefined'&&projectRevisions.length)?4+(17+Math.min(5,projectRevisions.length)*6.6+5):0)+(()=>{const r=steelRowsEstimate((codes||[]).filter(c=>c!=='PLANTA'));return r?4+13+9+r*7+4:0})()}
  const rows=steelRowsEstimate(codes);return rows?13+9+rows*7+4:0;
@@ -1834,8 +1836,8 @@ function organizeSheets(quiet=false){
  const newSpec=(kind,scale)=>{cur={kinds:[kind],scale,items:[],cx:0,cy:0,rowH:0,resH:0};specs.push(cur);return cur};
  // V299 — Encaixe "mais acima, mais à esquerda": testa posições junto às bordas dos desenhos já colocados
  // e preenche os vazios (em vez de fileiras fixas). A coluna de tabelas (alto, à direita) continua reservada.
- const place=(sp,it)=>{
-  const resH=kindTableHeight(sp.kinds,[...sp.items.map(i=>i.code),it.code]);
+ const place=(sp,it,mode='top')=>{
+  const resH=kindTableHeight(it.kind&&!sp.kinds.includes(it.kind)?[...sp.kinds,it.kind]:sp.kinds,[...sp.items.map(i=>i.code),it.code]);
   const tbl={x:area.w-TW-6,y:0,w:TW+6,h:resH+6};
   const rel=sp.items.map(i=>({x:i.x-area.x0,y:i.y-area.y0,w:i.w,h:i.h}));
   if(rel.some(r=>r.x<tbl.x+tbl.w&&r.x+r.w>tbl.x&&r.y<tbl.y+tbl.h&&r.y+r.h>tbl.y))return false;
@@ -1845,7 +1847,7 @@ function organizeSheets(quiet=false){
   const xs=[0,...rel.map(r=>r.x+r.w+gap)],ys=[0,tbl.h+gap,...rel.map(r=>r.y+r.h+gap)];
   let bestP=null;
   for(const v of [{w:it.w,h:it.h,alt:false},...(it.alt?[{w:it.alt.w,h:it.alt.h,alt:true}]:[])])
-   for(const y of ys)for(const x of xs){if(!fits(x,y,v.w,v.h))continue;const sc=y+v.h*.001+x*1e-6;if(!bestP||sc<bestP.sc)bestP={x,y,sc,...v}}
+   for(const y of ys)for(const x of xs){if(!fits(x,y,v.w,v.h))continue;const sc=mode==='left'?x+v.w*.001+y*1e-6:y+v.h*.001+x*1e-6;if(!bestP||sc<bestP.sc)bestP={x,y,sc,...v}}
   if(!bestP)return false;
   sp.resH=resH;if(bestP.alt){it.useAlt=true;it.w=bestP.w;it.h=bestP.h}
   sp.items.push({code:it.code,x:area.x0+bestP.x,y:area.y0+bestP.y,w:bestP.w,h:bestP.h,compact:!!bestP.alt,scale:it.scale});
@@ -1878,14 +1880,35 @@ function organizeSheets(quiet=false){
  // fica inteiro numa folha; só se divide quando não cabe sozinho numa folha. Entre as combinações
  // possíveis de tipos por folha (mesma escala), escolhe: menos tipos divididos → menos folhas →
  // folhas mais equilibradas (maior ocupação da folha menos ocupada).
+ // V302 — Cada bloco de etapas vizinhas é empacotado testando várias ordens de desenhos e dois critérios
+ // de encaixe (mais acima / mais à esquerda), com reaproveitamento das folhas anteriores do bloco
+ // (um desenho pequeno volta para o vazio de uma folha já aberta). Fica a variante com menos folhas;
+ // em empate, a ordem construtiva original.
+ const packBlock=(block,order,mode,fit)=>{
+  const items=block.flatMap(cat=>cat.sized.map((it0,k)=>({...it0,scale:cat.scale,kind:cat.kind,idx:cat.idx+k/1000})));
+  const ar=i=>i.w*i.h;
+  const fo=['PLANTA','T','E','B','P','VB','VI','VT','EL'],fk=i=>fo.indexOf(i.code.replace(/\d.*$/,''));
+  if(order==='area')items.sort((a,b)=>ar(b)-ar(a));else if(order==='h')items.sort((a,b)=>b.h-a.h);else if(order==='w')items.sort((a,b)=>b.w-a.w);
+  else if(order==='famh')items.sort((a,b)=>fk(a)-fk(b)||b.h-a.h);else if(order==='fama')items.sort((a,b)=>fk(a)-fk(b)||ar(b)-ar(a));
+  const out=[];
+  for(const it0 of items){const it={...it0};let ok=false;
+   for(const sp of (fit==='last'?out.slice(-1):fit==='two'?out.slice(-2):out)){if(place(sp,it,mode)){if(!sp.kinds.includes(it.kind))sp.kinds.push(it.kind);sp.first=Math.min(sp.first,it.idx);ok=true;break}}
+   if(!ok){const sp={kinds:[it.kind],scale:it.scale,items:[],cx:0,cy:0,rowH:0,resH:0,first:it.idx};out.push(sp);place(sp,it,mode)}}
+  return out};
  const simulate=blocks=>{const out=[];let splits=0;
-  for(const block of blocks){let sp={kinds:[block[0].kind],scale:block[0].scale,items:[],cx:0,cy:0,rowH:0,resH:0,first:block[0].idx};out.push(sp);
-   for(const cat of block){const start=out.length;
-    if(sp.items.length){sp.cx=0;sp.cy+=sp.rowH+gap;sp.rowH=0}
-    if(!sp.kinds.includes(cat.kind))sp.kinds.push(cat.kind);
-    for(const it0 of cat.sized){const it={...it0,scale:cat.scale};
-     if(!place(sp,it)){sp={kinds:[cat.kind],scale:cat.scale,items:[],cx:0,cy:0,rowH:0,resH:0,first:cat.idx};out.push(sp);place(sp,it)}}
-    if(out.length>start)splits++}}
+  for(const block of blocks){let bestB=null;
+   for(const order of ['seq','famh','fama','area','h','w'])for(const mode of ['top','left'])for(const fit of ['all','two','last']){
+    const r=packBlock(block,order,mode,fit);
+    const sp=block.filter(cat=>new Set(r.filter(s=>s.items.some(i=>cat.sized.some(z=>z.code===i.code))).map(s=>r.indexOf(s))).size>1).length;
+    // Dispersão: em quantas folhas cada família (VB, VT, EL, P…) ficou espalhada — menor é mais fácil de ler.
+    const fam={};r.forEach((s,k)=>s.items.forEach(i=>{const f=i.code.replace(/\d.*$/,'');(fam[f]=fam[f]||new Set()).add(k)}));
+    const fr=Object.values(fam).reduce((t,v)=>t+v.size,0);
+    // Inversões da sequência construtiva (desenho anterior em folha posterior) — menor mantém a ordem da obra.
+    r.sort((a,b)=>a.first-b.first);const seq=[];r.forEach((s,k)=>s.items.forEach(i=>seq.push({k,q:block.findIndex(c=>c.sized.some(z=>z.code===i.code))*1000+block.flatMap(c=>c.sized).findIndex(z=>z.code===i.code)})));
+    let inv=0;for(const a of seq)for(const b of seq)if(a.q<b.q&&a.k>b.k)inv++;
+    const sc=fr*40+inv;
+    if(!bestB||r.length<bestB.r.length||(r.length===bestB.r.length&&(sc<bestB.sc||(sc===bestB.sc&&sp<bestB.sp))))bestB={r,sp,fr,sc}}
+   out.push(...bestB.r.sort((a,b)=>a.first-b.first));splits+=bestB.sp}
   const fills=out.map(sp=>sp.items.reduce((t,i)=>t+i.w*i.h,0)/(area.w*area.h));
   return {specs:out,splits,n:out.length,minFill:Math.min(...fills)}};
  // Sequência construtiva: locação → estacas/tubulões → blocos → pilares e esperas → vigas → elevações.
