@@ -933,6 +933,7 @@ function genSteel(G){
       if(j===0&&fmT==='paral'&&h0<L/15)out.notes.push(`Banzos paralelos: a altura H = ${m2(h0)} m vale para o vão todo; use em torno de L/15 = ${m2(L/15)} m.`);
       // beiral (aba em balanço) e nós do banzo superior onde caem as terças
       let ab=G.tMod==='bei'?Math.max(300,(+G.bei||0)*1000):0;
+      if(ab&&clash.length&&!out._beiPlat){out._beiPlat=1;out.warns.push(`Beiral: o galpão tem platibanda (pilar ${clash.map(c=>c.name.split(' ')[0]).join(' e ')} continua acima da cota de apoio). A aba atravessaria a platibanda; use beiral só em galpão sem platibanda ou confirme com a arquitetura.`);}
       if(ab&&zt(0)-zbf(0)<250){if(j===0)out.warns.push('Beiral: esta forma de tesoura não tem altura no apoio para continuar em balanço (triangular ou tesoura-tesoura). Use a trapezoidal, banzos paralelos, uma água ou arco.');ab=0;}
       const na=ab?Math.max(1,Math.round(ab/(L/n))):0,pa=ab?ab/na:0;
       // lanternim: abertura na cumeeira com cobertura elevada (duas águas)
