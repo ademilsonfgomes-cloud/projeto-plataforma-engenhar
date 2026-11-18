@@ -220,7 +220,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f" data-auto><label for="g_side">Lateral</label><select id="g_side"><option value="A">A (menor coordenada)</option><option value="B">B (maior coordenada)</option></select></div>
         <div class="f"><label for="g_zm">Z · cota da marquise (m)</label><input id="g_zm" type="number" step="0.05" value="4"></div>
         <div class="f"><label for="g_proj">B · balanço (m)</label><input id="g_proj" type="number" step="0.1" value="2"></div>
-        <div class="f"><label for="g_incM">i · caimento para fora (%), negativo sobe</label><input id="g_incM" type="number" step="1" value="3"></div>
+        <div class="f" data-incM><label for="g_incM">i · caimento para fora (%), negativo sobe</label><input id="g_incM" type="number" step="1" value="3"></div>
         <div class="f"><label for="g_mTipo">Modelo</label><select id="g_mTipo"><option value="trelica">Treliça cônica: maior no pilar, menor na ponta</option><option value="paralela">Treliça de altura constante, inclinada</option><option value="arco">Treliça em arco: bem menor na ponta</option><option value="w">Console em perfil W</option></select></div>
         <div class="f" data-tre><label for="g_hS">H1 · altura da treliça no pilar (m)</label><input id="g_hS" type="number" step="0.05" value="0.6"></div>
         <div class="f" data-tre data-hT><label for="g_hT">H2 · altura da treliça na ponta (m)</label><input id="g_hT" type="number" step="0.05" value="0.15"></div>
@@ -648,21 +648,21 @@ function dimH(x1,x2,y,t){return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"
 function dimV(x,y1,y2,t,an='start'){return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="sd"/><line x1="${x-4}" y1="${y1}" x2="${x+4}" y2="${y1}" class="sd"/><line x1="${x-4}" y1="${y2}" x2="${x+4}" y2="${y2}" class="sd"/><text x="${x+(an==='end'?-6:6)}" y="${(y1+y2)/2+4}" text-anchor="${an}" class="st">${t}</text>`;}
 const SCH_CSS=`<style>.sa{stroke:var(--c-aco);stroke-width:2.6;fill:none;stroke-linejoin:round}.sw{stroke:var(--c-aco);stroke-width:1.4;fill:none}.sd{stroke:var(--d-cota);stroke-width:1}.st{fill:var(--d-cota);font:600 11px var(--f-mono)}.sc{fill:var(--c-pilar);opacity:.55}.sg{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}.sl{fill:var(--muted);font:11px var(--f-mono)}</style>`;
 function mqSchema(){const el=$('#mqSchema');if(!el)return;const mod=$('#g_mTipo').value,B=sv('g_proj'),H1=sv('g_hS'),i=sv('g_incM')/100||0,Z=sv('g_zm');
-  const H2=mod==='paralela'?H1:Math.min(sv('g_hT'),H1),x0=58,x1=262,W=x1-x0,h1=Math.max(34,Math.min(70,H1/Math.max(B,.5)*W)),h2=mod==='paralela'?h1:Math.max(5,h1*(H2/H1||0)),dz=Math.max(-26,Math.min(26,i*W*(Math.abs(i)<.06?3:1)));
+  const lev=mod==='trelica'||mod==='arco',H2=mod==='paralela'?H1:Math.min(sv('g_hT'),H1),x0=58,x1=262,W=x1-x0,h1=Math.max(34,Math.min(70,H1/Math.max(B,.5)*W)),h2=mod==='paralela'?h1:Math.max(5,h1*(H2/H1||0)),dz=lev?0:Math.max(-26,Math.min(26,i*W*(Math.abs(i)<.06?3:1)));
   const yT=46,top=x=>yT+dz*(x-x0)/W;let g='',tops,bots;const xs=[0,1/3,2/3,1].map(f=>x0+f*W);
   if(mod==='w'){g=`<path class="sa" d="M${x0} ${yT} L${x1} ${top(x1)}" style="stroke-width:9"/>`;}
-  else{let tp;if(mod==='arco'){const yE=yT+h1+dz-h2;tp=x=>yT+(yE-yT)*Math.pow((x-x0)/W,2);}else tp=top;
-    const bt=mod==='paralela'?(x=>tp(x)+h1):mod==='arco'?(x=>yT+h1+dz*(x-x0)/W):(x=>tp(x)+h1+(h2-h1)*(x-x0)/W);
+  else{let tp;if(mod==='arco'){const yE=yT+h1-h2;tp=x=>yT+(yE-yT)*Math.pow((x-x0)/W,2);}else if(mod==='trelica')tp=x=>yT+(h1-h2)*(x-x0)/W;else tp=top;
+    const bt=mod==='paralela'?(x=>tp(x)+h1):(x=>yT+h1);
     const samp=Array.from({length:21},(_,k)=>x0+k*W/20);g+=`<path class="sa" d="M${samp.map(x=>`${x} ${tp(x)}`).join(' L')}"/><path class="sa" d="M${x0} ${bt(x0)} L${x1} ${bt(x1)}"/>`;
     for(let k=1;k<xs.length;k++)g+=`<path class="sw" d="M${xs[k]} ${bt(xs[k])} L${xs[k]} ${tp(xs[k])} M${xs[k-1]} ${tp(xs[k-1])} L${xs[k]} ${bt(xs[k])}"/>`;tops=tp;bots=bt;}
   const yG=158;let d='';
   d+=dimH(x0,x1,yG-14,'B');
   if(mod!=='w'){d+=dimV(x0+9,tops(x0),bots(x0),'H1');if(mod!=='paralela')d+=dimV(x1+9,tops(x1),bots(x1),'H2');}
-  d+=`<text x="${x0+W*.45}" y="${top(x0+W*.45)-10}" class="st">i</text>`;
+  if(!lev)d+=`<text x="${x0+W*.45}" y="${top(x0+W*.45)-10}" class="st">i</text>`;else d+=`<text x="${x0+W*.5}" y="${yT+h1+12}" text-anchor="middle" class="sl">banzo inferior nivelado</text>`;
   d+=dimV(10,yG,yT,'Z');
   el.innerHTML=`<svg viewBox="0 0 300 170" role="img">${SCH_CSS}<rect x="24" y="8" width="${x0-24}" height="${yG-8}" class="sc"/><line x1="0" y1="${yG}" x2="300" y2="${yG}" class="sg"/>
     <text x="27" y="22" class="sl">pilar</text>${g}${d}<text x="${x0+4}" y="${yG+10}" class="sl">piso</text></svg>
-    <figcaption class="vals">B = ${fm(B)} m · ${mod==='w'?'':`H1 = ${fm(H1)} m · ${mod==='paralela'?'':`H2 = ${fm(H2)} m · `}`}i = ${fm(i*100,0)}% · Z = ${fm(Z)} m (piso ao topo do banzo no pilar)</figcaption><figcaption>${{trelica:'Treliça cônica: H1 no pilar maior que H2 na ponta.',paralela:'Altura constante: banzos paralelos; a treliça toda inclina com i.',arco:'Em arco: banzo superior curvo, de H1 no pilar até H2 (bem menor) na ponta.',w:'Console em perfil W: viga em balanço, inclinada com i.'}[mod]||''}</figcaption>`;}
+    <figcaption class="vals">B = ${fm(B)} m · ${mod==='w'?'':`H1 = ${fm(H1)} m · ${mod==='paralela'?'':`H2 = ${fm(H2)} m · `}`}${lev?`caimento resultante = (H1 − H2) / B = ${fm((H1-H2)/B*100,1)}%`:`i = ${fm(i*100,0)}%`} · Z = ${fm(Z)} m (piso ao topo do banzo no pilar)</figcaption><figcaption>${{trelica:'Treliça cônica: banzo inferior nivelado; o superior desce de H1 no pilar a H2 na ponta.',paralela:'Altura constante: banzos paralelos; a treliça toda inclina com i.',arco:'Em arco: banzo inferior nivelado; o superior curvo, de H1 no pilar até H2 (bem menor) na ponta.',w:'Console em perfil W: viga em balanço, inclinada com i.'}[mod]||''}</figcaption>`;}
 function tsSchema(){const el=$('#tsSchema');if(!el)return;const H=sv('g_h0'),i=sv('g_incl')/100||0,e=sv('g_pT'),n0=sv('g_nP');const T=STEEL&&STEEL.trusses&&STEEL.trusses[0];
   const L=T?T.L/1000:NaN,n=T?T.n:(n0>=2?n0:8),x0=22,x1=278,W=x1-x0,yB=118,h=Math.max(16,Math.min(34,H*40)),rise=Math.max(10,Math.min(52,i*W/2*(i<.08?3:1.6)));
   const top=x=>yB-h-rise*(1-Math.abs(x-(x0+W/2))/(W/2)),xs=Array.from({length:n+1},(_,k)=>x0+k*W/n);let g=`<path class="sa" d="M${x0} ${yB} L${x1} ${yB} M${x0} ${top(x0)} L${x0+W/2} ${top(x0+W/2)} L${x1} ${top(x1)}"/>`;
@@ -915,11 +915,11 @@ function genSteel(G){
       const nPn=Math.max(2,Math.ceil(proj/700)),ok=k=>k*proj/nPn,zT0=zm-MB.h/2,zB0=zT0-(hS-MB.h);
       let zTop=o=>zT0-im*o,zBot;
       if(mod==='paralela')zBot=o=>zTop(o)-(hS-MB.h);
-      else if(mod==='arco'){zBot=o=>zB0-im*o;const tip=zBot(proj)+Math.max(0,hT-MB.h),Dz=zT0-tip;
+      else if(mod==='arco'){zBot=o=>zB0;const tip=zBot(proj)+Math.max(0,hT-MB.h),Dz=zT0-tip;
         if(Dz>1){const R=(proj*proj+Dz*Dz)/(2*Dz);zTop=o=>zT0-(R-Math.sqrt(Math.max(0,R*R-o*o)));out.canopyR=R;}}
-      else{const hAt=o=>(hS-MB.h)+((hT-MB.h)-(hS-MB.h))*o/proj;zBot=o=>zTop(o)-Math.max(0,hAt(o));}
+      else{zBot=o=>zB0;zTop=o=>zB0+Math.max(0,(hS-MB.h)+((hT-MB.h)-(hS-MB.h))*o/proj);}
       const zTopA=o=>zTop(o)-0,zBotA=o=>zBot?zBot(o):0;
-      out.canopy={tre,mod,proj,hS,hT,nPn,zm,im,MB,MA,Co,Tm,cols:sups.map(q=>q.name),fw:S0.fw,dc:S0.dc,zTop:zTopA,zBot:zBotA,ok,R:out.canopyR,pts:G.mLanc==='pts',
+      out.canopy={tre,mod,imEf:(mod==='trelica'||mod==='arco')?(hS-hT)/proj:im,proj,hS,hT,nPn,zm,im,MB,MA,Co,Tm,cols:sups.map(q=>q.name),fw:S0.fw,dc:S0.dc,zTop:zTopA,zBot:zBotA,ok,R:out.canopyR,pts:G.mLanc==='pts',
         proj2:(p)=>[Math.abs(N(p)-S0.f),p[2]-zm],v0:S0.t};
       sups.forEach((q,ci)=>{const f=q.f,v=q.t,fw=q.fw,dc=q.dc,d=16,hef=12*d,pt=(o,z)=>P3m(f,q.sgn,v,o,z),add=(t,pr,a,b)=>out.mem.push({type:t,prof:pr,a,b,len:Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),mq:ci});
         const Yd=X0?P3(0,1,0):P3(1,0,0);
@@ -1145,7 +1145,7 @@ function drawMarquise(S){
   if(C.tre){const ks=Array.from({length:C.nPn+1},(_,k)=>C.ok(k));d.chain(ks,Math.min(...ks.map(o=>C.zBot(o)-C.zm))-C.MB.h/2,-ts*2.2,false);
     d.D(0,C.zBot(0)-C.zm,0,C.zTop(0)-C.zm,-ts*1.2,nint(C.hS-C.MB.h));d.D(C.proj,C.zBot(C.proj)-C.zm,C.proj,C.zTop(C.proj)-C.zm,-ts*1.5,nint(Math.max(0,C.hT-C.MB.h)));}
   d.D(0,ybot,C.proj,ybot,-ts*1.2);
-  d.T(C.proj*.5,ytop-ts*.2,`caimento ${nf0.format(C.im*100)}% · topo do banzo no pilar: z = ${m2(C.zm)} m`,'ANOT',{an:'middle',h:ts*.7});
+  d.T(C.proj*.5,ytop-ts*.2,`caimento ${nf0.format((C.imEf??C.im)*100)}%${C.mod==='trelica'||C.mod==='arco'?' (resultante de H1 e H2; banzo inferior nivelado)':''} · topo do banzo no pilar: z = ${m2(C.zm)} m`,'ANOT',{an:'middle',h:ts*.7});
   d.notes(-dc,ybot-ts*4,[
     C.tre?`Banzos ${C.MB.label}; montantes e diagonais ${C.MA.label}. Cotas de altura entre eixos dos banzos.${C.mod==='arco'&&C.R?` Banzo superior em arco de raio ${m2(C.R)} m: em trechos retos entre os nós (poligonal) ou calandrado.`:''}${C.mod==='paralela'?' Banzos paralelos: altura constante, treliça inclinada.':''}`:`Console ${C.Co.label}.`,
     `Apoios: ${C.cols.join(', ')}. Ligação no concreto com barras roscadas passantes ø16 e contraplaca na face oposta (ou chumbador químico, conforme folha de ligações).`,
@@ -1817,7 +1817,7 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
  $('#g_tTipo').value=GP.tTipo;fillT(GP.tTipo);$('#g_tTipo').addEventListener('change',e=>{fillT(e.target.value);selectSteel(null);runSteel();});$('#g_fEnc').addEventListener('change',()=>{selectSteel(null);runSteel();});opt('g_pTerca',['Ue200x2.65','Ue150x2.65','Ue150x2.00'],GP.pTerca);
  opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);
  const mqForm=()=>{mqSchema();const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
-   if(t)document.querySelectorAll('[data-hT]').forEach(x=>x.hidden=v==='paralela');const pts=$('#g_mLanc').value==='pts';
+   if(t)document.querySelectorAll('[data-hT]').forEach(x=>x.hidden=v==='paralela');document.querySelectorAll('[data-incM]').forEach(x=>x.hidden=v==='trelica'||v==='arco');const pts=$('#g_mLanc').value==='pts';
    document.querySelectorAll('[data-pts]').forEach(x=>x.hidden=!pts);document.querySelectorAll('[data-auto]').forEach(x=>x.hidden=pts);if(!pts)mqPickOn(false);};
  $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});$('#g_mLanc').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});
  $('#mqPick').onclick=()=>mqPickOn(!PICK);
