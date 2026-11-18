@@ -127,6 +127,7 @@ main{min-width:0;display:grid;gap:12px}
 .pk{display:flex;flex-wrap:wrap;gap:6px}.pk button[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
 .schema{margin:4px 0 10px;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--sheet)}.schema svg{display:block;width:100%;height:auto}
 .schema figcaption{font-size:12px;color:var(--muted);margin-top:2px}.schema figcaption.vals{font:600 12px var(--f-mono);color:var(--d-cota)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}.grid2 .f.w{grid-column:1/-1}.btnfile{display:inline-flex;align-items:center;padding:6px 12px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:14px}
 .tbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between}
 .tbar h3{margin:0;font:600 16px var(--f-disp);text-transform:uppercase;letter-spacing:.07em;color:var(--accent)}
 select{font:13px var(--f-body);padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink)}
@@ -162,6 +163,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
 .ly-TERCA{stroke:var(--d-terca);stroke-width:max(1.3px,calc(var(--pm,2px)*.35))}.ly-CONCRETO{stroke:var(--edge);stroke-width:max(1.3px,calc(var(--pm,2px)*.35))}
 .ly-COTA{stroke:var(--d-cota);stroke-width:max(.6px,calc(var(--pm,2px)*.18))}.ly-ANOT{stroke:var(--muted);stroke-width:max(.6px,calc(var(--pm,2px)*.18))}
 .ly-EIXO{stroke:var(--muted);stroke-width:max(.5px,calc(var(--pm)*.13))}.ly-HACH{stroke:var(--line);stroke-width:max(.4px,calc(var(--pm)*.09))}.ly-TEXTO{stroke:var(--ink);stroke-width:1px}
+.ly-MOLDURA{stroke:var(--ink);stroke-width:max(1.2px,calc(var(--pm,2px)*.5))}.ly-CARIMBO{stroke:var(--edge);stroke-width:max(.8px,calc(var(--pm,2px)*.25))}
 .tx-TEXTO{fill:var(--ink)}.tx-COTA{fill:var(--d-cota)}.tx-ANOT{fill:var(--muted)}
 .dot{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:baseline}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -246,6 +248,22 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f w"><label for="g_pTm">Terças e viga de borda</label><select id="g_pTm"></select></div>
       </fieldset>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="primary" type="button" id="g_run">Gerar estrutura metálica</button><button type="button" id="g_clear">Remover</button></div>
+    </section>
+    <section class="card" data-pane="plot" hidden>
+      <h2>Plotagem</h2>
+      <p class="note">Padrão Engenhar de pranchas: o mesmo carimbo e a mesma folha do Engenhar Muros e do Engenhar Alvenaria.</p>
+      <div>
+        <div class="f"><label for="pl_fmt">Formato</label><select id="pl_fmt"><option>A0</option><option selected>A1</option><option>A2</option><option>A3</option></select></div>
+        <div class="f"><label for="pl_or">Orientação</label><select id="pl_or"><option value="landscape">Horizontal (paisagem)</option><option value="portrait">Vertical (retrato)</option></select></div>
+        <div class="f"><label for="pl_bw">Saída do PDF</label><select id="pl_bw"><option value="pb">Preto e branco (impressão)</option><option value="cor">Colorido</option></select></div>
+        <div class="f w"><label for="pl_tit">Título do carimbo</label><input id="pl_tit"></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button type="button" class="primary" id="pl_ver">Ver pranchas</button><button type="button" id="pl_pdf">Baixar PDF</button><button type="button" id="pl_dxf">Baixar DXF das pranchas</button></div>
+      <fieldset><legend>Dados do carimbo</legend><div class="grid2" id="plotFields"></div></fieldset>
+      <fieldset><legend>Revisões</legend><ul class="note" id="pl_revs" style="margin:0 0 6px;padding-left:18px"></ul>
+        <div class="f w"><label for="pl_revDesc">Descrição da nova revisão</label><input id="pl_revDesc" placeholder="ex.: tesouras com beiral de 1,2 m"></div>
+        <button type="button" id="pl_revAdd">Registrar nova revisão</button></fieldset>
+      <fieldset><legend>Logo do carimbo</legend><p class="note" id="pl_logoSt"></p><div style="display:flex;gap:6px;flex-wrap:wrap"><label class="btnfile">Carregar logo (PNG ou JPG)<input type="file" id="pl_logo" accept="image/png,image/jpeg" hidden></label><button type="button" id="pl_logoDef">Usar logo padrão</button></div></fieldset>
     </section>
     <section class="card" data-pane="exib">
       <h2>Exibição</h2>
@@ -1157,7 +1175,8 @@ class Dwg{
   // desenho em escala: texto padrão de 2,5 mm no papel
   static at(esc){return new Dwg(2.5*esc,esc);}
   L(x1,y1,x2,y2,ly){this.e.push({t:'l',x1,y1,x2,y2,ly});}
-  T(x,y,s,ly='TEXTO',o={}){this.e.push({t:'t',x,y,s:String(s),h:o.h||this.ts,ly,an:o.an||'start',rot:o.rot||0});}
+  T(x,y,s,ly='TEXTO',o={}){this.e.push({t:'t',x,y,s:String(s),h:o.h||this.ts,ly,an:o.an||'start',rot:o.rot||0,b:!!o.b});}
+  I(x,y,w,h,href){this.e.push({t:'i',x,y,w,h,href,ly:'CARIMBO'});}
   C(x,y,r,ly){this.e.push({t:'c',x,y,r,ly});}
   P(pts,ly,cl=true){const n=pts.length;for(let k=0;k<(cl?n:n-1);k++){const a=pts[k],b=pts[(k+1)%n];this.L(a[0],a[1],b[0],b[1],ly);}}
   R(x,y,w,h,ly){this.P([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],ly);}
@@ -1180,8 +1199,8 @@ class Dwg{
     this.T(x,yy,title,'TEXTO',{h:this.ts*1.4});const es=this.esc?`ESC. 1:${String(this.esc).replace('.',',')}`:'';
     if(sub||es)this.T(x,yy-this.ts*1.6,[sub,es].filter(Boolean).join(' · '),'ANOT',{h:this.ts*.8});return yy;}
   bbox(){let x0=1e18,y0=1e18,x1=-1e18,y1=-1e18;const u=(x,y)=>{if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;};
-    for(const e of this.e){if(e.t==='l'){u(e.x1,e.y1);u(e.x2,e.y2);}else if(e.t==='c'){u(e.x-e.r,e.y-e.r);u(e.x+e.r,e.y+e.r);}
-      else{const w=e.s.length*e.h*.5,a=e.an==='middle'?w/2:e.an==='end'?w:0;if(Math.abs(e.rot)<1){u(e.x-a,e.y);u(e.x-a+w,e.y+e.h);}else{u(e.x-w,e.y-w);u(e.x+w,e.y+w);}}}
+    for(const e of this.e){if(e.t==='l'){u(e.x1,e.y1);u(e.x2,e.y2);}else if(e.t==='c'){u(e.x-e.r,e.y-e.r);u(e.x+e.r,e.y+e.r);}else if(e.t==='i'){u(e.x,e.y);u(e.x+e.w,e.y+e.h);}
+      else{const w=e.s.length*e.h*.8,a=e.an==='middle'?w/2:e.an==='end'?w:0;if(Math.abs(e.rot)<1){u(e.x-a,e.y);u(e.x-a+w,e.y+e.h);}else{u(e.x-w,e.y-w);u(e.x+w,e.y+w);}}}
     return {x0,y0,x1,y1};}
 }
 // tubo e cantoneira dupla em corte, centrados em (x,y)
@@ -1190,7 +1209,7 @@ function sec2L(d,cx,cy,b,t,gap,ly,up){[-1,1].forEach(s=>{const x0=cx+s*gap/2,k=u
 const ESCS=[1,2,5,10,20,25,50,75,100,125,200,250,500];const escN=v=>ESCS.find(e=>e>=v)||500;
 // passa o desenho para milímetros de papel (escala aplicada)
 function paper(d){if(!d||!d.esc)return d;
-  if(d.pn&&!d.z.length){const bb=d.bbox(),P=[...d.pn].sort((a,b)=>a.x-b.x);P.forEach((q,i)=>d.z.push({name:q.name,x0:q.x-d.ts*2,x1:i<P.length-1?P[i+1].x-d.ts*2:bb.x1,y0:q.y-d.ts*3,y1:bb.y1}));}const k=1/d.esc,p=new Dwg(d.ts*k,d.esc);p.z=d.z.map(z=>({name:z.name,x0:z.x0*k,y0:z.y0*k,x1:z.x1*k,y1:z.y1*k}));p.e=d.e.map(e=>e.t==='l'?{...e,x1:e.x1*k,y1:e.y1*k,x2:e.x2*k,y2:e.y2*k}:e.t==='c'?{...e,x:e.x*k,y:e.y*k,r:e.r*k}:{...e,x:e.x*k,y:e.y*k,h:Math.max(2,e.h*k)});return p;}
+  if(d.pn&&!d.z.length){const bb=d.bbox(),P=[...d.pn].sort((a,b)=>a.x-b.x);P.forEach((q,i)=>d.z.push({name:q.name,x0:q.x-d.ts*2,x1:i<P.length-1?P[i+1].x-d.ts*2:bb.x1,y0:q.y-d.ts*3,y1:bb.y1}));}const k=1/d.esc,p=new Dwg(d.ts*k,d.esc);p.z=d.z.map(z=>({name:z.name,x0:z.x0*k,y0:z.y0*k,x1:z.x1*k,y1:z.y1*k}));p.e=d.e.map(e=>e.t==='l'?{...e,x1:e.x1*k,y1:e.y1*k,x2:e.x2*k,y2:e.y2*k}:e.t==='c'?{...e,x:e.x*k,y:e.y*k,r:e.r*k}:e.t==='i'?{...e,x:e.x*k,y:e.y*k,w:e.w*k,h:e.h*k}:{...e,x:e.x*k,y:e.y*k,h:Math.max(2,e.h*k)});return p;}
 const sub=()=>{const m=MODELS.est;return `${m?m.name.replace(/\.ifc$/i,''):''} · cotas em mm`;};
 
 function drawTesoura(S){
@@ -1789,12 +1808,157 @@ function drawCortes(S){
     'CORTES DAS PEÇAS DA TESOURA',sub());
   return d;}
 
-const SHEETS=[{id:'tesoura',label:'Tesoura',fn:drawTesoura},{id:'cortes',label:'Cortes da tesoura',fn:drawCortes},{id:'marquise',label:'Marquise',fn:drawMarquise},{id:'planta',label:'Planta da cobertura',fn:drawPlanta},{id:'ligacoes',label:'Ligações aço-concreto',fn:drawLigacoes},{id:'nos',label:'Nós das treliças',fn:drawNos},{id:'tercas',label:'Ligações das terças',fn:drawTercas},{id:'romaneio',label:'Romaneio'}];
+const SHEETS=[{id:'pranchas',label:'Pranchas (plotagem)',fn:drawPranchas},{id:'tesoura',label:'Tesoura',fn:drawTesoura},{id:'cortes',label:'Cortes da tesoura',fn:drawCortes},{id:'marquise',label:'Marquise',fn:drawMarquise},{id:'planta',label:'Planta da cobertura',fn:drawPlanta},{id:'ligacoes',label:'Ligações aço-concreto',fn:drawLigacoes},{id:'nos',label:'Nós das treliças',fn:drawNos},{id:'tercas',label:'Ligações das terças',fn:drawTercas},{id:'romaneio',label:'Romaneio'}];
 let SHEET='tesoura',DVB=null,DFIT=null;
-const PENAS=[['ACO',5,'0,50'],['CHAPA',30,'0,40'],['TERCA',3,'0,35'],['CONCRETO',252,'0,35'],['TEXTO',7,'0,25'],['COTA',2,'0,18'],['ANOT',251,'0,18'],['EIXO',8,'0,13'],['HACH',9,'0,09']];
+const PENAS=[['MOLDURA',7,'0,50'],['CARIMBO',7,'0,25'],['ACO',5,'0,50'],['CHAPA',30,'0,40'],['TERCA',3,'0,35'],['CONCRETO',252,'0,35'],['TEXTO',7,'0,25'],['COTA',2,'0,18'],['ANOT',251,'0,18'],['EIXO',8,'0,13'],['HACH',9,'0,09']];
 const LYR=Object.fromEntries(PENAS.map(([l,c])=>[l,c]));
 // espessura das penas acompanha o zoom (mm de papel x pixels por mm), com mínimo legível
 function penW(){const svg=$('#dsvg');if(!svg||!DVB)return;const pm=Math.min((svg.clientWidth||1000)/DVB.w,(svg.clientHeight||700)/DVB.h);svg.style.setProperty('--pm',pm+'px');}
+/* ENG_PLOT:inicio — Engenhar · módulo comum de plotagem (padrão do Engenhar Muros V242).
+   Fonte única em comum/engenhar_plotagem.js; copiado entre os marcadores ENG_PLOT em cada programa
+   pelo script comum/sincronizar_plotagem.py. Não edite a cópia dentro do programa.
+   Coordenadas em mm de papel, origem no canto superior esquerdo da folha, y para baixo.
+   O programa fornece um "desenhista" dr com: line(x1,y1,x2,y2,ly), rect(x,y,w,h,ly), text(x,y,s,{h,an,bold,ly}), image(x,y,w,h,href).
+   h do texto = altura da letra (mm). Camadas usadas: MOLDURA, CARIMBO, TEXTO, ANOT. */
+const ENG_PLOT=(()=>{
+  const SIZES={A0:[1189,841],A1:[841,594],A2:[594,420],A3:[420,297],A4:[297,210]};
+  const LOGO='data:image/png;base64,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';
+  // Campos do carimbo (mesma ordem do editor do Muros).
+  const FIELDS=[['contractor','Contratante'],['taxid','CPF/CNPJ'],['address','Endereço'],['district','Bairro'],['complement','Complemento'],['lot','Lote'],['block','Quadra'],
+    ['city','Cidade'],['state','Estado'],['responsible','Responsável técnico'],['crea','CREA'],['revision','Revisão'],['date','Data (dd/mm/aaaa)'],['email','E-mail'],['phone','Contato']];
+  const DEFAULT={contractor:'',taxid:'',address:'',district:'',complement:'',lot:'',block:'',city:'',state:'',responsible:'',crea:'',revision:'00',date:'',email:'',phone:'',title:'PROJETO ESTRUTURAL',units:'COTAS mm · NÍVEIS m'};
+  const TABLE_W=150,GAP=10;
+  // Geometria da folha: moldura (20 mm à esquerda, 10 mm nos demais lados), faixa técnica à direita e carimbo na base da faixa.
+  function sheet(format='A1',orient='landscape'){let [w,h]=SIZES[format]||SIZES.A1;if(orient==='portrait')[w,h]=[h,w];
+    const stripW=Math.min(180,w*.42),stampH=Math.min(70,h*.23),stripX=w-10-stripW;
+    return {w,h,frame:{x:20,y:10,w:w-30,h:h-20},strip:{x:stripX,y:16,w:stripW},stamp:{x:stripX,y:h-10-stampH,w:stripW,h:stampH},
+      area:{x:28,y:16,x1:stripX-GAP,y1:h-14},tableW:Math.min(TABLE_W,(stripX-GAP-28)*.4)};}
+  const trunc=(s,n)=>{s=String(s??'');return s.length>n?s.slice(0,Math.max(0,n-1))+'…':s;};
+  const CW=.86,CWB=.98;   // largura média de caractere / altura de letra (Helvetica; negrito em maiúsculas)
+  const fit=(s,mm,hh)=>trunc(s,Math.max(0,Math.floor(mm/(hh*CW))));
+  function frame(dr,S){dr.rect(0,0,S.w,S.h,'MOLDURA');dr.rect(S.frame.x,S.frame.y,S.frame.w,S.frame.h,'MOLDURA');}
+  function box(dr,x,y,w,h,title){dr.rect(x,y,w,h,'CARIMBO');if(title)dr.text(x+4,y+8,title,{h:3.5,bold:true,ly:'TEXTO'});}
+  // Carimbo Engenhar, proporções do original 180 × 70 mm.
+  function stamp(dr,S,d,info){const {x,y,w,h}=S.stamp,X=v=>x+w*v/180,Y=v=>y+h*v/70,L=(a,b,c,e)=>dr.line(X(a),Y(b),X(c),Y(e),'CARIMBO');
+    dr.rect(x,y,w,h,'CARIMBO');dr.image(X(2),Y(1),w*176/180,h*19/70,d.logo||LOGO);
+    L(0,21,180,21);dr.text(X(90),Y(29.8),d.title||DEFAULT.title,{h:5,an:'middle',bold:true,ly:'TEXTO'});L(0,32,180,32);
+    const F=[[38,'CONTRATANTE:',d.contractor,0,113],[38,'CPF/CNPJ:',d.taxid,113,180],[44,'ENDEREÇO:',d.address,0,113],[44,'BAIRRO:',d.district,113,180],
+      [50,'COMPLEMENTO:',d.complement,0,64],[50,'LOTE:',d.lot,64,88],[50,'QUADRA:',d.block,88,113],[56,'CIDADE:',d.city,0,64],[56,'ESTADO:',d.state,64,88],[56,'FORMATO:',info.format,88,113],
+      [62,'REVISÃO:',d.revision,0,36],[62,'UNIDADES:',d.units||DEFAULT.units,36,113]];
+    const hh=Math.min(2.5,h*2.5/70);
+    F.forEach(([bot,lab,val,l,r])=>{const lw=lab.length*hh*CWB;dr.text(X(l+1),Y(bot-1.7),lab,{h:hh,bold:true,ly:'ANOT'});dr.text(X(l+1)+lw+1.2,Y(bot-1.7),fit(val,X(r)-X(l+1)-lw-2,hh),{h:hh,ly:'TEXTO'});});
+    [38,44,50,56,62].forEach(v=>L(0,v,113,v));[[32,113,50],[38,113,44],[44,64,50],[44,88,50],[50,64,56],[50,88,56],[56,36,62]].forEach(([a,b,c])=>L(b,a,b,c));L(113,32,113,62);
+    dr.text(X(115),Y(48),'RESPONSÁVEL TÉCNICO:',{h:hh,bold:true,ly:'ANOT'});dr.text(X(146.5),Y(53.6),fit(d.responsible,X(178)-X(115),hh),{h:hh,an:'middle',bold:true,ly:'TEXTO'});
+    dr.text(X(146.5),Y(59),fit(d.crea,X(178)-X(115),hh),{h:hh,an:'middle',ly:'TEXTO'});
+    L(0,62,180,62);L(145,62,145,70);const cl='CONTEÚDO:';dr.text(X(1),Y(67.6),cl,{h:hh,bold:true,ly:'ANOT'});
+    dr.text(X(1)+cl.length*hh*CWB+1.5,Y(67.6),fit(info.content,X(144)-X(1)-cl.length*hh*CWB-3,hh),{h:hh,bold:true,ly:'TEXTO'});
+    dr.text(X(146.5),Y(65.6),'DATA: '+(d.date||''),{h:hh,ly:'TEXTO'});
+    dr.text(X(146.5),Y(69.4),'FOLHA: '+String(info.no).padStart(2,'0')+'/'+String(info.total).padStart(2,'0'),{h:hh,bold:true,ly:'TEXTO'});}
+  // Quebra de linha simples por número de caracteres.
+  function wrap(s,n){const out=[];let cur='';String(s).split(/\s+/).forEach(wd=>{if((cur+' '+wd).trim().length>n){if(cur)out.push(cur);cur=wd;}else cur=(cur+' '+wd).trim();});if(cur)out.push(cur);return out;}
+  // Notas executivas numeradas na faixa técnica; devolve a altura usada.
+  function notes(dr,x,y,w,maxH,list,title='NOTAS EXECUTIVAS'){const hh=2.5,lh=5.6,n=Math.max(12,Math.floor((w-8)/(hh*CW)));const lines=[];
+    list.forEach((m,i)=>wrap(`${String(i+1).padStart(2,'0')}. ${m}`,n).forEach((t,j)=>lines.push(j?'     '+t:t)));
+    const fitN=Math.max(0,Math.floor((maxH-21)/lh)+1),shown=lines.slice(0,fitN),h=Math.min(maxH,16+Math.max(1,shown.length)*lh-lh+5);
+    box(dr,x,y,w,h,title);shown.forEach((t,i)=>dr.text(x+4,y+16+i*lh,t,{h:hh,ly:'TEXTO'}));if(shown.length<lines.length)dr.text(x+w-4,y+h-2,'(continua: reduzir notas ou usar folha maior)',{h:2,an:'end',ly:'ANOT'});return h;}
+  // Tabela genérica: cabeçalho e linhas; cols = [[título, largura relativa, alinhamento]].
+  function table(dr,x,y,w,title,cols,rows,foot){const hh=2.5,lh=6.6,h=17+(rows.length+1)*lh+(foot?lh:0)+3;box(dr,x,y,w,h,title);const tw=cols.reduce((a,c)=>a+c[1],0);
+    let cx=x+4;const xs=cols.map(c=>{const a=cx;cx+=(w-8)*c[1]/tw;return [a,cx];});
+    cols.forEach((c,i)=>dr.text(c[2]==='end'?xs[i][1]-1:xs[i][0],y+17.5,c[0],{h:hh,bold:true,an:c[2]==='end'?'end':'start',ly:'ANOT'}));
+    rows.forEach((r,k)=>r.forEach((v,i)=>dr.text(cols[i][2]==='end'?xs[i][1]-1:xs[i][0],y+17.5+(k+1)*lh,fit(v,xs[i][1]-xs[i][0]-1,hh),{h:hh,an:cols[i][2]==='end'?'end':'start',ly:'TEXTO'})));
+    if(foot)dr.text(x+4,y+17.5+(rows.length+1)*lh,foot,{h:hh,bold:true,ly:'TEXTO'});return h;}
+  function index(dr,x,y,w,list){return table(dr,x,y,w,'ÍNDICE DE PRANCHAS',[['Nº',.12],['CONTEÚDO',.7],['ESCALA',.18,'end']],list.map((t,i)=>[String(i+1).padStart(2,'0'),t.title,t.scale||'INDICADA']));}
+  function revTable(dr,x,y,w,revs){return table(dr,x,y,w,'QUADRO DE REVISÕES',[['REV.',.14],['DATA',.24],['DESCRIÇÃO',.62]],(revs||[]).slice(-5).map(r=>['R'+r.rev,r.date,r.desc]));}
+  // Empacota blocos (desenhos já em mm de papel) em faixas dentro da área útil; devolve folhas com posições.
+  function pack(blocks,S,firstReserve){const sheets=[];let cur=null;const gap=12;
+    const newSheet=()=>{const A={...S.area};if(!sheets.length&&firstReserve)A.x1-=firstReserve+GAP;cur={A,items:[],x:A.x,y:A.y,rowH:0,groups:[]};sheets.push(cur);};
+    newSheet();let lastG=null;
+    blocks.forEach(b=>{const bw=b.w,bh=b.h,A=cur.A;
+      if(lastG&&b.group!==lastG&&cur.x>A.x){cur.x=A.x;cur.y+=cur.rowH+gap;cur.rowH=0;}
+      if(cur.x>A.x&&cur.x+bw>A.x1){cur.x=A.x;cur.y+=cur.rowH+gap;cur.rowH=0;}
+      if(cur.y>A.y&&cur.y+bh>A.y1){newSheet();}
+      const c=cur;c.items.push({b,x:c.x,y:c.y,over:bw>c.A.x1-c.A.x||bh>c.A.y1-c.A.y});if(!c.groups.includes(b.group))c.groups.push(b.group);
+      c.x+=bw+gap;c.rowH=Math.max(c.rowH,bh);lastG=b.group;});
+    return sheets;}
+  return {SIZES,LOGO,FIELDS,DEFAULT,sheet,frame,box,stamp,notes,table,index,revTable,pack,wrap};
+})();
+/* ENG_PLOT:fim */
+
+// ================= Plotagem: pranchas no padrão Engenhar =================
+const PLOT_GROUPS=[['planta','PLANTA DA COBERTURA'],['tesoura','TESOURA'],['cortes','CORTES DA TESOURA'],['nos','NÓS DAS TRELIÇAS'],['tercas','LIGAÇÕES DAS TERÇAS'],['marquise','MARQUISE'],['ligacoes','LIGAÇÕES AÇO-CONCRETO']];
+const PLOT_NOTES=['Aço dos perfis formados a frio ZAR 250 ou CF-26 (NBR 6355); chapas e barras ASTM A36; perfis laminados conforme indicado.',
+  'Estrutura conforme NBR 8800 e NBR 14762; cargas conforme NBR 6120 e NBR 6123.',
+  'Soldas com eletrodo E70XX, executadas por soldador qualificado; filetes conforme os detalhes.',
+  'Parafusos ASTM A325 nas ligações principais e ASTM A307 nas terças, com porca e arruela; furos com folga de 1,5 mm.',
+  'Chumbadores químicos e barras passantes conforme a folha de ligações aço-concreto; respeitar embutimento e distância à borda.',
+  'Cotas em mm e níveis em m. Conferir todas as medidas no local antes da fabricação.',
+  'Emendas soldadas (ES e ET) conforme os detalhes; esmerilhar a solda onde houver apoio de terças ou telha.',
+  'Limpeza St 2/St 3, fundo anticorrosivo e acabamento em duas demãos, ou galvanização, conforme especificação.',
+  'Tolerâncias de fabricação e montagem conforme NBR 8800.',
+  'Prever travamentos provisórios durante a montagem até a fixação das terças e contraventamentos.',
+  'Qualquer alteração deve ser aprovada pelo responsável técnico.'];
+let PLOT={format:'A1',orient:'landscape',bw:true,stamp:{...ENG_PLOT.DEFAULT},revs:[],logo:''},PLOT_LAST=null;
+const plotKey=()=>'eng-plot:'+((MODELS.est&&MODELS.est.name)||'');
+function loadPLOT(){try{const g=JSON.parse(localStorage.getItem('eng-plot-rt')||'{}'),o=JSON.parse(localStorage.getItem(plotKey())||'null');
+  PLOT={format:'A1',orient:'landscape',bw:true,stamp:{...ENG_PLOT.DEFAULT,responsible:g.responsible||'',crea:g.crea||'',date:new Date().toLocaleDateString('pt-BR')},revs:[],logo:g.logo||''};
+  if(o){PLOT={...PLOT,...o,stamp:{...PLOT.stamp,...(o.stamp||{})}};}}catch(e){}plotForm();}
+function savePLOT(){try{localStorage.setItem(plotKey(),JSON.stringify({...PLOT,logo:undefined}));localStorage.setItem('eng-plot-rt',JSON.stringify({responsible:PLOT.stamp.responsible,crea:PLOT.stamp.crea,logo:PLOT.logo}));}catch(e){}}
+// desenhista do módulo comum sobre o nosso Dwg (y para cima): origem no canto superior esquerdo da folha
+function plotDr(D,ox){return {line:(x1,y1,x2,y2,ly)=>D.L(ox+x1,-y1,ox+x2,-y2,ly),rect:(x,y,w,h,ly)=>D.R(ox+x,-(y+h),w,h,ly),
+  text:(x,y,str,o={})=>D.T(ox+x,-y,str,o.ly||'TEXTO',{h:o.h||2.5,an:o.an||'start',b:o.bold}),image:(x,y,w,h,href)=>D.I(ox+x,-(y+h),w,h,href)};}
+// separa uma folha de desenho em blocos (um por detalhe) para distribuir nas pranchas
+function plotBlocks(){const B=[];PLOT_GROUPS.forEach(([id,lab])=>{const sh=SHEETS.find(s=>s.id===id);if(!sh)return;let d;try{d=paper(sh.fn(STEEL));}catch(e){d=null;}if(!d||!d.e.length)return;
+  const esc=`1:${String(d.esc).replace('.',',')}`,mk=(els,name)=>{const q=new Dwg(d.ts,0);q.e=els;const bb=q.bbox();return {group:lab,name,scale:esc,d:q,bb,w:bb.x1-bb.x0,h:bb.y1-bb.y0};};
+  if(d.z&&d.z.length>1){const rest=[],sets=d.z.map(()=>[]),anc=e=>e.t==='l'?[e.x1,e.y1]:[e.x,e.y];
+    d.e.forEach(e=>{const [x,y]=anc(e),k=d.z.findIndex(z=>x>=z.x0-1&&x<=z.x1+1&&y>=z.y0-1&&y<=z.y1+1);(k<0?rest:sets[k]).push(e);});
+    sets.forEach((els,k)=>{if(els.length)B.push(mk(els,d.z[k].name));});if(rest.length)B.push(mk(rest,lab));}
+  else B.push(mk(d.e,lab));});return B;}
+function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const S=ENG_PLOT.sheet(PLOT.format,PLOT.orient),blocks=plotBlocks();
+  const packed=ENG_PLOT.pack(blocks,S,S.tableW),N=packed.length,R=romRows(),byP={};R.P.forEach(r=>{byP[r.perfil]=(byP[r.perfil]||0)+r.kg;});
+  const matRows=Object.entries(byP).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,nf0.format(v)]);matRows.push(['Chapas de ligação',nf0.format(R.kgC)]);
+  const list=packed.map(ps=>({title:ps.groups.join(' · '),scale:[...new Set(ps.items.map(it=>it.b.scale))].join(' / ')}));
+  const sheets=packed.map((ps,i)=>{const D=new Dwg(2.5,0),dr=plotDr(D,0);ENG_PLOT.frame(dr,S);
+    ps.items.forEach(it=>D.put(it.b.d,it.x-it.b.bb.x0,-it.y-it.b.bb.y1));
+    const used=ENG_PLOT.notes(dr,S.strip.x,S.strip.y,S.strip.w,S.stamp.y-4-S.strip.y,PLOT_NOTES);
+    ENG_PLOT.stamp(dr,S,{...PLOT.stamp,logo:PLOT.logo||''},{format:PLOT.format,content:list[i].title,no:i+1,total:N});
+    if(i===0){const tx=S.strip.x-10-S.tableW;let cy=S.area.y;cy+=ENG_PLOT.index(dr,tx,cy,S.tableW,list)+4;
+      cy+=ENG_PLOT.table(dr,tx,cy,S.tableW,'RESUMO DE MATERIAL',[['PERFIL / ITEM',.7],['PESO (kg)',.3,'end']],matRows,`TOTAL: ${nf0.format(R.kgP+R.kgC)} kg (sem soldas)`)+4;
+      if(PLOT.revs.length)ENG_PLOT.revTable(dr,tx,cy,S.tableW,PLOT.revs);}
+    const over=ps.items.filter(it=>it.over).map(it=>it.b.name);return {D,w:S.w,h:S.h,title:list[i].title,over};});
+  return {S,sheets};}
+function drawPranchas(){const P=buildPlot();PLOT_LAST=P;if(!P)return null;const D=new Dwg(2.5,0);let ox=0;
+  P.sheets.forEach((sh,i)=>{D.put(sh.D,ox,0);D.T(ox,8,`PRANCHA ${String(i+1).padStart(2,'0')} · ${PLOT.format} · ${sh.w}×${sh.h} mm · ${sh.title}${sh.over.length?' · ATENÇÃO: desenho maior que a área útil, use formato maior':''}`,'ANOT',{h:5});
+    D.z.push({name:'P'+String(i+1).padStart(2,'0'),x0:ox,y0:-sh.h,x1:ox+sh.w,y1:14});ox+=sh.w+80;});
+  return D;}
+// ---------- PDF vetorial das pranchas
+const PDF_COR={MOLDURA:[20,30,40],CARIMBO:[60,75,90],ACO:[47,109,181],CHAPA:[210,105,30],TERCA:[42,122,47],CONCRETO:[60,74,87],TEXTO:[20,30,40],COTA:[110,90,0],ANOT:[90,100,110],EIXO:[120,130,140],HACH:[160,170,180]};
+const pdfTxt=s=>String(s).replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[≈]/g,'~').replace(/[−–]/g,'-').replace(/[▲△]/g,'').replace(/→/g,'->').replace(/[^\x20-\xFF•—‘’“”…]/g,'');
+function loadJsPDF(){return new Promise((ok,bad)=>{if(window.jspdf)return ok(window.jspdf);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';sc.onload=()=>window.jspdf?ok(window.jspdf):bad();sc.onerror=bad;document.head.appendChild(sc);});}
+async function plotPDF(){const P=buildPlot();if(!P){note('Gere a estrutura metálica antes de plotar.');return;}let lib;try{lib=await loadJsPDF();}catch(e){note('Não consegui carregar o gerador de PDF. Verifique a conexão e tente de novo.');return;}
+  const pen=Object.fromEntries(PENAS.map(([l,,w])=>[l,parseFloat(w.replace(',','.'))]));let doc=null;
+  P.sheets.forEach(sh=>{const o=sh.w>sh.h?'l':'p';if(!doc)doc=new lib.jsPDF({unit:'mm',format:[sh.w,sh.h],orientation:o});else doc.addPage([sh.w,sh.h],o);
+    let lw=-1,dash='';const setL=ly=>{const w=pen[ly]||.25;if(w!==lw){doc.setLineWidth(w);lw=w;}const c=PLOT.bw?[0,0,0]:(PDF_COR[ly]||[0,0,0]);doc.setDrawColor(c[0],c[1],c[2]);
+      const ds=ly==='EIXO'?'e':'';if(ds!==dash){doc.setLineDashPattern(ds?[6,1.5,1,1.5]:[],0);dash=ds;}};
+    sh.D.e.forEach(e=>{if(e.t==='l'){setL(e.ly);doc.line(e.x1,-e.y1,e.x2,-e.y2);}else if(e.t==='c'){setL(e.ly);doc.circle(e.x,-e.y,e.r,'S');}
+      else if(e.t==='i'){try{doc.addImage(e.href,'PNG',e.x,-(e.y+e.h),e.w,e.h);}catch(err){}}
+      else if(e.s){const c=PLOT.bw?[0,0,0]:(PDF_COR[e.ly]||[0,0,0]);doc.setTextColor(c[0],c[1],c[2]);doc.setFont('helvetica',e.b?'bold':'normal');doc.setFontSize(e.h/.716/.3528);
+        doc.text(pdfTxt(e.s),e.x,-e.y,{angle:e.rot||0,align:e.an==='middle'?'center':e.an==='end'?'right':'left'});}});});
+  const nome=`pranchas_${((MODELS.est&&MODELS.est.name)||'projeto').replace(/\.ifc$/i,'').replace(/[^\w-]+/g,'_')}.pdf`;saveFile(nome,doc.output('arraybuffer'),'application/pdf');}
+function plotDXF(){const P=buildPlot();if(!P){note('Gere a estrutura metálica antes de plotar.');return;}let ox=0;const L=P.sheets.map(sh=>{const it={d:sh.D,ox,oy:0};ox+=sh.w+80;return it;});saveFile('pranchas.dxf',dxfOf(L),'application/dxf');}
+// ---------- painel de plotagem
+function plotForm(){const f=$('#plotFields');if(!f)return;if(!f.dataset.ok){f.innerHTML=ENG_PLOT.FIELDS.map(([k,t])=>`<div class="f w"><label for="st_${k}">${t}</label><input id="st_${k}" data-k="${k}"></div>`).join('');f.dataset.ok=1;
+    f.addEventListener('input',e=>{const k=e.target.dataset.k;if(!k)return;PLOT.stamp[k]=e.target.value;savePLOT();if(SHEET==='pranchas'&&VIEW==='desenho')renderSheet();});}
+  ENG_PLOT.FIELDS.forEach(([k])=>{const i=$('#st_'+k);if(i)i.value=PLOT.stamp[k]||'';});$('#pl_fmt').value=PLOT.format;$('#pl_or').value=PLOT.orient;$('#pl_bw').value=PLOT.bw?'pb':'cor';$('#pl_tit').value=PLOT.stamp.title||'';
+  $('#pl_revs').innerHTML=PLOT.revs.length?PLOT.revs.map(r=>`<li>R${r.rev} · ${esc(r.date)} · ${esc(r.desc)}</li>`).join(''):`<li>Sem revisões registradas (revisão atual: ${esc(PLOT.stamp.revision||'00')}).</li>`;
+  $('#pl_logoSt').textContent=PLOT.logo?'Logo próprio carregado.':'Logo padrão da Engenhar.';}
+function bindPlot(){const re=()=>{savePLOT();if(SHEET==='pranchas'&&VIEW==='desenho')renderSheet();};
+  $('#pl_fmt').onchange=e=>{PLOT.format=e.target.value;re();};$('#pl_or').onchange=e=>{PLOT.orient=e.target.value;re();};$('#pl_bw').onchange=e=>{PLOT.bw=e.target.value==='pb';re();};
+  $('#pl_tit').oninput=e=>{PLOT.stamp.title=e.target.value;re();};
+  $('#pl_revAdd').onclick=()=>{const d=$('#pl_revDesc').value.trim();if(!PLOT.revs.length)PLOT.revs.push({rev:String(PLOT.stamp.revision||'00').padStart(2,'0'),date:PLOT.stamp.date||new Date().toLocaleDateString('pt-BR'),desc:'Emissão inicial'});
+    const n=String(Math.max(...PLOT.revs.map(r=>+r.rev||0))+1).padStart(2,'0'),dt=new Date().toLocaleDateString('pt-BR');PLOT.revs.push({rev:n,date:dt,desc:d||'Revisão geral'});PLOT.stamp.revision=n;PLOT.stamp.date=dt;$('#pl_revDesc').value='';plotForm();re();};
+  $('#pl_logo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{PLOT.logo=r.result;plotForm();re();};r.readAsDataURL(f);};
+  $('#pl_logoDef').onclick=()=>{PLOT.logo='';plotForm();re();};
+  $('#pl_ver').onclick=()=>setView('desenho','pranchas');$('#pl_pdf').onclick=plotPDF;$('#pl_dxf').onclick=plotDXF;}
 function renderSheet(){
   const isR=SHEET==='romaneio';$('#dsvg').toggleAttribute('hidden',isR);$('#dstage').hidden=isR;$('#drom').hidden=!isR;
   document.querySelectorAll('#dtabs .tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.s===SHEET));
@@ -1805,7 +1969,8 @@ function renderSheet(){
   const r1=v=>Math.round(v*10)/10,paths={};let circ='',txt='';const dash='12 3 2 3';
   for(const e of d.e){if(e.t==='l')(paths[e.ly]??=[]).push(`M${r1(e.x1)} ${r1(-e.y1)}L${r1(e.x2)} ${r1(-e.y2)}`);
     else if(e.t==='c')circ+=`<circle class="ly ly-${e.ly}" cx="${r1(e.x)}" cy="${r1(-e.y)}" r="${r1(e.r)}"/>`;
-    else if(e.s){const x=r1(e.x),y=r1(-e.y);txt+=`<text class="tx tx-${e.ly}" x="${x}" y="${y}" font-size="${r1(e.h)}" text-anchor="${e.an}"${e.rot?` transform="rotate(${r1(-e.rot)} ${x} ${y})"`:''}>${esc(e.s)}</text>`;}}
+    else if(e.t==='i')circ+=`<image href="${e.href}" x="${r1(e.x)}" y="${r1(-e.y-e.h)}" width="${r1(e.w)}" height="${r1(e.h)}" preserveAspectRatio="xMidYMid meet"/>`;
+    else if(e.s){const x=r1(e.x),y=r1(-e.y);txt+=`<text class="tx tx-${e.ly}" x="${x}" y="${y}" font-size="${r1(e.h/.716)}"${e.b?' font-weight="700"':''} text-anchor="${e.an}"${e.rot?` transform="rotate(${r1(-e.rot)} ${x} ${y})"`:''}>${esc(e.s)}</text>`;}}
   svg.innerHTML=Object.entries(paths).map(([ly,a])=>`<path class="ly ly-${ly}"${ly==='EIXO'?` stroke-dasharray="${dash}"`:''} d="${a.join('')}"/>`).join('')+circ+txt;
   const zs=$('#dzones');zs.hidden=!(d.z&&d.z.length>1);
   if(!zs.hidden){zs.innerHTML=`<button type="button" aria-pressed="true" data-z="-1">Folha inteira</button>`+d.z.map((z,k)=>`<button type="button" aria-pressed="false" data-z="${k}">${esc(z.name)}</button>`).join('');
@@ -1823,9 +1988,10 @@ function dxfOf(list){
   for(const {d,ox,oy} of list)for(const e of d.e){
     if(e.t==='l'){w(0,'LINE');w(8,e.ly);w(10,f(e.x1+ox));w(20,f(e.y1+oy));w(30,'0.0');w(11,f(e.x2+ox));w(21,f(e.y2+oy));w(31,'0.0');}
     else if(e.t==='c'){w(0,'CIRCLE');w(8,e.ly);w(10,f(e.x+ox));w(20,f(e.y+oy));w(30,'0.0');w(40,f(e.r));}
+    else if(e.t==='i'){const cx=e.x+e.w/2+ox,cy=e.y+e.h/2+oy;w(0,'TEXT');w(8,'CARIMBO');w(10,f(cx));w(20,f(cy));w(30,'0.0');w(40,f(e.h*.35));w(1,'ENGENHAR');w(72,4);w(11,f(cx));w(21,f(cy));w(31,'0.0');}
     else if(e.s){w(0,'TEXT');w(8,e.ly);w(10,f(e.x+ox));w(20,f(e.y+oy));w(30,'0.0');w(40,f(e.h));w(1,st(e.s));if(e.rot)w(50,f(e.rot));if(e.an!=='start'){w(72,e.an==='middle'?1:2);w(11,f(e.x+ox));w(21,f(e.y+oy));w(31,'0.0');}}}
   w(0,'ENDSEC');w(0,'EOF');return o.join('\r\n')+'\r\n';}
-function dxfAll(){const L=[];let cur=0;SHEETS.filter(s=>s.fn).forEach(s=>{const d=paper(s.fn(STEEL));if(!d)return;const bb=d.bbox();L.push({d,ox:cur-bb.x0,oy:-bb.y0});cur+=bb.x1-bb.x0+60;});
+function dxfAll(){const L=[];let cur=0;SHEETS.filter(s=>s.fn&&s.id!=='pranchas').forEach(s=>{const d=paper(s.fn(STEEL));if(!d)return;const bb=d.bbox();L.push({d,ox:cur-bb.x0,oy:-bb.y0});cur+=bb.x1-bb.x0+60;});
   const g=new Dwg(2.5);g.notes(0,-20,PENAS.map(([l,c,w])=>`${l}: cor ${c} · pena ${w} mm`),'PENAS POR CAMADA (CTB)','desenhos em milímetros de papel, cada um na escala indicada; plotar em 1:1');L.push({d:g,ox:0,oy:0});return dxfOf(L);}
 function romRows(){
   const P=STEEL.groups.map(g=>({mark:g.mark,desc:TDESC[g.type],perfil:g.prof.label,qty:g.qty,len:g.len,kg:g.kg}));
@@ -1856,7 +2022,7 @@ let DL=null;try{if(window.claude&&window.claude.use)window.claude.use('downloads
 function note(s){const t=$('#dmsg');t.textContent=s;t.hidden=false;clearTimeout(note.t);note.t=setTimeout(()=>t.hidden=true,5000);}
 function saveFile(name,text,type){
   if(DL){let fn=name,ex='';if(/\.dxf$/i.test(fn)){fn+='.txt';ex=' Tire o ".txt" do nome para abrir no CAD.';}
-    DL.save({filename:fn,data:text}).then(()=>note('Arquivo salvo.'+ex),e=>{if(!(e&&e.code==='declined'))note('Não foi possível salvar aqui. Use Copiar DXF.');});return;}
+    DL.save({filename:fn,data:typeof text==='string'?text:new Blob([text],{type})}).then(()=>note('Arquivo salvo.'+ex),e=>{if(!(e&&e.code==='declined'))note('Não foi possível salvar aqui. Use Copiar DXF.');});return;}
   try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);note(`${name} gerado.`);}
   catch(e){note('O download foi bloqueado. Use Copiar DXF.');}}
 function bindSheets(){
@@ -1945,7 +2111,7 @@ function loadText(k,text,name,isExample){
     try{const ifc=new IFC(text);if(!ifc.ents.size)throw new Error('vazio');
       if(k==='est'&&!isExample&&MODELS.est&&MODELS.est.example){ORIGIN=null;if(MODELS.arq&&MODELS.arq.example){scene.remove(MODELS.arq.group);MODELS.arq=null;}}
       if(k==='est'&&isExample)ORIGIN=null;
-      buildModel(k,ifc,name,isExample);renderAll();if(k==='est'){loadOVR();selectSteel(null);runSteel();}else if(STEEL)renderSteel();fit(false);}
+      buildModel(k,ifc,name,isExample);renderAll();if(k==='est'){loadOVR();loadPLOT();selectSteel(null);runSteel();}else if(STEEL)renderSteel();fit(false);}
     catch(err){$('#msgs').innerHTML=`<div class="msg al">Não consegui ler “${esc(name)}”. Confira se é um arquivo IFC (texto STEP, extensão .ifc). Detalhe: ${esc(err.message)}</div>`;}
     finally{$('#loading').hidden=true;}},30);
 }
@@ -2065,12 +2231,12 @@ const ICON={folder:'<path d="M3 7h6l2 2h10v10H3z"/>',sliders:'<path d="M4 6h10M1
   grid:'<rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',anchor:'<rect x="5" y="9" width="14" height="4"/><path d="M9 13v8M15 13v8M3 21h18M8 9V5h8v4"/>',
   node:'<circle cx="12" cy="12" r="3"/><path d="M2 18h20M12 15v-9M14 13l6-7M10 13L4 6"/>',purlin:'<path d="M6 6h12v3H9v6h9v3H6z"/>',
   list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',columns:'<path d="M5 21V5M12 21V5M19 21V5M3 5h18M3 21h18"/>'};
-const RAIL=[{g:'Painéis'},{id:'p:arq',lab:'Arquivos',ic:'folder'},{id:'p:aco',lab:'Estrutura',ic:'sliders'},{id:'p:exib',lab:'Exibição',ic:'eye'},
+const RAIL=[{g:'Painéis'},{id:'p:arq',lab:'Arquivos',ic:'folder'},{id:'p:aco',lab:'Estrutura',ic:'sliders'},{id:'p:plot',lab:'Plotagem',ic:'list'},{id:'p:exib',lab:'Exibição',ic:'eye'},
   {g:'Vistas'},{id:'v:3d',lab:'Modelo 3D',ic:'cube'},{id:'v:resumo',lab:'Resumo',ic:'check'},
   {id:'s:tesoura',lab:'Tesoura',ic:'truss'},{id:'s:cortes',lab:'Cortes',ic:'cut'},{id:'s:marquise',lab:'Marquise',ic:'canopy'},{id:'s:planta',lab:'Planta',ic:'grid'},
-  {id:'s:ligacoes',lab:'Lig. concreto',ic:'anchor'},{id:'s:nos',lab:'Nós',ic:'node'},{id:'s:tercas',lab:'Terças',ic:'purlin'},{id:'s:romaneio',lab:'Romaneio',ic:'list'},
+  {id:'s:ligacoes',lab:'Lig. concreto',ic:'anchor'},{id:'s:nos',lab:'Nós',ic:'node'},{id:'s:tercas',lab:'Terças',ic:'purlin'},{id:'s:romaneio',lab:'Romaneio',ic:'list'},{id:'s:pranchas',lab:'Pranchas',ic:'grid'},
   {id:'v:concreto',lab:'Concreto',ic:'columns'}];
-const PTIT={arq:'Arquivos',aco:'Estrutura metálica',exib:'Exibição'};
+const PTIT={arq:'Arquivos',aco:'Estrutura metálica',exib:'Exibição',plot:'Plotagem'};
 let PANE='aco',VIEW='3d';
 try{const st=JSON.parse(localStorage.getItem('eng-int-ui')||'{}');if(st.view)VIEW=st.view;if(st.sheet)SHEET=st.sheet;if('pane' in st)PANE=st.pane;}catch(e){}
 function saveUI(){try{localStorage.setItem('eng-int-ui',JSON.stringify({view:VIEW,sheet:SHEET,pane:PANE}));}catch(e){}}
@@ -2087,7 +2253,7 @@ $('#pclose').onclick=()=>{if(PANE)setPane(PANE);};
 const hdr=document.querySelector('header.top');new ResizeObserver(()=>document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px')).observe(hdr);
 {const p=PANE;PANE=null;if(p)setPane(p);else{$('#app').classList.add('nopanel');document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=true);}}
 setView(VIEW);
-initScene();bindSheets();renderAll();loadExample();
+initScene();bindSheets();bindPlot();loadPLOT();renderAll();loadExample();
 window.__eng={MODELS,IFC,sampleEst,sampleArq,select,selectSteel,mqAddPoint:h=>mqAddPoint(h),get ORIGIN(){return ORIGIN;},get STEEL(){return STEEL;},runSteel};
 })();
 </script>
