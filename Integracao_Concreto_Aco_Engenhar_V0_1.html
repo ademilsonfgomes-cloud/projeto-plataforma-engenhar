@@ -196,6 +196,9 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <fieldset><legend>Cobertura com tesouras</legend>
         <figure class="schema" id="tsSchema" aria-label="Esquema das medidas da tesoura"></figure>
         <label class="chk"><input type="checkbox" id="g_tOn" checked> Gerar tesouras e terças</label>
+        <div class="f"><label for="g_tMod">Modelo da tesoura</label><select id="g_tMod"><option value="trap">Duas águas trapezoidal</option><option value="bei">Duas águas com beiral (aba)</option></select></div>
+        <div class="f" data-bei hidden><label for="g_bei">a · beiral de cada lado (m)</label><input id="g_bei" type="number" step="0.1" min="0.3" value="1.2"></div>
+        <div class="f"><label for="g_alma">Diagonais</label><select id="g_alma"><option value="pratt">Pratt: montante e diagonal em cada painel</option><option value="warren">Warren: só diagonais (menos aço)</option></select></div>
         <div class="f"><label for="g_zs">Cota de apoio (m), vazio = automática</label><input id="g_zs" type="number" step="0.01" placeholder="auto"></div>
         <div class="f"><label for="g_incl">i · inclinação (%)</label><input id="g_incl" type="number" step="1" value="10"></div>
         <div class="f"><label for="g_h0">H · altura da tesoura no apoio (m)</label><input id="g_h0" type="number" step="0.05" value="0.5"></div>
@@ -664,14 +667,16 @@ function mqSchema(){const el=$('#mqSchema');if(!el)return;const mod=$('#g_mTipo'
     <text x="27" y="22" class="sl">pilar</text>${g}${d}<text x="${x0+4}" y="${yG+10}" class="sl">piso</text></svg>
     <figcaption class="vals">B = ${fm(B)} m · ${mod==='w'?'':`H1 = ${fm(H1)} m · ${mod==='paralela'?'':`H2 = ${fm(H2)} m · `}`}${lev?`caimento resultante = (H1 − H2) / B = ${fm((H1-H2)/B*100,1)}%`:`i = ${fm(i*100,0)}%`} · Z = ${fm(Z)} m (piso ao topo do banzo no pilar)</figcaption><figcaption>${{trelica:'Treliça cônica: banzo inferior nivelado; o superior desce de H1 no pilar a H2 na ponta.',paralela:'Altura constante: banzos paralelos; a treliça toda inclina com i.',arco:'Em arco: banzo inferior nivelado; o superior curvo, de H1 no pilar até H2 (bem menor) na ponta.',w:'Console em perfil W: viga em balanço, inclinada com i.'}[mod]||''}</figcaption>`;}
 function tsSchema(){const el=$('#tsSchema');if(!el)return;const H=sv('g_h0'),i=sv('g_incl')/100||0,e=sv('g_pT'),n0=sv('g_nP');const T=STEEL&&STEEL.trusses&&STEEL.trusses[0];
-  const L=T?T.L/1000:NaN,n=T?T.n:(n0>=2?n0:8),x0=22,x1=278,W=x1-x0,yB=118,h=Math.max(16,Math.min(34,H*40)),rise=Math.max(10,Math.min(52,i*W/2*(i<.08?3:1.6)));
-  const top=x=>yB-h-rise*(1-Math.abs(x-(x0+W/2))/(W/2)),xs=Array.from({length:n+1},(_,k)=>x0+k*W/n);let g=`<path class="sa" d="M${x0} ${yB} L${x1} ${yB} M${x0} ${top(x0)} L${x0+W/2} ${top(x0+W/2)} L${x1} ${top(x1)}"/>`;
-  xs.forEach((x,k)=>{g+=`<path class="sw" d="M${x} ${yB} L${x} ${top(x)}"/>`;if(k<n){const a=xs[k],b=xs[k+1];g+=k<n/2?`<path class="sw" d="M${a} ${top(a)} L${b} ${yB}"/>`:`<path class="sw" d="M${a} ${yB} L${b} ${top(b)}"/>`;}});
-  let d=dimV(x0+6,top(x0),yB,'H')+dimH(x0,x1,yB+22,'L');
+  const bei=$('#g_tMod').value==='bei',war=$('#g_alma').value==='warren',ab=bei?sv('g_bei'):0,L=T?T.L/1000:NaN,n=T?T.n:(n0>=2?n0:8),x0=bei?44:22,x1=bei?256:278,W=x1-x0,yB=118,h=Math.max(16,Math.min(34,H*40)),rise=Math.max(10,Math.min(52,i*W/2*(i<.08?3:1.6)));
+  let d0='';const top=x=>yB-h-rise*(1-Math.abs(x-(x0+W/2))/(W/2)),xs=Array.from({length:n+1},(_,k)=>x0+k*W/n);let g=`<path class="sa" d="M${x0} ${yB} L${x1} ${yB} M${x0} ${top(x0)} L${x0+W/2} ${top(x0+W/2)} L${x1} ${top(x1)}"/>`;
+  xs.forEach((x,k)=>{if(!war||k===0||k===n||k===n/2)g+=`<path class="sw" d="M${x} ${yB} L${x} ${top(x)}"/>`;if(k<n){const a=xs[k],b=xs[k+1],kk=k<n/2?k:n-1-k,dn=k<n/2?(war?kk%2===0:true):(war?kk%2!==0:false);g+=dn?`<path class="sw" d="M${a} ${top(a)} L${b} ${yB}"/>`:`<path class="sw" d="M${a} ${yB} L${b} ${top(b)}"/>`;}});
+  if(bei){const sl=(top(x0)-top(x0+W/2))/(W/2);[[x0,-1],[x1,1]].forEach(([xa,gg])=>{const xt=xa+gg*20,yt=top(xa)+sl*20,yb2=yt+6;g+=`<path class="sa" d="M${xa} ${top(xa)} L${xt} ${yt} M${xa} ${yB} L${xt} ${yb2} M${xt} ${yt} L${xt} ${yb2}"/><path class="sw" d="M${xa} ${top(xa)} L${xt} ${yb2}"/>`;});
+    d0=`<text x="${x0-10}" y="${yB+14}" text-anchor="middle" class="st">a</text><text x="${x1+10}" y="${yB+14}" text-anchor="middle" class="st">a</text>`;}
+  let d=d0+dimV(x0+6,top(x0),yB,'H')+dimH(x0,x1,yB+22,'L');
   d+=`<text x="${x0+W*.22}" y="${top(x0+W*.22)-8}" class="st">i</text>`;
   d+=dimH(xs[Math.floor(n/2)-1],xs[Math.floor(n/2)],top(xs[Math.floor(n/2)])-14,`e`);
   el.innerHTML=`<svg viewBox="0 0 300 150" role="img">${SCH_CSS}<rect x="${x0-6}" y="${yB+2}" width="12" height="10" class="sc"/><rect x="${x1-6}" y="${yB+2}" width="12" height="10" class="sc"/>${g}${d}</svg>
-    <figcaption class="vals">L = ${isFinite(L)?fm(L)+' m (vão lido do IFC)':'vão lido do IFC'} · H = ${fm(H)} m · i = ${fm(i*100,0)}% · e = ${fm(e)} m · n = ${n}</figcaption><figcaption>${n0>=2?'Número de painéis (n) informado':'Painéis (n) calculados pelo espaçamento e'}; terças nos nós do banzo superior.</figcaption>`;}
+    <figcaption class="vals">L = ${isFinite(L)?fm(L)+' m (vão lido do IFC)':'vão lido do IFC'} · H = ${fm(H)} m · i = ${fm(i*100,0)}% · e = ${fm(e)} m · n = ${n}${bei?` · a = ${fm(ab)} m`:''}</figcaption><figcaption>${n0>=2?'Número de painéis (n) informado':'Painéis (n) calculados pelo espaçamento e'}; terças nos nós do banzo superior${war?' (Warren: a cada dois painéis)':''}.${bei?' Beiral a: a tesoura continua em balanço além dos apoios.':''}</figcaption>`;}
 function mqPickOn(on){PICK=!!on;const b=$('#mqPick');if(b){b.setAttribute('aria-pressed',PICK);b.textContent=PICK?'Terminar de marcar':'Marcar pontos no 3D';}
   const h=document.querySelector('.hint');if(h){if(!h.dataset.t)h.dataset.t=h.textContent;h.textContent=PICK?'MARCANDO PONTOS DA MARQUISE: clique na face lateral de cada pilar, viga ou parede, do lado para onde a marquise sai':h.dataset.t;h.classList.toggle('on',PICK);}
   if(PICK&&typeof setView==='function'&&VIEW!=='3d')setView('3d');}
@@ -753,7 +758,7 @@ const STP={
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 const TDESC={MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
 const TORD=['BI','BS','MO','DG','TC','PT','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
+const GP={tOn:true,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
   tg:6.3,mOn:true,mLanc:'auto',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
@@ -814,9 +819,12 @@ function genSteel(G){
         out.notes.push(`Tesoura ${j+1}: o pilar ${clash.map(c=>c.name.split(' ')[0]).join(' e ')} continua acima da cota de apoio (platibanda). Apoio deslocado ${nf0.format(sh/10)} cm para a viga, ao lado do pilar.`);}
       const sA=below(ua,va),sB=below(ub,vb);
       if(!sA||!sB)out.warns.push(`Tesoura ${j+1}: não há concreto embaixo de ${!sA?'um dos apoios':'um dos apoios'} na cota ${m2(zs)} m.`);
-      const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],nh=+G.nP>=2?Math.max(1,Math.round(+G.nP/2)):Math.max(2,Math.ceil(L/2/(G.pT*1000)-1e-6)),n=2*nh;
+      const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],war=G.alma==='warren',nh=+G.nP>=2?Math.max(1,Math.round(+G.nP/2)):Math.max(2,Math.ceil(L/2/(G.pT*1000*(war?.5:1))-1e-6)),n=2*nh;
       const at=(s,z)=>P3(ua+e[0]*s,va+e[1]*s,z),zt=s=>zb+(h0-Bz.h)+i*Math.min(s,L-s),sk=k=>k*L/n;
-      const T={j,pj,L,n,nh,at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
+      // beiral (aba em balanço) e nós do banzo superior onde caem as terças
+      const ab=G.tMod==='bei'?Math.max(300,(+G.bei||0)*1000):0,na=ab?Math.max(1,Math.round(ab/(L/n))):0,pa=ab?ab/na:0;
+      const topN=[];for(let q=na;q>=1;q--)topN.push(-q*pa);for(let k=0;k<=n;k++)if(!war||k%2===0||k===nh)topN.push(sk(k));for(let q=1;q<=na;q++)topN.push(L+q*pa);
+      const T={j,pj,L,n,nh,ab,na,pa,war,topN,topS:s=>at(s,zt(s)+Bz.h/2+Te.h/2),at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
       const lb=G.tTipo==='enc'&&+G.lBar>0?+G.lBar*1000:0,csI=Math.cos(Math.atan(i));
       // banzo de cada metade, a partir do apoio: barra mais longa possível até lb, emenda no meio de um painel (fora dos nós)
       const piece=(type,zf,s0,s1)=>{const len=(a,b)=>Math.abs(b-a)/(type==='BS'?csI:1),dir=Math.sign(s1-s0),cuts=[];
@@ -831,9 +839,19 @@ function genSteel(G){
         const pts=[0,...cuts,L].sort((a,b)=>a-b);for(let k=0;k<pts.length-1;k++)add('BI',Bz,at(pts[k],zb),at(pts[k+1],zb),{truss:j});
         cuts.forEach(c=>out.shop.push({j,type:'BI',s:c,z:zb,p:at(c,zb)}));}
       else{piece('BI',()=>zb,0,L/2);piece('BI',()=>zb,L,L/2);}
-      piece('BS',zt,0,L/2);piece('BS',zt,L,L/2);
-      for(let k=0;k<=n;k++)add('MO',Al,at(sk(k),zb),at(sk(k),zt(sk(k))),{truss:j});
-      for(let k=0;k<n;k++){const s1=sk(k),s2=sk(k+1);if(k<nh)add('DG',Dg,at(s1,zt(s1)),at(s2,zb),{truss:j});else add('DG',Dg,at(s1,zb),at(s2,zt(s2)),{truss:j});}
+      piece('BS',zt,ab?-ab:0,L/2);piece('BS',zt,ab?L+ab:L,L/2);
+      for(let k=0;k<=n;k++)if(!war||k===0||k===n||k===nh)add('MO',Al,at(sk(k),zb),at(sk(k),zt(sk(k))),{truss:j});
+      for(let k=0;k<n;k++){const s1=sk(k),s2=sk(k+1),kk=k<nh?k:n-1-k,down=k<nh?(war?kk%2===0:true):(war?kk%2!==0:false);
+        if(down)add('DG',Dg,at(s1,zt(s1)),at(s2,zb),{truss:j});else add('DG',Dg,at(s1,zb),at(s2,zt(s2)),{truss:j});}
+      if(ab){// aba: banzo inferior sobe do apoio até a ponta (altura mínima 150 mm); montantes e diagonais
+        const dTip=Math.max(60,150-Bz.h),zTipB=zt(-ab)-dTip;if(zTipB<zb-1)out.warns.push(`Tesoura ${j+1}: com ${m2(ab)} m de beiral e ${nf0.format(i*100)}% de inclinação a ponta fica abaixo do banzo inferior; aumente a altura no apoio ou reduza o beiral.`);
+        const zbA=s=>s<0?zb+(Math.max(zb,zTipB)-zb)*(-s)/ab:zb+(Math.max(zb,zTipB)-zb)*(s-L)/ab;
+        [[0,-1],[L,1]].forEach(([s0,g])=>{add('BI',Bz,at(s0,zb),at(s0+g*ab,zbA(s0+g*ab)),{truss:j,aba:1});
+          for(let q=1;q<=na;q++){const sq=s0+g*q*pa,sp=s0+g*(q-1)*pa;if(zt(sq)-zbA(sq)>40)add('MO',Al,at(sq,zbA(sq)),at(sq,zt(sq)),{truss:j,aba:1});
+            add('DG',Dg,at(sp,zt(sp)),at(sq,zbA(sq)),{truss:j,aba:1});}});
+        const hitB=Array.from({length:8},(_,q)=>-(q+.5)*ab/8).flatMap(s2=>[s2,L-s2]).map(s2=>{const p=at(s2,0);return els.find(e=>/Pilar|Viga|Parede/.test(e.cat)&&e.bb.z1>zs+300&&e.bb.z0<zs+h0&&inPlan(e,U(p),Vv(p),0));}).filter(Boolean);
+        if(hitB.length&&j===0)out.warns.push(`Beiral: a aba da tesoura atravessa ${[...new Set(hitB.map(e=>e.name.split(' (')[0]))].join(', ')} (platibanda ou parede acima da cota de apoio). Confira a arquitetura ou use o modelo sem beiral.`);
+        if(j===0)out.notes.push(`Beiral de ${m2(ab)} m de cada lado: a tesoura continua em balanço além dos apoios, com ${na} painel(is) e altura de ${nf0.format((zt(-ab)-Math.max(zb,zTipB))+Bz.h)} mm na ponta.`);}
       [[sA,ua,va,'fixo'],[sB,ub,vb,'deslizante']].forEach(([se,u,v,mode])=>{
         const wc=se?(spanX?(se.bb.x1-se.bb.x0):(se.bb.y1-se.bb.y0)):200,hc=se?se.bb.z1-se.bb.z0:400;
         const Wp=Math.min(180,wc-20),Lp=300;
@@ -848,7 +866,7 @@ function genSteel(G){
       cuts.forEach(t=>out.tcSp.push({p:P(t),u,prof,span:len,t:Math.min(t,len-t)}));};
     const tr=out.trusses,TeK=k=>STP[OV.tc[k]]||Te,up=(p,k)=>[p[0],p[1],p[2]+(TeK(k).h-Te.h)/2];
     Object.entries(OV.tc).forEach(([k,v])=>{if(STP[v]&&v!==G.pTerca)out.edits.push(`terça da linha ${+k+1} em ${STP[v].label}`);});
-    for(let j=0;j<tr.length-1;j++){const a=tr[j],b=tr[j+1],n=Math.min(a.n,b.n);for(let k=0;k<=n;k++)addTC(TeK(k),up(a.top(Math.round(k*a.n/n)),k),up(b.top(Math.round(k*b.n/n)),k),{line:k});}
+    for(let j=0;j<tr.length-1;j++){const a=tr[j],b=tr[j+1],m=Math.min(a.topN.length,b.topN.length);for(let k=0;k<m;k++)addTC(TeK(k),up(a.topS(a.topN[k]),k),up(b.topS(b.topN[k]),k),{line:k});}
     // prolongamento das terças até as vigas de concreto da frente e do fundo, com montantes de apoio
     const roofBeams=beams.filter(b=>Math.abs(b.bb.z1-zs)<40);
     const ray=(o,d)=>{let best=null;for(const bm of roofBeams){const s=bm.ex[0].start,t=bm.ex[0].end,p=[U(s),Vv(s)],q=[U(t),Vv(t)],r=[q[0]-p[0],q[1]-p[1]];
@@ -856,7 +874,7 @@ function genSteel(G){
       if(ss>=-.02&&ss<=1.02&&tt>300&&tt<9000&&(!best||tt<best.t))best={t:tt,bm};}return best;};
     const TQ=STP.TQ100x3;
     [[tr[0],-1],[tr[tr.length-1],1]].forEach(([T,sg])=>{if(!T)return;
-      for(let k=0;k<=T.n;k++){const p=up(T.top(k),k),o=[U(p),Vv(p)],h=ray(o,[0,sg]);if(!h)continue;
+      for(let k=0;k<T.topN.length;k++){const p=up(T.topS(T.topN[k]),k),o=[U(p),Vv(p)],h=ray(o,[0,sg]);if(!h)continue;
         const hp=[o[0],o[1]+sg*h.t],zp=p[2],zBot=zp-TeK(k).h/2;
         addTC(TeK(k),p,P3(hp[0],hp[1],zp),{line:k});
         if(zBot-zs>150){add('PT',TQ,P3(hp[0],hp[1],zs+12.5),P3(hp[0],hp[1],zBot),{th:TeK(k).h});
@@ -867,7 +885,7 @@ function genSteel(G){
     if(tr.length){const Lmax=Math.max(...tr.map(t=>t.L));let amax=0;for(let j=0;j<tr.length-1;j++)amax=Math.max(amax,D2(tr[j].uv[0],tr[j+1].uv[0]),D2(tr[j].uv[1],tr[j+1].uv[1]));
       const wd=(1.25*.20+1.5*.25)*amax/1000;let N=0;for(let k=1;k<tr[0].n;k++){const s=k*Lmax/tr[0].n,Mx=wd*(s/1000)*((Lmax-s)/1000)/2,h=((h0-Bz.h)+i*Math.min(s,Lmax-s))/1000;N=Math.max(N,Mx/h);}
       const isUe=!!Bz.t,BB0=Bz.base||Bz,up=isUe?ueProps(BB0):null,Ab=isUe?up.A:Bz.A,rr=isUe?Math.min(up.rx,up.ry):Bz.r,fy=25,gm=isUe?1.2:1.1;
-      const Nt=Ab*fy/1.1,Lb=Lmax/tr[0].n/Math.cos(Math.atan(i))/10,lam=Lb/rr,l0=lam/Math.PI*Math.sqrt(fy/20000),chi=l0<=1.5?Math.pow(.658,l0*l0):.877/(l0*l0);
+      const Nt=Ab*fy/1.1,Lb=Lmax/tr[0].n*(tr[0].war?2:1)/Math.cos(Math.atan(i))/10,lam=Lb/rr,l0=lam/Math.PI*Math.sqrt(fy/20000),chi=l0<=1.5?Math.pow(.658,l0*l0):.877/(l0*l0);
       let Aef=Ab;if(isUe){const lp=(BB0.h/BB0.t)/(1.052*2)*Math.sqrt(fy/20000);if(lp>.673)Aef=Ab-(1-(1-.22/lp)/lp)*BB0.h*BB0.t/100;
         if(!(BB0.c>0)){const lf=(BB0.b/BB0.t)/(1.052*Math.sqrt(.43))*Math.sqrt(fy/20000);if(lf>.673)Aef-=2*(1-(1-.22/lf)/lf)*BB0.b*BB0.t/100;}}
       const Nc=chi*Aef*fy/gm;
@@ -881,7 +899,7 @@ function genSteel(G){
         const qd=(1.25*.20+1.5*.25)*sp,qs=(.20+.25)*sp,Md=qd*L*L/8,MR=W*25/1.1/100,f=5*qs*Math.pow(m.len,4)/(384*200000*Ix*1e4),fl=m.len/180;
         out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flexão`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`faixa de ${m2(sp*1000)} m; biapoiada, sem vento e sem flambagem lateral (telha travando)`});
         out.pre.push({item:`Terça ${P.label}, vão ${m2(m.len)} m: flecha`,sol:`${nf1.format(f)} mm`,res:`${nf1.format(fl)} mm`,u:f/fl,obs:'L/180, carga de serviço'});});
-      {const T0=tr[0],pp=T0.L/T0.n/Math.cos(Math.atan(i));out.notes.push(`Tesouras com ${T0.n} painéis (${T0.n+1} montantes, ${T0.n} diagonais); terças a cada ${m2(pp)} m na rampa${+G.nP>=2?' (número de painéis informado)':''}.`);
+      {const T0=tr[0],pp=T0.L/T0.n*(T0.war?2:1)/Math.cos(Math.atan(i));if(h0<T0.L/20-1)out.notes.push(`Altura no apoio de ${m2(h0)} m, abaixo de L/20 = ${m2(T0.L/20)} m: o banzo sai mais pesado (com L/20 a força no banzo cai uns 25 a 30%). Use ao menos L/20 se a arquitetura permitir.`);out.notes.push(`Tesouras com ${T0.n} painéis (${T0.war?'Warren, montantes só nos apoios e na cumeeira':`${T0.n+1} montantes`}, ${T0.n} diagonais); terças a cada ${m2(pp)} m na rampa${+G.nP>=2?' (número de painéis informado)':''}.`);
         if(+G.nP>=2&&pp>G.pT*1000*1.25)out.warns.push(`Com ${T0.n} painéis as terças ficam a ${m2(pp)} m, acima do espaçamento máximo de ${m2(G.pT*1000)} m: confira a telha.`);
         if(+G.nP>=2&&G.nP%2)out.notes.push(`O número de painéis precisa ser par (montante na cumeeira): usado ${T0.n}.`);}
       out.preHyp=`Tesouras: vão ${m2(Lmax)} m, espaçamento ${m2(amax)} m, carga permanente 0,20 kN/m² (telha e estrutura) e sobrecarga 0,25 kN/m², γg = 1,25 e γq = 1,5.`;}
@@ -1336,9 +1354,9 @@ function detailSteel(S,G){
     const ue=G.tTipo==='ue'&&!!T.Bz.t,enc=G.tTipo==='enc'&&!!T.Bz.t,N=S.trussN||0,obra=enc&&G.fab!=='fabrica';D.obra=obra;let FvRd=2*48.4,nb=Math.max(2,Math.ceil(N/FvRd)),cols=0,Rb=0;
     if(enc){Rb=Math.min(2*48.4,2*2.4*16*T.Bz.t*FU_CF*10/1.55/1000);nb=Math.max(2,Math.ceil(N/Rb));cols=nb;FvRd=Rb;}
     if(ue){Rb=Math.min(48.4,2.4*16*T.Bz.t*FU_CF*10/1.55/1000);nb=Math.max(4,Math.ceil(N/Rb/2)*2);cols=nb/2;FvRd=Rb;}
-    const wd=S.trussWd||0,Vs=s0=>wd*Math.abs(T.L/2-s0)/1000;
+    const wd=S.trussWd||0,Vs=s0=>wd*(s0<-1?Math.max(0,T.ab+s0):s0>T.L+1?Math.max(0,T.ab-(s0-T.L)):Math.abs(T.L/2-s0))/1000;
     // esforço estimado na peça pela cortante da treliça biapoiada no nó (diagonal: V / seno do ângulo)
-    const force=(w,nd)=>{const V=Vs(nd.p[0]);return w.m.type==='DG'?V/Math.max(Math.sin(w.ang*Math.PI/180),.2):V;};
+    const force=(w,nd)=>{const V=w.m.aba?wd*T.ab/1000:Vs(nd.p[0]);return w.m.type==='DG'?V/Math.max(Math.sin(w.ang*Math.PI/180),.2):V;};
     const sets=trussNodes(mems,['BI','BS'],'BS',{Lmin:60,tg,force,ue,enc,splice:nd=>!obra&&Math.abs(nd.p[0]-T.L/2)<3&&nd.inc.filter(i=>i.chord).length===2?{n:nb,cols}:null});D.ue=ue;D.enc=enc;
     sets.forEach(s=>s.count*=S.trusses.length);D.nodeSets.push({name:'Tesoura',sets,prefix:'N'});
     D.splice=obra?null:{n:nb,N,FvRd};
@@ -1816,10 +1834,10 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
    $('label[for=g_pMA]').textContent=t==='enc'?'Montantes e diagonais da treliça (aba e espessura; largura sob medida)':'Montantes e diagonais da treliça';};
  $('#g_tTipo').value=GP.tTipo;fillT(GP.tTipo);$('#g_tTipo').addEventListener('change',e=>{fillT(e.target.value);selectSteel(null);runSteel();});$('#g_fEnc').addEventListener('change',()=>{selectSteel(null);runSteel();});opt('g_pTerca',['Ue200x2.65','Ue150x2.65','Ue150x2.00'],GP.pTerca);
  opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);
- const mqForm=()=>{mqSchema();const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
+ const mqForm=()=>{mqSchema();document.querySelectorAll('[data-bei]').forEach(x=>x.hidden=$('#g_tMod').value!=='bei');const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
    if(t)document.querySelectorAll('[data-hT]').forEach(x=>x.hidden=v==='paralela');document.querySelectorAll('[data-incM]').forEach(x=>x.hidden=v==='trelica'||v==='arco');const pts=$('#g_mLanc').value==='pts';
    document.querySelectorAll('[data-pts]').forEach(x=>x.hidden=!pts);document.querySelectorAll('[data-auto]').forEach(x=>x.hidden=pts);if(!pts)mqPickOn(false);};
- $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});$('#g_mLanc').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});
+ $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});['g_tMod','g_alma'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();tsSchema();selectSteel(null);runSteel();}));$('#g_bei').addEventListener('input',tsSchema);$('#g_mLanc').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});
  $('#mqPick').onclick=()=>mqPickOn(!PICK);
  $('#mqUndo').onclick=()=>{if(OVR.mq&&OVR.mq.length){OVR.mq.pop();saveOVR();runSteel();}};
  $('#mqClr').onclick=()=>{OVR.mq=[];saveOVR();runSteel();};
