@@ -106,6 +106,9 @@ main{min-width:0;display:grid;gap:12px}
 .stage-tools{position:absolute;right:8px;top:8px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .hint.on{color:#fff!important;background:var(--accent)!important;font-weight:600}
 .hint{position:absolute;left:10px;bottom:8px;font:11px var(--f-mono);color:var(--muted);background:var(--sheet);padding:2px 6px;border-radius:4px;pointer-events:none}
+.pmbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 8px}.pmbar button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.phit{fill:rgba(23,74,120,.05);stroke:var(--accent);stroke-width:1.5px;stroke-dasharray:6 4;vector-effect:non-scaling-stroke;cursor:move}.phit:hover{fill:rgba(23,74,120,.12)}.phit.bad{stroke:#c0392b;fill:rgba(192,57,43,.08)}
+.pghost{fill:rgba(23,74,120,.15);stroke:var(--accent);stroke-width:2px;vector-effect:non-scaling-stroke;pointer-events:none}.pnew{fill:none;stroke:var(--muted);stroke-dasharray:10 6;stroke-width:1px;vector-effect:non-scaling-stroke;pointer-events:none}
 .selcard{position:absolute;left:10px;top:10px;max-width:min(340px,calc(100% - 20px));background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--sel);border-radius:6px;padding:8px 11px;font-size:13px;display:grid;gap:2px}
 .selcard b{font:600 15px var(--f-disp);letter-spacing:.03em}
 .selcard dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px}
@@ -345,6 +348,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
    <div class="vw" data-view="desenho" hidden>
     <section class="card" id="dcard">
       <div class="tbar"><h3 id="dtitle">Detalhamento</h3><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" id="dDxf" class="primary">DXF desta folha</button><button type="button" id="dDxfAll">DXF completo</button><button type="button" id="dCopy">Copiar DXF</button><button type="button" id="dFit">Enquadrar</button></div></div>
+      <div class="pmbar" id="pmBar" hidden><button type="button" id="pmMove" aria-pressed="false">Mover desenhos</button><button type="button" id="pmOpt">Otimizar pranchas</button><button type="button" id="pmAuto">Voltar à arrumação automática</button><span class="note" id="pmSt"></span></div>
       <nav class="tabs" id="dtabs" role="tablist"></nav>
       <div class="msg ok" id="dmsg" hidden></div>
       <div class="zones" id="dzones" hidden></div>
@@ -2189,8 +2193,28 @@ function plotBlocks(){const B=[];PLOT_GROUPS.forEach(([id,lab])=>{const sh=SHEET
     d.e.forEach(e=>{const [x,y]=anc(e),k=d.z.findIndex(z=>x>=z.x0-1&&x<=z.x1+1&&y>=z.y0-1&&y<=z.y1+1);(k<0?rest:sets[k]).push(e);});
     sets.forEach((els,k)=>{if(els.length)B.push(mk(els,d.z[k].name));});if(rest.length)B.push(mk(rest,lab));}
   else B.push(mk(d.e,lab));});return B;}
-function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const S=ENG_PLOT.sheet(PLOT.format,PLOT.orient),blocks=plotBlocks();
-  const packed=ENG_PLOT.pack(blocks,S,S.tableW),N=packed.length,R=romRows(),byP={};R.P.forEach(r=>{byP[r.perfil]=(byP[r.perfil]||0)+r.kg;});
+// arrumação das pranchas: automática (por grupo), manual (o usuário arrasta) ou otimizada (encaixe mais compacto)
+const plotLayOk=()=>PLOT.lay&&PLOT.layFmt===PLOT.format+'|'+PLOT.orient;
+function plotKeys(blocks){const seen={};blocks.forEach(b=>{let k=b.group+'|'+b.name;seen[k]=(seen[k]||0)+1;if(seen[k]>1)k+='#'+seen[k];b.key=k;});return blocks;}
+function plotArea(S,i){const A={...S.area};if(i===0)A.x1-=S.tableW+10;return A;}
+function plotFromLay(blocks,S){const L=PLOT.lay,sh=[],rest=[];
+  blocks.forEach(b=>{const p=L[b.key];if(!p){rest.push(b);return;}(sh[p.s]??=[]).push({b,x:p.x,y:p.y});});
+  let out=sh.filter(a=>a&&a.length);if(!out.length&&!rest.length)out=[[]];
+  if(rest.length){const extra=plotOptimize(rest,S,out);out=extra;}
+  return out.map((items,i)=>{const A=plotArea(S,i),groups=[];items.forEach(it=>{if(!groups.includes(it.b.group))groups.push(it.b.group);it.over=it.x<A.x-.5||it.y<A.y-.5||it.x+it.b.w>A.x1+.5||it.y+it.b.h>A.y1+.5;});return {A,items,groups};});}
+// encaixe compacto: maiores primeiro, cada desenho na posição mais alta e mais à esquerda que couber, na primeira prancha com espaço
+function plotOptimize(blocks,S,start){const gap=10,sh=(start||[]).map(a=>a.slice());
+  const fits=(items,A,x,y,w,h)=>x>=A.x-.01&&y>=A.y-.01&&x+w<=A.x1+.01&&y+h<=A.y1+.01&&items.every(o=>x+w+gap<=o.x||o.x+o.b.w+gap<=x||y+h+gap<=o.y||o.y+o.b.h+gap<=y);
+  const order=blocks.slice().sort((a,b)=>b.h*b.w-a.h*a.w);
+  order.forEach(b=>{let done=false;
+    for(let i=0;i<=sh.length&&!done;i++){if(i===sh.length)sh.push([]);const items=sh[i],A=plotArea(S,i);
+      const xs=[A.x,...items.map(o=>o.x+o.b.w+gap)],ys=[A.y,...items.map(o=>o.y+o.b.h+gap)];let best=null;
+      ys.forEach(y=>xs.forEach(x=>{if(fits(items,A,x,y,b.w,b.h)&&(!best||y<best.y-.5||(Math.abs(y-best.y)<.5&&x<best.x)))best={x,y};}));
+      if(best){items.push({b,x:best.x,y:best.y});done=true;}else if(!items.length){items.push({b,x:A.x,y:A.y});done=true;}}});
+  return sh.filter(a=>a.length);}
+function plotFreeze(P){const L={};P.sheets.forEach((s,i)=>s.items.forEach(it=>{L[it.key]={s:i,x:it.x,y:it.y};}));PLOT.lay=L;PLOT.layFmt=PLOT.format+'|'+PLOT.orient;}
+function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const S=ENG_PLOT.sheet(PLOT.format,PLOT.orient),blocks=plotKeys(plotBlocks());
+  const packed=plotLayOk()?plotFromLay(blocks,S):ENG_PLOT.pack(blocks,S,S.tableW),N=packed.length,R=romRows(),byP={};R.P.forEach(r=>{byP[r.perfil]=(byP[r.perfil]||0)+r.kg;});
   const matRows=Object.entries(byP).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,nf0.format(v)]);matRows.push(['Chapas de ligação',nf0.format(R.kgC)]);
   const list=packed.map(ps=>({title:ps.groups.join(' · '),scale:[...new Set(ps.items.map(it=>it.b.scale))].join(' / ')}));
   const sheets=packed.map((ps,i)=>{const D=new Dwg(2.5,0),dr=plotDr(D,0);ENG_PLOT.frame(dr,S);
@@ -2200,10 +2224,11 @@ function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const S=ENG_PLOT.s
     if(i===0){const tx=S.strip.x-10-S.tableW;let cy=S.area.y;cy+=ENG_PLOT.index(dr,tx,cy,S.tableW,list)+4;
       cy+=ENG_PLOT.table(dr,tx,cy,S.tableW,'RESUMO DE MATERIAL',[['PERFIL / ITEM',.7],['PESO (kg)',.3,'end']],matRows,`TOTAL: ${nf0.format(R.kgP+R.kgC)} kg (sem soldas)`)+4;
       if(PLOT.revs.length)ENG_PLOT.revTable(dr,tx,cy,S.tableW,PLOT.revs);}
-    const over=ps.items.filter(it=>it.over).map(it=>it.b.name);return {D,w:S.w,h:S.h,title:list[i].title,over};});
+    const over=ps.items.filter(it=>it.over).map(it=>it.b.name);return {D,w:S.w,h:S.h,title:list[i].title,over,A:ps.A||plotArea(S,i),items:ps.items.map(it=>({key:it.b.key,name:it.b.name,x:it.x,y:it.y,w:it.b.w,h:it.b.h,over:!!it.over}))};});
   return {S,sheets};}
-function drawPranchas(){const P=buildPlot();PLOT_LAST=P;if(!P)return null;const D=new Dwg(2.5,0);let ox=0;
-  P.sheets.forEach((sh,i)=>{D.put(sh.D,ox,0);D.T(ox,8,`PRANCHA ${String(i+1).padStart(2,'0')} · ${PLOT.format} · ${sh.w}×${sh.h} mm · ${sh.title}${sh.over.length?' · ATENÇÃO: desenho maior que a área útil, use formato maior':''}`,'ANOT',{h:5});
+let PLOT_VIEW=null;
+function drawPranchas(){const P=buildPlot();PLOT_LAST=P;if(!P)return null;const D=new Dwg(2.5,0);let ox=0;PLOT_VIEW={sheets:[],hits:[]};
+  P.sheets.forEach((sh,i)=>{D.put(sh.D,ox,0);PLOT_VIEW.sheets.push({ox,w:sh.w,h:sh.h,A:sh.A});sh.items.forEach(it=>PLOT_VIEW.hits.push({...it,s:i,ox}));D.T(ox,8,`PRANCHA ${String(i+1).padStart(2,'0')} · ${PLOT.format} · ${sh.w}×${sh.h} mm · ${sh.title}${sh.over.length?' · ATENÇÃO: desenho maior que a área útil, use formato maior':''}`,'ANOT',{h:5});
     D.z.push({name:'P'+String(i+1).padStart(2,'0'),x0:ox,y0:-sh.h,x1:ox+sh.w,y1:14});ox+=sh.w+80;});
   return D;}
 // ---------- PDF vetorial das pranchas
@@ -2236,6 +2261,7 @@ function bindPlot(){const re=()=>{savePLOT();if(SHEET==='pranchas'&&VIEW==='dese
   $('#pl_logoDef').onclick=()=>{PLOT.logo='';plotForm();re();};
   $('#pl_ver').onclick=()=>setView('desenho','pranchas');$('#pl_pdf').onclick=plotPDF;$('#pl_dxf').onclick=plotDXF;}
 function renderSheet(){
+  if($('#pmBar')&&SHEET!=='pranchas')$('#pmBar').hidden=true;
   const isR=SHEET==='romaneio';$('#dsvg').toggleAttribute('hidden',isR);$('#dstage').hidden=isR;$('#drom').hidden=!isR;
   document.querySelectorAll('#dtabs .tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.s===SHEET));
   const sh=SHEETS.find(x=>x.id===SHEET);if($('#dtitle'))$('#dtitle').textContent=sh?sh.label:'Detalhamento';
@@ -2252,8 +2278,24 @@ function renderSheet(){
   if(!zs.hidden){zs.innerHTML=`<button type="button" aria-pressed="true" data-z="-1">Folha inteira</button>`+d.z.map((z,k)=>`<button type="button" aria-pressed="false" data-z="${k}">${esc(z.name)}</button>`).join('');
     zs.querySelectorAll('button').forEach(b=>b.onclick=()=>{zs.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));const k=+b.dataset.z,z=d.z[k],p=d.ts*2;
       DVB=k<0?{...DFIT}:{x:z.x0-p,y:-z.y1-p,w:z.x1-z.x0+2*p,h:z.y1-z.y0+2*p};svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();});}
-  const bb=d.bbox(),pad=d.ts*2;DFIT={x:bb.x0-pad,y:-bb.y1-pad,w:bb.x1-bb.x0+2*pad,h:bb.y1-bb.y0+2*pad};DVB={...DFIT};svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();
+  const bb=d.bbox(),pad=d.ts*2;DFIT={x:bb.x0-pad,y:-bb.y1-pad,w:bb.x1-bb.x0+2*pad,h:bb.y1-bb.y0+2*pad};
+  if(KEEPVB&&SHEET==='pranchas'){KEEPVB=false;}else DVB={...DFIT};svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();pmOverlay();
 }
+let PMOVE=false,KEEPVB=false;
+function pmOverlay(){const bar=$('#pmBar');if(!bar)return;const on=SHEET==='pranchas'&&!!PLOT_VIEW&&!!STEEL;bar.hidden=!on;if(!on)return;
+  $('#pmMove').setAttribute('aria-pressed',String(PMOVE));const n=PLOT_VIEW.sheets.length,bad=PLOT_VIEW.hits.filter(h=>h.over||pmClash(h)).length;
+  $('#pmSt').textContent=`${n} prancha${n>1?'s':''} · ${plotLayOk()?'arrumação sua (salva neste projeto)':'arrumação automática'}${bad?` · ${bad} desenho(s) fora da área útil ou sobrepostos (em vermelho)`:''}${PMOVE?' · arraste os desenhos; solte à direita da última prancha para criar outra':''}`;
+  const svg=$('#dsvg');svg.querySelectorAll('.phit,.pnew').forEach(x=>x.remove());if(!PMOVE)return;const NS='http://www.w3.org/2000/svg';
+  PLOT_VIEW.hits.forEach((h,k)=>{const r=document.createElementNS(NS,'rect');r.setAttribute('class','phit'+(h.over||pmClash(h)?' bad':''));r.setAttribute('x',h.ox+h.x);r.setAttribute('y',h.y);r.setAttribute('width',h.w);r.setAttribute('height',h.h);r.dataset.k=k;
+    const t=document.createElementNS(NS,'title');t.textContent=h.name;r.appendChild(t);svg.appendChild(r);});
+  const L=PLOT_VIEW.sheets[n-1],r=document.createElementNS(NS,'rect');r.setAttribute('class','pnew');r.setAttribute('x',L.ox+L.w+80);r.setAttribute('y',0);r.setAttribute('width',L.w);r.setAttribute('height',L.h);svg.appendChild(r);}
+function pmClash(h){return PLOT_VIEW.hits.some(o=>o!==h&&o.s===h.s&&h.x<o.x+o.w&&o.x<h.x+h.w&&h.y<o.y+o.h&&o.y<h.y+h.h);}
+function pmDrop(h,nx,ny){const V=PLOT_VIEW,cx=nx+h.w/2;let s=V.sheets.findIndex(q=>cx>=q.ox-40&&cx<=q.ox+q.w+40);const L=V.sheets[V.sheets.length-1];
+  if(s<0)s=cx>L.ox+L.w?V.sheets.length:0;const ox=s<V.sheets.length?V.sheets[s].ox:L.ox+L.w+80,A=s<V.sheets.length?V.sheets[s].A:plotArea(PLOT_LAST.S,s);
+  let x=Math.round(nx-ox),y=Math.round(ny);x=Math.min(Math.max(x,A.x),Math.max(A.x,A.x1-h.w));y=Math.min(Math.max(y,A.y),Math.max(A.y,A.y1-h.h));
+  if(!plotLayOk())plotFreeze(PLOT_LAST);PLOT.lay[h.key]={s,x,y};pmRenum();savePLOT();KEEPVB=true;renderSheet();}
+// tira pranchas vazias e renumera
+function pmRenum(){const used=[...new Set(Object.values(PLOT.lay).map(p=>p.s))].sort((a,b)=>a-b),map={};used.forEach((s,i)=>map[s]=i);Object.values(PLOT.lay).forEach(p=>p.s=map[p.s]);}
 function dxfOf(list){
   const o=[],w=(c,v)=>o.push(String(c),String(v)),f=v=>(Math.round(v*1000)/1000).toFixed(3),st=s=>s.replace(/[^\x20-\x7e]/g,c=>'\\U+'+c.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0'));
   w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(0,'ENDSEC');w(0,'SECTION');w(2,'TABLES');
@@ -2308,13 +2350,23 @@ function bindSheets(){
   const ap2=()=>{svg.setAttribute('viewBox',`${DVB.x} ${DVB.y} ${DVB.w} ${DVB.h}`);penW();};
   const zoom=(cx,cy,f)=>{if(!DVB)return;const pt=svg.createSVGPoint();pt.x=cx;pt.y=cy;const p=pt.matrixTransform(svg.getScreenCTM().inverse());DVB={x:p.x-(p.x-DVB.x)*f,y:p.y-(p.y-DVB.y)*f,w:DVB.w*f,h:DVB.h*f};ap2();};
   svg.addEventListener('wheel',e=>{e.preventDefault();zoom(e.clientX,e.clientY,Math.exp(e.deltaY*.0015));},{passive:false});
-  svg.addEventListener('pointerdown',e=>{svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});last={x:e.clientX,y:e.clientY};pd=0;});
-  svg.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId)||!DVB)return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  let drag=null;const toSvg=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse());};
+  svg.addEventListener('pointerdown',e=>{const t=e.target;
+    if(PMOVE&&t.classList&&t.classList.contains('phit')){const h=PLOT_VIEW.hits[+t.dataset.k],p=toSvg(e),g=document.createElementNS('http://www.w3.org/2000/svg','rect');
+      g.setAttribute('class','pghost');g.setAttribute('width',h.w);g.setAttribute('height',h.h);g.setAttribute('x',h.ox+h.x);g.setAttribute('y',h.y);svg.appendChild(g);
+      drag={h,p,g,id:e.pointerId};svg.setPointerCapture(e.pointerId);e.preventDefault();return;}
+    svg.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});last={x:e.clientX,y:e.clientY};pd=0;});
+  svg.addEventListener('pointermove',e=>{if(drag&&drag.id===e.pointerId){const p=toSvg(e);drag.g.setAttribute('x',drag.h.ox+drag.h.x+p.x-drag.p.x);drag.g.setAttribute('y',drag.h.y+p.y-drag.p.y);return;}
+    if(!pts.has(e.pointerId)||!DVB)return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===2){const [a,b]=[...pts.values()],dd=Math.hypot(a.x-b.x,a.y-b.y);if(pd)zoom((a.x+b.x)/2,(a.y+b.y)/2,pd/dd);pd=dd;return;}
     const m=svg.getScreenCTM();DVB.x-=(e.clientX-last.x)/m.a;DVB.y-=(e.clientY-last.y)/m.d;last={x:e.clientX,y:e.clientY};ap2();});
-  const up=e=>{pts.delete(e.pointerId);pd=0;};svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
+  const up=e=>{if(drag&&drag.id===e.pointerId){const d=drag;drag=null;const p=toSvg(e),dx=p.x-d.p.x,dy=p.y-d.p.y;d.g.remove();if(Math.hypot(dx,dy)>1)pmDrop(d.h,d.h.ox+d.h.x+dx,d.h.y+dy);return;}pts.delete(e.pointerId);pd=0;};svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   svg.addEventListener('dblclick',()=>{if(DFIT){DVB={...DFIT};ap2();}});
   $('#dFit').onclick=()=>{if(DFIT){DVB={...DFIT};ap2();}};
+  $('#pmMove').onclick=()=>{PMOVE=!PMOVE;pmOverlay();};
+  $('#pmOpt').onclick=()=>{if(!STEEL||!STEEL.mem.length)return;const S=ENG_PLOT.sheet(PLOT.format,PLOT.orient),sh=plotOptimize(plotKeys(plotBlocks()),S);
+    const L={};sh.forEach((items,i)=>items.forEach(it=>{L[it.b.key]={s:i,x:it.x,y:it.y};}));PLOT.lay=L;PLOT.layFmt=PLOT.format+'|'+PLOT.orient;savePLOT();renderSheet();note(`Pranchas otimizadas: ${sh.length} prancha${sh.length>1?'s':''}. Arraste os desenhos para ajustar.`);};
+  $('#pmAuto').onclick=()=>{delete PLOT.lay;delete PLOT.layFmt;savePLOT();renderSheet();};
   $('#dDxf').onclick=()=>{const s=SHEETS.find(x=>x.id===SHEET);if(!s.fn||!STEEL)return;const d=paper(s.fn(STEEL));if(d)saveFile(`${SHEET}.dxf`,dxfOf([{d,ox:0,oy:0}]),'application/dxf');};
   $('#dDxfAll').onclick=()=>{if(STEEL&&STEEL.mem.length)saveFile('estrutura_metalica_completo.dxf',dxfAll(),'application/dxf');};
   $('#dCopy').onclick=()=>{if(!STEEL||!STEEL.mem.length)return;const s=SHEETS.find(x=>x.id===SHEET),t=s.fn?dxfOf([{d:paper(s.fn(STEEL)),ox:0,oy:0}]):dxfAll();
