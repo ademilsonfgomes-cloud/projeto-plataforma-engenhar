@@ -203,6 +203,25 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <div style="display:flex;gap:6px;flex-wrap:wrap"><select id="exSel" aria-label="Exemplo"><option value="galpao">Exemplo: galpão de concreto</option><option value="garagem">Exemplo: garagem</option></select><button type="button" id="bEx">Abrir exemplo</button></div>
       <p class="note">O arquivo é lido no seu navegador e não é enviado para nenhum servidor.</p>
     </section>
+    <section class="card" data-pane="arq" id="novoCard">
+      <h2>Galpão novo (sem IFC)</h2>
+      <p class="note">Pilares metálicos, alvenaria até uma altura e telha daí até o beiral. Depois escolha a tesoura no painel Aço, como num IFC.</p>
+      <figure class="schema" id="nvSchema" aria-label="Esquema do galpão novo"></figure>
+      <fieldset><legend>Medidas</legend>
+        <div class="f"><label for="nv_vao">Vão entre eixos (m)</label><input id="nv_vao" type="number" step="0.5" min="6" max="40" value="15"></div>
+        <div class="f"><label for="nv_comp">Comprimento (m)</label><input id="nv_comp" type="number" step="0.5" min="6" max="200" value="30"></div>
+        <div class="f"><label for="nv_esp">Espaçamento máx. dos pilares (m)</label><input id="nv_esp" type="number" step="0.5" min="3" max="8" value="6"></div>
+        <div class="f"><label for="nv_pd">Pé-direito até o apoio (m)</label><input id="nv_pd" type="number" step="0.1" min="3" max="15" value="6"></div>
+        <div class="f"><label for="nv_alv">Alvenaria até (m) · 0 = só telha</label><input id="nv_alv" type="number" step="0.1" min="0" max="15" value="2.5"></div>
+        <div class="f"><label for="nv_oit">Pilares no oitão</label><select id="nv_oit"><option value="sim">Sim</option><option value="nao">Só cantos</option></select></div>
+      </fieldset>
+      <div class="f w"><label for="nv_perf">Perfil do pilar</label><select id="nv_perf">
+        <optgroup label="Perfil enrijecido (dobrado)"><option value="Ue200x3.00">Ue 200x75x25x3,00</option><option value="Ue150x3.00">Ue 150x60x20x3,00</option><option value="CX200x3.00" selected>Caixa 2 Ue 200x75x25x3,00</option><option value="CX200x2.65">Caixa 2 Ue 200x75x25x2,65</option><option value="CX150x3.00">Caixa 2 Ue 150x60x20x3,00</option></optgroup>
+        <optgroup label="H laminado"><option value="W150x22.5">W150x22,5 (H)</option><option value="W150x29.8">W150x29,8 (H)</option><option value="W200x35.9">W200x35,9 (H)</option><option value="W200x46.1">W200x46,1 (H)</option></optgroup></select></div>
+      <div class="f w"><label for="nv_tv">Travessas da telha lateral</label><select id="nv_tv"><option value="Ue127x2.65">Ue 127x50x17x2,65</option><option value="Ue100x2.65">Ue 100x50x17x2,65</option><option value="Ue150x2.00">Ue 150x60x20x2,00</option></select></div>
+      <div class="row"><button class="primary" type="button" id="bNovo">Criar galpão</button></div>
+      <p class="note" id="nvMsg"></p>
+    </section>
     <section class="card" data-pane="aco">
       <h2>Estrutura metálica</h2>
       <p class="note">Lançamento automático sobre o concreto lido. Ajuste e clique em Gerar. Para mover ou remover uma tesoura, ou trocar o perfil de uma linha de terças, clique na peça no 3D.</p>
@@ -642,7 +661,7 @@ function matFor(k,el){
 }
 let SELMAT;function selMat(){if(!SELMAT)SELMAT=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});SELMAT.color.set(tok('--sel'));return SELMAT;}
 
-function buildModel(k,ifc,fileName,isExample){
+function buildModel(k,ifc,fileName,isExample,novo){
   const t0=performance.now();
   const els=ifc.elements();els.forEach(describe);
   if(MODELS[k]){scene.remove(MODELS[k].group);MODELS[k].els.forEach(el=>{el.mesh.geometry.dispose();if(el.edges)el.edges.geometry.dispose();});}
@@ -653,10 +672,11 @@ function buildModel(k,ifc,fileName,isExample){
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(f,3));g.computeVertexNormals();
     el.mesh=new THREE.Mesh(g,matFor(k,el));el.mesh.userData={k,el};group.add(el.mesh);
     if(k==='est'){el.edges=new THREE.LineSegments(new THREE.EdgesGeometry(g,25),edgeMat);el.edges.visible=$('#vEdge').checked;group.add(el.edges);}
+    if(novo&&el.cat==='Pilar'){el.hide=1;el.mesh.visible=false;if(el.edges)el.edges.visible=false;}
     delete el.p;});
   group.visible=$(k==='est'?'#vEst':'#vArq').checked;
   scene.add(group);
-  MODELS[k]={group,els,edgeMat,levels:ifc.levels||[],name:fileName,schema:ifc.schema,unit:ifc.unitName,miss:ifc.miss,example:isExample,ms:performance.now()-t0,ents:ifc.ents.size};
+  MODELS[k]={group,els,edgeMat,levels:ifc.levels||[],name:fileName,schema:ifc.schema,unit:ifc.unitName,miss:ifc.miss,example:isExample,novo:novo||null,ms:performance.now()-t0,ents:ifc.ents.size};
   if(sel.el&&sel.el.mesh.parent!==scene&&!sel.el.mesh.parent?.parent)select(null);
 }
 function fit(top){
@@ -677,8 +697,8 @@ function bindPick(cv){
     if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>5){down=null;return;}down=null;
     const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);rc.setFromCamera(mv,camera);
     if(PICK&&MODELS.est){const hit=rc.intersectObjects(MODELS.est.els.map(el=>el.mesh),false)[0];if(hit)mqAddPoint(hit);else note3d('Clique sobre um pilar, uma viga ou uma parede.');return;}
-    const objs=[];for(const k of ['est','arq'])if(MODELS[k]&&MODELS[k].group.visible)MODELS[k].els.forEach(el=>objs.push(el.mesh));
-    if(steelGroup&&steelGroup.visible)steelGroup.children.forEach(o=>objs.push(o));
+    const objs=[];for(const k of ['est','arq'])if(MODELS[k]&&MODELS[k].group.visible)MODELS[k].els.forEach(el=>{if(!el.hide)objs.push(el.mesh);});
+    if(steelGroup&&steelGroup.visible)steelGroup.children.forEach(o=>{if(o.userData.k!=='telha')objs.push(o);});
     const hit=rc.intersectObjects(objs,false)[0];
     if(hit&&hit.object.userData.k==='aco'){selectSteel(hit.object.userData.m);return;}
     if(hit&&hit.object.userData.k==='placa'){selectSteel(null);return;}
@@ -828,6 +848,11 @@ const STP={
  'W200x15.0':{label:'W200x15,0',w:100,h:200,kgm:15.0,A:19.4,Ix:1305,Zx:147.9},
  'W200x19.3':{label:'W200x19,3',w:102,h:203,kgm:19.3,A:25.1,Ix:1686,Zx:190.6},
  'W250x17.9':{label:'W250x17,9',w:101,h:251,kgm:17.9,A:23.1,Ix:2291,Zx:211.0},
+ // H laminados (pilar)
+ 'W150x22.5':{label:'W150x22,5 (H)',w:152,h:152,kgm:22.5,A:29.0,Ix:1229,Zx:179.6,H:1},
+ 'W150x29.8':{label:'W150x29,8 (H)',w:153,h:157,kgm:29.8,A:38.5,Ix:1739,Zx:247.5,H:1},
+ 'W200x35.9':{label:'W200x35,9 (H)',w:165,h:201,kgm:35.9,A:45.7,Ix:3437,Zx:379.2,H:1},
+ 'W200x46.1':{label:'W200x46,1 (H)',w:203,h:203,kgm:46.1,A:58.6,Ix:4543,Zx:495.3,H:1},
  '2L51x4.8':{label:'2L 2" x 3/16"',w:112,h:51,kgm:7.26,A:9.24,r:1.57},
  '2L64x4.8':{label:'2L 2½" x 3/16"',w:138,h:64,kgm:9.14,A:11.64,r:1.98},
  'L38x3.2':{label:'L 1½" x ⅛"',w:38,h:38,kgm:1.83,A:2.33,r:1.17},
@@ -855,8 +880,10 @@ const STP={
  'U75x40x2.00':{label:'U 75x40x2.00'.replace('.',','),w:40,h:75,kgm:2.37,b:40,c:0,t:2.0},
  'BR16':{label:'Barra redonda ø16 (tirante)',w:16,h:16,kgm:1.58,A:2.01,r:.4},
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
-const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise'};
-const TORD=['BI','BS','MO','DG','LP','LR','TC','PT','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
+// caixa: 2 Ue soldados pelas pontas dos enrijecedores (pilar)
+[['Ue150x3.00','CX150x3.00'],['Ue200x3.00','CX200x3.00'],['Ue200x2.65','CX200x2.65']].forEach(([u,k])=>{const P=STP[u];STP[k]={label:'2 '+P.label.replace('Ue ','Ue ')+' (caixa)',w:2*P.b,h:P.h,kgm:2*P.kgm,base:P,box:1};});
+const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise',PM:'Pilar metálico',TV:'Travessa do fechamento lateral'};
+const TORD=['PM','BI','BS','MO','DG','LP','LR','TC','PT','TV','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
 const GP={tOn:true,tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
   tg:6.3,mOn:false,mLanc:'fach',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
@@ -978,9 +1005,9 @@ function genSteel(G){
         if(j===0)out.notes.push(`Beiral de ${m2(ab)} m de cada lado: a tesoura continua em balanço além dos apoios, com ${na} painel(is) e altura de ${nf0.format((zt(-ab)-Math.max(zb,zTipB))+Bz.h)} mm na ponta.`);}
       [[sA,ua,va,'fixo'],[sB,ub,vb,'deslizante']].forEach(([se,u,v,mode])=>{
         const wc=se?(spanX?(se.bb.x1-se.bb.x0):(se.bb.y1-se.bb.y0)):200,hc=se?se.bb.z1-se.bb.z0:400;
-        const Wp=Math.min(180,wc-20),Lp=300;
+        const Wp=M.novo?Math.ceil((wc+40)/10)*10:Math.min(180,wc-20),Lp=300;
         out.plates.push({c:P3(u,v,zs+tpl/2),X:P3(0,1,0),Y:P3(1,0,0),dims:[Lp,Wp,tpl]});
-        out.nodes.push({kind:'AT',mode,el:se,wc,hc,Wp,Lp,t:tpl,d:16,chord:Bz,pos:P3(u,v,zs)});});
+        out.nodes.push({kind:M.novo?'TP':'AT',mode,el:se,wc,hc,Wp,Lp,t:tpl,d:16,chord:Bz,pos:P3(u,v,zs),prof:M.novo?STP[M.novo.perf]:null});});
     });
     // terças: entre tesouras vizinhas, no nó de cada painel do banzo superior
     const lbT=+G.lBar>0?Math.floor(+G.lBar*1000/50)*50:0;
@@ -1030,7 +1057,7 @@ function genSteel(G){
   }
 
   // ================= MARQUISE =================
-  if(G.mOn){
+  if(G.mOn){if(M.novo)out.warns.push('Marquise em galpão de pilar metálico: o lançamento sai, mas a ligação na face do pilar ainda está detalhada para pilar de concreto (chumbador). O detalhe soldado no pilar metálico vem na próxima etapa.');
     const Co=STP[G.pCon],Tm=STP[G.pTm],zm=G.zm*1000,proj=G.proj*1000,im=G.incM/100,isA=G.side==='A',su=isA?-1:1;
     let MB=STP[G.pMB],MA=STP[G.pMA];if(G.tTipo==='enc'&&MB.t){MA=encWeb(MB,MA,+G.fEnc||1);MB=encChord(MB);}
     const mod=G.mTipo==='w'?'w':G.mTipo,tre=mod!=='w',hS=G.hS*1000,hT=mod==='paralela'?hS:Math.min(G.hT*1000,hS),need=tre?hS+MB.h:Co.h;
@@ -1134,6 +1161,38 @@ function genSteel(G){
       out.preHypM=`Marquise: ${tre?`treliça ${mod==='arco'?'em arco':mod==='paralela'?'de altura constante, inclinada,':'cônica'} com ${m2(hS)} m no pilar e ${m2(hT)} m na ponta,`:'console em perfil W,'} balanço ${m2(proj)} m, consoles a cada ${m2(amax)} m no máximo, mesmas cargas da cobertura.`;
     }
   }
+  // ================= GALPÃO NOVO: pilares metálicos, bases, travessas e telha lateral =================
+  if(M.novo){const n=M.novo,PC=STP[n.perf],{cols:gc,xo}=nvGrid(n),heavy=PC.H||PC.box,tb=heavy?19:16,dch=heavy?19:16,TV=STP[n.tv];out.clad=[];
+    const hx=c=>c.rot?PC.w:PC.h,hy=c=>c.rot?PC.h:PC.w;
+    gc.forEach((c,i)=>{const x=c.x*1000,y=c.y*1000;add('PM',PC,[x,y,tb],[x,y,zs],{rot:c.rot,oit:c.oit});
+      const Lb=Math.ceil((hx(c)+200)/50)*50,Bb=Math.ceil((hy(c)+200)/50)*50;
+      out.plates.push({c:[x,y,tb/2],X:[1,0,0],Y:[0,1,0],dims:[Lb,Bb,tb]});
+      out.nodes.push({kind:'BA',prof:PC,Lb,Bb,t:tb,d:dch,rot:c.rot,pos:[x,y,0],name:`PM${i+1}`});});
+    // travessas por fora dos pilares (alma na horizontal, contra o vento), da alvenaria ao beiral
+    const z0=n.alv>0?n.alv*1000+100:300,zTop=zs-150,nT=Math.max(1,Math.ceil((zTop-z0)/1800)),zl=zTop-z0>300?Array.from({length:nT+1},(_,k)=>Math.round(z0+k*(zTop-z0)/nT)):[];
+    const V=n.vao*1000,Cc=n.comp*1000,ys=[...new Set(gc.filter(c=>!c.oit).map(c=>c.y*1000))].sort((a,b)=>a-b),xs=[0,...xo.map(x=>x*1000),V];
+    const offL=PC.h/2+TV.h/2,offO=Math.max(PC.w,xo.length?PC.h:0)/2+TV.h/2;
+    [[0,-1],[V,1]].forEach(([x,g])=>{for(let q=0;q<ys.length-1;q++)zl.forEach(z=>add('TV',TV,[x+g*offL,ys[q],z],[x+g*offL,ys[q+1],z],{rot:1}));
+      const xf=x+g*(offL+TV.h/2);out.clad.push([[xf,0,z0-100],[xf,Cc,z0-100],[xf,Cc,zs],[xf,0,zs]]);});
+    [[0,-1],[Cc,1]].forEach(([y,g])=>{for(let q=0;q<xs.length-1;q++)zl.forEach(z=>add('TV',TV,[xs[q],y+g*offO,z],[xs[q+1],y+g*offO,z],{rot:1}));
+      const yf=y+g*(offO+TV.h/2);out.clad.push([[0,yf,z0-100],[V,yf,z0-100],[V,yf,zs],[0,yf,zs]]);});
+    if(!zl.length)out.clad.length=0;
+    const aTel=2*(V+Cc)*Math.max(0,zs-(n.alv>0?n.alv*1000:0))/1e6,aAlv=2*(V+Cc)*n.alv/1000;
+    out.notes.push(`Galpão novo: ${gc.length} pilares ${PC.label} (${gc.filter(c=>c.oit).length} no oitão), engastados na base com placa e 4 chumbadores; tesouras apoiadas no topo dos pilares por chapa de topo.`);
+    if(n.alv>0)out.notes.push(`Alvenaria em bloco de 14 cm até ${m2(n.alv*1000)} m (${nf1.format(aAlv)} m²): amarrar nos pilares com tela soldada ou ferro-cabelo a cada 2 fiadas (solda na mesa do pilar) e cinta de amarração em canaleta no topo; a alvenaria não trava o pilar no cálculo.`);
+    if(zl.length)out.notes.push(`Fechamento lateral em telha de ${n.alv>0?`${m2(n.alv*1000)} m`:'0,30 m'} até o beiral (${nf1.format(aTel)} m², sem o triângulo do oitão): ${zl.length} linhas de travessas ${TV.label} por fora dos pilares, a cada ${m2((zTop-z0)/nT)} m no máximo${n.alv>0?'; a telha transpassa 10 cm sobre a cinta':''}.`);
+    // pré-dimensionamento: vento como estimativa (q = 0,60 kN/m², Cpe 0,7 barlavento e 0,3 sotavento), pilares em balanço ligados pela tesoura
+    const qk=.6,IxW=P=>P.Ix?P.Ix:P.box?2*ueProps(P.base).A*ueProps(P.base).rx**2:ueProps(P).A*ueProps(P).rx**2,
+      MRc=P=>P.Zx?P.Zx*34.5/1.1/100:IxW(P)/(P.h/20)*25/1.1/100,H=zs/1000,Ixc=IxW(PC);
+    [[ys.length>1?Math.max(...ys.slice(1).map((y,k)=>y-ys[k]))/1000:n.esp,'lateral',PC.Ix?'flexão no eixo forte':'flexão no eixo da alma']].forEach(([b,lb,obs])=>{
+      const Mk=.275*qk*b*H*H,Md=1.4*Mk,MR=MRc(PC),dl=.3*.0625*qk*1e-4*b*100*Math.pow(H*100,4)/(20000*Ixc)*10,dlim=zs/300;
+      if(Md>MR||dl>dlim)out.warns.push(`Pilar ${PC.label} não passa no pré-dimensionamento com o vento estimado (${Md>MR?`momento ${nf1.format(Md)} > ${nf1.format(MR)} kN·m`:`deslocamento ${nf1.format(dl)} > ${nf1.format(dlim)} mm`}). Use um perfil maior (ex.: W200x35,9), reduza o espaçamento ou ligue a tesoura ao pilar com mão-francesa (pórtico).`);
+      out.pre.push({item:`Pilar ${lb} ${PC.label}: flexão na base (vento)`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`${obs}; faixa de ${m2(b*1000)} m, altura ${m2(zs)} m, q = 0,60 kN/m² estimado`});
+      out.pre.push({item:`Pilar ${lb}: deslocamento no topo`,sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'H/300 na combinação frequente (ψ1 = 0,3 do vento), pilares em balanço ligados pela tesoura'});});
+    if(zl.length){const st=(zTop-z0)/nT/1000,L=(ys.length>1?Math.max(...ys.slice(1).map((y,k)=>y-ys[k])):n.esp*1000)/1000,pp=ueProps(TV),W=pp.A*pp.rx*pp.rx/(TV.h/20),Md=1.4*qk*st*L*L/8,MR=W*25/1.1/100;
+      out.pre.push({item:`Travessa ${TV.label}, vão ${m2(L*1000)} m`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`faixa de ${m2(st*1000)} m; vento 0,60 kN/m², biapoiada`});}
+    out.preHypN='Pilares e travessas: vento estimado em 0,60 kN/m² (confirme pela NBR 6123 para o local).';
+  }
   // ================= agrupar ligações aço-concreto =================
   const cg=new Map();
   out.nodes.forEach(nd=>{let key,title,desc,checks=[];
@@ -1143,6 +1202,11 @@ function genSteel(G){
       if(nd.wc/2<5*nd.d)checks.push(`Chumbador a ${nd.wc/2} mm da borda da viga: o mínimo recomendado é 5d = ${5*nd.d} mm.`);
       if(nd.Wp<nd.chord.w)checks.push(`Placa (${nd.Wp} mm) mais estreita que o banzo (${nd.chord.w} mm).`);
       if(12*nd.d>nd.hc-50)checks.push(`Embutimento de ${12*nd.d} mm não cabe na altura da viga (${nd.hc} mm).`);}
+    else if(nd.kind==='TP'){key=`TP|${nd.mode}|${nd.wc}|${nd.Wp}`;title=`Apoio da tesoura no topo do pilar metálico (${nd.mode})`;
+      desc=`Chapa de topo ${nd.Wp} x ${nd.Lp} x ${nd.t} mm soldada no pilar · 2 parafusos ø${nd.d} ASTM A325 na chapa de apoio da tesoura${nd.mode==='deslizante'?' (furos oblongos 18 x 50 mm)':''}`;
+      if(nd.Wp<nd.chord.w)checks.push(`Chapa de topo (${nd.Wp} mm) mais estreita que o banzo (${nd.chord.w} mm).`);}
+    else if(nd.kind==='BA'){key=`BA|${nd.prof.label}|${Math.max(nd.Lb,nd.Bb)}|${Math.min(nd.Lb,nd.Bb)}`;title=`Base do pilar metálico ${nd.prof.label}`;
+      desc=`Placa de base ${nd.Lb} x ${nd.Bb} x ${nd.t} mm · 4 chumbadores ø${nd.d} com gancho, ${12*nd.d+150} mm · graute 25 mm`;}
     else if(nd.kind==='AP'){key=`AP|${nd.wc}`;title='Montante de apoio de terça na viga de concreto';
       desc=`Placa ${nd.Lp} x ${nd.Wp} x ${nf1.format(nd.t)} mm · 2 chumbadores químicos ø12,5 no eixo da viga`;
       if(nd.wc/2<5*nd.d)checks.push(`Chumbador a ${nd.wc/2} mm da borda da viga: o mínimo recomendado é 5d = ${5*nd.d} mm.`);}
@@ -1152,7 +1216,7 @@ function genSteel(G){
       const ed=(nd.fw-nd.g)/2;if(ed<5*nd.d)checks.push(`Chumbador a ${ed} mm da borda do pilar: o mínimo recomendado é 5d = ${5*nd.d} mm.`);
       if(nd.Wp<nd.prof.w+60)checks.push(`Face do pilar estreita: placa de ${nd.Wp} mm para peça de ${nd.prof.w} mm.`);
     }
-    if(!cg.has(key))cg.set(key,{key,kind:nd.kind,title,desc,checks,count:0,els:new Set(),nd});const g=cg.get(key);g.count++;if(nd.el)g.els.add(nd.el.name.split(' (')[0]);});
+    if(!cg.has(key))cg.set(key,{key,kind:nd.kind,title,desc,checks,count:0,els:new Set(),nd});const g=cg.get(key);g.count++;if(nd.el)g.els.add(nd.el.name.split(' (')[0]);else if(nd.name)g.els.add(nd.name);});
   const kc={};out.conns=[...cg.values()].sort((a,b)=>a.kind.localeCompare(b.kind));out.conns.forEach(c=>{kc[c.kind]=(kc[c.kind]||0)+1;c.mark=c.kind+kc[c.kind];});
   // marcas das peças
   const gm=new Map();out.mem.forEach(m=>{const k=`${m.type}|${m.prof.label}|${Math.round(m.len/10)}`;if(!gm.has(k))gm.set(k,{type:m.type,prof:m.prof,len:Math.round(m.len),qty:0});gm.get(k).qty++;m.gk=k;});
@@ -1178,8 +1242,11 @@ function renderSteel(){
   if(!STEEL)return;steelGroup=new THREE.Group();
   const mA=matFor('aco',{cat:'aco'}),mP=matFor('aco',{cat:'placa'});
   STEEL.mem.forEach(m=>{const u=V.norm(V.sub(m.b,m.a));let ref=Math.abs(u[2])>.95?[1,0,0]:[0,0,1];const z=V.norm(V.sub(ref,V.mul(u,V.dot(ref,u)))),y=V.cross(z,u);
-    const c=[(m.a[0]+m.b[0])/2,(m.a[1]+m.b[1])/2,(m.a[2]+m.b[2])/2];const mesh=boxMesh(m.len,m.prof.w,m.prof.h,u,y,z,c,mA);mesh.userData={k:'aco',m};m.mesh=mesh;steelGroup.add(mesh);});
+    const c=[(m.a[0]+m.b[0])/2,(m.a[1]+m.b[1])/2,(m.a[2]+m.b[2])/2];const mesh=boxMesh(m.len,m.rot?m.prof.h:m.prof.w,m.rot?m.prof.w:m.prof.h,u,y,z,c,mA);mesh.userData={k:'aco',m};m.mesh=mesh;steelGroup.add(mesh);});
   STEEL.plates.forEach(p=>{const Z=V.cross(p.X,p.Y);const mesh=boxMesh(p.dims[0],p.dims[1],p.dims[2],p.X,p.Y,Z,p.c,mP);mesh.userData={k:'placa'};steelGroup.add(mesh);});
+  if(STEEL.clad&&STEEL.clad.length){if(!MATS.telha)MATS.telha=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,opacity:.28,depthWrite:false});MATS.telha.color.set(tok('--c-aco'));
+    const O=ORIGIN||[0,0,0];STEEL.clad.forEach(q=>{const f=[0,1,2,0,2,3].flatMap(i=>[q[i][0]-O[0],q[i][1]-O[1],q[i][2]-O[2]]),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(f),3));g.computeVertexNormals();
+      const mesh=new THREE.Mesh(g,MATS.telha);mesh.userData={k:'telha'};mesh.renderOrder=2;steelGroup.add(mesh);});}
   steelGroup.visible=$('#vAco').checked;scene.add(steelGroup);
 }
 function renderSteelTables(){
@@ -1200,7 +1267,7 @@ function renderSteelTables(){
    <div class="table-wrap"><table><thead><tr><th>Marca</th><th>Ligação</th><th class="n">Qtd.</th><th>Composição</th><th>No concreto</th><th>Verificação</th></tr></thead><tbody>${cr}</tbody></table></div>
    ${pr?`<div class="tbar"><h3>Pré-verificação (estimativa)</h3></div>
    <div class="table-wrap"><table><thead><tr><th>Item</th><th class="n">Solicitação</th><th class="n">Resistência</th><th>Uso</th><th>Observação</th></tr></thead><tbody>${pr}</tbody></table></div>
-   <p class="note">${esc(STEEL.preHyp||'')} ${esc(STEEL.preHypM||'')} Não inclui vento: em marquise e cobertura leve a sucção do vento pode inverter os esforços e costuma governar os chumbadores. Use só para conferir a ordem de grandeza; o dimensionamento é do calculista.</p>`:''}`;
+   <p class="note">${esc(STEEL.preHyp||'')} ${esc(STEEL.preHypM||'')} ${esc(STEEL.preHypN||'')} Não inclui vento na cobertura: em marquise e cobertura leve a sucção do vento pode inverter os esforços e costuma governar os chumbadores. Use só para conferir a ordem de grandeza; o dimensionamento é do calculista.</p>`:''}`;
 }
 function readG(){const g={};for(const k of Object.keys(GP)){const el=document.getElementById('g_'+k);if(!el){g[k]=GP[k];continue;}
   g[k]=el.type==='checkbox'?el.checked:(typeof GP[k]==='number'?(parseFloat(String(el.value).replace(',','.'))||GP[k]):el.value);}return g;}
@@ -1253,6 +1320,13 @@ class Dwg{
 }
 // tubo e cantoneira dupla em corte, centrados em (x,y)
 function secBox(d,cx,cy,w,h,ly){d.R(cx-w/2,cy-h/2,w,h,ly);}
+// pilar em planta, centrado; strong=1: altura do perfil na vertical do papel (direção do vão)
+function colPlan(d,cx,cy,P,ly,strong=1){
+  if(P.H){const h=P.h,b=P.w,tf=b>160?11:8,tw=b>160?7:6,pts=[[-b/2,-h/2],[b/2,-h/2],[b/2,-h/2+tf],[tw/2,-h/2+tf],[tw/2,h/2-tf],[b/2,h/2-tf],[b/2,h/2],[-b/2,h/2],[-b/2,h/2-tf],[-tw/2,h/2-tf],[-tw/2,-h/2+tf],[-b/2,-h/2+tf]];
+    d.P([...pts,pts[0]].map(([x,y])=>strong?[cx+x,cy+y]:[cx+y,cy+x]),ly);return;}
+  if(!strong){d.R(cx-P.h/2,cy-P.w/2,P.h,P.w,ly);return;}
+  if(P.box){secUe(d,cx-P.base.b,cy,P.base,1,ly);secUe(d,cx+P.base.b,cy,P.base,-1,ly);return;}
+  secUe(d,cx-P.b/2,cy,P,1,ly);}
 function sec2L(d,cx,cy,b,t,gap,ly,up){[-1,1].forEach(s=>{const x0=cx+s*gap/2,k=up?-1:1;d.P([[x0,cy+k*b/2],[x0+s*t,cy+k*b/2],[x0+s*t,cy-k*(b/2-t)],[x0+s*b,cy-k*(b/2-t)],[x0+s*b,cy-k*b/2],[x0,cy-k*b/2]],ly);});}
 const ESCS=[1,2,5,10,20,25,50,75,100,125,200,250,500];const escN=v=>ESCS.find(e=>e>=v)||500;
 // passa o desenho para milímetros de papel (escala aplicada)
@@ -1275,9 +1349,9 @@ function drawTesoura(S){
   d.T(T.L*.25,pr(bi.a)[1]-Bz.h/2-ts*1.1,`${bi.mark} · ${Bz.label}`,'TEXTO',{an:'middle',h:ts*.7});
   d.T(T.L*.1,pr(bs.a)[1]+T.L*.1*T.i+Bz.h/2+ts*.9,`${bs.mark} · ${Bz.label}`,'TEXTO',{an:'middle',h:ts*.7,rot:Math.atan(T.i)*180/Math.PI});
   // apoios: placa e viga de concreto em corte
-  const nd=S.nodes.filter(n=>n.kind==='AT');
-  [[0,'AT1 (fixo)'],[T.L,'AT2 (deslizante)']].forEach(([x,lb],k)=>{const n=nd[k]||nd[0];if(!n)return;
-    d.R(x-n.Wp/2,0,n.Wp,n.t,'CHAPA');d.hatch(x-n.wc/2,-Math.min(n.hc,500),n.wc,Math.min(n.hc,500));d.tag(x,n.t,x+(k?-1:1)*ts*5,-ts*7.5,lb);});
+  const nd=S.nodes.filter(n=>n.kind==='AT'||n.kind==='TP'),tpM=nd[0]&&nd[0].kind==='TP';
+  [[0,tpM?'TP (fixo)':'AT1 (fixo)'],[T.L,tpM?'TP (deslizante)':'AT2 (deslizante)']].forEach(([x,lb],k)=>{const n=nd[k]||nd[0];if(!n)return;
+    d.R(x-n.Wp/2,0,n.Wp,n.t,'CHAPA');if(tpM)d.R(x-n.wc/2,-500,n.wc,500,'ACO');else d.hatch(x-n.wc/2,-Math.min(n.hc,500),n.wc,Math.min(n.hc,500));d.tag(x,n.t,x+(k?-1:1)*ts*5,-ts*7.5,lb);});
   const zb=T.zb-S.zs,n=T.n,sk=k=>T.sk(k),ztop=k=>T.zt(sk(k))-S.zs;
   d.chain(Array.from({length:n+1},(_,k)=>sk(k)),zb-Bz.h/2,-ts*3.2,false);d.D(0,zb-Bz.h/2,T.L,zb-Bz.h/2,-ts*5);
   d.D(0,0,0,ztop(0)+Bz.h/2,ts*2,`${nint(ztop(0)+Bz.h/2)}`);d.D(T.L/2,0,T.L/2,ztop(T.nh)+Bz.h/2,-ts*1.5);
@@ -1291,7 +1365,7 @@ function drawTesoura(S){
   d.notes(0,-ts*9,[`Vãos entre apoios: ${spans} mm. Geometria igual; conferir o vão de cada uma.`,
     Bz.enc?`Banzos ${Bz.label} com a alma por fora e as abas para dentro; montantes ${T.Al.label}${T.Dg&&T.Dg.label!==T.Al.label?` e diagonais ${T.Dg.label}`:' e diagonais iguais'}, encaixados entre as abas. Cortes A a D na folha de cortes; nós na folha de nós.`:Bz.t?`Banzos ${Bz.label}; montantes e diagonais ${T.Al.label} (perfis formados a frio, almas sobrepostas, sem chapa gusset). Cortes A a D na folha de cortes; nós na folha de nós.`:`Banzos ${Bz.label} (cantoneiras laminadas costas com costas); montantes e diagonais ${T.Al.label}. Cortes A a D na folha de cortes; nós com chapa gusset na folha de nós.`,
     ...(S.shop.length?[`Barras do banzo inferior: ${barras('BI')} mm; banzo superior: ${barras('BS')} mm. ES = emenda soldada${S.det&&S.det.obra?' na obra':''} (detalhe na folha de nós).${S.det&&S.det.obra?' Banzo superior com corte em meia-esquadria na cumeeira, solda de topo; tesoura montada inteira na obra.':''}`]:[]),
-    `Apoio AT1 fixo e AT2 deslizante (furo oblongo). Cotas de altura a partir do topo da viga de concreto (z = ${m2(S.zs)} m).`],
+    (tpM?`Apoio no topo do pilar metálico: lado fixo e lado deslizante (furo oblongo), detalhes TP na folha de ligações. Cotas de altura a partir do topo do pilar (z = ${m2(S.zs)} m).`:`Apoio AT1 fixo e AT2 deslizante (furo oblongo). Cotas de altura a partir do topo da viga de concreto (z = ${m2(S.zs)} m).`)+``],
     `TESOURA TS1 · ${S.trusses.length} UNIDADES`,sub());
   return d;}
 
@@ -1339,7 +1413,7 @@ function drawPlanta(S){
   // cotas entre tesouras pela fila A
   for(let j=0;j<S.trusses.length-1;j++){const a=S.trusses[j].at(0,0),b=S.trusses[j+1].at(0,0);d.D(a[0],a[1],b[0],b[1],ts*3.5);}
   const t0=S.trusses[0];if(t0){const a=t0.at(0,0),b=t0.at(t0.L,0);d.D(a[0],a[1],b[0],b[1],-ts*3);}
-  S.nodes.forEach(n=>{if(n.kind==='AT'||n.kind==='AP'){const p=n.pos;d.C(p[0],p[1],ts*.25,'CHAPA');}});
+  S.nodes.forEach(n=>{if(n.kind==='AT'||n.kind==='AP'||n.kind==='TP'){const p=n.pos;d.C(p[0],p[1],ts*.25,'CHAPA');}});
   (S.tcSp||[]).forEach(e=>{const q=[-e.u[1],e.u[0]];d.L(e.p[0]-q[0]*ts*.6,e.p[1]-q[1]*ts*.6,e.p[0]+q[0]*ts*.6,e.p[1]+q[1]*ts*.6,'CHAPA');});
   if(S.canopy)d.T((x0+x1)/2,y0-ts*1.5,'','ANOT');
   d.notes(x0,y0-ts*7,['Tesouras (TS), terças (TC), montantes de apoio (□100) e marquise sobre o concreto da cota de apoio.','Pontos laranja: ligações aço-concreto (ver folha de ligações).',...((S.tcSp||[]).length?['Traços laranja nas terças: emendas soldadas ET (detalhe na folha das terças).']:[])],
@@ -1362,6 +1436,32 @@ function drawLigacoes(S){
         `2 chumbadores químicos ø${n.d} (barra roscada classe 5.8), embutimento ${12*n.d} mm, furo no concreto ø${n.d+2}.`,
         n.mode==='deslizante'?'Chapa de apoio da tesoura com furos oblongos 18 x 50 mm na direção do vão; porca sem aperto final (dilatação).':'Chapa de apoio da tesoura com furos ø18; porca com aperto final.',
         `Distância do chumbador à borda da viga: ${n.wc/2} mm (mínimo 5d = ${5*n.d} mm).`],`${c.mark} · ${c.title.toUpperCase()}`,`${c.count} unidades · ${[...c.els].join(', ')}`);}
+    else if(c.kind==='TP'){const Bz=n.chord,P=n.prof,hx=n.wc,hcol=450;
+      sd.R(-hx/2,-hcol,hx,hcol,'ACO');sd.L(-hx/2-20,-hcol,hx/2+20,-hcol,'EIXO');if(P.H){sd.L(-hx/2+10,-hcol,-hx/2+10,0,'ANOT');sd.L(hx/2-10,-hcol,hx/2-10,0,'ANOT');}
+      sd.R(-n.Wp/2,0,n.Wp,n.t,'CHAPA');sd.R(-n.Wp/2,n.t,n.Wp,8,'CHAPA');if(Bz.enc)secUeH(sd,0,n.t+8,Bz.base,false,'ACO');else if(Bz.t)secUe(sd,-Bz.b/2,n.t+8+Bz.h/2,Bz,1,'ACO');else sec2L(sd,0,n.t+8+Bz.h/2,Bz.h,4.8,8,'ACO');
+      sd.L(-n.d/2,n.t+8+30,-n.d/2,-25,'ANOT');sd.L(n.d/2,n.t+8+30,n.d/2,-25,'ANOT');
+      sd.chain([-n.Wp/2,-hx/2,hx/2,n.Wp/2],-hcol,-ts*1.6,false);sd.T(0,n.t+8+Bz.h+ts*1.2,'CORTE','TEXTO',{an:'middle',h:ts*.9});
+      const ox=n.Wp/2+ts*6+n.Lp/2;sd.R(ox-n.Lp/2,-n.Wp/2,n.Lp,n.Wp,'CHAPA');colPlan(sd,ox,0,P,'ANOT',1);
+      [-100,100].forEach(dx=>{if(n.mode==='deslizante')sd.slot(ox+dx,0,18,50,0,'CHAPA');else sd.C(ox+dx,0,9,'CHAPA');});
+      sd.L(ox-n.Lp/2-ts,0,ox+n.Lp/2+ts,0,'EIXO');sd.chain([ox-n.Lp/2,ox-100,ox+100,ox+n.Lp/2],-n.Wp/2,-ts*1.6,false);sd.D(ox+n.Lp/2,-n.Wp/2,ox+n.Lp/2,n.Wp/2,-ts*1.4);
+      sd.T(ox,n.Wp/2+ts*1.2,'PLANTA (vão da tesoura na vertical)','TEXTO',{an:'middle',h:ts*.9});
+      sd.notes(-n.Wp/2,-hcol-ts*5,[`Chapa de topo ${n.Wp} x ${n.Lp} x ${n.t} mm ASTM A36, soldada no topo do pilar ${P.label} com filete contínuo em todo o contorno.`,
+        `Chapa de apoio da tesoura ${n.Wp} x ${n.Lp} x 8 mm soldada no banzo inferior; 2 parafusos ø${n.d} ASTM A325 a 100 mm do eixo.`,
+        n.mode==='deslizante'?'Lado deslizante: furos oblongos 18 x 50 mm na chapa da tesoura, na direção do vão; porca sem aperto final (dilatação).':'Lado fixo: furos ø18; porca com aperto final.',
+        'Montagem: pilar aprumado e travado antes de apoiar a tesoura.'],`${c.mark} · ${c.title.toUpperCase()}`,`${c.count} unidades · ${[...c.els].slice(0,10).join(', ')}`);}
+    else if(c.kind==='BA'){const P=n.prof,Lb=n.rot?n.Bb:n.Lb,Bb=n.rot?n.Lb:n.Bb,hx=n.rot?P.w:P.h,e=50,la=12*n.d+150,pes=Math.max(400,Math.ceil((Math.max(P.h,P.w)+200)/50)*50+100);
+      sd.hatch(-pes/2,-25-500,pes,500);sd.R(-Lb/2,-25,Lb,25,'ANOT');sd.R(-Lb/2,0,Lb,n.t,'CHAPA');sd.R(-hx/2,n.t,hx,450,'ACO');
+      [-1,1].forEach(g=>{const x=g*(Lb/2-e);sd.P([[x,n.t+40],[x,-la+60],[x+g*-0,-la],[x-g*100,-la]],'ANOT');sd.R(x-n.d*.9,n.t,n.d*1.8,n.d*.8,'ANOT');sd.R(x-n.d*.9,n.t+n.d*.8,n.d*1.8,n.d*.8,'ANOT');});
+      sd.chain([-Lb/2,-Lb/2+e,Lb/2-e,Lb/2],-25-500,-ts*1.6,false);sd.D(Lb/2,0,Lb/2,-la,-ts*1.6,`${la}`);sd.D(-Lb/2,0,-Lb/2,n.t,ts*1.3,nint(n.t));
+      sd.T(0,n.t+450+ts*.9,'ELEVAÇÃO','TEXTO',{an:'middle',h:ts*.9});
+      const ox=Lb/2+ts*7+Bb/2;sd.R(ox-Bb/2,-Lb/2,Bb,Lb,'CHAPA');colPlan(sd,ox,0,P,'ACO',!n.rot);
+      [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([a,b])=>sd.C(ox+a*(Bb/2-e),b*(Lb/2-e),(n.d+6)/2,'CHAPA'));
+      sd.chain([ox-Bb/2,ox-Bb/2+e,ox+Bb/2-e,ox+Bb/2],-Lb/2,-ts*1.6,false);sd.chain([-Lb/2,-Lb/2+e,Lb/2-e,Lb/2],ox+Bb/2,-ts*1.4,true);
+      sd.T(ox,Lb/2+ts*1.2,'PLANTA (vão da tesoura na vertical)','TEXTO',{an:'middle',h:ts*.9});
+      sd.notes(-Lb/2,-25-500-ts*5,[`Placa de base ${n.Lb} x ${n.Bb} x ${n.t} mm ASTM A36; pilar soldado com filete contínuo em todo o contorno.`,
+        `4 chumbadores ø${n.d} ASTM A36 (ou SAE 1020), comprimento ${la} mm com gancho de 100 mm, deixados no concreto com gabarito; furo na placa ø${n.d+6} com arruela de chapa.`,
+        'Nivelar com porca e contraporca e grautear 25 mm com graute não retrátil depois do prumo.',
+        `Pescoço de concreto ${pes} x ${pes} mm sobre a sapata; base engastada (o pilar trabalha em balanço com o vento).`],`${c.mark} · ${c.title.toUpperCase()}`,`${c.count} unidades · ${[...c.els].slice(0,12).join(', ')}${c.count>12?'…':''}`);}
     else if(c.kind==='AC'){const hp=n.Hp,t=n.t,dc=n.dc;
       sd.hatch(-dc,-hp/2-150,dc,hp+300);sd.R(0,-hp/2,t,hp,'CHAPA');sd.R(-dc-t,-hp/2,t,hp,'CHAPA');
       const pr=n.prof;if(n.role)sec2L(sd,t+pr.h/2+4,0,pr.h,4.8,8,'ACO');else secBox(sd,t+pr.h/2,0,pr.h,pr.w,'ACO');
@@ -2103,7 +2203,8 @@ function renderAll(){
   const msgs=[];
   for(const k of ['est','arq']){const m=MODELS[k];if(!m)continue;const miss=[...m.miss.entries()];
     if(miss.length)msgs.push(`<div class="msg al">${k==='est'?'Estrutural':'Arquitetônico'}: algumas geometrias ainda não são lidas por esta versão (${miss.map(([t,n])=>`${esc(t.replace('IFC','Ifc'))} ×${n}`).join(', ')}). Se faltar alguma peça, me mande o arquivo.</div>`);}
-  if(MODELS.est&&MODELS.est.example)msgs.push(`<div class="msg ok">${MODELS.est.name.includes('garagem')?'Exemplo da garagem: pilares, vigas, paredes de concreto (uma curva), laje e sapatas, mais o volume da grelha como referência arquitetônica.':'Exemplo de galpão de concreto (15 x 25 m, cinta a 8,70 m e platibanda até 10,20 m), com cobertura em tesouras e marquise geradas automaticamente.'} Abra o seu IFC para substituí-lo.</div>`);
+  if(MODELS.est&&MODELS.est.novo){const n=MODELS.est.novo;msgs.push(`<div class="msg ok">Galpão novo ${m2(n.vao*1000)} x ${m2(n.comp*1000)} m, pé-direito ${m2(n.pd*1000)} m, pilares ${esc(STP[n.perf].label)}${n.alv>0?`, alvenaria até ${m2(n.alv*1000)} m e telha acima`:', fechamento todo em telha'}. Ajuste a cobertura no painel Aço.</div>`);}
+  else if(MODELS.est&&MODELS.est.example)msgs.push(`<div class="msg ok">${MODELS.est.name.includes('garagem')?'Exemplo da garagem: pilares, vigas, paredes de concreto (uma curva), laje e sapatas, mais o volume da grelha como referência arquitetônica.':'Exemplo de galpão de concreto (15 x 25 m, cinta a 8,70 m e platibanda até 10,20 m), com cobertura em tesouras e marquise geradas automaticamente.'} Abra o seu IFC para substituí-lo.</div>`);
   $('#msgs').innerHTML=msgs.join('');
   const f=$('#filt'),cur=f.value;f.innerHTML='<option value="">Todos os tipos</option>'+CAT_ORDER.filter(c=>cnt[c]).map(c=>`<option${c===cur?' selected':''}>${c}</option>`).join('');
   renderTable();
@@ -2119,7 +2220,7 @@ $('#tbody').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]'
 $('#filt').addEventListener('change',renderTable);
 $('#vEst').addEventListener('change',e=>{if(MODELS.est)MODELS.est.group.visible=e.target.checked;});
 $('#vArq').addEventListener('change',e=>{if(MODELS.arq)MODELS.arq.group.visible=e.target.checked;});
-$('#vEdge').addEventListener('change',e=>{if(MODELS.est)MODELS.est.els.forEach(el=>{if(el.edges)el.edges.visible=e.target.checked;});});
+$('#vEdge').addEventListener('change',e=>{if(MODELS.est)MODELS.est.els.forEach(el=>{if(el.edges&&!el.hide)el.edges.visible=e.target.checked;});});
 $('#opArq').addEventListener('input',()=>{if(MATS.arq)MATS.arq.opacity=+$('#opArq').value/100;});
 $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.target.checked;});
 {const opt=(id,keys,def)=>{$('#'+id).innerHTML=keys.map(k=>`<option value="${k}"${k===def?' selected':''}>${esc(STP[k].label)} · ${nf2.format(STP[k].kgm)} kg/m</option>`).join('');};
@@ -2154,13 +2255,13 @@ $('#bFit').onclick=()=>fit(false);$('#bTop').onclick=()=>fit(true);
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);}catch(e){}
 new MutationObserver(applyTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 
-function loadText(k,text,name,isExample){
+function loadText(k,text,name,isExample,novo){
   $('#loading').hidden=false;
   setTimeout(()=>{
     try{const ifc=new IFC(text);if(!ifc.ents.size)throw new Error('vazio');
       if(k==='est'&&!isExample&&MODELS.est&&MODELS.est.example){ORIGIN=null;if(MODELS.arq&&MODELS.arq.example){scene.remove(MODELS.arq.group);MODELS.arq=null;}}
       if(k==='est'&&isExample)ORIGIN=null;
-      buildModel(k,ifc,name,isExample);renderAll();if(k==='est'){loadOVR();loadPLOT();selectSteel(null);runSteel();}else if(STEEL)renderSteel();fit(false);}
+      buildModel(k,ifc,name,isExample,novo);renderAll();if(k==='est'){loadOVR();loadPLOT();selectSteel(null);runSteel();}else if(STEEL)renderSteel();fit(false);}
     catch(err){$('#msgs').innerHTML=`<div class="msg al">Não consegui ler “${esc(name)}”. Confira se é um arquivo IFC (texto STEP, extensão .ifc). Detalhe: ${esc(err.message)}</div>`;}
     finally{$('#loading').hidden=true;}},30);
 }
@@ -2265,6 +2366,57 @@ function sampleGalpao(){
   lv.forEach(l=>w(`IFCRELCONTAINEDINSPATIALSTRUCTURE(${gid()},$,$,$,(${l.els.join(',')}),${l.id})`));
   return text();
 }
+/* ================= Galpão novo, sem IFC: pilares metálicos, sapatas e alvenaria ================= */
+function nvRead(){const g=id=>+$('#nv_'+id).value;return {vao:g('vao'),comp:g('comp'),esp:g('esp'),pd:g('pd'),alv:Math.max(0,g('alv')),perf:$('#nv_perf').value,tv:$('#nv_tv').value,oit:$('#nv_oit').value==='sim'};}
+function nvGrid(n){const ny=Math.max(1,Math.ceil(n.comp/n.esp-1e-6)),ys=Array.from({length:ny+1},(_,k)=>n.comp*k/ny);
+  const nx=n.oit?Math.max(1,Math.ceil(n.vao/n.esp-1e-6)):1,xo=Array.from({length:nx-1},(_,k)=>n.vao*(k+1)/nx);
+  const cols=[];[0,n.vao].forEach(x=>ys.forEach(y=>cols.push({x,y,rot:0})));[0,n.comp].forEach(y=>xo.forEach(x=>cols.push({x,y,rot:1,oit:1})));return {ys,xo,cols};}
+function sampleNovo(n){
+  const {w,f,P,D,gid,text}=writer('IFC2X3');const P0=STP[n.perf],hp=P0.h/1000,bp=P0.w/1000,tb=.016;
+  const O=P(0,0,0),Z=D(0,0,1),A0=w(`IFCAXIS2PLACEMENT3D(${O},$,$)`),ctx=w(`IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,${A0},$)`);
+  const ua=w(`IFCUNITASSIGNMENT((${w('IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.)')}))`);w(`IFCPROJECT(${gid()},$,'Galp\\X2\\00E3\\X0\\o novo',$,$,$,$,(${ctx}),${ua})`);
+  const pB=w(`IFCLOCALPLACEMENT($,${A0})`);const lv=[['T\\X2\\00C9\\X0\\RREO',0],['COBERTURA',n.pd]].map(([nm,z])=>({nm,z,pl:w(`IFCLOCALPLACEMENT(${pB},${w(`IFCAXIS2PLACEMENT3D(${P(0,0,z)},$,$)`)})`),id:null,els:[]}));
+  lv.forEach(l=>l.id=w(`IFCBUILDINGSTOREY(${gid()},$,'${l.nm}',$,$,${l.pl},$,$,.ELEMENT.,${f(l.z)})`));
+  const body=items=>{const r=w(`IFCSHAPEREPRESENTATION(${ctx},'Body','SweptSolid',(${items.join(',')}))`);return w(`IFCPRODUCTDEFINITIONSHAPE($,$,(${r}))`);};
+  const place=(x,y,z)=>w(`IFCLOCALPLACEMENT(${lv[0].pl},${w(`IFCAXIS2PLACEMENT3D(${P(x,y,z)},$,$)`)})`);
+  const rect=(b,h)=>w(`IFCRECTANGLEPROFILEDEF(.AREA.,$,${w(`IFCAXIS2PLACEMENT2D(${P(0,0)},$)`)},${f(b)},${f(h)})`);
+  const ext=(pr,d)=>w(`IFCEXTRUDEDAREASOLID(${pr},${A0},${Z},${f(d)})`);
+  const el=(t,nm,pl,pds,x='')=>{const id=w(`${t}(${gid()},$,'${nm}',$,$,${pl},${pds},'${nm}'${x})`);lv[0].els.push(id);return id;};
+  const {cols}=nvGrid(n);const sap=Math.max(.8,Math.min(1.6,.6+n.vao*n.esp/150)),pes=Math.max(.4,Math.ceil((Math.max(hp,bp)+.2)/.05)*.05+.1);
+  cols.forEach((c,i)=>{const nm=`PM${i+1} (${STP[n.perf].label.replace(/'/g,'')})`;
+    el('IFCCOLUMN',nm,place(c.x,c.y,0),body([ext(c.rot?rect(bp,hp):rect(hp,bp),n.pd)]));
+    el('IFCFOOTING',`S${i+1} (${Math.round(sap*100)}x${Math.round(sap*100)})`,place(c.x,c.y,-.6),body([ext(rect(sap,sap),.5)]),',.PAD_FOOTING.');
+    el('IFCFOOTING',`Pescoço S${i+1} (${Math.round(pes*100)}x${Math.round(pes*100)})`,place(c.x,c.y,-.1),body([ext(rect(pes,pes),.1)]));});
+  if(n.alv>0){const tw=.14,half=c=>(c.rot?hp:bp)/2;
+    const wall=(x0,y0,x1,y1,nm)=>{const L=Math.hypot(x1-x0,y1-y0);if(L<.05)return;const cx=(x0+x1)/2,cy=(y0+y1)/2,alongX=Math.abs(x1-x0)>Math.abs(y1-y0);
+      el('IFCWALLSTANDARDCASE',nm,place(cx,cy,0),body([ext(alongX?rect(L,tw):rect(tw,L),n.alv)]));};
+    let k=1;const byX=x=>cols.filter(c=>Math.abs(c.x-x)<1e-6&&!c.oit).sort((a,b)=>a.y-b.y),byY=y=>cols.filter(c=>Math.abs(c.y-y)<1e-6).sort((a,b)=>a.x-b.x);
+    [0,n.vao].forEach(x=>{const cs=byX(x);for(let q=0;q<cs.length-1;q++)wall(x,cs[q].y+bp/2,x,cs[q+1].y-bp/2,`ALV${k++} (bloco 14)`);});
+    [0,n.comp].forEach(y=>{const cs=byY(y);for(let q=0;q<cs.length-1;q++)wall(cs[q].x+half(cs[q]),y,cs[q+1].x-half(cs[q+1]),y,`ALV${k++} (bloco 14)`);});}
+  el('IFCSLAB','Piso (12 cm)',place(n.vao/2,n.comp/2,0),body([w(`IFCEXTRUDEDAREASOLID(${rect(n.vao+.3,n.comp+.3)},${A0},${D(0,0,-1)},${f(.12)})`)]),',.FLOOR.');
+  w(`IFCRELCONTAINEDINSPATIALSTRUCTURE(${gid()},$,$,$,(${lv[0].els.join(',')}),${lv[0].id})`);
+  return text();}
+function nvSchema(){const fg=$('#nvSchema');if(!fg)return;const n=nvRead(),W=300,H=160,x0=36,x1=214,yb=132,
+    zt=yb-92,za=yb-(yb-zt)*Math.min(1,n.alv/Math.max(n.pd,.1)),zr=zt-18,tl=n.alv<n.pd;
+  const bl=[];if(n.alv>0)[x0,x1].forEach(x=>{bl.push(`<rect x="${x-5}" y="${za}" width="10" height="${yb-za}" fill="var(--c-parede)" stroke="none"/>`);for(let y=za+5;y<yb;y+=5)bl.push(`<line x1="${x-5}" y1="${y}" x2="${x+5}" y2="${y}"/>`);});
+  fg.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Corte: pilares metálicos, alvenaria até ${n.alv} m e telha acima">
+   <g stroke="var(--sheet)" stroke-width=".6">${bl.join('')}</g>
+   ${tl?`<g stroke="var(--c-aco)" stroke-width="2.4" opacity=".55"><line x1="${x0-6}" y1="${za}" x2="${x0-6}" y2="${zt}"/><line x1="${x1+6}" y1="${za}" x2="${x1+6}" y2="${zt}"/></g>`:''}
+   <g fill="none" stroke="currentColor" stroke-width="1.4"><line x1="${x0}" y1="${yb}" x2="${x0}" y2="${zt}"/><line x1="${x1}" y1="${yb}" x2="${x1}" y2="${zt}"/>
+   <polyline points="${x0-8},${zt} ${(x0+x1)/2},${zr} ${x1+8},${zt}"/><line x1="${x0}" y1="${zt}" x2="${x1}" y2="${zt}" stroke-dasharray="3 3"/><line x1="8" y1="${yb}" x2="${x1+20}" y2="${yb}"/></g>
+   <g fill="none" stroke="currentColor" stroke-width=".7"><line x1="${x1+24}" y1="${yb}" x2="${x1+24}" y2="${zt}"/><line x1="${x1+20}" y1="${zt}" x2="${x1+28}" y2="${zt}"/><line x1="${x1+20}" y1="${yb}" x2="${x1+28}" y2="${yb}"/></g>
+   <g font-size="10" fill="currentColor"><text x="${(x0+x1)/2}" y="${yb+14}" text-anchor="middle">vão ${nf1.format(n.vao)} m</text>
+   <text x="${x1+30}" y="${(zt+yb)/2-2}">pé-direito</text><text x="${x1+30}" y="${(zt+yb)/2+10}">${nf1.format(n.pd)} m</text>
+   ${n.alv>0?`<text x="${x0+10}" y="${(za+yb)/2+3}">alvenaria ${nf1.format(n.alv)} m</text>`:''}
+   ${tl?`<text x="${x0+10}" y="${(za+zt)/2+3}" fill="var(--c-aco)">telha + travessas</text>`:''}
+   <text x="${(x0+x1)/2}" y="${zr-5}" text-anchor="middle">tesoura (painel Aço)</text></g></svg>`;}
+['vao','comp','esp','pd','alv','perf','oit'].forEach(id=>$('#nv_'+id).addEventListener('input',nvSchema));nvSchema();
+$('#bNovo').onclick=()=>{const n=nvRead(),msg=$('#nvMsg');
+  if(!(n.vao>=6&&n.comp>=6&&n.pd>=3&&n.esp>=3))return msg.textContent='Confira as medidas: vão e comprimento a partir de 6 m, pé-direito a partir de 3 m, espaçamento a partir de 3 m.';
+  if(n.vao>n.comp)return msg.textContent='O vão (largura entre os pilares que recebem a tesoura) deve ser menor ou igual ao comprimento.';
+  if(n.alv>n.pd)n.alv=n.pd;msg.textContent='';
+  ORIGIN=null;select(null);selectSteel(null);if(MODELS.arq){scene.remove(MODELS.arq.group);MODELS.arq=null;}$('#g_tOn').checked=true;
+  loadText('est',sampleNovo(n),`galpao-novo-${n.vao}x${n.comp}.ifc`,true,n);};
 function loadExample(){ORIGIN=null;select(null);selectSteel(null);const ex=$('#exSel').value;
   if(MODELS.arq){scene.remove(MODELS.arq.group);MODELS.arq=null;}
   if(ex==='garagem'){$('#g_tOn').checked=false;loadText('est',sampleEst(),'exemplo-garagem.ifc',true);setTimeout(()=>loadText('arq',sampleArq(),'exemplo-arquitetonico.ifc',true),60);}
