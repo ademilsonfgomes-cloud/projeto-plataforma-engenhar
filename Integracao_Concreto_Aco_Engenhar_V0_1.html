@@ -810,6 +810,30 @@ function mqPlan(){const el=$('#mqPlan');if(!el)return;const M=MODELS.est;if(!M){
   $('#mqAll').setAttribute('aria-pressed',String(!part));$('#mqSome').setAttribute('aria-pressed',String(part));
   const n=cand.filter(onSide).length,k=part?cand.filter(c=>onSide(c)&&ids.includes(c.id)).length:n;
   $('#mqFInfo').textContent=!sd?'Nenhum lado escolhido: toque numa das faixas em volta da planta.':part?`${MQ_SIDE[sd]}: ${k} de ${n} pilares marcados. Toque nos pilares (círculos) para incluir ou tirar.`:`${MQ_SIDE[sd]}: marquise em toda a extensão (${n} pilar${n>1?'es':''}). Para só um trecho, toque em "Só alguns pilares".`;}
+// marquise pelo clique no pilar do 3D: lados do galpão em que o pilar está e liga/desliga o pilar na marquise
+function mqSideInfo(el){const M=MODELS.est;if(!M||!el)return null;const zm=(sv('g_zm')||4)*1000,cand=M.els.filter(e=>e.cat==='Pilar'&&e.bb.z0<zm-300&&e.bb.z1>zm+100);
+  if(!cand.includes(el))return {cand,sides:[],zm};const X0=Math.min(...cand.map(c=>c.bb.x0)),X1=Math.max(...cand.map(c=>c.bb.x1)),Y0=Math.min(...cand.map(c=>c.bb.y0)),Y1=Math.max(...cand.map(c=>c.bb.y1));
+  const on=(c,sd)=>sd==='S'?c.bb.y0<Y0+600:sd==='N'?c.bb.y1>Y1-600:sd==='O'?c.bb.x0<X0+600:c.bb.x1>X1-600;
+  return {cand,zm,on,sides:['S','N','O','L'].filter(sd=>on(el,sd))};}
+function mqColOn(el){const F=OVR.mqF;return !!(F&&$('#g_mOn').checked&&$('#g_mLanc').value==='fach'&&F.side&&mqSideInfo(el).sides.includes(F.side)&&(F.mode!=='sel'||(F.ids||[]).includes(el.id)));}
+function mqToggleCol(el,side,again){const I=mqSideInfo(el);if(!I||!I.sides.includes(side))return;
+  const F=OVR.mqF={side:null,mode:'all',ids:[],...(OVR.mqF||{})},live=$('#g_mOn').checked&&$('#g_mLanc').value==='fach';
+  if(live&&F.side===side&&(F.mode!=='sel'||F.ids.includes(el.id))){// tirar o pilar
+    if(F.mode!=='sel'){F.mode='sel';F.ids=I.cand.filter(c=>I.on(c,side)).map(c=>c.id);}F.ids=F.ids.filter(x=>x!==el.id);
+    if(!F.ids.length){F.side=null;F.mode='all';$('#g_mOn').checked=false;}}
+  else{if(!live||F.side!==side||F.mode!=='sel'){F.side=side;F.mode='sel';F.ids=[];}F.ids=[...new Set([...F.ids,el.id])];{// pilares entre os marcados entram também (terça vence um vão de cada vez)
+    const ax=side==='S'||side==='N'?c=>(c.bb.x0+c.bb.x1)/2:c=>(c.bb.y0+c.bb.y1)/2,sel=I.cand.filter(c=>F.ids.includes(c.id)).map(ax),lo=Math.min(...sel),hi=Math.max(...sel);
+    F.ids=I.cand.filter(c=>I.on(c,side)&&ax(c)>=lo-1&&ax(c)<=hi+1).map(c=>c.id);}$('#g_mOn').checked=true;$('#g_mLanc').value='fach';}
+  saveOVR();$('#g_mLanc').dispatchEvent(new Event('change'));if(again)again();}
+function mqCard(el){const I=mqSideInfo(el);if(!I||!STEEL)return '';
+  if(!I.sides.length)return `<div class="ed"><b>Marquise</b><span class="note">Este pilar não chega à cota da marquise (${m2(I.zm)} m) ou não está na borda do galpão.</span></div>`;
+  const F=OVR.mqF||{},live=$('#g_mOn').checked&&$('#g_mLanc').value==='fach'&&F.side,inM=mqColOn(el);
+  const names=live?(F.mode==='sel'?I.cand.filter(c=>(F.ids||[]).includes(c.id)):I.cand.filter(c=>I.on(c,F.side))).map(c=>c.name.split(' (')[0]):[];
+  const st=live?`Marquise ${MQ_SIDE[F.side].toLowerCase()}: ${names.join(', ')}${names.length<2?' · marque mais um pilar do mesmo lado para as terças aparecerem':''}.`:'Toque em adicionar e depois em outro pilar do mesmo lado: a marquise e as terças saem entre eles.';
+  const bt=inM?`<button type="button" class="mqT" data-s="${F.side}">Tirar este pilar da marquise</button>`
+    :I.sides.map(sd=>`<button type="button" class="mqT primary" data-s="${sd}">Adicionar marquise${I.sides.length>1||(live&&F.side!==sd)?` (${MQ_SIDE[sd].toLowerCase()})`:''}</button>`).join('');
+  return `<div class="ed"><b>Marquise</b><span class="note">${esc(st)}</span>${bt}</div>`;}
+function mqCardBind(el,again){document.querySelectorAll('#sel .mqT').forEach(b=>b.onclick=()=>mqToggleCol(el,b.dataset.s,again));}
 function mqPlanBind(){const el=$('#mqPlan');if(!el||el.dataset.ok)return;el.dataset.ok=1;
   const upd=fn=>{OVR.mqF={side:null,mode:'all',ids:[],...(OVR.mqF||{})};fn(OVR.mqF);saveOVR();runSteel();};
   el.addEventListener('click',e=>{const t=e.target;if(t.dataset.s)upd(F=>{if(F.side!==t.dataset.s){F.side=t.dataset.s;F.ids=[];}});
@@ -838,10 +862,12 @@ function selectSteel(m){
   else if(m.type==='TC'&&m.line!=null){const cur=OVR.tc[m.line]||$('#g_pTerca').value,ops=Object.keys(STP).filter(k=>/^Ue?\d/.test(k)).sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);
     ed=`<div class="ed"><b>Editar terças da linha ${m.line+1}</b><label for="edTc">Perfil desta linha (todas as tesouras)</label>
     <div class="row"><select id="edTc">${ops.map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(STP[k].label)}</option>`).join('')}</select><button type="button" id="edTcOk" class="primary">Aplicar</button></div></div>`;}
+  let pmEl=null;if(m.type==='PM'&&MODELS.est){pmEl=MODELS.est.els.find(e=>e.cat==='Pilar'&&Math.abs((e.bb.x0+e.bb.x1)/2-m.a[0])<60&&Math.abs((e.bb.y0+e.bb.y1)/2-m.a[1])<60);if(pmEl)ed+=mqCard(pmEl);}
   if(nOVR())ed+=`<button type="button" id="edUndo">Desfazer ${nOVR()===1?'a edição manual':`as ${nOVR()} edições manuais`}</button>`;
   card.innerHTML=`<b>${esc(m.mark)} · aço</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${ed}`;card.hidden=false;
   if(T){$('#edMv').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),dv:Math.round(parseFloat(String($('#edDv').value).replace(',','.'))||0)};});
     $('#edRm').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),off:true};});}
+  if(pmEl){const a=m.a;mqCardBind(pmEl,()=>{const q=STEEL.mem.find(x=>x.type==='PM'&&Math.abs(x.a[0]-a[0])<1&&Math.abs(x.a[1]-a[1])<1);if(q)selectSteel(q);});}
   if($('#edTcOk'))$('#edTcOk').onclick=()=>editSteel(()=>{const v=$('#edTc').value;if(v===$('#g_pTerca').value)delete OVR.tc[m.line];else OVR.tc[m.line]=v;});
   if($('#edUndo'))$('#edUndo').onclick=()=>editSteel(()=>{OVR={t:{},tc:{},mq:OVR.mq||[],mqF:OVR.mqF};});}
 function select(el){
@@ -855,7 +881,9 @@ function select(el){
     ['Base / topo',`z = ${m2(b.z0)} / ${m2(b.z1)} m`],['Pavimento',el.storey||'—'],['Material',el.mat||'—']];
   if(el.cat==='Pilar'&&el.ex[0]){const t=el.ex[0].end;rows.push(['Topo (x, y)',`${m2(t[0])} ; ${m2(t[1])} m`]);}
   if(el.cat==='Viga'&&el.ex[0]){const s=el.ex[0].start,t=el.ex[0].end;rows.push(['Eixo',`(${m2(s[0])}; ${m2(s[1])}) → (${m2(t[0])}; ${m2(t[1])})`]);}
-  card.innerHTML=`<b>${esc(el.name||el.tag||'(sem nome)')}</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;card.hidden=false;
+  const mq=k==='est'&&el.cat==='Pilar'?mqCard(el):'';
+  card.innerHTML=`<b>${esc(el.name||el.tag||'(sem nome)')}</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${mq}`;card.hidden=false;
+  if(mq)mqCardBind(el,()=>select(el));
 }
 
 /* ================= Aço: catálogo (valores de tabela Gerdau; Ue pela seção nominal) ================= */
