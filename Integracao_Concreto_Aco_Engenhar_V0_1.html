@@ -340,6 +340,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f w"><label for="pl_tit">Título do carimbo</label><input id="pl_tit"></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button type="button" class="primary" id="pl_ver">Ver pranchas</button><button type="button" id="pl_pdf">Baixar PDF</button><button type="button" id="pl_dxf">Baixar DXF das pranchas</button></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px"><button type="button" id="pl_mem">Memória de cálculo (PDF)</button><button type="button" id="pl_mdesc">Memorial descritivo (PDF)</button></div>
       <fieldset><legend>Dados do carimbo</legend><div class="grid2" id="plotFields"></div></fieldset>
       <fieldset><legend>Revisões</legend><ul class="note" id="pl_revs" style="margin:0 0 6px;padding-left:18px"></ul>
         <div class="f w"><label for="pl_revDesc">Descrição da nova revisão</label><input id="pl_revDesc" placeholder="ex.: tesouras com beiral de 1,2 m"></div>
@@ -2783,7 +2784,7 @@ function drawPranchas(){const P=buildPlot();PLOT_LAST=P;if(!P)return null;const 
   return D;}
 // ---------- PDF vetorial das pranchas
 const PDF_COR={MOLDURA:[20,30,40],CARIMBO:[60,75,90],ACO:[47,109,181],CHAPA:[210,105,30],TERCA:[42,122,47],CONCRETO:[60,74,87],ARMADURA:[192,57,43],TEXTO:[20,30,40],COTA:[110,90,0],ANOT:[90,100,110],EIXO:[120,130,140],HACH:[160,170,180]};
-const pdfTxt=s=>String(s).replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[≈]/g,'~').replace(/[−–]/g,'-').replace(/[▲△]/g,'').replace(/→/g,'->').replace(/[^\x20-\xFF•—‘’“”…]/g,'');
+const pdfTxt=s=>String(s).replace(/⅛/g,'1/8').replace(/λ/g,'esb.').replace(/χ/g,'chi').replace(/ψ/g,'psi').replace(/γ/g,'gama').replace(/←/g,'<-').replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[≈]/g,'~').replace(/[−–]/g,'-').replace(/[▲△]/g,'').replace(/→/g,'->').replace(/[^\x20-\xFF•—‘’“”…]/g,'');
 function loadJsPDF(){return new Promise((ok,bad)=>{if(window.jspdf)return ok(window.jspdf);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';sc.onload=()=>window.jspdf?ok(window.jspdf):bad();sc.onerror=bad;document.head.appendChild(sc);});}
 async function plotPDF(){const P=buildPlot();if(!P){note('Gere a estrutura metálica antes de plotar.');return;}let lib;try{lib=await loadJsPDF();}catch(e){note('Não consegui carregar o gerador de PDF. Verifique a conexão e tente de novo.');return;}
   const pen=Object.fromEntries(PENAS.map(([l,,w])=>[l,parseFloat(w.replace(',','.'))]));let doc=null;
@@ -2795,6 +2796,75 @@ async function plotPDF(){const P=buildPlot();if(!P){note('Gere a estrutura metá
       else if(e.s){const c=PLOT.bw?[0,0,0]:(PDF_COR[e.ly]||[0,0,0]);doc.setTextColor(c[0],c[1],c[2]);doc.setFont('helvetica',e.b?'bold':'normal');doc.setFontSize(e.h/.716/.3528);
         doc.text(pdfTxt(e.s),e.x,-e.y,{angle:e.rot||0,align:e.an==='middle'?'center':e.an==='end'?'right':'left'});}});});
   const nome=`pranchas_${((MODELS.est&&MODELS.est.name)||'projeto').replace(/\.ifc$/i,'').replace(/[^\w-]+/g,'_')}.pdf`;saveFile(nome,doc.output('arraybuffer'),'application/pdf');}
+// ---------- documentos em texto (A4): memória de cálculo e memorial descritivo
+async function docPDF(nome,titulo,secs){let lib;try{lib=await loadJsPDF();}catch(e){note('Não consegui carregar o gerador de PDF. Verifique a conexão.');return;}
+  const doc=new lib.jsPDF({unit:'mm',format:'a4'}),W=210,H=297,mx=20,mw=W-2*mx;let y=0,pg=0;const st=PLOT.stamp||{},obra=[st.contractor,st.address,st.city].filter(Boolean).join(' · ');
+  const T=s2=>pdfTxt(String(s2??''));const head=()=>{pg++;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(20,30,40);doc.text(T('ENGENHAR · '+titulo),mx,12);doc.setFont('helvetica','normal');doc.text(T(obra||((MODELS.est&&MODELS.est.name)||'')),W-mx,12,{align:'right'});
+    doc.setDrawColor(150);doc.line(mx,14,W-mx,14);doc.setFontSize(8);doc.text(T(`Página ${pg}`),W-mx,H-10,{align:'right'});doc.text(T(`${st.responsible||'Responsável técnico'}${st.crea?' · CREA '+st.crea:''} · ${new Date().toLocaleDateString('pt-BR')}`),mx,H-10);y=22;};
+  const need=h=>{if(y+h>H-18){doc.addPage();head();}};
+  const par=(t2,o={})=>{doc.setFont('helvetica',o.b?'bold':'normal');doc.setFontSize(o.s||9.5);const L=doc.splitTextToSize(T(t2),mw-(o.ind||0));L.forEach(l=>{need(o.s?o.s*.5:5);doc.text(l,mx+(o.ind||0),y);y+=(o.s||9.5)*.47;});y+=o.after??1.6;};
+  const table=(cols,rows)=>{const tw=cols.reduce((a,c)=>a+c[1],0),xs=[];let cx=mx;cols.forEach(c=>{xs.push(cx);cx+=mw*c[1]/tw;});const wcol=i=>mw*cols[i][1]/tw-2;
+    const row=(cells,b)=>{doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(8);const Ls=cells.map((c,i)=>doc.splitTextToSize(T(c),wcol(i))),h=Math.max(...Ls.map(l=>l.length))*3.6+1.6;need(h);
+      Ls.forEach((l,i)=>l.forEach((t2,k)=>doc.text(t2,xs[i]+1,y+3.4+k*3.6)));doc.setDrawColor(200);doc.line(mx,y+h,mx+mw,y+h);y+=h;};row(cols.map(c=>c[0]),true);rows.forEach(r=>row(r));y+=3;};
+  head();doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text(T(titulo.toUpperCase()),mx,y+4);y+=10;
+  secs.forEach(sc=>{need(12);par(sc.h,{b:1,s:11.5,after:2});(sc.p||[]).forEach(t2=>par(t2));if(sc.t)table(sc.t[0],sc.t[1]);(sc.p2||[]).forEach(t2=>par(t2));});
+  saveFile(nome,doc.output('arraybuffer'),'application/pdf');}
+function docBase(){const S=STEEL,M=MODELS.est,nv=M&&M.novo,G=readG(),T=S.trusses[0],c=S.calc,W=(c&&c.res.W)||S.wind;
+  const ti=S.ttypes&&S.ttypes.length?S.ttypes:[{name:'TS1',rep:0,js:S.trusses.map((t,j)=>j)}];
+  return {S,M,nv,G,T,c,W,ti,nome:((M&&M.name)||'projeto').replace(/\.ifc$/i,'').replace(/[^\w-]+/g,'_')};}
+function memCalc(){const B=docBase(),{S,nv,G,T,c,W,ti}=B;if(!S||!S.mem.length||!c){note('Gere a estrutura e o cálculo antes.');return;}const R=c.res,fm=v=>nf2.format(v);
+  const secs=[];
+  secs.push({h:'1. Objeto',p:[`Memória de cálculo da estrutura metálica ${nv?`do galpão com pilares metálicos (${m2(nv.vao*1000)} x ${m2(nv.comp*1000)} m, pé-direito ${m2(nv.pd*1000)} m)`:`da cobertura sobre a estrutura de concreto do arquivo “${B.M.name}”`}: tesouras, terças, linhas de corrente, contraventamentos${nv?', pilares, travessas, escoras e bases':''}.`,
+    'Cálculo feito pelo programa Engenhar · Integração Concreto-Aço: análise linear elástica de 1ª ordem, em pórtico plano por tesoura, com as combinações e verificações descritas abaixo. Os resultados devem ser conferidos pelo responsável técnico antes da execução.']});
+  secs.push({h:'2. Normas',p:['ABNT NBR 8800:2008 (estruturas de aço) · NBR 14762:2010 (perfis formados a frio) · NBR 6355:2012 (perfis estruturais formados a frio) · NBR 6120:2019 (ações) · NBR 6123:1988 (vento) · NBR 8681:2003 (ações e segurança)'+(S.fund?' · NBR 6118:2014 e NBR 6122:2019 (fundações)':'')+'.']});
+  secs.push({h:'3. Materiais',t:[[['Material',.35],['Uso',.4],['Propriedades',.25]],[['Aço ZAR 250 (NBR 6355)','Perfis formados a frio','fy 250 MPa, fu 360 MPa'],['ASTM A36','Chapas, barras redondas, chumbadores','fy 250 MPa, fu 400 MPa'],['ASTM A325 / A307','Parafusos estruturais / secundários','fub 825 / 415 MPa'],['Eletrodo E70XX','Soldas','fw 485 MPa'],['Aço (geral)','Módulos','E 200 GPa, G 77 GPa']]]});
+  secs.push({h:'4. Geometria',t:[[['Item',.5],['Valor',.5]],[['Tesouras',`${S.trusses.length} un. · ${ti.map(t=>`${t.name} vão ${m2(S.trusses[t.rep].L)} m (${t.js.length})`).join('; ')}`],['Modelo da tesoura',`${({trap:'trapezoidal',tri:'triangular',meia:'uma água',paral:'banzos paralelos',arco:'em arco',tes:'tesoura-tesoura'})[T.fmT]||T.fmT}, ${T.n} painéis, diagonais ${G.alma}, inclinação ${nf0.format(T.i*100)}%`],
+    ['Altura no apoio',`${m2(G.h0*1000)} m`],['Cota de apoio',`${m2(S.zs)} m`],['Espaçamento máximo entre tesouras',`${m2(Math.max(...R.trusses.map(t=>t.b))*1000)} m (faixa de influência)`],...(nv?[['Pilares',`${S.mem.filter(m=>m.type==='PM').length} un. ${STP[nv.perf].label}, base engastada`],['Alvenaria',nv.alv>0?`até ${m2(nv.alv*1000)} m`:'sem alvenaria']]:[])]]});
+  secs.push({h:'5. Ações',p:[`Permanente (G): telha ${fm(R.gt)} kN/m²${R.gx?` + forro/instalações ${fm(R.gx)} kN/m²`:''}; peso próprio das peças calculado pelos perfis, + 10% de ligações.`,
+    `Sobrecarga (Q): ${fm(R.qQ)} kN/m² em projeção horizontal (NBR 8800, anexo B).`,
+    `Vento (NBR 6123): V0 = ${W.V0} m/s; S1 = 1,0; categoria ${W.cat}, classe B, S2 = ${fm(W.S2)}; S3 = ${fm(W.S3)}; Vk = ${nf1.format(W.Vk)} m/s; q = 0,613·Vk² = ${fm(W.q)} kN/m².`,
+    'Coeficientes adotados (galpão de planta retangular, cobertura de baixa inclinação): paredes +0,7 a barlavento e −0,5 a sotavento; cobertura −0,8 na água de barlavento e −0,4 na de sotavento; vento longitudinal −0,8; pressão interna Cpi = +0,2 ou −0,3.'],
+    t:[[['Caso',.14],['Descrição',.56],['Coef. líquidos',.3]],[['W1A','Vento transversal pelo lado A, Cpi −0,3','cobertura −0,5/−0,1; paredes +1,0/−0,2'],['W2A','Vento transversal pelo lado A, Cpi +0,2','cobertura −1,0/−0,6; paredes +0,5/−0,7'],['W1B, W2B','Os mesmos, pelo lado B','espelhados'],['W0a','Vento longitudinal, Cpi +0,2','cobertura −1,0; paredes −1,0'],['W0b','Vento longitudinal, Cpi −0,3','cobertura −0,5; paredes −0,5']]]});
+  secs.push({h:'6. Combinações (NBR 8681)',p:['Combinações últimas normais (γg = 1,25 desfavorável ou 1,0 favorável; γq = 1,5; γw = 1,4; ψ0 = 0,5 para a sobrecarga e 0,6 para o vento):',R.combos.map(cb=>cb.nm).join(' · ')+'.',
+    'Combinações de serviço: flecha das tesouras com G + Q (limite L/250) e deslocamento do topo dos pilares com 0,3·W (combinação frequente, limite H/300), conforme o anexo C da NBR 8800.']});
+  secs.push({h:'7. Modelo de cálculo',p:['Cada tesoura é calculada como pórtico plano: banzos contínuos (barras com rigidez à flexão no plano), montantes e diagonais rotulados nas pontas (só força normal).'+(nv?' Pilares engastados na base, ligados à tesoura por rótula nos dois apoios'+(S.mem.some(m=>m.type==='MF')?' e pelas mãos-francesas (pórtico).':' (os dois pilares trabalham juntos).'):' Apoios na estrutura de concreto: um fixo e um deslizante.'),
+    'Cargas da cobertura aplicadas nos pontos das terças (vento normal à telha); vento nas paredes como carga distribuída nos pilares; faixa de influência de cada tesoura igual à metade dos vãos vizinhos.',
+    'Verificações pela NBR 14762: tração (escoamento da seção bruta), compressão com flambagem global (flexão e flexo-torção) e largura efetiva local, flexão com flambagem lateral com torção, interação força normal + momento. A flambagem distorcional não é verificada neste programa.']});
+  secs.push({h:'8. Verificações',t:[[['Peça',.34],['Solicitante',.2],['Resistente',.18],['Aprov.',.08],['Combinação / observação',.2]],c.rows.map(r=>[r.item,r.sol,r.res,`${nf0.format(r.u*100)}%`,r.obs])],
+    p2:[c.worst.u>1?`ATENÇÃO: ${c.rows.filter(r=>r.u>1).length} verificação(ões) acima de 100%. Pior caso: ${c.worst.item}.`:`Todas as verificações passam. Maior aproveitamento: ${nf0.format(c.worst.u*100)}% (${c.worst.item}).`]});
+  if(nv&&R.cols.length){const cb=R.cols.filter(Boolean).reduce((a,b)=>b.base.M>a.base.M?b:a);secs.push({h:'9. Reações na fundação (valores de cálculo, pior pilar)',p:[`Momento na base ${fm(cb.base.M)} kN·m com N ${fm(cb.base.N)} kN (${cb.base.c}). Força normal máxima de compressão no pilar: ${fm(Math.max(...R.cols.filter(Boolean).map(c2=>c2.Nc)))} kN.`,
+    S.fundLoads?`Valores característicos estimados por pilar: N ≈ ${nf1.format(S.fundLoads.Nk)} kN, M ≈ ${nf1.format(S.fundLoads.Mk)} kN·m, H ≈ ${nf1.format(S.fundLoads.Hk)} kN.`:'','A fundação (estacas/tubulões e blocos) deve ser verificada com esses esforços e com a sondagem do terreno.']});}
+  const lig=S.pre.filter(p=>/Solda|Chumbador mais|Console|Treliça|Flecha na ponta/.test(p.item));if(lig.length)secs.push({h:`${nv?10:9}. Ligações e marquise`,t:[[['Item',.4],['Solicitante',.2],['Resistente',.2],['Aprov.',.2]],lig.map(p=>[p.item,p.sol,p.res,`${nf0.format(p.u*100)}%`])]});
+  secs.push({h:'Limitações e responsabilidade',p:['Coeficientes de vento simplificados (não substituem o estudo completo da NBR 6123 para geometrias especiais, aberturas dominantes ou relevo); análise de 1ª ordem; flambagem distorcional não verificada; fundações dimensionadas por critérios mínimos.','Este documento não dispensa a análise, a conferência e a ART do responsável técnico.']});
+  docPDF(`memoria_de_calculo_${B.nome}.pdf`,'Memória de cálculo',secs);}
+function memDesc(){const B=docBase(),{S,nv,G,T,ti}=B;if(!S||!S.mem.length){note('Gere a estrutura antes.');return;}const R=romRows(),by=t=>S.mem.filter(m=>m.type===t),lab=t=>[...new Set(by(t).map(m=>m.prof.label))].join(', ');
+  const secs=[];
+  secs.push({h:'1. Objeto',p:[`Memorial descritivo da estrutura metálica ${nv?`do galpão de ${m2(nv.vao*1000)} x ${m2(nv.comp*1000)} m, pé-direito ${m2(nv.pd*1000)} m, com pilares metálicos${nv.alv>0?`, alvenaria até ${m2(nv.alv*1000)} m e fechamento em telha acima`:' e fechamento em telha'}`:`da cobertura sobre a estrutura de concreto (${B.M.name})`}.`]});
+  secs.push({h:'2. Normas',p:['NBR 8800, NBR 14762, NBR 6355, NBR 6120, NBR 6123, NBR 8681'+(S.fund?', NBR 6118, NBR 6122':'')+'. Fabricação e montagem conforme NBR 8800 (tolerâncias, soldas e parafusos).']});
+  secs.push({h:'3. Materiais',t:[[['Material',.3],['Especificação',.7]],[['Perfis formados a frio','Aço ZAR 250 (fy 250 MPa), dobrados a frio conforme NBR 6355'],['Chapas e barras','ASTM A36'],['Parafusos','ASTM A325 nas ligações principais (apoios, mãos-francesas, emendas de campo); ASTM A307 nas terças, travessas e escoras; porca e arruela'],
+    ['Chumbadores','Barra ASTM A36 (ou SAE 1020) com gancho, 2 porcas e arruela de chapa'],['Barras redondas','ASTM A36 com rosca nas pontas; esticadores forjados'],['Soldas','Eletrodo E70XX, por soldador qualificado'],['Pintura','Limpeza St 2/St 3, fundo anticorrosivo e duas demãos de acabamento (ou galvanização)'],
+    ['Telhas',`${(TELHAS[G.telha]||TELHAS.aco)[0]} na cobertura${nv?' e no fechamento lateral':''}`],...(S.fund||nv?[['Concreto','C25 nas fundações e vigas baldrame; lastro de concreto magro 5 cm'],['Aço para concreto','CA-50 (CA-60 nos estribos de 5 mm)']]:[])]]});
+  const el=[];
+  if(nv){if(S.fund)el.push(['Fundações',`${S.fund.count} ${S.fund.tub?`tubulões ø${S.fund.D/10} cm com base ø${S.fund.Bd/10} cm`:`estacas escavadas ø${S.fund.D/10} cm`}, ${m2(S.fund.dep)} m${S.fund.bloco?`, com blocos de coroamento ${S.fund.B.side/10} x ${S.fund.B.side/10} x ${S.fund.B.H/10} cm`:''}`]);
+    if(S.vb)el.push(['Vigas baldrame',`${S.vb.list.length} vigas ${S.vb.bw/10} x ${S.vb.h/10} cm ligando as fundações (VB1 a VB${S.vb.list.length})`]);
+    el.push(['Pilares',`${by('PM').length} pilares ${lab('PM')}, bases com placa e 4 chumbadores (engastadas)`]);}
+  el.push(['Tesouras',`${S.trusses.length} tesouras, ${ti.map(t=>`${t.name} (${t.js.length} un., vão ${m2(S.trusses[t.rep].L)} m)`).join(', ')}; banzos ${lab('BS')}; montantes e diagonais ${[...new Set([...by('MO'),...by('DG')].map(m=>m.prof.label))].join(', ')}`]);
+  el.push(['Terças',`${lab('TC')}, em barras de até ${m2((+G.lBar||6)*1000)} m com emendas soldadas`]);
+  if(by('LC').length)el.push(['Linhas de corrente',`${lab('LC')} ligando as terças de cada água`]);
+  if(by('CC').length)el.push(['Contraventamento da cobertura',`X em ${lab('CC')} com esticador nos vãos das pontas`]);
+  if(by('CL').length)el.push(['Contraventamento lateral',`X em ${lab('CL')} com esticador nos vãos das pontas`]);
+  if(by('EB').length)el.push(['Escoras do beiral',lab('EB')]);if(by('TV').length)el.push(['Travessas do fechamento',lab('TV')]);if(by('MF').length)el.push(['Mãos-francesas pilar–tesoura',lab('MF')]);if(by('TB').length)el.push(['Travamento do banzo inferior',lab('TB')]);
+  if(S.gutters&&S.gutters.length)el.push(['Calha',`espaço para calha ${S.gutters[0].ext?'externa':'interna'} de ${m2(T.cw)} m nos lados ${S.gutters.map(g=>g.side).join(' e ')}, com ${S.gutters.reduce((a,g)=>a+g.outs.length,0)} saídas para condutor (calha definida no projeto de cobertura)`]);
+  if(S.canopy)el.push(['Marquise',`${S.canopy.mod||'treliça'} com balanço de ${m2(S.canopy.proj)} m`]);
+  secs.push({h:'4. Elementos',t:[[['Elemento',.28],['Descrição',.72]],el]});
+  const byP={};R.P.forEach(r=>{byP[r.perfil]=(byP[r.perfil]||0)+r.kg;});
+  secs.push({h:'5. Quantitativos de aço',t:[[['Perfil / item',.7],['Peso (kg)',.3]],[...Object.entries(byP).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,nf0.format(v)]),['Chapas de ligação',nf0.format(R.kgC)],['TOTAL (sem soldas)',nf0.format(R.kgP+R.kgC)]]],
+    p2:[`Parafusos e acessórios: ${R.B.map(b=>`${b.desc}: ${b.qty}`).join('; ')}.`]});
+  if(S.fund)secs.push({h:'6. Quantitativos das fundações',p:[`Concreto: ${nf1.format(S.fund.vol*S.fund.count)} m³ nas ${S.fund.tub?'tubulões':'estacas'}${S.fund.bloco?' e blocos':''}; aço CA-50: ${nf0.format(S.fund.kg*S.fund.count)} kg.`]});
+  secs.push({h:'7. Sequência de execução',p:['1) Locação dos eixos e gabarito; 2) fundações (estacas/tubulões e blocos) com os chumbadores posicionados por gabarito; 3) vigas baldrame; 4) montagem e prumo dos pilares, nivelamento por porca e contraporca e grauteamento das bases; 5) montagem das tesouras (fixação nos apoios); 6) terças, linhas de corrente e contraventamentos com esticadores (ajuste final após o prumo e o esquadro); 7) escoras, travessas e fechamentos; 8) telhamento, calhas e rufos; 9) retoques de pintura.',
+    'Prever travamentos provisórios durante a montagem até a fixação das terças e dos contraventamentos. Tolerâncias de fabricação e montagem conforme NBR 8800.']});
+  secs.push({h:'8. Observações',p:['Todas as cotas e quantidades conferem com as pranchas e o romaneio emitidos pelo programa; conferir as medidas no local antes da fabricação.','Qualquer alteração deve ser aprovada pelo responsável técnico.']});
+  docPDF(`memorial_descritivo_${B.nome}.pdf`,'Memorial descritivo',secs);}
 function plotDXF(){const P=buildPlot();if(!P){note('Gere a estrutura metálica antes de plotar.');return;}let ox=0;const L=P.sheets.map(sh=>{const it={d:sh.D,ox,oy:0};ox+=sh.w+80;return it;});saveFile('pranchas.dxf',dxfOf(L),'application/dxf');}
 // ---------- painel de plotagem
 function plotForm(){const f=$('#plotFields');if(!f)return;if(!f.dataset.ok){f.innerHTML=ENG_PLOT.FIELDS.map(([k,t])=>`<div class="f w"><label for="st_${k}">${t}</label><input id="st_${k}" data-k="${k}"></div>`).join('');f.dataset.ok=1;
@@ -3021,7 +3091,7 @@ function projOpen(txt,fname){const st=$('#stProj');let P;try{P=JSON.parse(txt);}
   if(P.est.novo)loadText('est',sampleNovo(P.est.novo),P.est.name,true,P.est.novo);else loadText('est',P.est.src,P.est.name,!!P.est.example);
   if(P.arq)setTimeout(()=>loadText('arq',P.arq.src,P.arq.name,false),80);
   nvSchema();st.textContent=`Projeto aberto: ${fname} (salvo em ${new Date(P.salvo||Date.now()).toLocaleString('pt-BR')}).`;}
-$('#bProjS').onclick=projSave;$('#bDim').onclick=()=>{$('#dimSt').textContent='Calculando…';setTimeout(dimensionar,30);};$('#bProjA').onclick=()=>$('#fProj').click();
+$('#bProjS').onclick=projSave;$('#pl_mem').onclick=memCalc;$('#pl_mdesc').onclick=memDesc;$('#bDim').onclick=()=>{$('#dimSt').textContent='Calculando…';setTimeout(dimensionar,30);};$('#bProjA').onclick=()=>$('#fProj').click();
 $('#fProj').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>projOpen(r.result,f.name);r.readAsText(f);e.target.value='';};
 function bindFile(btn,inp,k){$(btn).onclick=()=>$(inp).click();$(inp).onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadText(k,r.result,f.name,false);r.readAsText(f);e.target.value='';};}
 bindFile('#bEst','#fEst','est');bindFile('#bArq','#fArq','arq');
