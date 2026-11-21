@@ -275,9 +275,10 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f"><label for="g_tbN">Travamento do banzo inferior (mão-francesa terça–banzo)</label><select id="g_tbN"><option value="2" selected>A cada 2 nós</option><option value="1">Em todos os nós</option><option value="0">Sem travamento</option></select></div>
       </fieldset>
       <fieldset id="fdBox" hidden><legend>Fundações dos pilares (IFC)</legend>
-        <p class="note" style="margin:0">Clique na base de cada pilar (perto da viga baldrame). O programa reconhece a fundação do IFC; se não houver, propõe uma pelo padrão abaixo. A locação e a folha de fundações saem sozinhas.</p>
-        <div class="row" style="flex-wrap:wrap;gap:6px"><button type="button" id="fdM">Lançar fundações (clique na base do pilar)</button><button type="button" id="fdA">Todos os pilares da base</button><button type="button" id="fdU">Desfazer último</button><button type="button" id="fdX">Limpar</button></div>
+        <p class="note" style="margin:0">Ao abrir o IFC, todos os pilares do nível mais baixo recebem a fundação: a do IFC, se existir; senão, uma proposta pelo padrão abaixo. Para mudar, clique no pilar ou na fundação no 3D. A locação e a folha de fundações saem sozinhas.</p>
+        <div class="row" style="flex-wrap:wrap;gap:6px"><button type="button" id="fdA">Reconhecer de novo (todos os pilares da base)</button><button type="button" id="fdV">Ver locação</button><button type="button" id="fdX">Remover todas</button></div>
         <p class="note" id="fdSt" style="margin:0"></p>
+        <p class="note" style="margin:0">Mudou o padrão? As fundações propostas (não editadas) são refeitas.</p>
         <div class="f"><label for="fi_tipo">Padrão quando o IFC não tem fundação</label><select id="fi_tipo"><option value="estaca">Estaca escavada</option><option value="tubulao">Tubulão</option><option value="sapata">Sapata</option></select></div>
         <div class="f"><label for="fi_bloco">Bloco de coroamento</label><select id="fi_bloco"><option value="1">Com bloco</option><option value="0">Sem bloco</option></select></div>
         <div class="f"><label for="fi_nE">Estacas por bloco</label><select id="fi_nE"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
@@ -778,6 +779,7 @@ function bindPick(cv){
     const objs=[];for(const k of ['est','arq'])if(MODELS[k]&&MODELS[k].group.visible)MODELS[k].els.forEach(el=>{if(!el.hide)objs.push(el.mesh);});
     if(steelGroup&&steelGroup.visible)steelGroup.children.forEach(o=>{if(o.userData.k!=='telha')objs.push(o);});
     const hit=rc.intersectObjects(objs,false)[0];
+    if(hit&&hit.object.userData.k==='fd'){selectSteel(null);select(null);fdCard(hit.object.userData.fi);return;}
     if(hit&&hit.object.userData.k==='aco'){selectSteel(hit.object.userData.m);return;}
     if(hit&&hit.object.userData.k==='placa'){selectSteel(null);return;}
     selectSteel(null);select(hit?hit.object.userData.el:null);});
@@ -988,9 +990,11 @@ function select(el){
     ['Base / topo',`z = ${m2(b.z0)} / ${m2(b.z1)} m`],['Pavimento',el.storey||'—'],['Material',el.mat||'—']];
   if(el.cat==='Pilar'&&el.ex[0]){const t=el.ex[0].end;rows.push(['Topo (x, y)',`${m2(t[0])} ; ${m2(t[1])} m`]);}
   if(el.cat==='Viga'&&el.ex[0]){const s=el.ex[0].start,t=el.ex[0].end;rows.push(['Eixo',`(${m2(s[0])}; ${m2(s[1])}) → (${m2(t[0])}; ${m2(t[1])})`]);}
+  if(k==='est'&&MODELS.est&&!MODELS.est.novo&&/Pilar|Fundação/.test(el.cat)){const i=fdIndexFor(el);if(i>=0){fdCard(i);return;}}
   const mq=k==='est'&&el.cat==='Pilar'?mqCard(el):'';
   card.innerHTML=`<b>${esc(el.name||el.tag||'(sem nome)')}</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${mq}`;card.hidden=false;
   if(mq)mqCardBind(el,()=>select(el));
+  if(k==='est'&&el.cat==='Pilar'&&MODELS.est&&!MODELS.est.novo){const c=fdBaseCol(el,fdC(el));if(c&&c.id===el.id){card.insertAdjacentHTML('beforeend','<div class="row"><button type="button" id="fdAdd">Lançar fundação neste pilar</button></div>');$('#fdAdd').onclick=()=>{const i=fdAddCol(el);saveOVR();runSteel();fdCard(i);};}}
 }
 
 /* ================= Aço: catálogo (valores de tabela Gerdau; Ue pela seção nominal) ================= */
@@ -2184,11 +2188,11 @@ function drawFund(S){if(S.fdIfc)return drawFundIFC(S);const F=S.fund;if(!F)retur
 let FDPICK=false;
 const fdC=e=>[(e.bb.x0+e.bb.x1)/2,(e.bb.y0+e.bb.y1)/2];
 function fdMode(on){FDPICK=!!on;if(FDPICK){if(PICKT)manMode(null);if(PICK&&typeof mqPickOn==='function'){PICK=false;mqPickOn(false);}}
-  const b=$('#fdM');if(b){b.setAttribute('aria-pressed',String(FDPICK));b.textContent=FDPICK?'Concluir e ver a locação':'Lançar fundações (clique na base do pilar)';}fdStatus();
+  const b=null;if(b){b.setAttribute('aria-pressed',String(FDPICK));b.textContent=FDPICK?'Concluir e ver a locação':'Lançar fundações (clique na base do pilar)';}fdStatus();
   if(FDPICK){if(VIEW!=='3d')setView('3d');note3d('Clique na base de um pilar (perto da viga baldrame).');}
   else if((OVR.fd||[]).length&&on===false)setView('desenho','locacao');}
 function fdStatus(){const st=$('#fdSt');if(!st)return;const n=(OVR.fd||[]).length,ni=(OVR.fd||[]).filter(e=>e.src==='ifc').length;
-  st.textContent=FDPICK?`${n} fundação(ões) lançada(s). Clique no próximo pilar; ao terminar, clique em “Concluir”.`:n?`${n} fundação(ões): ${ni} reconhecida(s) no IFC e ${n-ni} proposta(s). Locação e fundações nas folhas.`:'Nenhuma fundação lançada.';}
+  st.textContent=n?`${n} pilares da base com fundação: ${ni} reconhecida(s) no IFC e ${n-ni} proposta(s) pelo padrão abaixo. Para mudar uma, clique no pilar (ou na fundação) no 3D.`:'Nenhuma fundação. Use “Reconhecer de novo”.';}
 // pilar mais baixo da prumada clicada (clique no pilar, na viga baldrame ou na própria fundação)
 function fdBaseCol(el,pt){const P=MODELS.est.els.filter(e=>e.cat==='Pilar');let ref=el&&el.cat==='Pilar'?fdC(el):pt;
   let c=P.filter(p=>ref[0]>p.bb.x0-150&&ref[0]<p.bb.x1+150&&ref[1]>p.bb.y0-150&&ref[1]<p.bb.y1+150);
@@ -2255,7 +2259,14 @@ function fdSpec(f,cd){const kgm=dd=>.00617*dd*dd;
     F.B=B;F.bloco=true;F.volB=bx*by*H/1e9;}else{F.bloco=false;F.volB=0;}
   F.vol=F.volP*nE+F.volB;F.kg=F.kgP*nE+(F.B?F.B.kg:0);return F;}
 // monta a lista do STEEL: pilares, tipos (E/T/B/S), vigas baldrame do IFC
-function fdBuild(){const M=MODELS.est;if(!M||M.novo||!(OVR.fd||[]).length)return null;
+// índice da fundação do pilar clicado (só o pilar da base) ou da fundação do IFC clicada
+function fdIndexFor(el){const L=OVR.fd||[];if(el.cat==='Pilar'){const c=fdBaseCol(el,fdC(el));return c&&c.id===el.id?L.findIndex(e=>e.id===el.id):-1;}
+  const c=fdBaseCol(null,fdC(el));return c?L.findIndex(e=>e.id===c.id):-1;}
+// ao abrir o IFC: todos os pilares do nível mais baixo recebem a fundação (reconhecida ou proposta)
+function fdAuto(){const P=MODELS.est.els.filter(e=>e.cat==='Pilar');OVR.fd=[];if(!P.length)return;const z0=Math.min(...P.map(e=>e.bb.z0)),seen=[];
+  P.slice().sort((a,b)=>a.bb.z0-b.bb.z0).forEach(c=>{const q=fdC(c);if(seen.some(s=>Math.hypot(s[0]-q[0],s[1]-q[1])<300))return;seen.push(q);if(c.bb.z0<=z0+1500)fdAddCol(c);});
+  OVR.fd.sort((a,b)=>b.y-a.y||a.x-b.x);saveOVR();}
+function fdBuild(){const M=MODELS.est;if(M&&!M.novo&&OVR.fd===undefined)fdAuto();if(!M||M.novo||!(OVR.fd||[]).length)return null;
   const list=[];OVR.fd.forEach((e,i)=>{const c=M.els.find(x=>x.id===e.id);if(!c)return;const cd=fdColDim(c);list.push({i,c,nm:fdName(c,i),x:e.x,y:e.y,z:e.z,src:e.src,f:e.f,cd,F:fdSpec(e.f,cd)});});
   if(!list.length)return null;
   const types=[],tk=new Map(),cnt={E:0,T:0,B:0,S:0},get=(k,pf,mk)=>{if(!tk.has(k)){cnt[pf]++;const t={name:pf+cnt[pf],pf,...mk(),count:0,names:[]};tk.set(k,t);types.push(t);}return tk.get(k);};
@@ -2300,11 +2311,11 @@ function fdCard(i){const e=(OVR.fd||[])[i];if(!e)return;const c=MODELS.est.els.f
   $('#fdc_loc').onclick=()=>{fdMode(false);setView('desenho','locacao');};}
 // 3D: fundações propostas (as reconhecidas já estão no IFC)
 function fdRender3d(){const Q=STEEL&&STEEL.fdIfc;if(!Q||!steelGroup)return;if(!MATS.fdp)MATS.fdp=new THREE.MeshLambertMaterial({transparent:true,opacity:.55,depthWrite:false});MATS.fdp.color.set(tok('--c-fund')||'#a08060');
-  const X=[1,0,0],Y=[0,1,0],Z=[0,0,1],add=(l,w,h,u,y,z,c)=>{const m=boxMesh(l,w,h,u,y,z,c,MATS.fdp);m.userData={k:'telha'};steelGroup.add(m);};
+  const X=[1,0,0],Y=[0,1,0],Z=[0,0,1],add=(l,w,h,u,y,z,c,fi)=>{const m=boxMesh(l,w,h,u,y,z,c,MATS.fdp);m.userData={k:'fd',fi};steelGroup.add(m);};
   Q.list.filter(p=>p.src!=='ifc').forEach(p=>{const F=p.F,z0=p.z;
-    if(F.sap){add(F.a,F.b,F.h,X,Y,Z,[p.x+F.ox,p.y+F.oy,z0-F.dep+F.h/2]);return;}
-    let zt=z0;if(F.bloco){add(F.B.bx,F.B.by,F.B.H,X,Y,Z,[p.x+F.ox,p.y+F.oy,z0-F.B.H/2]);zt=z0-F.B.H+F.EMB;}
-    F.pp.forEach(q=>add(F.dep,F.D,F.D,Z,X,Y,[p.x+q[0],p.y+q[1],zt-F.dep/2]));});}
+    if(F.sap){add(F.a,F.b,F.h,X,Y,Z,[p.x+F.ox,p.y+F.oy,z0-F.dep+F.h/2],p.i);return;}
+    let zt=z0;if(F.bloco){add(F.B.bx,F.B.by,F.B.H,X,Y,Z,[p.x+F.ox,p.y+F.oy,z0-F.B.H/2],p.i);zt=z0-F.B.H+F.EMB;}
+    F.pp.forEach(q=>add(F.dep,F.D,F.D,Z,X,Y,[p.x+q[0],p.y+q[1],zt-F.dep/2],p.i));});}
 // folha de locação no IFC de concreto
 function drawLocIFC(S){const Q=S.fdIfc;if(!Q)return null;const L=Q.list,xs=L.map(p=>p.x),ys=L.map(p=>p.y),X0=Math.min(...xs),X1=Math.max(...xs),Y0=Math.min(...ys),Y1=Math.max(...ys);
   const d=Dwg.at(escN(Math.max(X1-X0,Y1-Y0,3000)/300)),ts=d.ts;
@@ -3388,7 +3399,7 @@ function projOpen(txt,fname){const st=$('#stProj');let P;try{P=JSON.parse(txt);}
   if(P.est.novo)loadText('est',sampleNovo(P.est.novo),P.est.name,true,P.est.novo);else loadText('est',P.est.src,P.est.name,!!P.est.example);
   if(P.arq)setTimeout(()=>loadText('arq',P.arq.src,P.arq.name,false),80);
   nvSchema();st.textContent=`Projeto aberto: ${fname} (salvo em ${new Date(P.salvo||Date.now()).toLocaleString('pt-BR')}).`;}
-$('#bProjS').onclick=projSave;$('#fdM').onclick=()=>fdMode(FDPICK?false:true);$('#fdA').onclick=fdAll;$('#fdU').onclick=()=>{if((OVR.fd||[]).length){OVR.fd.pop();saveOVR();$('#sel').hidden=true;runSteel();}};$('#fdX').onclick=()=>{OVR.fd=[];saveOVR();$('#sel').hidden=true;runSteel();};$('#manM').onclick=()=>manMode(PICKT==='M'?null:'M');$('#manT').onclick=()=>manMode(PICKT==='T'?null:'T');
+$('#bProjS').onclick=projSave;$('#fdA').onclick=()=>{fdAuto();$('#sel').hidden=true;runSteel();};$('#fdV').onclick=()=>setView('desenho','locacao');['fi_tipo','fi_bloco','fi_nE','fi_D','fi_B','fi_prof','fi_a'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('change',()=>{if(!(OVR.fd||[]).length)return;OVR.fd.forEach(x=>{if(x.src==='prop'&&!x.ed)x.f=fdDefault();});saveOVR();runSteel();});});$('#fdX').onclick=()=>{OVR.fd=[];saveOVR();$('#sel').hidden=true;runSteel();};$('#manM').onclick=()=>manMode(PICKT==='M'?null:'M');$('#manT').onclick=()=>manMode(PICKT==='T'?null:'T');
 $('#manU').onclick=()=>{if((OVR.man||[]).length){OVR.man.pop();saveOVR();runSteel();}manMode(null);};$('#manC').onclick=()=>{OVR.man=[];saveOVR();runSteel();manMode(null);};
 $('#g_tLanc').addEventListener('change',()=>{if($('#g_tLanc').value!=='man')manMode(null);});$('#pl_mem').onclick=memCalc;$('#pl_mdesc').onclick=memDesc;$('#bDim').onclick=()=>{$('#dimSt').textContent='Calculando…';setTimeout(dimensionar,30);};$('#bProjA').onclick=()=>$('#fProj').click();
 $('#fProj').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>projOpen(r.result,f.name);r.readAsText(f);e.target.value='';};
