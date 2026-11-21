@@ -67,8 +67,8 @@
           ],
           "base": [
             -380,
-            -300,
-            -200
+            -240,
+            -100
           ],
           "pts": []
         },
@@ -105,10 +105,10 @@
             40
           ],
           "base": [
-            -120,
+            -100,
             -120,
             -140,
-            -160,
+            -140,
             -160
           ],
           "pts": []
@@ -146,8 +146,8 @@
             40
           ],
           "base": [
-            -240,
-            -320,
+            -160,
+            -280,
             -380
           ],
           "pts": []
@@ -179,16 +179,16 @@
     }
   },
   "blockOffset": {
-    "x": 3794.676220703125,
-    "y": 941.0475421905518
+    "x": -248.6858764648441,
+    "y": 1075.2087322235107
   },
   "tubuloOffset": {
-    "x": 1413.0796264648436,
-    "y": 1458.9918170928954
+    "x": 52.46535034179669,
+    "y": 1075.2087322235107
   },
   "wallOffset": {
-    "x": 246.5739318847656,
-    "y": 282.8918060302734
+    "x": 241.9071838378906,
+    "y": 280.3507598876953
   },
   "wallOrtho": false,
   "detailsPlaced": true,
@@ -214,7 +214,7 @@
       "bottomCover": 3,
       "cornerDia": 10,
       "cornerExtDia": 10,
-      "soloLen": 80,
+      "soloLen": 50,
       "soloN2": 0,
       "soloDia2": 10,
       "soloN": 1,
@@ -227,7 +227,7 @@
     "N3": {
       "dia": 10,
       "qty": 6,
-      "lapFactor": 75,
+      "lapFactor": 55,
       "bend": 21,
       "follow": 1
     }
@@ -250,7 +250,7 @@
         "bottomCover": 3,
         "cornerDia": 12.5,
         "cornerExtDia": 12.5,
-        "soloLen": 80,
+        "soloLen": 50,
         "soloN2": 0,
         "soloDia2": 12.5,
         "soloN": 1,
@@ -263,7 +263,7 @@
       "N3": {
         "dia": 12.5,
         "qty": 6,
-        "lapFactor": 75,
+        "lapFactor": 55,
         "bend": 21,
         "follow": 1
       }
@@ -285,7 +285,7 @@
         "bottomCover": 3,
         "cornerDia": 12.5,
         "cornerExtDia": 12.5,
-        "soloLen": 80,
+        "soloLen": 50,
         "soloN2": 0,
         "soloDia2": 12.5,
         "soloN": 1,
@@ -298,7 +298,7 @@
       "N3": {
         "dia": 12.5,
         "qty": 6,
-        "lapFactor": 75,
+        "lapFactor": 55,
         "bend": 21,
         "follow": 1
       }
@@ -320,7 +320,7 @@
         "bottomCover": 3,
         "cornerDia": 12.5,
         "cornerExtDia": 12.5,
-        "soloLen": 80,
+        "soloLen": 50,
         "soloN2": 0,
         "soloDia2": 12.5,
         "soloN": 1,
@@ -333,42 +333,7 @@
       "N3": {
         "dia": 12.5,
         "qty": 6,
-        "lapFactor": 75,
-        "bend": 21,
-        "follow": 1
-      }
-    },
-    "P9": {
-      "N1": {
-        "dia": 5,
-        "spacing": 12,
-        "cover": 3,
-        "hook": 10,
-        "zone": 0,
-        "spacing2": 0,
-        "dia2": 0
-      },
-      "N2": {
-        "dia": 10,
-        "qty": 6,
-        "topCover": 3,
-        "bottomCover": 3,
-        "cornerDia": 12.5,
-        "cornerExtDia": 12.5,
-        "soloLen": 80,
-        "soloN2": 0,
-        "soloDia2": 12.5,
-        "soloN": 1,
-        "soloDia": 12.5,
-        "extN": 0,
-        "extDia": 12.5,
-        "latN": 1,
-        "latDia": 12.5
-      },
-      "N3": {
-        "dia": 12.5,
-        "qty": 6,
-        "lapFactor": 75,
+        "lapFactor": 55,
         "bend": 21,
         "follow": 1
       }
@@ -390,7 +355,7 @@
         "bottomCover": 3,
         "cornerDia": 12.5,
         "cornerExtDia": 12.5,
-        "soloLen": 80,
+        "soloLen": 50,
         "soloN2": 0,
         "soloDia2": 12.5,
         "soloN": 1,
@@ -403,7 +368,7 @@
       "N3": {
         "dia": 12.5,
         "qty": 6,
-        "lapFactor": 75,
+        "lapFactor": 55,
         "bend": 21,
         "follow": 1
       }
@@ -425,7 +390,7 @@
         "bottomCover": 3,
         "cornerDia": 12.5,
         "cornerExtDia": 12.5,
-        "soloLen": 80,
+        "soloLen": 50,
         "soloN2": 0,
         "soloDia2": 12.5,
         "soloN": 1,
@@ -438,7 +403,7 @@
       "N3": {
         "dia": 12.5,
         "qty": 6,
-        "lapFactor": 75,
+        "lapFactor": 55,
         "bend": 21,
         "follow": 1
       }
@@ -460,7 +425,7 @@
         "bottomCover": 3,
         "cornerDia": 12.5,
         "cornerExtDia": 12.5,
-        "soloLen": 80,
+        "soloLen": 50,
         "soloN2": 0,
         "soloDia2": 12.5,
         "soloN": 1,
@@ -473,7 +438,7 @@
       "N3": {
         "dia": 12.5,
         "qty": 6,
-        "lapFactor": 75,
+        "lapFactor": 55,
         "bend": 21,
         "follow": 1
       }
@@ -598,11 +563,7 @@
   },
   "projectRevisions": [],
   "beamCompact": [
-    "VT2",
-    "VT1",
-    "VT3",
-    "VB4",
-    "VB6"
+    "VT1"
   ],
   "detailSheetK": {
     "T1": 2,
@@ -642,72 +603,76 @@
   },
   "extraDetailOffsets": {
     "P1": {
-      "x": 3694.9978881835937,
-      "y": 962.0475388526917
+      "x": 3684.565354919434,
+      "y": 61.750735068321205
     },
     "VB1": {
-      "x": 10832.29658355713,
-      "y": 1663.2589535713196
+      "x": 8189.27352256775,
+      "y": 1758.6306238174438
     },
     "VB2": {
-      "x": 11608.179872131348,
-      "y": 58.09181489944456
+      "x": 12190.071532821656,
+      "y": 593.7507349014282
     },
     "VB3": {
-      "x": 11748.994874572754,
-      "y": 423.8705502510071
+      "x": 12190.071532821656,
+      "y": 943.6994531631469
     },
     "VB4": {
-      "x": 10832.29658355713,
-      "y": 593.1475277900696
+      "x": 12190.071532821656,
+      "y": 1293.6481714248657
     },
     "VB5": {
-      "x": 11748.994874572754,
-      "y": 789.6492856025696
+      "x": 12190.071532821656,
+      "y": 1643.5968896865845
     },
     "VB6": {
-      "x": 10832.29658355713,
-      "y": 1128.2032406806948
+      "x": 8406.454125595094,
+      "y": 1408.681905555725
     },
     "VB7": {
-      "x": 11748.994874572754,
-      "y": 1155.428020954132
+      "x": 4946.2656734466555,
+      "y": 593.7507349014282
     },
     "VB8": {
-      "x": 11748.994874572754,
-      "y": 1521.2067563056946
+      "x": 4946.2656734466555,
+      "y": 943.6994531631469
     },
     "VB9": {
-      "x": 11748.994874572754,
-      "y": 1886.9854916572572
+      "x": 4846.031908798218,
+      "y": 1293.6481714248657
     },
     "VT1": {
-      "x": 8436.507960510255,
-      "y": 1724.9031918525698
+      "x": 8804.253930282594,
+      "y": 882.2663599014282
     },
     "VT2": {
-      "x": 8436.507960510255,
-      "y": 1065.047491168976
+      "x": 7252.55087852478,
+      "y": 882.2663599014282
     },
     "VT3": {
-      "x": 10832.29658355713,
-      "y": 58.09181489944467
+      "x": 7252.55087852478,
+      "y": 1366.4980676651
     },
     "EL1": {
-      "x": 89.70000190734936,
-      "y": 1099.7575131416322
+      "x": 10829.400000000001,
+      "y": 55.550734901428314
     },
     "EL2": {
-      "x": 3669.6000019073485,
-      "y": 58.09181489944458
+      "x": 7249.5,
+      "y": 55.550734901428214
     },
     "EL3": {
-      "x": 7249.500001907349,
-      "y": 58.09181489944456
+      "x": 10829.400000000001,
+      "y": 1053.8662744522096
     },
     "P2": {
-      "x": 7274.897888183594,
-      "y": 1071.2474900245668
+      "x": 3684.5653549194335,
+      "y": 1155.4714870214461
+    },
+    "VB10": {
+      "x": 7252.55087852478,
+      "y": 1702.5297937393186
     }
   },
   "detailScale": {
@@ -730,7 +695,8 @@
     "EL1": 50,
     "EL2": 50,
     "EL3": 50,
-    "P2": 50
+    "P2": 50,
+    "VB10": 50
   },
   "block": {
     "blockEnabled": true,
@@ -786,10 +752,9 @@
         "kind": "planta",
         "kinds": [
           "planta",
-          "fundacoes",
-          "elevacoes"
+          "fundacoes"
         ],
-        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · FUNDAÇÕES — ESTACAS · ELEVAÇÕES DOS ARRIMOS",
+        "title": "PLANTA DE LOCAÇÃO DOS ARRIMOS · FUNDAÇÕES — ESTACAS E BLOCOS",
         "mixed": true
       },
       {
@@ -800,14 +765,13 @@
         "x": 3579.9,
         "y": 0,
         "done": false,
-        "kind": "fundacoes",
+        "kind": "pilares",
         "kinds": [
-          "fundacoes",
           "pilares",
-          "elevacoes"
+          "vigas"
         ],
-        "title": "FUNDAÇÕES — BLOCOS · PILARES · ELEVAÇÕES DOS ARRIMOS",
-        "mixed": true
+        "title": "PILARES · VIGAS BALDRAME E CINTAS DE TOPO",
+        "mixed": false
       },
       {
         "id": 3,
@@ -817,13 +781,12 @@
         "x": 7159.8,
         "y": 0,
         "done": false,
-        "kind": "pilares",
+        "kind": "vigas",
         "kinds": [
-          "pilares",
           "vigas",
           "elevacoes"
         ],
-        "title": "PILARES · VIGAS BALDRAME E CINTAS DE TOPO · ELEVAÇÕES DOS ARRIMOS",
+        "title": "VIGAS BALDRAME E CINTAS DE TOPO · ELEVAÇÕES DOS ARRIMOS",
         "mixed": false
       },
       {
@@ -836,9 +799,10 @@
         "done": false,
         "kind": "vigas",
         "kinds": [
-          "vigas"
+          "vigas",
+          "elevacoes"
         ],
-        "title": "VIGAS BALDRAME E CINTAS DE TOPO",
+        "title": "VIGAS BALDRAME E CINTAS DE TOPO · ELEVAÇÕES DOS ARRIMOS",
         "mixed": false
       }
     ],
