@@ -256,6 +256,7 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <figure class="schema" id="tsSchema" aria-label="Esquema das medidas da tesoura"></figure>
         <label class="chk"><input type="checkbox" id="g_tOn" checked> Gerar tesouras e terças</label>
         <label class="chk"><input type="checkbox" id="g_cvOn" checked> Contraventamento da cobertura (X nos vãos das pontas)</label>
+        <label class="chk"><input type="checkbox" id="g_lcOn" checked> Linhas de corrente nas terças (ø10 no meio do vão; clique para mudar)</label>
         <div class="f w"><span class="lbl" id="tsCatL">Modelo da tesoura (toque para escolher)</span><div class="cat" id="tsCat" role="group" aria-labelledby="tsCatL"></div>
           <select id="g_tForma" hidden><option value="trap">Trapezoidal</option><option value="tri">Triangular</option><option value="meia">Uma água</option><option value="paral">Banzos paralelos</option><option value="arco">Em arco</option><option value="tes">Tesoura-tesoura</option></select></div>
         <div class="f"><label for="g_tMod">Beiral</label><select id="g_tMod"><option value="trap">Sem beiral</option><option value="bei">Com beiral (aba)</option></select></div>
@@ -863,6 +864,27 @@ function mqAddPoint(hit){const el=hit.object.userData.el;
   if(!OVR.mq.length)$('#g_zm').value=(Math.round(P[2]/50)*50/1000).toFixed(2);
   OVR.mq.push({id:el.id,ax,sgn,t:ax==='x'?P[1]:P[0],z:P[2]});saveOVR();runSteel();}
 function note3d(s){const h=document.querySelector('.hint');if(!h)return;h.textContent=s;clearTimeout(note3d.t);note3d.t=setTimeout(()=>mqPickOn(PICK),2500);}
+// troca de perfil pelo clique: vale para todas as peças do mesmo tipo
+const PEDIT={BS:['chord','g_pBanzo','Banzos (superior e inferior), todas as tesouras'],BI:['chord','g_pBanzo','Banzos (superior e inferior), todas as tesouras'],MO:['web','g_pAlma','Montantes de todas as tesouras'],DG:['web','g_pDg','Diagonais de todas as tesouras'],
+  PM:['col','nv','Todos os pilares metálicos'],TV:['ue','nvtv','Todas as travessas do fechamento'],EB:['ue','ovr','Escoras do beiral'],CC:['bar','ovr','Contraventamento da cobertura'],CL:['bar','ovr','Contraventamento lateral'],LC:['bar','lcd','Todas as linhas de corrente']};
+function pOpts(kind,src){if(src.startsWith('g_'))return [...document.querySelectorAll('#'+src+' option')].map(o=>o.value);if(kind==='col')return [...document.querySelectorAll('#nv_perf option')].map(o=>o.value);
+  if(kind==='bar')return Object.keys(STP).filter(k=>/^BR/.test(k));return Object.keys(STP).filter(k=>/^Ue\d/.test(k)).sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);}
+function pCur(m,src){if(src.startsWith('g_'))return $('#'+src).value;return Object.keys(STP).find(k=>STP[k]===m.prof)||'';}
+function peditHTML(m){const P=PEDIT[m.type];if(!P)return '';if((P[1]==='nv'||P[1]==='nvtv')&&!(MODELS.est&&MODELS.est.novo))return '';const cur=pCur(m,P[1]),ops=pOpts(P[0],P[1]);
+  let h=`<div class="ed"><b>Trocar perfil</b><label for="peSel">${esc(P[2])}</label><div class="row"><select id="peSel">${ops.map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(STP[k]?STP[k].label:k)}</option>`).join('')}</select><button type="button" id="peOk" class="primary">Aplicar</button></div></div>`;
+  if(m.type==='LC'){const o=(OVR.lc||{})[m.bay]||{},n=o.n!=null?o.n:(m.bayL>6500?2:1),pos=o.pos&&o.pos.length?o.pos:STEEL.mem.filter(x=>x.type==='LC'&&x.bay===m.bay).map(x=>x.lcPos).filter((v,i,a)=>a.indexOf(v)===i);
+    h+=`<div class="ed"><b>Linhas de corrente do vão ${m.bay+1}–${m.bay+2}</b><label for="lcN">Quantidade neste vão (vão de ${m2(m.bayL)} m)</label><select id="lcN">${[0,1,2,3].map(v=>`<option${v===n?' selected':''}>${v}</option>`).join('')}</select>
+      <label for="lcP">Posição de cada linha, em mm a partir da tesoura ${m.bay+1} (separe por ;)</label><input id="lcP" value="${pos.map(v=>Math.round(v)).join('; ')}">
+      <div class="row"><button type="button" id="lcOk" class="primary">Aplicar neste vão</button><button type="button" id="lcAll">Em todos os vãos</button></div></div>`;}
+  return h;}
+function peApply(m,fn){const t=m.type,c=[(m.a[0]+m.b[0])/2,(m.a[1]+m.b[1])/2,(m.a[2]+m.b[2])/2],bay=m.bay;fn();saveOVR();selectSteel(null);runSteel();
+  const d=x=>Math.hypot((x.a[0]+x.b[0])/2-c[0],(x.a[1]+x.b[1])/2-c[1],(x.a[2]+x.b[2])/2-c[2]),q=STEEL.mem.filter(x=>x.type===t&&(bay==null||x.bay===bay)).sort((a,b)=>d(a)-d(b))[0];if(q)selectSteel(q);}
+function peditBind(m){const P=PEDIT[m.type];if(!P||!$('#peOk'))return;
+  $('#peOk').onclick=()=>peApply(m,()=>{const v=$('#peSel').value,M=MODELS.est;if(P[1].startsWith('g_'))$('#'+P[1]).value=v;else if(P[1]==='nv'){M.novo.perf=v;$('#nv_perf').value=v;}else if(P[1]==='nvtv'){M.novo.tv=v;$('#nv_tv').value=v;}
+    else if(P[1]==='lcd')OVR.lcd=v;else OVR.prof={...(OVR.prof||{}),[m.type]:v};});
+  if($('#lcOk')){const rd=()=>{const n=+$('#lcN').value,p=String($('#lcP').value).split(/[;]/).map(x=>parseFloat(x.replace(',','.'))).filter(x=>x>0);return {n,pos:p.length===n?p:null};};
+    $('#lcOk').onclick=()=>peApply(m,()=>{OVR.lc={...(OVR.lc||{}),[m.bay]:rd()};});
+    $('#lcAll').onclick=()=>peApply(m,()=>{const o=rd();OVR.lc={};for(let j=0;j<STEEL.trusses.length-1;j++)OVR.lc[j]={...o};});}}
 function selectSteel(m){
   if(selSteel&&selSteel.mesh)selSteel.mesh.material=matFor('aco',{cat:'aco'});selSteel=null;select(null);if(!m)return;selSteel=m;
   m.mesh.material=selMat();const card=$('#sel'),g=STEEL.groups.find(x=>x.mark===m.mark);
@@ -874,14 +896,16 @@ function selectSteel(m){
   else if(m.type==='TC'&&m.line!=null){const cur=OVR.tc[m.line]||$('#g_pTerca').value,ops=Object.keys(STP).filter(k=>/^Ue?\d/.test(k)).sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);
     ed=`<div class="ed"><b>Editar terças da linha ${m.line+1}</b><label for="edTc">Perfil desta linha (todas as tesouras)</label>
     <div class="row"><select id="edTc">${ops.map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(STP[k].label)}</option>`).join('')}</select><button type="button" id="edTcOk" class="primary">Aplicar</button></div></div>`;}
+  ed+=peditHTML(m);
   let pmEl=null;if(m.type==='PM'&&MODELS.est){pmEl=MODELS.est.els.find(e=>e.cat==='Pilar'&&Math.abs((e.bb.x0+e.bb.x1)/2-m.a[0])<60&&Math.abs((e.bb.y0+e.bb.y1)/2-m.a[1])<60);if(pmEl)ed+=mqCard(pmEl);}
   if(nOVR())ed+=`<button type="button" id="edUndo">Desfazer ${nOVR()===1?'a edição manual':`as ${nOVR()} edições manuais`}</button>`;
   card.innerHTML=`<b>${esc(m.mark)} · aço</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${ed}`;card.hidden=false;
   if(T){$('#edMv').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),dv:Math.round(parseFloat(String($('#edDv').value).replace(',','.'))||0)};});
     $('#edRm').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),off:true};});}
+  peditBind(m);
   if(pmEl){const a=m.a;mqCardBind(pmEl,()=>{const q=STEEL.mem.find(x=>x.type==='PM'&&Math.abs(x.a[0]-a[0])<1&&Math.abs(x.a[1]-a[1])<1);if(q)selectSteel(q);});}
   if($('#edTcOk'))$('#edTcOk').onclick=()=>editSteel(()=>{const v=$('#edTc').value;if(v===$('#g_pTerca').value)delete OVR.tc[m.line];else OVR.tc[m.line]=v;});
-  if($('#edUndo'))$('#edUndo').onclick=()=>editSteel(()=>{OVR={t:{},tc:{},mq:OVR.mq||[],mqF:OVR.mqF};});}
+  if($('#edUndo'))$('#edUndo').onclick=()=>editSteel(()=>{OVR={t:{},tc:{},mq:OVR.mq||[],mqF:OVR.mqF,prof:OVR.prof,lc:OVR.lc,lcd:OVR.lcd};});}
 function select(el){
   if(sel.el&&sel.el.mesh){const k=sel.el.mesh.userData.k;sel.el.mesh.material=matFor(k,sel.el);}
   sel.el=el;const card=$('#sel');
@@ -935,13 +959,17 @@ const STP={
  'U100x40x2.65':{label:'U 100x40x2.65'.replace('.',','),w:40,h:100,kgm:3.63,b:40,c:0,t:2.65},
  'U100x40x2.00':{label:'U 100x40x2.00'.replace('.',','),w:40,h:100,kgm:2.76,b:40,c:0,t:2.0},
  'U75x40x2.00':{label:'U 75x40x2.00'.replace('.',','),w:40,h:75,kgm:2.37,b:40,c:0,t:2.0},
+ 'BR8':{label:'Barra redonda ø8',w:8,h:8,kgm:.395,A:.50,r:.2},
+ 'BR10':{label:'Barra redonda ø10',w:10,h:10,kgm:.617,A:.79,r:.25},
+ 'BR12.5':{label:'Barra redonda ø12,5',w:12.5,h:12.5,kgm:.963,A:1.23,r:.31},
  'BR16':{label:'Barra redonda ø16 (tirante)',w:16,h:16,kgm:1.58,A:2.01,r:.4},
+ 'BR20':{label:'Barra redonda ø20',w:20,h:20,kgm:2.47,A:3.14,r:.5},
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 // caixa: 2 Ue soldados pelas pontas dos enrijecedores (pilar)
 [['Ue150x3.00','CX150x3.00'],['Ue200x3.00','CX200x3.00'],['Ue200x2.65','CX200x2.65']].forEach(([u,k])=>{const P=STP[u];STP[k]={label:'2 '+P.label.replace('Ue ','Ue ')+' (caixa)',w:2*P.b,h:P.h,kgm:2*P.kgm,base:P,box:1};});
-const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise',PM:'Pilar metálico',TV:'Travessa do fechamento lateral',EB:'Escora do beiral (topo dos pilares)',CL:'Contraventamento lateral (barra redonda)',CC:'Contraventamento da cobertura (barra redonda)'};
-const TORD=['PM','EB','CL','BI','BS','MO','DG','LP','LR','TC','CC','PT','TV','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,cvOn:true,tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
+const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise',PM:'Pilar metálico',TV:'Travessa do fechamento lateral',EB:'Escora do beiral (topo dos pilares)',LC:'Linha de corrente das terças (barra redonda)',CL:'Contraventamento lateral (barra redonda)',CC:'Contraventamento da cobertura (barra redonda)'};
+const TORD=['PM','EB','CL','BI','BS','MO','DG','LP','LR','TC','LC','CC','PT','TV','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
+const GP={tOn:true,cvOn:true,lcOn:true,tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
   tg:6.3,mOn:false,mLanc:'fach',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
@@ -990,8 +1018,10 @@ function genSteel(G){
   if(G.tOn){
     let Bz=STP[G.pBanzo],Al=STP[G.pAlma],Dg=STP[G.pDg]||Al;if(G.tTipo==='enc'&&Bz.t){Al=encWeb(Bz,Al,+G.fEnc||1);Dg=encWeb(Bz,Dg,+G.fEnc||1);Bz=encChord(Bz);}
     const Te=STP[G.pTerca],i=G.incl/100,h0=G.h0*1000,tpl=16,zb=zs+tpl+Bz.h/2;
-    const used=new Set(),pairs=[];
-    sideA.forEach(a=>{let best=null;sideB.forEach(b=>{if(used.has(b))return;const dv=Math.abs(Vv(ctr(a))-Vv(ctr(b)));if(dv<1500&&(!best||dv<best.dv))best={b,dv};});if(best){used.add(best.b);pairs.push([a,best.b]);}});
+    // cada fila transversal de pilares (mesma posição ao longo da obra) recebe uma tesoura entre o primeiro e o último pilar da fila
+    const rowsV=[],pairs=[];sup.slice().sort((a,b)=>Vv(ctr(a))-Vv(ctr(b))).forEach(c=>{const v=Vv(ctr(c)),r=rowsV[rowsV.length-1];if(r&&v-r.v0<1500)r.cs.push(c);else rowsV.push({v0:v,cs:[c]});});
+    rowsV.forEach(r=>{if(r.cs.length<2)return;const q=r.cs.slice().sort((a,b)=>U(ctr(a))-U(ctr(b))),a=q[0],b=q[q.length-1];if(U(ctr(b))-U(ctr(a))>3000)pairs.push([a,b]);});
+    const Lmx=Math.max(0,...pairs.map(([a,b])=>D2([U(ctr(a)),Vv(ctr(a))],[U(ctr(b)),Vv(ctr(b))])));
     if(pairs.length<2)out.warns.push('Encontrei menos de duas linhas de apoio para as tesouras.');
     const OV=G.ovr||{t:{},tc:{}};
     pairs.forEach(([a,b],pj)=>{const ov=OV.t[pj]||{};
@@ -1002,7 +1032,7 @@ function genSteel(G){
         out.notes.push(`Tesoura ${j+1}: o pilar ${clash.map(c=>c.name.split(' ')[0]).join(' e ')} continua acima da cota de apoio (platibanda). Apoio deslocado ${nf0.format(sh/10)} cm para a viga, ao lado do pilar.`);}
       const sA=below(ua,va),sB=below(ub,vb);
       if(!sA||!sB)out.warns.push(`Tesoura ${j+1}: não há concreto embaixo de ${!sA?'um dos apoios':'um dos apoios'} na cota ${m2(zs)} m.`);
-      const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],war=G.alma==='warren',nh=+G.nP>=2?Math.max(1,Math.round(+G.nP/2)):Math.max(2,Math.ceil(L/2/(G.pT*1000*(war?.5:1))-1e-6)),n=2*nh;
+      const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],war=G.alma==='warren',nh=+G.nP>=2?Math.max(1,Math.round(+G.nP/2)):Math.max(2,Math.ceil(Math.max(L,Lmx)/2/(G.pT*1000*(war?.5:1))-1e-6)),n=2*nh;
       const at=(s,z)=>P3(ua+e[0]*s,va+e[1]*s,z),sk=k=>k*L/n,fmT=G.tForma||'trap',dz0=h0-Bz.h,hf=s=>Math.min(s,L-s);
       // forma da tesoura: banzo superior zt(s) e inferior zbf(s), eixos dos banzos
       let zt,zbf=()=>zb;
@@ -1066,6 +1096,10 @@ function genSteel(G){
         out.plates.push({c:P3(u,v,zs+tpl/2),X:P3(0,1,0),Y:P3(1,0,0),dims:[Lp,Wp,tpl]});
         out.nodes.push({kind:M.novo?'TP':'AT',mode,el:se,wc,hc,Wp,Lp,t:tpl,d:16,chord:Bz,pos:P3(u,v,zs),prof:M.novo?STP[M.novo.perf]:null});});
     });
+    // tipos de tesoura: mesma forma, vão, painéis, beiral e lanternim = mesma marca (TS1, TS2…)
+    {const ty=new Map();out.trusses.forEach(T=>{const k=`${T.fmT}|${Math.round(T.L/10)}|${T.n}|${T.ab}|${T.lant?1:0}`;if(!ty.has(k))ty.set(k,{rep:T.j,js:[]});ty.get(k).js.push(T.j);});
+      out.ttypes=[...ty.values()];out.ttypes.forEach((t,q)=>{t.name='TS'+(q+1);t.js.forEach(j=>out.trusses[j].tname=t.name);});
+      if(out.ttypes.length>1)out.notes.push(`Tesouras de ${out.ttypes.length} tamanhos: ${out.ttypes.map(t=>`${t.name} vão ${m2(out.trusses[t.rep].L)} m (${t.js.length} un.)`).join('; ')}. Cada tipo tem a sua folha de detalhamento.`);}
     // terças: entre tesouras vizinhas, no nó de cada painel do banzo superior
     const lbT=+G.lBar>0?Math.floor(+G.lBar*1000/50)*50:0;
     const addTC=(prof,a,b,x)=>{const len=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),u=[(b[0]-a[0])/len,(b[1]-a[1])/len,(b[2]-a[2])/len],P=t=>[a[0]+u[0]*t,a[1]+u[1]*t,a[2]+u[2]*t];
@@ -1218,6 +1252,13 @@ function genSteel(G){
       out.preHypM=`Marquise: ${tre?`treliça ${mod==='arco'?'em arco':mod==='paralela'?'de altura constante, inclinada,':'cônica'} com ${m2(hS)} m no pilar e ${m2(hT)} m na ponta,`:'console em perfil W,'} balanço ${m2(proj)} m, consoles a cada ${m2(amax)} m no máximo, mesmas cargas da cobertura.`;
     }
   }
+  // ================= LINHAS DE CORRENTE: barra redonda ligando as terças de cada água, no meio do vão (posição e diâmetro editáveis) =================
+  if(G.tOn&&G.lcOn!==false&&out.trusses.length>=2){const tr=out.trusses,LCo=(G.ovr&&G.ovr.lc)||{},dDef=(G.ovr&&G.ovr.lcd)||'BR10';let nl=0;
+    for(let j=0;j<tr.length-1;j++){const A=tr[j],B=tr[j+1],m=Math.min(A.tops.length,B.tops.length);if(m<2)continue;const bay=D2(A.at(0,0),B.at(0,0)),o=LCo[j]||{};
+      const nL=o.n!=null?+o.n:bay>6500?2:1,pos=(o.pos&&o.pos.length===nL?o.pos:Array.from({length:nL},(_,q)=>Math.round(bay*(q+1)/(nL+1)))),BRd=STP[o.d||dDef]||STP.BR10;
+      pos.forEach((t,q)=>{const f=Math.min(.95,Math.max(.05,t/bay)),P=k=>{const a=A.tops[k],b=B.tops[k];return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f];};
+        for(let k=0;k<m-1;k++)add('LC',BRd,P(k),P(k+1),{bay:j,lcq:q,lcPos:t,bayL:bay});nl++;});}
+    if(nl)out.notes.push(`Linhas de corrente: barra redonda ${STP[dDef]?STP[dDef].label.replace('Barra redonda ',''):'ø10'} ligando todas as terças de cada água, no meio do vão (dois alinhamentos nos vãos acima de 6,5 m); rosca e porca nas pontas. Clique numa linha de corrente para mudar a posição, a quantidade ou o diâmetro.`);}
   // ================= CONTRAVENTAMENTO DA COBERTURA: X em barra redonda nos vãos das pontas, no plano do banzo superior =================
   if(G.tOn&&G.cvOn!==false&&out.trusses.length>=3){const tr=out.trusses,BR=STP['BR16'],bays=[[0,1]];if(tr.length>=4)bays.push([tr.length-2,tr.length-1]);let nx=0;
     const nd=(T,k)=>T.at(T.sk(k),T.zt(T.sk(k))+T.Bz.h/2);
@@ -1234,43 +1275,51 @@ function genSteel(G){
       out.nodes.push({kind:'BA',prof:PC,Lb,Bb,t:tb,d:dch,rot:c.rot,pos:[x,y,0],name:`PM${i+1}`});});
     // travessas por fora dos pilares (alma na horizontal, contra o vento), da alvenaria ao beiral
     const z0=n.alv>0?n.alv*1000+100:300,zTop=zs-150,nT=Math.max(1,Math.ceil((zTop-z0)/1800)),zl=zTop-z0>300?Array.from({length:nT+1},(_,k)=>Math.round(z0+k*(zTop-z0)/nT)):[];
-    const V=n.vao*1000,Cc=n.comp*1000,ys=SD.x0.map(c=>c.y*1000);
-    const offL=PC.h/2+TV.h/2,offO=Math.max(PC.w,...SD.y0.concat(SD.y1).map(c=>c.rot?PC.h:PC.w))/2+TV.h/2;
-    [[SD.x0,0,-1],[SD.x1,V,1]].forEach(([cs,x,g])=>{for(let q=0;q<cs.length-1;q++)zl.forEach(z=>add('TV',TV,[x+g*offL,cs[q].y*1000,z],[x+g*offL,cs[q+1].y*1000,z],{rot:1}));
-      const xf=x+g*(offL+TV.h/2);out.clad.push([[xf,0,z0-100],[xf,Cc,z0-100],[xf,Cc,zs],[xf,0,zs]]);});
-    [[SD.y0,0,-1],[SD.y1,Cc,1]].forEach(([cs,y,g])=>{for(let q=0;q<cs.length-1;q++)zl.forEach(z=>add('TV',TV,[cs[q].x*1000,y+g*offO,z],[cs[q+1].x*1000,y+g*offO,z],{rot:1}));
-      const yf=y+g*(offO+TV.h/2);out.clad.push([[0,yf,z0-100],[V,yf,z0-100],[V,yf,zs],[0,yf,zs]]);});
-    if(!zl.length)out.clad.length=0;
+    const V=n.vao*1000,Cc=n.comp*1000,CT=nvCtr(gc),SG={x0:nvSegs(SD.x0,CT),x1:nvSegs(SD.x1,CT),y0:nvSegs(SD.y0,CT),y1:nvSegs(SD.y1,CT)},ys=SD.x0.map(c=>c.y*1000),OVp=(G.ovr&&G.ovr.prof)||{};
+    const offL=PC.h/2+TV.h/2,offO=Math.max(PC.w,...SD.y0.concat(SD.y1).map(c=>c.rot?PC.h:PC.w))/2+TV.h/2,sh=(p,sg,o)=>[p[0]+sg.n[0]*o,p[1]+sg.n[1]*o];
+    [['x0',offL],['x1',offL],['y0',offO],['y1',offO]].forEach(([k,o])=>SG[k].forEach(sg=>{const a=sh(sg.a,sg,o),b=sh(sg.b,sg,o);zl.forEach(z=>add('TV',TV,[a[0],a[1],z],[b[0],b[1],z],{rot:1,side:k}));
+      if(zl.length){const c=sh(sg.a,sg,o+TV.h/2),d=sh(sg.b,sg,o+TV.h/2);out.clad.push([[c[0],c[1],z0-100],[d[0],d[1],z0-100],[d[0],d[1],zs],[c[0],c[1],zs]]);}}));
+    // fechamento do oitão: travessas e telha no triângulo entre a cota de apoio e a cobertura, presas nos montantes da tesoura da ponta
+    {const st=zl.length>1?(zl[1]-zl[0]):1500;let nO=0,aO=0;
+      [['y0',SD.y0],['y1',SD.y1]].forEach(([k,cs])=>{if(cs.length<2||!out.trusses.length)return;const ym=cs.reduce((s,c)=>s+c.y,0)/cs.length*1000,T=out.trusses.slice().sort((a,b)=>Math.abs(a.at(0,0)[1]-ym)-Math.abs(b.at(0,0)[1]-ym))[0];
+        const A=T.at(0,0),B=T.at(T.L,0),zr=s=>T.zt(Math.min(T.L,Math.max(0,s)))+T.Bz.h/2,sg0=SG[k][0];if(!sg0)return;const o=offO,nr=sg0.n,P=s=>[A[0]+(B[0]-A[0])*s/T.L+nr[0]*o,A[1]+(B[1]-A[1])*s/T.L+nr[1]*o];
+        const ss=Array.from({length:121},(_,q)=>T.L*q/120),cuts=cs.map(c=>{const r=[c.x*1000-A[0],c.y*1000-A[1]];return (r[0]*(B[0]-A[0])+r[1]*(B[1]-A[1]))/T.L;}).filter(s=>s>50&&s<T.L-50);
+        for(let z=zs+st;z<Math.max(...ss.map(zr))-200;z+=st){const ok=ss.filter(s=>zr(s)-z>150);if(ok.length<2)break;const s1=ok[0],s2=ok[ok.length-1],br=[s1,...cuts.filter(s=>s>s1&&s<s2),s2];
+          for(let q=0;q<br.length-1;q++){const a=P(br[q]),b=P(br[q+1]);add('TV',TV,[a[0],a[1],z],[b[0],b[1],z],{rot:1,side:k,oitao:1});nO++;}}
+        const of2=o+TV.h/2,Q=s=>[A[0]+(B[0]-A[0])*s/T.L+nr[0]*of2,A[1]+(B[1]-A[1])*s/T.L+nr[1]*of2],poly=[[...Q(0),zs],...Array.from({length:T.n+1},(_,q)=>{const s=T.L*q/T.n;return [...Q(s),zr(s)];}),[...Q(T.L),zs]];
+        out.clad.push(poly);aO+=ss.reduce((s,x,q)=>q?s+(zr(x)-zs+zr(ss[q-1])-zs)/2*(x-ss[q-1]):0,0)/1e6;});
+      if(nO)out.notes.push(`Fechamento dos oitões acima da cota de apoio: ${nO} travessas ${TV.label} presas nos montantes da tesoura da ponta e telha no triângulo (${nf1.format(aO)} m² nos dois oitões).`);}
     // escora do beiral no topo dos pilares e contraventamento lateral em X nos vãos das pontas
-    {const EBp=STP['Ue150x3.00'],BR=STP['BR16'],ze=zs-EBp.h/2-20,zlo=n.alv>0&&zs-n.alv*1000>1800?n.alv*1000+150:300,zhi=zs-250;let nx=0;
-      [[SD.x0,0],[SD.x1,V]].forEach(([cs,x])=>{for(let q=0;q<cs.length-1;q++)add('EB',EBp,[x,cs[q].y*1000,ze],[x,cs[q+1].y*1000,ze]);
-        [...new Set(cs.length>=4?[0,cs.length-2]:[0])].forEach(q=>{if(q+1>=cs.length)return;const ya=cs[q].y*1000,yb=cs[q+1].y*1000;add('CL',BR,[x,ya,zlo],[x,yb,zhi]);add('CL',BR,[x,yb,zlo],[x,ya,zhi]);nx++;});});
-      out.notes.push(`Escora do beiral ${EBp.label} ligando o topo dos pilares nas duas laterais; contraventamento lateral: ${nx} X em barra redonda ø16 com esticador nos vãos das pontas${zlo>300?`, acima da alvenaria (de ${m2(zlo)} m ao topo)`:', da base ao topo (barra passa na junta da alvenaria)'}.`);
+    {const EBp=STP[OVp.EB]||STP['Ue150x3.00'],BR=STP[OVp.CL]||STP['BR16'],ze=zs-EBp.h/2-20,zlo=n.alv>0&&zs-n.alv*1000>1800?n.alv*1000+150:300,zhi=zs-250;let nx=0;
+      ['x0','x1'].forEach(k=>{const sgs=SG[k];sgs.forEach(sg=>add('EB',EBp,[sg.a[0],sg.a[1],ze],[sg.b[0],sg.b[1],ze],{side:k}));
+        [...new Set(sgs.length>=3?[0,sgs.length-1]:[0])].forEach(q=>{const sg=sgs[q];if(!sg)return;add('CL',BR,[sg.a[0],sg.a[1],zlo],[sg.b[0],sg.b[1],zhi],{side:k});add('CL',BR,[sg.b[0],sg.b[1],zlo],[sg.a[0],sg.a[1],zhi],{side:k});nx++;});});
+      out.notes.push(`Escora do beiral ${EBp.label} ligando o topo dos pilares nas duas laterais; contraventamento lateral: ${nx} X em ${BR.label.replace(' (tirante)','').toLowerCase()} com esticador nos vãos das pontas${zlo>300?`, acima da alvenaria (de ${m2(zlo)} m ao topo)`:', da base ao topo (barra passa na junta da alvenaria)'}.`);
       out.cvLat={zlo,zhi};}
     // vigas baldrame entre as fundações vizinhas (todas as laterais)
     {const FS0=fundSpec(n),vb=n.vb||{bw:200,h:400,inf:[2,10],sup:[2,8],est:[5,150]},half=FS0?(FS0.bloco?FS0.B.side/2:FS0.D/2):Math.max(200,Math.ceil((Math.max(PC.h,PC.w)+200)/50)*50/2+50);
-      const list=[];[SD.x0,SD.x1,SD.y0,SD.y1].forEach(cs=>{for(let q=0;q<cs.length-1;q++){const a=cs[q],b=cs[q+1],L=Math.round((Math.hypot(b.x-a.x,b.y-a.y)*1000-2*half)/50)*50;if(L>100)list.push({a:[a.x*1000,a.y*1000],b:[b.x*1000,b.y*1000],L});}});
+      const list=[];['x0','x1','y0','y1'].forEach(k=>SG[k].forEach(sg=>{const L=Math.round((sg.L-2*half)/50)*50;if(L>100)list.push({a:sg.a,b:sg.b,L});}));
       list.forEach((v,i)=>v.mark='VB'+(i+1));const gm=new Map();list.forEach(v=>{if(!gm.has(v.L))gm.set(v.L,{L:v.L,qty:0,names:[]});const q=gm.get(v.L);q.qty++;q.names.push(v.mark);});
       const grp=[...gm.values()].sort((a,b)=>b.L-a.L);grp.forEach(g=>{g.mark=g.names.length>1?`${g.names[0]} (e mais ${g.names.length-1})`:g.names[0];});
       out.vb={...vb,half,list,grp,blockH:FS0&&FS0.bloco?FS0.B.H:500};}
-    const aTel=2*(V+Cc)*Math.max(0,zs-(n.alv>0?n.alv*1000:0))/1e6,aAlv=2*(V+Cc)*n.alv/1000;
+    const per=['x0','x1','y0','y1'].reduce((s,k)=>s+SG[k].reduce((a,g)=>a+g.L,0),0)/1000,aTel=per*Math.max(0,zs-(n.alv>0?n.alv*1000:0))/1000,aAlv=per*n.alv;
+    const ysL=SG.x0.map(g=>g.L);
     out.notes.push(`Galpão novo: ${gc.length} pilares ${PC.label} (${gc.filter(c=>c.oit).length} no oitão), engastados na base com placa e 4 chumbadores; tesouras apoiadas no topo dos pilares por chapa de topo.`);
     if(n.alv>0)out.notes.push(`Alvenaria em bloco de 14 cm até ${m2(n.alv*1000)} m (${nf1.format(aAlv)} m²): amarrar nos pilares com tela soldada ou ferro-cabelo a cada 2 fiadas (solda na mesa do pilar) e cinta de amarração em canaleta no topo; a alvenaria não trava o pilar no cálculo. Alvenaria apoiada nas vigas baldrame entre as fundações (folha de baldrames).`);
     if(zl.length)out.notes.push(`Fechamento lateral em telha de ${n.alv>0?`${m2(n.alv*1000)} m`:'0,30 m'} até o beiral (${nf1.format(aTel)} m², sem o triângulo do oitão): ${zl.length} linhas de travessas ${TV.label} por fora dos pilares, a cada ${m2((zTop-z0)/nT)} m no máximo${n.alv>0?'; a telha transpassa 10 cm sobre a cinta':''}.`);
     // pré-dimensionamento: vento como estimativa (q = 0,60 kN/m², Cpe 0,7 barlavento e 0,3 sotavento), pilares em balanço ligados pela tesoura
     const qk=.6,IxW=P=>P.Ix?P.Ix:P.box?2*ueProps(P.base).A*ueProps(P.base).rx**2:ueProps(P).A*ueProps(P).rx**2,
       MRc=P=>P.Zx?P.Zx*34.5/1.1/100:IxW(P)/(P.h/20)*25/1.1/100,H=zs/1000,Ixc=IxW(PC);
-    [[ys.length>1?Math.max(...ys.slice(1).map((y,k)=>y-ys[k]))/1000:n.esp,'lateral',PC.Ix?'flexão no eixo forte':'flexão no eixo da alma']].forEach(([b,lb,obs])=>{
+    [[ysL.length?Math.max(...ysL)/1000:n.esp,'lateral',PC.Ix?'flexão no eixo forte':'flexão no eixo da alma']].forEach(([b,lb,obs])=>{
       const Mk=.275*qk*b*H*H,Md=1.4*Mk,MR=MRc(PC),dl=.3*.0625*qk*1e-4*b*100*Math.pow(H*100,4)/(20000*Ixc)*10,dlim=zs/300;
       if(Md>MR||dl>dlim)out.warns.push(`Pilar ${PC.label} não passa no pré-dimensionamento com o vento estimado (${Md>MR?`momento ${nf1.format(Md)} > ${nf1.format(MR)} kN·m`:`deslocamento ${nf1.format(dl)} > ${nf1.format(dlim)} mm`}). Use um perfil maior (ex.: W200x35,9), reduza o espaçamento ou ligue a tesoura ao pilar com mão-francesa (pórtico).`);
       out.pre.push({item:`Pilar ${lb} ${PC.label}: flexão na base (vento)`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`${obs}; faixa de ${m2(b*1000)} m, altura ${m2(zs)} m, q = 0,60 kN/m² estimado`});
       out.pre.push({item:`Pilar ${lb}: deslocamento no topo`,sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'H/300 na combinação frequente (ψ1 = 0,3 do vento), pilares em balanço ligados pela tesoura'});});
-    if(zl.length){const st=(zTop-z0)/nT/1000,L=(ys.length>1?Math.max(...ys.slice(1).map((y,k)=>y-ys[k])):n.esp*1000)/1000,pp=ueProps(TV),W=pp.A*pp.rx*pp.rx/(TV.h/20),Md=1.4*qk*st*L*L/8,MR=W*25/1.1/100;
+    if(zl.length){const st=(zTop-z0)/nT/1000,L=(ysL.length?Math.max(...ysL):n.esp*1000)/1000,pp=ueProps(TV),W=pp.A*pp.rx*pp.rx/(TV.h/20),Md=1.4*qk*st*L*L/8,MR=W*25/1.1/100;
       out.pre.push({item:`Travessa ${TV.label}, vão ${m2(L*1000)} m`,sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MR)} kN·m`,u:Md/MR,obs:`faixa de ${m2(st*1000)} m; vento 0,60 kN/m², biapoiada`});}
     out.preHypN='Pilares e travessas: vento estimado em 0,60 kN/m² (confirme pela NBR 6123 para o local).';
-    if(n.dxf)out.notes.unshift(`Pilares lançados pela planta “${n.dxf}”: ${gc.length} posições, vão ${m2(V)} m e comprimento ${m2(Cc)} m.`);
+    if(n.dxf){const ws=SD.rows.filter(r=>r.cs.length>1).map(r=>(r.cs[r.cs.length-1].x-r.cs[0].x)*1000),w0=Math.min(...ws),w1=Math.max(...ws);out.notes.unshift(`Pilares lançados pela planta “${n.dxf}”: ${gc.length} posições, vão ${w1-w0>300?`de ${m2(w0)} a ${m2(w1)}`:m2(w1)} m e comprimento ${m2(Cc)} m.`);}
     // fundação e cargas por pilar para o projeto de fundação
-    {const bMax=ys.length>1?Math.max(...ys.slice(1).map((y,k)=>y-ys[k]))/1000:n.esp,Nk=(.20+.25)*bMax*n.vao/2+PC.kgm*zs/1e5+(n.alv>0?14*.14*n.alv*bMax:0),Mk=.275*.6*bMax*(zs/1000)**2,Hk=(.7*.6*bMax*zs/1000)*5/8;
+    {const bMax=ysL.length?Math.max(...ysL)/1000:n.esp,Nk=(.20+.25)*bMax*n.vao/2+PC.kgm*zs/1e5+(n.alv>0?14*.14*n.alv*bMax:0),Mk=.275*.6*bMax*(zs/1000)**2,Hk=(.7*.6*bMax*zs/1000)*5/8;
       out.fundLoads={Nk,Mk,Hk};const FS=fundSpec(n);
       if(FS){FS.count=gc.length;FS.prof=PC;FS.names=gc.map((c,i)=>`${FS.tub?'T':'E'}${i+1}`);out.fund=FS;
         out.notes.push(`Fundação: ${gc.length} ${FS.tub?`tubulões ø${FS.D/10} cm com base ø${FS.Bd/10} cm`:`estacas escavadas ø${FS.D/10} cm`}, ${m2(FS.dep)} m${FS.bloco?`, blocos ${FS.B.side/10} x ${FS.B.side/10} x ${FS.B.H/10} cm`:`, sem bloco (chumbadores no topo do ${FS.tub?'tubulão':'fuste da estaca'})`}; concreto ${nf1.format(FS.vol*gc.length)} m³ e aço CA-50 ${nf0.format(FS.kg*gc.length)} kg no total.`);
@@ -1329,7 +1378,7 @@ function renderSteel(){
     const c=[(m.a[0]+m.b[0])/2,(m.a[1]+m.b[1])/2,(m.a[2]+m.b[2])/2];const mesh=boxMesh(m.len,m.rot?m.prof.h:m.prof.w,m.rot?m.prof.w:m.prof.h,u,y,z,c,mA);mesh.userData={k:'aco',m};m.mesh=mesh;steelGroup.add(mesh);});
   STEEL.plates.forEach(p=>{const Z=V.cross(p.X,p.Y);const mesh=boxMesh(p.dims[0],p.dims[1],p.dims[2],p.X,p.Y,Z,p.c,mP);mesh.userData={k:'placa'};steelGroup.add(mesh);});
   if(STEEL.clad&&STEEL.clad.length){if(!MATS.telha)MATS.telha=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,opacity:.28,depthWrite:false});MATS.telha.color.set(tok('--c-aco'));
-    const O=ORIGIN||[0,0,0];STEEL.clad.forEach(q=>{const f=[0,1,2,0,2,3].flatMap(i=>[q[i][0]-O[0],q[i][1]-O[1],q[i][2]-O[2]]),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(f),3));g.computeVertexNormals();
+    const O=ORIGIN||[0,0,0];STEEL.clad.forEach(q=>{const ix=[];for(let k=1;k<q.length-1;k++)ix.push(0,k,k+1);const f=ix.flatMap(i=>[q[i][0]-O[0],q[i][1]-O[1],q[i][2]-O[2]]),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(f),3));g.computeVertexNormals();
       const mesh=new THREE.Mesh(g,MATS.telha);mesh.userData={k:'telha'};mesh.renderOrder=2;steelGroup.add(mesh);});}
   steelGroup.visible=$('#vAco').checked;scene.add(steelGroup);
 }
@@ -1418,9 +1467,11 @@ function paper(d){if(!d||!d.esc)return d;
   if(d.pn&&!d.z.length){const bb=d.bbox(),P=[...d.pn].sort((a,b)=>a.x-b.x);P.forEach((q,i)=>d.z.push({name:q.name,x0:q.x-d.ts*2,x1:i<P.length-1?P[i+1].x-d.ts*2:bb.x1,y0:q.y-d.ts*3,y1:bb.y1}));}const k=1/d.esc,p=new Dwg(d.ts*k,d.esc);p.z=d.z.map(z=>({name:z.name,x0:z.x0*k,y0:z.y0*k,x1:z.x1*k,y1:z.y1*k}));p.e=d.e.map(e=>e.t==='l'?{...e,x1:e.x1*k,y1:e.y1*k,x2:e.x2*k,y2:e.y2*k}:e.t==='c'?{...e,x:e.x*k,y:e.y*k,r:e.r*k}:e.t==='i'?{...e,x:e.x*k,y:e.y*k,w:e.w*k,h:e.h*k}:{...e,x:e.x*k,y:e.y*k,h:Math.max(2,e.h*k)});return p;}
 const sub=()=>{const m=MODELS.est;return `${m?m.name.replace(/\.ifc$/i,''):''} · cotas em mm`;};
 
-function drawTesoura(S){
-  const T=S.trusses[0];if(!T)return null;const d=Dwg.at(escN(T.L/350)),ts=d.ts,Bz=T.Bz;
-  const pr=p=>T.proj(p),ms=S.mem.filter(m=>m.truss===0);
+function drawTesoura(S){if(!S.trusses.length)return null;const tys=S.ttypes&&S.ttypes.length?S.ttypes:[{rep:0,js:S.trusses.map((t,j)=>j),name:'TS1'}],esc=escN(Math.max(...S.trusses.map(t=>t.L))/350);
+  if(tys.length===1)return drawTesouraJ(S,tys[0],esc);const d=Dwg.at(esc);let y=0;tys.forEach(ty=>{const sd=drawTesouraJ(S,ty,esc),bb=sd.bbox();d.put(sd,-bb.x0,y-bb.y1);y-=bb.y1-bb.y0+d.ts*8;});return d;}
+function drawTesouraJ(S,ty,esc){const j=ty.rep;
+  const T=S.trusses[j];if(!T)return null;const d=Dwg.at(esc),ts=d.ts,Bz=T.Bz;
+  const pr=p=>T.proj(p),ms=S.mem.filter(m=>m.truss===j);
   ms.forEach(m=>{const [x1,y1]=pr(m.a),[x2,y2]=pr(m.b);
     if(m.type==='BI'||m.type==='BS'){const L=Math.hypot(x2-x1,y2-y1),nx=-(y2-y1)/L,ny=(x2-x1)/L,h=Bz.h/2;d.L(x1+nx*h,y1+ny*h,x2+nx*h,y2+ny*h,'ACO');d.L(x1-nx*h,y1-ny*h,x2-nx*h,y2-ny*h,'ACO');d.L(x1,y1,x2,y2,'EIXO');}
     else d.L(x1,y1,x2,y2,'ACO');});
@@ -1429,10 +1480,10 @@ function drawTesoura(S){
     d.T((x1+x2)/2+(m.type==='MO'?-ts*.35:0),(y1+y2)/2+(m.type==='MO'?0:ts*.25),m.mark,'TEXTO',{h:ts*.65,an:'middle',rot:r});});
   ms.filter(m=>m.type==='BS'||m.type==='BI').forEach(m=>{const [x1,y1]=pr(m.a),[x2,y2]=pr(m.b),up=m.type==='BS',ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI,r=ang>90?ang-180:ang<-90?ang+180:ang;
     d.T((x1+x2)/2,(y1+y2)/2+(up?Bz.h/2+ts*.5:-Bz.h/2-ts*1.3),m.mark,'TEXTO',{h:ts*.7,an:'middle',rot:r});});
-  {const NS=S.det&&S.det.nodeSets.find(q=>q.prefix==='N');if(NS)NS.sets.forEach(st=>(st.ps||[]).forEach(q=>{const [x,y]=q.p,yy=y+(q.top?Bz.h/2+ts*2.6:-Bz.h/2-ts*2.4);
+  {const NS=S.det&&S.det.nodeSets.find(q=>q.prefix==='N'&&(q.tj||0)===j);if(NS)NS.sets.forEach(st=>(st.ps||[]).forEach(q=>{const [x,y]=q.p,yy=y+(q.top?Bz.h/2+ts*2.6:-Bz.h/2-ts*2.4);
     d.L(x,y+(q.top?Bz.h/2:-Bz.h/2),x,yy+(q.top?-ts*.9:ts*.9),'ANOT');d.C(x,yy,ts*.9,'ANOT');d.T(x,yy-ts*.35,st.mark,'TEXTO',{an:'middle',h:ts*.6});}));}
   const bi=ms.find(m=>m.type==='BI'),bs=ms.find(m=>m.type==='BS');
-  S.shop.filter(e=>e.j===0).forEach(e=>{const [x,y]=pr(e.p),up=e.type==='BS';d.L(x,y-Bz.h*.9,x,y+Bz.h*.9,'CHAPA');d.tag(x,y,up?x:x+ts*3.5,y+ts*3.2,'ES');});
+  S.shop.filter(e=>e.j===j).forEach(e=>{const [x,y]=pr(e.p),up=e.type==='BS';d.L(x,y-Bz.h*.9,x,y+Bz.h*.9,'CHAPA');d.tag(x,y,up?x:x+ts*3.5,y+ts*3.2,'ES');});
   const barras=t=>ms.filter(m=>m.type===t).map(m=>nint(m.len)).join(' + ');
   d.T(T.L*.25,pr(bi.a)[1]-Bz.h/2-ts*9.6,`banzos ${Bz.label} · montantes e diagonais ${T.Al.label}`,'ANOT',{an:'middle',h:ts*.7});
   // apoios: placa e viga de concreto em corte
@@ -1447,13 +1498,13 @@ function drawTesoura(S){
    const sA=T.sk(k2)+T.L/T.n*.5,pA=[sA,zb+(T.zt(sA)-T.zb)],uA=v2.norm([1,T.i]);cutMark(d,pA,uA,'A',cL,1);
    cutMark(d,[T.sk(k2+1)+T.L/T.n*.25,zb],[1,0],'B',cL,-1);
    const dg=ms.filter(m=>m.type==='DG')[1];if(dg){const a=pr(dg.a),b=pr(dg.b),mid=v2.mul(v2.add(a,b),.5);cutMark(d,mid,v2.norm(v2.sub(b,a)),'C',cL*.8,1);}
-   const esD=S.det&&S.det.obra&&S.shop.find(e=>e.j===0&&e.type==='BI');cutMark(d,[esD?esD.s+40:T.L/2+70,zb],[1,0],'D',cL,-1);}
-  const spans=S.trusses.map((t,j)=>`TS${j+1} = ${nint(t.L)}`).join(' · ');
-  d.notes(0,-ts*13,[`Vãos entre apoios: ${spans} mm. Geometria igual; conferir o vão de cada uma.`,
+   const esD=S.det&&S.det.obra&&S.shop.find(e=>e.j===j&&e.type==='BI');cutMark(d,[esD?esD.s+40:T.L/2+70,zb],[1,0],'D',cL,-1);}
+  const spans=ty.js.map(q=>`${nint(S.trusses[q].L)}`).join(' · ');
+  d.notes(0,-ts*13,[`${ty.name}: ${ty.js.length} tesoura${ty.js.length>1?'s':''} iguais, posições ${ty.js.map(q=>q+1).join(', ')} da obra (planta da cobertura). Vão entre apoios ${spans} mm.`,
     Bz.enc?`Banzos ${Bz.label} com a alma por fora e as abas para dentro; montantes ${T.Al.label}${T.Dg&&T.Dg.label!==T.Al.label?` e diagonais ${T.Dg.label}`:' e diagonais iguais'}, encaixados entre as abas. Cortes A a D na folha de cortes; nós na folha de nós.`:Bz.t?`Banzos ${Bz.label}; montantes e diagonais ${T.Al.label} (perfis formados a frio, almas sobrepostas, sem chapa gusset). Cortes A a D na folha de cortes; nós na folha de nós.`:`Banzos ${Bz.label} (cantoneiras laminadas costas com costas); montantes e diagonais ${T.Al.label}. Cortes A a D na folha de cortes; nós com chapa gusset na folha de nós.`,
     ...(S.shop.length?[`Barras do banzo inferior: ${barras('BI')} mm; banzo superior: ${barras('BS')} mm. ES = emenda soldada${S.det&&S.det.obra?' na obra':''} (detalhe na folha de nós).${S.det&&S.det.obra?' Banzo superior com corte em meia-esquadria na cumeeira, solda de topo; tesoura montada inteira na obra.':''}`]:[]),
     (tpM?`Apoio no topo do pilar metálico: lado fixo e lado deslizante (furo oblongo), detalhes TP na folha de ligações. Cotas de altura a partir do topo do pilar (z = ${m2(S.zs)} m).`:`Apoio AT1 fixo e AT2 deslizante (furo oblongo). Cotas de altura a partir do topo da viga de concreto (z = ${m2(S.zs)} m).`)+``],
-    `TESOURA TS1 · ${S.trusses.length} UNIDADES`,sub());
+    `TESOURA ${ty.name} · ${ty.js.length} UNIDADE${ty.js.length>1?'S':''} · VÃO ${m2(T.L)} m`,sub());
   return d;}
 
 function drawMarquise(S){
@@ -1493,10 +1544,10 @@ function drawPlanta(S){
   M.els.filter(e=>e.cat==='Pilar'&&Math.abs(e.bb.z1-zs)<40).forEach(e=>d.R(e.bb.x0,e.bb.y0,e.bb.x1-e.bb.x0,e.bb.y1-e.bb.y0,'CONCRETO'));
   M.els.filter(e=>e.cat==='Viga'&&e.ex[0]&&Math.abs(e.bb.z1-zs)<40).forEach(e=>{const a=e.ex[0].start,b=e.ex[0].end,L=Math.hypot(b[0]-a[0],b[1]-a[1]),nx=-(b[1]-a[1])/L,ny=(b[0]-a[0])/L,w=(e.ex[0].prof.b||200)/2;
     d.L(a[0]+nx*w,a[1]+ny*w,b[0]+nx*w,b[1]+ny*w,'CONCRETO');d.L(a[0]-nx*w,a[1]-ny*w,b[0]-nx*w,b[1]-ny*w,'CONCRETO');});
-  S.mem.forEach(m=>{if(/^(BS|MO|DG|TV|CL|PM)$/.test(m.type))return;
+  S.mem.forEach(m=>{if(/^(BS|MO|DG|TV|CL|PM|EB)$/.test(m.type))return;
     if(m.type==='PT'){secBox(d,m.a[0],m.a[1],100,100,'ACO');return;}
     if(Math.hypot(m.b[0]-m.a[0],m.b[1]-m.a[1])<20)return;d.L(m.a[0],m.a[1],m.b[0],m.b[1],/TC|TM|VB/.test(m.type)?'TERCA':'ACO');});
-  S.trusses.forEach((t,j)=>{const a=t.at(0,0),b=t.at(t.L,0);d.T(a[0]-ts*.6,a[1]+ts*.3,`TS${j+1}`,'TEXTO',{an:'end',h:ts*.8});d.T(b[0]+ts*.6,b[1]+ts*.3,`TS${j+1}`,'TEXTO',{h:ts*.8});});
+  S.trusses.forEach((t,j)=>{const a=t.at(0,0),b=t.at(t.L,0),nm=t.tname||'TS1';d.T(a[0]-ts*.6,a[1]+ts*.3,nm,'TEXTO',{an:'end',h:ts*.8});d.T(b[0]+ts*.6,b[1]+ts*.3,nm,'TEXTO',{h:ts*.8});});
   // cotas entre tesouras pela fila A
   for(let j=0;j<S.trusses.length-1;j++){const a=S.trusses[j].at(0,0),b=S.trusses[j+1].at(0,0);d.D(a[0],a[1],b[0],b[1],ts*3.5);}
   const t0=S.trusses[0];if(t0){const a=t0.at(0,0),b=t0.at(t0.L,0);d.D(a[0],a[1],b[0],b[1],-ts*3);}
@@ -1510,24 +1561,23 @@ function drawPlanta(S){
 const holeOfAP=d=>d+1.5;
 /* ================= Galpão novo: locação, baldrames, pilares e vistas ================= */
 function nvData(S){const M=MODELS.est;if(!M||!M.novo)return null;const n=M.novo,g=nvGrid(n),PC=STP[n.perf];return {n,...g,PC,V:n.vao*1000,C:n.comp*1000,zs:S.zs};}
-function drawLocacao(S){const N=nvData(S);if(!N)return null;const {n,cols,sides,PC,V,C}=N,FS=S.fund,d=Dwg.at(escN(Math.max(V,C)/300)),ts=d.ts;
-  const hx=c=>c.rot?PC.w:PC.h,hy=c=>c.rot?PC.h:PC.w;
-  // eixos
-  const xsA=[...new Set(cols.map(c=>Math.round(c.x*1000)))].sort((a,b)=>a-b),ysA=[...new Set(sides.x0.map(c=>Math.round(c.y*1000)))].sort((a,b)=>a-b);
-  ysA.forEach((y,k)=>{d.L(-ts*15,y,V+ts*4,y,'EIXO');d.C(-ts*16.2,y,ts*1.1,'ANOT');d.T(-ts*16.2,y-ts*.4,String(k+1),'TEXTO',{an:'middle',h:ts*.85});});
-  [0,V].forEach((x,k)=>{d.L(x,-ts*4,x,C+ts*4,'EIXO');d.C(x,C+ts*5.2,ts*1.1,'ANOT');d.T(x,C+ts*4.8,'AB'[k],'TEXTO',{an:'middle',h:ts*.85});});
-  // baldrames, fundações e pilares
+function drawLocacao(S){const N=nvData(S);if(!N)return null;const {cols,sides,PC}=N,FS=S.fund,CT=nvCtr(cols),xs=cols.map(c=>c.x*1000),ys=cols.map(c=>c.y*1000),X0=Math.min(...xs),X1=Math.max(...xs),Y0=Math.min(...ys),Y1=Math.max(...ys);
+  const d=Dwg.at(escN(Math.max(X1-X0,Y1-Y0)/300)),ts=d.ts,hx=c=>c.rot?PC.w:PC.h,hy=c=>c.rot?PC.h:PC.w;
+  // eixos transversais (filas 1, 2, 3…) e longitudinais (A e B, seguindo as laterais)
+  sides.rows.forEach((r,k)=>{const a=r.cs[0],b=r.cs[r.cs.length-1],y=a.y*1000;d.L(X0-ts*15,y,X1+ts*4,y,'EIXO');d.C(X0-ts*16.2,y,ts*1.1,'ANOT');d.T(X0-ts*16.2,y-ts*.4,String(k+1),'TEXTO',{an:'middle',h:ts*.85});});
+  [[sides.x0,'A'],[sides.x1,'B']].forEach(([cs,lb])=>{for(let q=0;q<cs.length-1;q++)d.L(cs[q].x*1000,cs[q].y*1000,cs[q+1].x*1000,cs[q+1].y*1000,'EIXO');const t=cs[cs.length-1];d.L(t.x*1000,t.y*1000,t.x*1000,t.y*1000+ts*4,'EIXO');d.C(t.x*1000,t.y*1000+ts*5.2,ts*1.1,'ANOT');d.T(t.x*1000,t.y*1000+ts*4.8,lb,'TEXTO',{an:'middle',h:ts*.85});});
   (S.vb?S.vb.list:[]).forEach(v=>{const dx=v.b[0]-v.a[0],dy=v.b[1]-v.a[1],L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L,nx=-uy*S.vb.bw/2,ny=ux*S.vb.bw/2,h=S.vb.half;
     d.L(v.a[0]+ux*h+nx,v.a[1]+uy*h+ny,v.b[0]-ux*h+nx,v.b[1]-uy*h+ny,'CONCRETO');d.L(v.a[0]+ux*h-nx,v.a[1]+uy*h-ny,v.b[0]-ux*h-nx,v.b[1]-uy*h-ny,'CONCRETO');
-    const mx=(v.a[0]+v.b[0])/2,my=(v.a[1]+v.b[1])/2;d.T(mx+(Math.abs(ux)>.5?0:ts*.8),my+(Math.abs(ux)>.5?ts*.6:0),v.mark,'TEXTO',{h:ts*.75,an:Math.abs(ux)>.5?'middle':'start'});});
+    const mx=(v.a[0]+v.b[0])/2,my=(v.a[1]+v.b[1])/2,hor=Math.abs(ux)>.5;d.T(mx+(hor?0:ts*.8),my+(hor?ts*.6:0),v.mark,'TEXTO',{h:ts*.75,an:hor?'middle':'start'});});
   cols.forEach((c,i)=>{const x=c.x*1000,y=c.y*1000;
     if(FS){if(FS.bloco)d.R(x-FS.B.side/2,y-FS.B.side/2,FS.B.side,FS.B.side,'CONCRETO');d.C(x,y,FS.D/2,'ANOT');}
     d.R(x-hx(c)/2,y-hy(c)/2,hx(c),hy(c),'ACO');d.L(x-hx(c)/2,y-hy(c)/2,x+hx(c)/2,y+hy(c)/2,'ACO');
-    const sx=c.x===0?-1:1,sy=c.y===0?-1:1;d.T(x+sx*ts*1.2,y+sy*ts*1.2+(sy<0?-ts*.8:0),`PM${i+1}${FS?` / ${FS.tub?'T':'E'}${i+1}${FS.bloco?` / B${i+1}`:''}`:''}`,'TEXTO',{h:ts*.7,an:sx<0?'end':'start'});});
-  // cotas
-  d.chain(ysA,-ts*9,0,true);d.D(-ts*12,0,-ts*12,C,0);
-  d.chain(xsA,-ts*7,0,false);d.D(0,-ts*10,V,-ts*10,0);
-  d.notes(0,-ts*15,['Cotas em mm entre eixos dos pilares; eixos 1, 2, 3… transversais e A, B nas laterais.',`Pilares ${PC.label} com a alma (altura do perfil) na direção do vão; nos oitões, voltada para fora.`,
+    const sx=x<CT[0]?-1:1,sy=y<CT[1]?-1:1;d.T(x+sx*ts*1.2,y+sy*ts*1.2+(sy<0?-ts*.8:0),`PM${i+1}${FS?` / ${FS.tub?'T':'E'}${i+1}${FS.bloco?` / B${i+1}`:''}`:''}`,'TEXTO',{h:ts*.7,an:sx<0?'end':'start'});});
+  // cotas: ao longo de cada lateral (alinhadas) e nas filas da frente e do fundo
+  [sides.x0,sides.x1].forEach(cs=>nvSegs(cs,CT).forEach(sg=>{const lft=[-sg.u[1],sg.u[0]],sgn=lft[0]*sg.n[0]+lft[1]*sg.n[1]>0?1:-1;d.D(sg.a[0],sg.a[1],sg.b[0],sg.b[1],sgn*ts*8);}));
+  [[sides.y0,-1],[sides.y1,1]].forEach(([cs,g])=>{if(cs.length<2)return;const y=cs[0].y*1000;d.chain(cs.map(c=>c.x*1000),y+g*ts*7,0,false);d.D(cs[0].x*1000,y+g*ts*10,cs[cs.length-1].x*1000,y+g*ts*10,0);});
+  d.D(X0-ts*12,Y0,X0-ts*12,Y1,0);
+  d.notes(X0,Y0-ts*15,['Cotas em mm entre eixos dos pilares; eixos 1, 2, 3… transversais e A, B nas laterais.',`Pilares ${PC.label} com a alma (altura do perfil) na direção do vão; nos oitões, voltada para fora.`,
     FS?`${FS.tub?'Tubulões':'Estacas'} ø${FS.D/10} cm${FS.bloco?` com blocos ${FS.B.side/10} x ${FS.B.side/10} cm`:''} centrados nos pilares; vigas baldrame VB entre as fundações vizinhas.`:'Sapatas centradas nos pilares; vigas baldrame VB entre as fundações vizinhas.',
     'Locar pelos eixos com gabarito; conferir esquadro pelas diagonais antes de concretar.'],'PLANTA DE LOCAÇÃO DOS PILARES E FUNDAÇÕES',sub());
   return d;}
@@ -1581,26 +1631,27 @@ function drawPilares(S){const N=nvData(S);if(!N)return null;const {PC}=N,d=Dwg.a
     sd.notes(0,y-ts*2,['Pesos sem soldas e sem pintura.'],'TABELA DE AÇO DOS PILARES','');const bb=sd.bbox();d.put(sd,X-bb.x0,-bb.y1);}
   return d;}
 // vistas das 4 faces: pilares, alvenaria, travessas, escora, contraventamento e a tesoura do oitão
-function drawVistas(S){const N=nvData(S);if(!N)return null;const {n,sides,PC,V,C,zs}=N,d=Dwg.at(escN(Math.max(V,C)/300)),ts=d.ts,alv=n.alv*1000;
-  const ridge=Math.max(...S.mem.filter(m=>m.truss!=null&&m.mq==null).flatMap(m=>[m.a[2],m.b[2]]),zs+1000);
-  const views=[['x',0,'VISTA LATERAL ESQUERDA (EIXO A)',sides.x0,1],['x',V,'VISTA LATERAL DIREITA (EIXO B)',sides.x1,-1],['y',0,'VISTA FRONTAL (OITÃO, EIXO 1)',sides.y0,-1],['y',C,'VISTA DE FUNDO (OITÃO)',sides.y1,1]];
+function drawVistas(S){const N=nvData(S);if(!N)return null;const {n,sides,PC,cols,zs}=N,CT=nvCtr(cols),alv=n.alv*1000;
+  const ridge=Math.max(...S.mem.filter(m=>m.truss!=null&&m.mq==null).flatMap(m=>[m.a[2],m.b[2]]),zs+1000),big=Math.max(...[sides.x0,sides.x1,sides.y0,sides.y1].map(cs=>nvSegs(cs,CT).reduce((a,g)=>a+g.L,0)));
+  const d=Dwg.at(escN(big/300)),ts=d.ts;
+  const views=[[sides.x0,'VISTA LATERAL ESQUERDA (EIXO A)',1],[sides.x1,'VISTA LATERAL DIREITA (EIXO B)',1],[sides.y0,'VISTA FRONTAL (OITÃO, FILA 1)',0],[sides.y1,'VISTA DE FUNDO (OITÃO)',0]];
   let oy=0,ox=0,rowH=0;
-  views.forEach(([ax,cv,title,cs,dir],vi)=>{const sd=new Dwg(ts,d.esc),hk=ax==='x'?'y':'x',ho=p=>dir>0?p[hk==='x'?0:1]:(hk==='x'?V:C)-p[hk==='x'?0:1],near=p=>Math.abs(p[ax==='x'?0:1]-cv)<700,len=hk==='x'?V:C;
+  views.forEach(([cs,title,lat],vi)=>{const sgs=nvSegs(cs,CT);if(!sgs.length)return;const sd=new Dwg(ts,d.esc),len=sgs.reduce((a,g)=>a+g.L,0);
+    // posição ao longo do lado (desdobrado) e distância ao plano do lado
+    const loc=p=>{let best=null;sgs.forEach(g=>{const r=[p[0]-g.a[0],p[1]-g.a[1]],t=Math.max(-50,Math.min(g.L+50,r[0]*g.u[0]+r[1]*g.u[1])),q=[g.a[0]+g.u[0]*t,g.a[1]+g.u[1]*t],dd=Math.hypot(p[0]-q[0],p[1]-q[1]);if(!best||dd<best.dd)best={dd,h:g.cum+t,g};});return best;};
     sd.L(-ts*3,0,len+ts*3,0,'CONCRETO');
-    // alvenaria entre os pilares
-    if(alv>0)for(let q=0;q<cs.length-1;q++){const a=ho([cs[q].x*1000,cs[q].y*1000]),b=ho([cs[q+1].x*1000,cs[q+1].y*1000]),x0=Math.min(a,b),x1=Math.max(a,b);sd.hatch(x0+100,0,x1-x0-200,alv,'CONCRETO');}
-    S.mem.forEach(m=>{if(!near(m.a)||!near(m.b))return;const a=[ho(m.a),m.a[2]],b=[ho(m.b),m.b[2]],L=Math.hypot(b[0]-a[0],b[1]-a[1]);
-      if(m.type==='PM'){const w=ax==='x'?(m.rot?PC.h:PC.w):(m.rot?PC.w:PC.h);sd.R(a[0]-w/2,0,w,zs,'ACO');sd.T(a[0],-ts*1.6,m.nm||'','TEXTO',{an:'middle',h:ts*.7});return;}
-      if(m.type==='TV'||m.type==='EB'){const w=m.type==='TV'?m.prof.w:m.prof.h;sd.R(Math.min(a[0],b[0]),a[1]-w/2,Math.abs(b[0]-a[0]),w,m.type==='TV'?'TERCA':'ACO');return;}
+    if(alv>0)sgs.forEach(g=>sd.hatch(g.cum+100,0,g.L-200,alv,'CONCRETO'));
+    S.mem.forEach(m=>{const A=loc(m.a),B=loc(m.b);if(A.dd>700||B.dd>700)return;const a=[A.h,m.a[2]],b=[B.h,m.b[2]],L=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      if(m.type==='PM'){const u=A.g.u,w=Math.abs(u[0])*(m.rot?PC.w:PC.h)+Math.abs(u[1])*(m.rot?PC.h:PC.w);sd.R(a[0]-w/2,0,w,zs,'ACO');sd.T(a[0],-ts*1.6,m.nm||'','TEXTO',{an:'middle',h:ts*.7});return;}
+      if(m.type==='TV'||m.type==='EB'){const w=m.type==='TV'?m.prof.w:m.prof.h;if(L<20)return;sd.R(Math.min(a[0],b[0]),a[1]-w/2,Math.abs(b[0]-a[0]),w,m.type==='TV'?'TERCA':'ACO');return;}
       if(m.type==='TC'||m.type==='TM'){if(L<30){secBox(sd,a[0],a[1],m.prof.w,m.prof.h,'TERCA');return;}sd.L(a[0],a[1],b[0],b[1],'TERCA');return;}
-      if(m.mq!=null)return;if(L<20)return;sd.L(a[0],a[1],b[0],b[1],'ACO');});
-    // telhado ao fundo nas vistas laterais (beiral e cumeeira)
-    if(ax==='x'){sd.L(0,ridge,len,ridge,'ANOT');sd.T(len+ts,ridge,`cumeeira +${m2(ridge)}`,'ANOT',{h:ts*.7});}
-    const cl=S.mem.filter(m=>m.type==='CL'&&near(m.a)&&near(m.b));if(cl.length){const m=cl[0];sd.T((ho(m.a)+ho(m.b))/2,(m.a[2]+m.b[2])/2+ts*.6,'CL ø16','TEXTO',{an:'middle',h:ts*.7});}
-    // cotas e níveis
-    const xs=cs.map(c=>ho([c.x*1000,c.y*1000])).sort((a,b)=>a-b);sd.chain(xs,-ts*3,-ts*1.5,false);
+      if(m.mq!=null||m.type==='LC'||m.type==='CC')return;if(L<20)return;sd.L(a[0],a[1],b[0],b[1],'ACO');});
+    if(lat){sd.L(0,ridge,len,ridge,'ANOT');sd.T(len+ts,ridge,`cumeeira +${m2(ridge)}`,'ANOT',{h:ts*.7});}
+    const cl=S.mem.find(m=>m.type==='CL'&&loc(m.a).dd<700&&loc(m.b).dd<700);if(cl){const A=loc(cl.a),B=loc(cl.b);sd.T((A.h+B.h)/2,(cl.a[2]+cl.b[2])/2+ts*.6,`CL ${cl.prof.label.replace(/Barra redonda |\s*\(tirante\)/g,'')}`,'TEXTO',{an:'middle',h:ts*.7});}
+    sd.chain([0,...sgs.map(g=>g.cum+g.L)],-ts*3,0,false);
     [[0,'±0,00'],...(alv>0?[[alv,`+${m2(alv)} alvenaria`]]:[]),[zs,`+${m2(zs)} apoio`]].forEach(([z,t])=>{sd.L(len+ts*.5,z,len+ts*2,z,'ANOT');sd.T(len+ts*2.4,z-ts*.3,t,'ANOT',{h:ts*.7});});
-    sd.notes(0,-ts*8,[ax==='x'?'Travessas da telha por fora dos pilares; escora do beiral (EB) no topo; X de contraventamento (CL) nos vãos das pontas.':'Tesoura do oitão em elevação; travessas da telha por fora dos pilares do oitão.'],title,sub());
+    sd.notes(0,-ts*8,[lat?'Travessas da telha por fora dos pilares; escora do beiral (EB) no topo; X de contraventamento (CL) nos vãos das pontas.':'Tesoura do oitão em elevação; travessas e telha do oitão até a cobertura, por fora dos pilares do oitão.',
+      ...(sgs.some(g=>Math.abs(g.u[0])>.02&&Math.abs(g.u[1])>.02)?['Lado inclinado em planta: vista desdobrada ao longo do lado (cotas em verdadeira grandeza).']:[])],title,sub());
     const bb=sd.bbox();if(vi===2){ox=0;oy-=rowH+ts*8;rowH=0;}d.put(sd,ox-bb.x0,oy-bb.y1);rowH=Math.max(rowH,bb.y1-bb.y0);ox+=bb.x1-bb.x0+ts*10;if(vi===0){ox=0;oy-=bb.y1-bb.y0+ts*8;rowH=0;}});
   return d;}
 /* ================= Fundações (estaca, tubulão e bloco): critérios do Engenhar Muros ================= */
@@ -1868,7 +1919,7 @@ function detailSteel(S,G){
     // esforço estimado na peça pela cortante da treliça biapoiada no nó (diagonal: V / seno do ângulo)
     const force=(w,nd)=>{const V=w.m.aba?wd*T.ab/1000:Vs(nd.p[0]);return w.m.type==='DG'?V/Math.max(Math.sin(w.ang*Math.PI/180),.2):V;};
     const sets=trussNodes(mems,['BI','BS'],'BS',{Lmin:60,tg,force,ue,enc,splice:nd=>!obra&&Math.abs(nd.p[0]-T.L/2)<3&&nd.inc.filter(i=>i.chord).length===2?{n:nb,cols}:null});D.ue=ue;D.enc=enc;
-    sets.forEach(s=>s.count*=S.trusses.length);D.nodeSets.push({name:'Tesoura',sets,prefix:'N'});
+    const ty0=S.ttypes&&S.ttypes[0];sets.forEach(s=>s.count*=ty0?ty0.js.length:S.trusses.length);D.nodeSets.push({name:S.ttypes&&S.ttypes.length>1?'Tesoura TS1':'Tesoura',sets,prefix:'N',tj:0});
     D.splice=obra?null:{n:nb,N,FvRd};
     const nShop=S.shop.filter(e=>e.j===0).length;
     if(enc&&nShop){const B0=T.Bz.base,H=Math.floor((T.Bz.h-10)/5)*5,tt=4.75,tm=Math.min(B0.t,tt),capF=Lw=>2*(2*wThin(tm,Lw)+wTr(tm,H));let Lw=40;while(capF(Lw)<N&&Lw<400)Lw+=5;
@@ -1890,13 +1941,17 @@ function detailSteel(S,G){
       D.pre.push({item:`Solda da peça mais exigida (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(web.cap)} kN`,u:web.u2,obs:`${web.L1} + ${web.L2} mm de solda nas quinas, chapa fina (NBR 14762)`});}
     else if(web){const R=2*web.Lw*filRd(web.fa);D.pre.push({item:`Solda da peça mais solicitada (${web.m.mark})`,sol:`${nf1.format(web.F)} kN`,res:`${nf1.format(R)} kN`,u:web.F/R,obs:`filete ${nf1.format(web.fa)} mm, 2 x ${web.Lw} mm (comprimento calculado)`});}
     let dgw=null;sets.forEach(s=>s.rep.webs.forEach(w=>{if(w.m.type==='DG'&&(!dgw||w.F>dgw.F))dgw=w;}));if(dgw){const web=dgw,Fd=web.F,Nt=(web.m.prof.t?ueProps(web.m.prof.base||web.m.prof).A:web.m.prof.A)*25/1.1;D.pre.push({item:`Diagonal mais solicitada (${web.m.mark}, tração)`,sol:`${nf1.format(Fd)} kN`,res:`${nf1.format(Nt)} kN`,u:Fd/Nt,obs:`${web.m.prof.label}, área bruta`});}}
+  // ---- demais tipos de tesoura (TS2, TS3…): nós próprios, numeração continua
+  if(T&&S.ttypes&&S.ttypes.length>1)S.ttypes.slice(1).forEach(ty=>{const Tj=S.trusses[ty.rep],mems=S.mem.filter(m=>m.truss===ty.rep&&/BI|BS|MO|DG/.test(m.type)).map(m=>({m,a:Tj.proj(m.a),b:Tj.proj(m.b)}));
+    const wd=S.trussWd||0,force=(w,nd)=>{const V=wd*Math.abs(Tj.L/2-nd.p[0])/1000;return w.m.type==='DG'?V/Math.max(Math.sin(w.ang*Math.PI/180),.2):V;};
+    const sets=trussNodes(mems,['BI','BS'],'BS',{Lmin:60,tg,force,ue:D.ue,enc:D.enc,splice:()=>null});sets.forEach(s=>s.count*=ty.js.length);D.nodeSets.push({name:`Tesoura ${ty.name}`,sets,prefix:'N',tj:ty.rep});});
   // ---- treliça da marquise
   const C=S.canopy;
   if(C&&C.tre){const mems=S.mem.filter(m=>m.mq===0&&/MBS|MBI|MMO|MDG/.test(m.type)).map(m=>({m,a:C.proj2(m.a),b:C.proj2(m.b)}));
     const wc=S.canopyWd||0,fc=(w,nd)=>{const V=wc*(C.proj-nd.p[0])/1000;return w.m.type==='MDG'?V/Math.max(Math.sin(w.ang*Math.PI/180),.2):V;};
     const sets=trussNodes(mems,['MBS','MBI'],'MBS',{Lmin:60,tg,force:fc,ue:G.tTipo==='ue'&&!!C.MB.t,enc:G.tTipo==='enc'&&!!C.MB.t,splice:()=>null}).filter(s=>s.rep.p[0]>1);
     sets.forEach(s=>s.count*=C.cols.length);D.nodeSets.push({name:'Marquise',sets,prefix:'NM'});}
-  let k=0;D.nodeSets.forEach(ns=>ns.sets.forEach((s,i)=>{s.mark=ns.prefix+(i+1);s.kgUn=s.rep.Lg*s.rep.Hg*tg*7.85e-6;
+  let k=0;const nc={};D.nodeSets.forEach(ns=>ns.sets.forEach((s,i)=>{s.mark=ns.prefix+(nc[ns.prefix]=(nc[ns.prefix]||0)+1);s.kgUn=s.rep.Lg*s.rep.Hg*tg*7.85e-6;
     if(s.rep.tala){const nt=s.rep.tala.ext?2:1;D.plates.push({mark:'TL'+(i+1),desc:`Tala da emenda (${s.mark})${nt>1?', uma em cada aba':''}`,dims:`${s.rep.tala.L} x ${s.rep.tala.H} x 4,75`,qty:s.count*nt,kg:s.rep.tala.L*s.rep.tala.H*4.75*7.85e-6*s.count*nt});}
     if(s.rep.ue||s.rep.enc)return;D.plates.push({mark:'G'+(++k),desc:`Chapa gusset do nó ${s.mark}`,dims:`${s.rep.Lg} x ${s.rep.Hg} x ${nf1.format(tg)}`,qty:s.count,kg:s.kgUn*s.count,node:s.mark});}));
   // ---- ligações das terças: conta quantas pontas de terça chegam em cada suporte
@@ -2551,7 +2606,7 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
    document.querySelectorAll('[data-lant]').forEach(x=>x.hidden=tf==='meia'||$('#g_lant').value!=='sim');
    document.querySelectorAll('#tsCat .ci').forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===tf));document.querySelectorAll('#mqCat .ci').forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===v));const pts=$('#g_mLanc').value==='pts';
    document.querySelectorAll('[data-pts]').forEach(x=>x.hidden=!pts);document.querySelectorAll('[data-auto]').forEach(x=>x.hidden=true);document.querySelectorAll('[data-fach]').forEach(x=>x.hidden=$('#g_mLanc').value!=='fach');if(!pts)mqPickOn(false);if(!$('#g_mOn').checked){mqKids().forEach(x=>{if(!x.hidden){x.dataset.off='1';x.hidden=true;}});mqPickOn(false);}};
- $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});['g_mOn','g_tOn','g_cvOn'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();}));['g_tMod','g_alma','g_lant','g_tForma'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();tsSchema();selectSteel(null);runSteel();}));['g_lw','g_lh'].forEach(id=>$('#'+id).addEventListener('input',tsSchema));
+ $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});['g_mOn','g_tOn','g_cvOn','g_lcOn'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();}));['g_tMod','g_alma','g_lant','g_tForma'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();tsSchema();selectSteel(null);runSteel();}));['g_lw','g_lh'].forEach(id=>$('#'+id).addEventListener('input',tsSchema));
  buildCat('tsCat',TS_CAT,icoTs,'g_tForma');buildCat('mqCat',MQ_CAT,icoMq,'g_mTipo');$('#g_bei').addEventListener('input',tsSchema);$('#g_mLanc').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});
  $('#mqPick').onclick=()=>mqPickOn(!PICK);
  $('#mqUndo').onclick=()=>{if(OVR.mq&&OVR.mq.length){OVR.mq.pop();saveOVR();runSteel();}};
@@ -2682,14 +2737,20 @@ function nvRead(){const g=id=>+$('#nv_'+id).value,tipo=$('#fd_tipo').value;
     vb:{bw:+$('#vb_bw').value*10,h:Math.max(250,+$('#vb_h').value*10),inf:$('#vb_inf').value.split('|').map(Number),sup:$('#vb_sup').value.split('|').map(Number),est:$('#vb_est').value.split('|').map(Number)}};
   const P=DXF.cols&&$('#dx_use').checked?DXF.cols:null;if(P){n.cols=P.cols;n.vao=P.vao;n.comp=P.comp;n.dxf=DXF.name;}return n;}
 // lados do galpão: pilares em x = 0, x = vão, y = 0 e y = comprimento (cantos entram nos dois)
-function nvSides(cols,vao,comp){const e=1e-3,o=(a,k)=>a.slice().sort((p,q)=>p[k]-q[k]);
-  return {x0:o(cols.filter(c=>Math.abs(c.x)<e),'y'),x1:o(cols.filter(c=>Math.abs(c.x-vao)<e),'y'),y0:o(cols.filter(c=>Math.abs(c.y)<e),'x'),y1:o(cols.filter(c=>Math.abs(c.y-comp)<e),'x')};}
+// filas transversais (mesmo y): o primeiro e o último pilar de cada fila formam as laterais; a primeira e a última fila são os oitões
+function nvSides(cols){const rows=[];cols.slice().sort((p,q)=>p.y-q.y).forEach(c=>{const r=rows[rows.length-1];if(r&&c.y-r.y0<.35)r.cs.push(c);else rows.push({y0:c.y,cs:[c]});});
+  rows.forEach(r=>r.cs.sort((p,q)=>p.x-q.x));const R=rows.filter(r=>r.cs.length>=1);
+  return {rows:R,x0:R.map(r=>r.cs[0]),x1:R.map(r=>r.cs[r.cs.length-1]),y0:R.length?R[0].cs:[],y1:R.length?R[R.length-1].cs:[]};}
+// segmentos de um lado (mm), com direção e normal para fora do galpão
+function nvSegs(cs,ctr){const out=[];let cum=0;for(let q=0;q<cs.length-1;q++){const a=[cs[q].x*1000,cs[q].y*1000],b=[cs[q+1].x*1000,cs[q+1].y*1000],L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<1)continue;
+    const u=[(b[0]-a[0])/L,(b[1]-a[1])/L];let n=[-u[1],u[0]];if(((a[0]+b[0])/2-ctr[0])*n[0]+((a[1]+b[1])/2-ctr[1])*n[1]<0)n=[-n[0],-n[1]];out.push({a,b,L,u,n,ca:cs[q],cb:cs[q+1],cum});cum+=L;}return out;}
+const nvCtr=cols=>[cols.reduce((s,c)=>s+c.x,0)/cols.length*1000,cols.reduce((s,c)=>s+c.y,0)/cols.length*1000];
 function nvGrid(n){let cols;
   if(n.cols)cols=n.cols.map(c=>({...c}));
   else{const ny=Math.max(1,Math.ceil(n.comp/n.esp-1e-6)),ys=Array.from({length:ny+1},(_,k)=>n.comp*k/ny);
     const nx=n.oit?Math.max(1,Math.ceil(n.vao/n.esp-1e-6)):1,xo=Array.from({length:nx-1},(_,k)=>n.vao*(k+1)/nx);
     cols=[];[0,n.vao].forEach(x=>ys.forEach(y=>cols.push({x,y,rot:0})));[0,n.comp].forEach(y=>xo.forEach(x=>cols.push({x,y,rot:1,oit:1})));}
-  return {cols,sides:nvSides(cols,n.vao,n.comp)};}
+  return {cols,sides:nvSides(cols)};}
 // fundação: medidas em mm (critérios do detalhamento do Engenhar Muros)
 function fundSpec(n){const f=n.fund||{tipo:'sapata'};if(f.tipo==='sapata')return null;
   const PC=STP[n.perf],heavy=PC.H||PC.box,d=heavy?19:16,la=12*d+150,plate=Math.ceil((Math.max(PC.h,PC.w)+200)/50)*50;
@@ -2713,10 +2774,11 @@ function sampleNovo(n){
   lv.forEach(l=>l.id=w(`IFCBUILDINGSTOREY(${gid()},$,'${l.nm}',$,$,${l.pl},$,$,.ELEMENT.,${f(l.z)})`));
   const body=items=>{const r=w(`IFCSHAPEREPRESENTATION(${ctx},'Body','SweptSolid',(${items.join(',')}))`);return w(`IFCPRODUCTDEFINITIONSHAPE($,$,(${r}))`);};
   const place=(x,y,z)=>w(`IFCLOCALPLACEMENT(${lv[0].pl},${w(`IFCAXIS2PLACEMENT3D(${P(x,y,z)},$,$)`)})`);
+  const placeR=(x,y,z,ux,uy)=>w(`IFCLOCALPLACEMENT(${lv[0].pl},${w(`IFCAXIS2PLACEMENT3D(${P(x,y,z)},${D(0,0,1)},${D(ux,uy,0)})`)})`);
   const rect=(b,h)=>w(`IFCRECTANGLEPROFILEDEF(.AREA.,$,${w(`IFCAXIS2PLACEMENT2D(${P(0,0)},$)`)},${f(b)},${f(h)})`);
   const ext=(pr,d)=>w(`IFCEXTRUDEDAREASOLID(${pr},${A0},${Z},${f(d)})`);
   const el=(t,nm,pl,pds,x='')=>{const id=w(`${t}(${gid()},$,'${nm}',$,$,${pl},${pds},'${nm}'${x})`);lv[0].els.push(id);return id;};
-  const {cols,sides}=nvGrid(n),FS=fundSpec(n);const circ=r=>w(`IFCCIRCLEPROFILEDEF(.AREA.,$,${w(`IFCAXIS2PLACEMENT2D(${P(0,0)},$)`)},${f(r)})`);const sap=Math.max(.8,Math.min(1.6,.6+n.vao*n.esp/150)),pes=Math.max(.4,Math.ceil((Math.max(hp,bp)+.2)/.05)*.05+.1);
+  const {cols,sides}=nvGrid(n),FS=fundSpec(n),CT=nvCtr(cols),chains=[sides.x0,sides.x1,sides.y0,sides.y1];const circ=r=>w(`IFCCIRCLEPROFILEDEF(.AREA.,$,${w(`IFCAXIS2PLACEMENT2D(${P(0,0)},$)`)},${f(r)})`);const sap=Math.max(.8,Math.min(1.6,.6+n.vao*n.esp/150)),pes=Math.max(.4,Math.ceil((Math.max(hp,bp)+.2)/.05)*.05+.1);
   cols.forEach((c,i)=>{const nm=`PM${i+1} (${STP[n.perf].label.replace(/'/g,'')})`;
     el('IFCCOLUMN',nm,place(c.x,c.y,0),body([ext(c.rot?rect(bp,hp):rect(hp,bp),n.pd)]));
     if(!FS){el('IFCFOOTING',`S${i+1} (${Math.round(sap*100)}x${Math.round(sap*100)})`,place(c.x,c.y,-.6),body([ext(rect(sap,sap),.5)]),',.PAD_FOOTING.');
@@ -2726,16 +2788,17 @@ function sampleNovo(n){
     el('IFCPILE',`${fn} (ø${FS.D/10})`,place(c.x,c.y,top-m(FS.dep)+m(FS.bh)),body([ext(circ(m(FS.D)/2),m(FS.dep-FS.bh))]),',.BORED.,$');
     if(FS.bh){el('IFCPILE',`${fn} base (ø${FS.Bd/10})`,place(c.x,c.y,top-m(FS.dep)),body([ext(circ(m(FS.Bd)/2),.2)]),',.BORED.,$');
       el('IFCPILE',`${fn} saia`,place(c.x,c.y,top-m(FS.dep)+.2),body([ext(circ(m(FS.D+FS.Bd)/4),m(FS.sk))]),',.BORED.,$');}});
-  if(n.alv>0){const tw=.14;
-    const wall=(x0,y0,x1,y1,nm)=>{const L=Math.hypot(x1-x0,y1-y0);if(L<.05)return;const cx=(x0+x1)/2,cy=(y0+y1)/2,alongX=Math.abs(x1-x0)>Math.abs(y1-y0);
-      el('IFCWALLSTANDARDCASE',nm,place(cx,cy,0),body([ext(alongX?rect(L,tw):rect(tw,L),n.alv)]));};
-    let k=1;const ey=c=>(c.rot?hp:bp)/2,ex=c=>(c.rot?bp:hp)/2;
-    [[sides.x0,0],[sides.x1,n.vao]].forEach(([cs,x])=>{for(let q=0;q<cs.length-1;q++)wall(x,cs[q].y+ey(cs[q]),x,cs[q+1].y-ey(cs[q+1]),`ALV${k++} (bloco 14)`);});
-    [[sides.y0,0],[sides.y1,n.comp]].forEach(([cs,y])=>{for(let q=0;q<cs.length-1;q++)wall(cs[q].x+ex(cs[q]),y,cs[q+1].x-ex(cs[q+1]),y,`ALV${k++} (bloco 14)`);});}
-  {const vb=n.vb||{bw:200,h:400},hb=vb.h/1000,bw=vb.bw/1000,half=FS?(FS.bloco?FS.B.side/2000:FS.D/2000):pes/2;let k=1;
-    const beam=(x0,y0,x1,y1)=>{const L=Math.hypot(x1-x0,y1-y0)-2*half;if(L<.1)return;const alongX=Math.abs(x1-x0)>Math.abs(y1-y0);el('IFCBEAM',`VB${k++} (${vb.bw/10}x${vb.h/10})`,place((x0+x1)/2,(y0+y1)/2,-hb),body([ext(alongX?rect(L,bw):rect(bw,L),hb)]));};
-    [sides.x0,sides.x1].forEach(cs=>{for(let q=0;q<cs.length-1;q++)beam(cs[q].x,cs[q].y,cs[q+1].x,cs[q+1].y);});[sides.y0,sides.y1].forEach(cs=>{for(let q=0;q<cs.length-1;q++)beam(cs[q].x,cs[q].y,cs[q+1].x,cs[q+1].y);});}
-  el('IFCSLAB','Piso (12 cm)',place(n.vao/2,n.comp/2,0),body([w(`IFCEXTRUDEDAREASOLID(${rect(n.vao+.3,n.comp+.3)},${A0},${D(0,0,-1)},${f(.12)})`)]),',.FLOOR.');
+  // peça reta entre dois pilares vizinhos, girada na direção do lado (vale para lado inclinado)
+  const piece=(sg,trim,wd,z0,hgt,t,nm)=>{const L=sg.L/1000-trim[0]-trim[1];if(L<.05)return;const c0=sg.L/2000+(trim[0]-trim[1])/2,cx=sg.a[0]/1000+sg.u[0]*c0,cy=sg.a[1]/1000+sg.u[1]*c0;
+    el(t,nm,placeR(cx,cy,z0,sg.u[0],sg.u[1]),body([ext(rect(L,wd),hgt)]));};
+  const half=(c,u)=>(Math.abs(u[0])*(c.rot?bp:hp)+Math.abs(u[1])*(c.rot?hp:bp))/2;
+  if(n.alv>0){let k=1;chains.forEach(cs=>nvSegs(cs,CT).forEach(sg=>piece(sg,[half(sg.ca,sg.u),half(sg.cb,sg.u)],.14,0,n.alv,'IFCWALLSTANDARDCASE',`ALV${k++} (bloco 14)`)));}
+  {const vb=n.vb||{bw:200,h:400},hb=vb.h/1000,bw=vb.bw/1000,hf=FS?(FS.bloco?FS.B.side/2000:FS.D/2000):pes/2;let k=1;
+    chains.forEach(cs=>nvSegs(cs,CT).forEach(sg=>piece(sg,[hf,hf],bw,-hb,hb,'IFCBEAM',`VB${k++} (${vb.bw/10}x${vb.h/10})`)));}
+  {// piso no contorno dos pilares (segue lados inclinados)
+    const ol=[...sides.x0.map(c=>[c.x-.15,c.y]),...sides.x1.slice().reverse().map(c=>[c.x+.15,c.y])];ol[0][1]-=.15;ol[sides.x0.length-1][1]+=.15;ol[sides.x0.length][1]+=.15;ol[ol.length-1][1]-=.15;
+    const ps=ol.map(p=>P(p[0],p[1])),pf=w(`IFCARBITRARYCLOSEDPROFILEDEF(.AREA.,$,${w(`IFCPOLYLINE((${[...ps,ps[0]].join(',')}))`)})`);
+    el('IFCSLAB','Piso (12 cm)',place(0,0,0),body([w(`IFCEXTRUDEDAREASOLID(${pf},${A0},${D(0,0,-1)},${f(.12)})`)]),',.FLOOR.');}
   w(`IFCRELCONTAINEDINSPATIALSTRUCTURE(${gid()},$,$,$,(${lv[0].els.join(',')}),${lv[0].id})`);
   return text();}
 /* ---- DXF: lê linhas, polilinhas, círculos e blocos; agrupa o desenho do layer escolhido em peças (cada pilar) ---- */
@@ -2780,13 +2843,18 @@ function dxfCols(){const ly=$('#dx_ly').value,un=+$('#dx_un').value,sg=DXF.segs&
   // vão na direção x: gira se o desenho for mais largo que alto
   let x0=Math.min(...pc.map(p=>p.x)),x1=Math.max(...pc.map(p=>p.x)),y0=Math.min(...pc.map(p=>p.y)),y1=Math.max(...pc.map(p=>p.y));
   if(x1-x0>y1-y0)pc=pc.map(p=>({x:y1-p.y,y:p.x-x0,w:p.h,h:p.w}));else pc=pc.map(p=>({x:p.x-x0,y:p.y-y0,w:p.w,h:p.h}));
-  x0=Math.min(...pc.map(p=>p.x));y0=Math.min(...pc.map(p=>p.y));pc.forEach(p=>{p.x-=x0;p.y-=y0;});
-  const V=Math.max(...pc.map(p=>p.x)),C=Math.max(...pc.map(p=>p.y)),tl=350,sn=(v,a)=>Math.abs(v-a)<tl?a:v;
-  const cols=pc.map(p=>{const x=sn(sn(p.x,0),V),y=sn(sn(p.y,0),C),onX=x===0||x===V,onY=y===0||y===C;return {x:x/1000,y:y/1000,rot:!onX&&onY?1:0,oit:!onX&&onY?1:0,inner:!onX&&!onY?1:0};});
-  DXF.cols={cols,vao:Math.round(V)/1000,comp:Math.round(C)/1000,raw:pc};DXF.msg=`${cols.length} pilares · vão ${m2(V)} m · comprimento ${m2(C)} m${cols.some(c=>c.inner)?` · ${cols.filter(c=>c.inner).length} internos (sem tesoura)`:''}`;}
+  // filas transversais: pilares com o mesmo y (tolerância de 35 cm) ficam alinhados; a fila pode ter qualquer largura (galpão trapezoidal)
+  const rows=[];pc.slice().sort((a,b)=>a.y-b.y).forEach(p=>{const r=rows[rows.length-1];if(r&&p.y-r.y0<350)r.ps.push(p);else rows.push({y0:p.y,ps:[p]});});
+  rows.forEach(r=>{const ym=r.ps.reduce((s,p)=>s+p.y,0)/r.ps.length;r.ps.forEach(p=>p.y=ym);r.ps.sort((a,b)=>a.x-b.x);});
+  x0=Math.min(...pc.map(p=>p.x));y0=Math.min(...pc.map(p=>p.y));pc.forEach(p=>{p.x=Math.round(p.x-x0);p.y=Math.round(p.y-y0);});
+  const cols=[];rows.forEach((r,ri)=>r.ps.forEach((p,k)=>{const end=ri===0||ri===rows.length-1,lat=k===0||k===r.ps.length-1;cols.push({x:p.x/1000,y:p.y/1000,rot:end&&!lat?1:0,oit:end&&!lat?1:0,inner:!end&&!lat?1:0});}));
+  const ws=rows.filter(r=>r.ps.length>1).map(r=>r.ps[r.ps.length-1].x-r.ps[0].x),V=Math.max(...ws),Vm=Math.min(...ws),C=Math.max(...pc.map(p=>p.y));
+  DXF.cols={cols,vao:Math.round(V)/1000,comp:Math.round(C)/1000,raw:pc};
+  DXF.msg=`${cols.length} pilares · ${rows.length} filas · vão ${V-Vm>300?`de ${m2(Vm)} a ${m2(V)}`:m2(V)} m · comprimento ${m2(C)} m${cols.some(c=>c.inner)?` · ${cols.filter(c=>c.inner).length} internos (sem tesoura)`:''}`;}
 function dxfPrev(){const fg=$('#dxPrev');if(!DXF.cols){fg.innerHTML=`<p class="note" style="margin:4px">${esc(DXF.msg||'')}</p>`;return;}
   const {cols,vao,comp}=DXF.cols,W=300,H=170,k=Math.min((W-40)/Math.max(comp,1),(H-40)/Math.max(vao,1)),X=y=>20+y*k,Y=x=>H-20-x*k;
-  fg.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Pilares lidos do DXF"><rect x="${X(0)}" y="${Y(vao)}" width="${comp*k}" height="${vao*k}" fill="none" stroke="var(--line)"/>
+  const sd=nvSides(cols),ol=[...sd.x0,...sd.x1.slice().reverse()].map(c=>`${X(c.y)},${Y(c.x)}`).join(' ');
+  fg.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Pilares lidos do DXF"><polygon points="${ol}" fill="none" stroke="var(--line)"/>
     ${cols.map(c=>`<rect x="${X(c.y)-3}" y="${Y(c.x)-3}" width="6" height="6" fill="${c.inner?'var(--muted)':'var(--c-aco)'}"/>`).join('')}
     <text x="${W/2}" y="${H-5}" text-anchor="middle" font-size="10" fill="currentColor">${esc(DXF.msg)}</text></svg>`;
   $('#nv_vao').value=vao;$('#nv_comp').value=comp;nvSchema();}
