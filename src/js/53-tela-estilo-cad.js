@@ -125,7 +125,7 @@
     ['Novo projeto', () => $('newProject')?.click()], ['Abrir projeto', () => $('restore')?.click()], ['Salvar', () => $('save')?.click()],
     ['Exemplo didático', () => $('example')?.click()], ['Desfazer', () => window.undo58?.undo?.()], ['Refazer', () => window.undo58?.redo?.()],
     ['Resistências', () => window.res96?.open()], ['Vento e contraventamento', () => window.vento109?.open()], ['Vergas', () => window.vergas109?.open()],
-    ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Visibilidade', () => $('vis87btn')?.click()],
+    ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Memorial descritivo', () => window.memo147?.abrir()], ['Visibilidade', () => $('vis87btn')?.click()],
     ['Verificar geometria', () => window.geo116?.abrir()], ['Gerar todos os níveis', () => document.getElementById('genAll103')?.click()], ['Trena', () => window.trena118?.ligar()], ['Lápis', () => window.ref126?.ligar()], ['Renumerar', () => window.renum116?.()],
   ];
   for (const [l, f] of EXTRA) REG.set('x:' + l, { key: 'x:' + l, t: { l, ic: '', t: () => { f(); } }, cat: 'extra' });
@@ -313,7 +313,7 @@
   const ghostOn = () => LS('ghost74') === '1';
   const MENUS = [
     ['Arquivo', () => [{ k: 'x:Novo projeto' }, { k: 'x:Abrir projeto' }, { k: 'x:Salvar' }, { k: 'x:Exemplo didático' }, { s: 1 },
-      { k: 'Conferir projeto|auditV48' }, { k: 'Diagnóstico (.txt)|downloadAuditV48' }, { s: 1 }, { k: 'x:Memorial de cálculo' }]],
+      { k: 'Conferir projeto|auditV48' }, { k: 'Diagnóstico (.txt)|downloadAuditV48' }, { s: 1 }, { k: 'x:Memorial de cálculo' }, { k: 'x:Memorial descritivo' }]],
     ['Editar', () => [{ k: 'x:Desfazer', d: 'Ctrl+Z' }, { k: 'x:Refazer', d: 'Ctrl+Y' }, { s: 1 }, { k: 'Selecionar|sel', d: 'Esc' }, { k: 'Apagar parede|deleteWall' }, { k: 'Desfazer exclusão|undoDelete' }]],
     ['Ver', () => [{ h: 'Vistas' }, ...Object.entries(U.VNAME).map(([v, n]) => ({ l: n, f: () => U.view(v), c: U.curView === v })), { s: 1 },
       { h: 'Fundo da área de desenho' }, ...temas().sort((a, b) => ORDEM_TEMA.indexOf(a[0]) - ORDEM_TEMA.indexOf(b[0])).map(([k, T]) => ({ l: T.nome, f: () => { window.bg88.set(k); toggles(); }, c: temaAtual() === k, sw: T.bg })),
@@ -325,7 +325,7 @@
       { s: 1 }, { l: 'Voltar para a tela clássica', f: () => { LS('ui85', 'off'); location.reload(); } }]],
     ['Planta', () => daCat('arq')], ['Paredes', () => daCat('paredes')], ['Modulação', () => daCat('mod')], ['Elevações', () => daCat('elev')],
     ['Armaduras', () => [...daCat('arm'), { s: 1 }, { k: 'x:Vergas' }]], ['Laje', () => daCat('laje')], ['Cargas', () => daCat('cargas')],
-    ['Cálculo', () => [{ k: 'x:Resistências' }, { k: 'x:Vento e contraventamento' }, { k: 'x:Vergas' }, { s: 1 }, { k: 'x:Memorial de cálculo' }]],
+    ['Cálculo', () => [{ k: 'x:Resistências' }, { k: 'x:Vento e contraventamento' }, { k: 'x:Vergas' }, { s: 1 }, { k: 'x:Memorial de cálculo' }, { k: 'x:Memorial descritivo' }]],
     ['Pranchas', () => daCat('pranchas')], ['3D', () => daCat('d3')], ['Quantitativos', () => daCat('quant')], ['Ajustes', () => daCat('ajustes')],
     ['Ajuda', () => [{ l: 'Como usar os resultados', f: () => U.view('help') }, { l: 'Personalizar barras…', f: abrirPaleta }]],
   ];

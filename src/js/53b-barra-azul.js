@@ -41,7 +41,7 @@
   const pop = document.createElement('div'); pop.id = 'exp109'; pop.className = 'noPrint'; pop.hidden = true; document.body.append(pop);
   function menuExportar(e) {
     const r = e.target.closest('a').getBoundingClientRect();
-    const op = [['Pranchas em PDF', 'PDF|plotPDF26'], ['Pranchas em DXF', 'DXF|plotDXF36'], ['Quantitativos em Excel', 'Excel|xlBtn73'], ['Memorial de cálculo', 'x:Memorial de cálculo'], ['Diagnóstico (.txt)', 'Diagnóstico (.txt)|downloadAuditV48']];
+    const op = [['Pranchas em PDF', 'PDF|plotPDF26'], ['Pranchas em DXF', 'DXF|plotDXF36'], ['Quantitativos em Excel', 'Excel|xlBtn73'], ['Memorial de cálculo', 'x:Memorial de cálculo'], ['Memorial descritivo e materiais', 'x:Memorial descritivo'], ['Diagnóstico (.txt)', 'Diagnóstico (.txt)|downloadAuditV48']];
     pop.innerHTML = op.map(([t, k]) => `<button type="button" data-k="${k}">${t}</button>`).join('');
     pop.style.top = Math.min(r.top, innerHeight - 220) + 'px'; pop.style.left = r.right + 6 + 'px'; pop.hidden = false;
     pop.onclick = ev => { const b = ev.target.closest('[data-k]'); if (!b) return; pop.hidden = true; run(b.dataset.k); };
