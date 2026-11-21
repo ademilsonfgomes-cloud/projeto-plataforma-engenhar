@@ -781,7 +781,9 @@ function manPick(rc){const O=ORIGIN||[0,0,0],objs=MODELS.est.els.filter(e=>!e.hi
     q=el.cat==='Pilar'?{x:Math.round((el.bb.x0+el.bb.x1)/2),y:Math.round((el.bb.y0+el.bb.y1)/2),id:el.id}:{x:Math.round(hit.point.x+O[0]),y:Math.round(hit.point.y+O[1]),id:el.id};}
   if(!PICKA){PICKA=q;$('#manSt').textContent=PICKT==='M'?'Agora clique no outro pilar.':'Agora clique no outro apoio da tesoura.';return;}
   if(Math.hypot(q.x-PICKA.x,q.y-PICKA.y)<1500){note3d('Os dois pontos estão muito perto.');return;}
-  OVR.man=[...(OVR.man||[]),{k:PICKT,a:PICKA,b:q}];saveOVR();const k=PICKT;PICKA=null;runSteel();manMode(k);}
+  OVR.man=[...(OVR.man||[]),{k:PICKT,a:PICKA,b:q}];saveOVR();const k=PICKT;PICKA=null;runSteel();manMode(k);manSel(OVR.man.length-1);}
+// seleciona uma peça da tesoura (ou mestra) lançada à mão para abrir o cartão com as dimensões dela
+function manSel(idx){if(!STEEL)return;const T=STEEL.trusses.find(t=>t.manT===idx||(t.mestra&&t.manIdx===idx));if(!T)return;const m=STEEL.mem.find(x=>x.truss===T.j&&x.type==='BS');if(m)selectSteel(m);}
 const TS_CAT=[['trap','Trapezoidal'],['tri','Triangular'],['meia','Uma água'],['paral','Banzos paralelos'],['arco','Em arco'],['tes','Tesoura-tesoura']];
 const MQ_CAT=[['trelica','Cônica'],['warren','Cônica Warren'],['arco','Em arco'],['paralela','Altura constante'],['nivelada','Nivelada c/ calços'],['vier','Vierendeel'],['atir','Atirantada'],['mf','Mão-francesa'],['w','Console (caixa ou W)']];
 const icoP=(f,a,b,n=16)=>Array.from({length:n+1},(_,k)=>{const x=a+(b-a)*k/n;return `${x.toFixed(1)} ${f(x).toFixed(1)}`;}).join(' L');
@@ -937,7 +939,13 @@ function selectSteel(m){
   m.mesh.material=selMat();const card=$('#sel'),g=STEEL.groups.find(x=>x.mark===m.mark);
   const rows=[['Peça',TDESC[m.type]],['Perfil',m.prof.label],['Comprimento',`${m2(m.len)} m`],['Peso',`${nf1.format(m.len/1000*m.prof.kgm)} kg`],['Iguais a esta',`${g?g.qty:1} peças`],['Cotas',`z = ${m2(Math.min(m.a[2],m.b[2]))} a ${m2(Math.max(m.a[2],m.b[2]))} m`]];
   let ed='';const T=m.truss!=null&&m.mq==null?STEEL.trusses[m.truss]:null;
-  if(T){const o=OVR.t[T.pj]||{};ed=`<div class="ed"><b>Editar tesoura ${T.j+1}</b><label for="edDv">Mover ao longo da obra (mm, + ou −)</label>
+  if(T&&T.manT!=null){const e=(OVR.man||[])[T.manT]||{},p=e.p||{},fm=p.forma||$('#g_tForma').value;
+    ed=`<div class="ed"><b>Dimensões da tesoura ${T.tname||''} (lançada à mão)</b><label for="edFm">Modelo</label><select id="edFm">${TS_CAT.map(([k,l])=>`<option value="${k}"${k===fm?' selected':''}>${l}</option>`).join('')}</select>
+      <label for="edH0">Altura no apoio (m)</label><input id="edH0" type="number" step="0.05" min="0" value="${p.h0!=null?p.h0:$('#g_h0').value}">
+      <label for="edIn">Inclinação (%)</label><input id="edIn" type="number" step="1" min="0" max="60" value="${p.incl!=null?p.incl:$('#g_incl').value}">
+      <div class="row"><button type="button" id="edApM" class="primary">Aplicar nesta tesoura</button><button type="button" id="edRmM">Remover</button></div></div>`;}
+  else if(T&&T.mestra){ed=`<div class="ed"><b>Treliça mestra ${T.tname||''}</b><span class="note">Altura e perfis no painel Estrutura (lançamento manual).</span><button type="button" id="edRmM">Remover esta treliça mestra</button></div>`;}
+  else if(T){const o=OVR.t[T.pj]||{};ed=`<div class="ed"><b>Editar tesoura ${T.j+1}</b><label for="edDv">Mover ao longo da obra (mm, + ou −)</label>
     <div class="row"><input id="edDv" type="number" step="50" value="${+o.dv||0}"><button type="button" id="edMv" class="primary">Mover</button></div>
     <button type="button" id="edRm">Remover esta tesoura</button></div>`;}
   else if(m.type==='TC'&&m.line!=null){const cur=OVR.tc[m.line]||$('#g_pTerca').value,ops=Object.keys(STP).filter(k=>/^Ue?\d/.test(k)).sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);
@@ -947,7 +955,10 @@ function selectSteel(m){
   let pmEl=null;if(m.type==='PM'&&MODELS.est){pmEl=MODELS.est.els.find(e=>e.cat==='Pilar'&&Math.abs((e.bb.x0+e.bb.x1)/2-m.a[0])<60&&Math.abs((e.bb.y0+e.bb.y1)/2-m.a[1])<60);if(pmEl)ed+=mqCard(pmEl);}
   if(nOVR())ed+=`<button type="button" id="edUndo">Desfazer ${nOVR()===1?'a edição manual':`as ${nOVR()} edições manuais`}</button>`;
   card.innerHTML=`<b>${esc(m.mark)} · aço</b><dl>${rows.map(([a,v])=>`<dt>${a}</dt><dd>${esc(v)}</dd>`).join('')}</dl>${ed}`;card.hidden=false;
-  if(T){$('#edMv').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),dv:Math.round(parseFloat(String($('#edDv').value).replace(',','.'))||0)};});
+  if(T&&(T.manT!=null||T.mestra)){const idx=T.mestra?T.manIdx:T.manT;
+    if($('#edApM'))$('#edApM').onclick=()=>{const e=OVR.man[idx];e.p={forma:$('#edFm').value,h0:+String($('#edH0').value).replace(',','.'),incl:+String($('#edIn').value).replace(',','.')};saveOVR();selectSteel(null);runSteel();manSel(idx);};
+    $('#edRmM').onclick=()=>{OVR.man=OVR.man.filter((_,q)=>q!==idx).map(e=>({...e,a:{...e.a,onM:e.a.onM==null?null:e.a.onM>idx?e.a.onM-1:e.a.onM===idx?null:e.a.onM},b:{...e.b,onM:e.b.onM==null?null:e.b.onM>idx?e.b.onM-1:e.b.onM===idx?null:e.b.onM}}));saveOVR();selectSteel(null);runSteel();};}
+  else if(T){$('#edMv').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),dv:Math.round(parseFloat(String($('#edDv').value).replace(',','.'))||0)};});
     $('#edRm').onclick=()=>editSteel(()=>{OVR.t[T.pj]={...(OVR.t[T.pj]||{}),off:true};});}
   peditBind(m);
   if(pmEl){const a=m.a;mqCardBind(pmEl,()=>{const q=STEEL.mem.find(x=>x.type==='PM'&&Math.abs(x.a[0]-a[0])<1&&Math.abs(x.a[1]-a[1])<1);if(q)selectSteel(q);});}
@@ -1296,12 +1307,12 @@ function genSteel(G){
     // lançamento manual: as tesouras são os pares clicados no 3D; pontas na treliça mestra apoiam nela
     const MAN=G.tLanc==='man'&&!M.novo?((G.ovr&&G.ovr.man)||[]):null;
     if(MAN){pairs.length=0;const end=q=>{const el=q.id!=null?els.find(e=>e.id===q.id):null;return el&&el.cat==='Pilar'&&q.onM==null?el:{name:q.onM!=null?'treliça mestra':(el?el.name:'ponto'),bb:{x0:q.x,x1:q.x,y0:q.y,y1:q.y,z0:zs,z1:zs},onM:q.onM,fake:1};};
-      MAN.map((e,i)=>({e,i})).filter(o=>o.e.k==='T').sort((p,q)=>Vv([(p.e.a.x+p.e.b.x)/2,(p.e.a.y+p.e.b.y)/2])-Vv([(q.e.a.x+q.e.b.x)/2,(q.e.a.y+q.e.b.y)/2])).forEach(o=>pairs.push([end(o.e.a),end(o.e.b)]));}
+      MAN.map((e,i)=>({e,i})).filter(o=>o.e.k==='T').sort((p,q)=>Vv([(p.e.a.x+p.e.b.x)/2,(p.e.a.y+p.e.b.y)/2])-Vv([(q.e.a.x+q.e.b.x)/2,(q.e.a.y+q.e.b.y)/2])).forEach(o=>pairs.push(Object.assign([end(o.e.a),end(o.e.b)],{manT:o.i,manP:o.e.p||{}})));}
     const Lmx=Math.max(0,...pairs.map(([a,b])=>D2([U(ctr(a)),Vv(ctr(a))],[U(ctr(b)),Vv(ctr(b))])));
     if(pairs.length<2&&!MAN)out.warns.push('Encontrei menos de duas linhas de apoio para as tesouras.');
     if(MAN&&!MAN.length)out.notes.push('Lançamento manual: nenhuma tesoura lançada ainda. Use “Lançar treliça mestra” e “Lançar tesoura” no painel Estrutura.');
     const OV=G.ovr||{t:{},tc:{}};
-    pairs.forEach(([a,b],pj)=>{const ov=OV.t[pj]||{};
+    pairs.forEach((pr,pj)=>{const [a,b]=pr,pp=pr.manP||{},i=(pp.incl!=null?+pp.incl:G.incl)/100,h0=(pp.h0!=null?+pp.h0:G.h0)*1000;const ov=OV.t[pj]||{};
       if(ov.off){out.edits.push(`tesoura do par de pilares ${a.name.split(' ')[0]}–${b.name.split(' ')[0]} removida`);return;}
       const j=out.trusses.length,dv=+ov.dv||0;if(dv)out.edits.push(`tesoura ${j+1} deslocada ${dv>0?'+':''}${nf0.format(dv)} mm ao longo da obra`);
       let ua=U(ctr(a)),va=Vv(ctr(a))+dv,ub=U(ctr(b)),vb=Vv(ctr(b))+dv;const clash=[above(ua,va),above(ub,vb)].filter(Boolean);
@@ -1310,7 +1321,7 @@ function genSteel(G){
       const sA=a.onM!=null?null:below(ua,va),sB=b.onM!=null?null:below(ub,vb);
       if((!sA&&a.onM==null)||(!sB&&b.onM==null))out.warns.push(`Tesoura ${j+1}: não há concreto embaixo de um dos apoios na cota ${m2(zs)} m.`);
       const A2=[ua,va],B2=[ub,vb],L=D2(A2,B2),e=[(ub-ua)/L,(vb-va)/L],war=G.alma==='warren',nh=+G.nP>=2?Math.max(1,Math.round(+G.nP/2)):Math.max(2,Math.ceil(Math.max(L,Lmx)/2/(G.pT*1000*(war?.5:1))-1e-6)),n=2*nh;
-      const at=(s,z)=>P3(ua+e[0]*s,va+e[1]*s,z),sk=k=>k*L/n,fmT=G.tForma||'trap',dz0=h0-Bz.h,hf=s=>Math.min(s,L-s);
+      const at=(s,z)=>P3(ua+e[0]*s,va+e[1]*s,z),sk=k=>k*L/n,fmT=pp.forma||G.tForma||'trap',dz0=h0-Bz.h,hf=s=>Math.min(s,L-s);
       // forma da tesoura: banzo superior zt(s) e inferior zbf(s), eixos dos banzos
       let zt,zbf=()=>zb;
       if(fmT==='tri')zt=s=>zb+i*hf(s);
@@ -1338,7 +1349,7 @@ function genSteel(G){
         else{const se=s0-g*cw;if(s0===0)topN.unshift(se);else topN.push(se);add('BX',Bz,at(s0,zt(s0)),at(se,zt(se)),{truss:j});}});
       const tops=topN.map(s2=>at(s2,zt(s2)+Bz.h/2+Te.h/2));
       if(lant){const ls=[L/2-lw/2-ovL+60,L/2-120,L/2+120,L/2+lw/2+ovL-60];const mid=tops.findIndex((p2,q)=>topN[q]>L/2);ls.forEach((s2,q)=>tops.splice(mid+q,0,at(s2,zLa(s2)+LPr.h/2+Te.h/2)));}
-      const T={j,pj,L,n,nh,ab,na,pa,war,topN,tops,cSides,cw,supM:[a.onM,b.onM],fmT,zbf,lant,lw,hl,topS:s=>at(s,zt(s)+Bz.h/2+Te.h/2),at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
+      const T={j,pj,L,n,nh,ab,na,pa,war,topN,tops,cSides,cw,supM:[a.onM,b.onM],manT:pr.manT,fmT,zbf,lant,lw,hl,topS:s=>at(s,zt(s)+Bz.h/2+Te.h/2),at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
       const lb=G.tTipo==='enc'&&+G.lBar>0?+G.lBar*1000:0,csI=Math.cos(Math.atan(i));
       // banzo de cada metade, a partir do apoio: barra mais longa possível até lb, emenda no meio de um painel (fora dos nós)
       const piece=(type,zf,s0,s1)=>{const len=(a,b)=>Math.hypot(b-a,zf(b)-zf(a)),dir=Math.sign(s1-s0),cuts=[];
@@ -1403,7 +1414,7 @@ function genSteel(G){
         top:k=>at(sl[k],zs),sup:[elA,elB],uv:[A2,B2],mestra:1,manIdx:mi,proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*ev[0]+(v-va)*ev[1],p[2]-zs];}};out.trusses.push(T);
       out.notes.push(`Treliça mestra ${mi+1}: nivelada, ${m2(L)} m de vão entre as faces dos pilares, ${m2(HM)} m de altura, ${n} painéis; banzos ${BzM.label}, montantes e diagonais ${AlM.label}; recebe ${sAp.length} tesoura(s) nos nós do banzo superior.`);});
     // tipos de tesoura: mesma forma, vão, painéis, beiral e lanternim = mesma marca (TS1, TS2…)
-    {const ty=new Map();out.trusses.forEach(T=>{const k=`${T.mestra?'M':''}${T.fmT}|${Math.round(T.L/10)}|${T.n}|${T.ab}|${T.lant?1:0}`;if(!ty.has(k))ty.set(k,{rep:T.j,js:[]});ty.get(k).js.push(T.j);});
+    {const ty=new Map();out.trusses.forEach(T=>{const k=`${T.mestra?'M':''}${T.fmT}|${Math.round(T.L/10)}|${T.n}|${T.ab}|${T.lant?1:0}|${Math.round(T.h0)}|${Math.round(T.i*1000)}`;if(!ty.has(k))ty.set(k,{rep:T.j,js:[]});ty.get(k).js.push(T.j);});
       out.ttypes=[...ty.values()];let qs=0,qm=0;out.ttypes.forEach(t=>{t.name=out.trusses[t.rep].mestra?'TM'+(++qm):'TS'+(++qs);t.js.forEach(j=>out.trusses[j].tname=t.name);});
       if(out.ttypes.length>1)out.notes.push(`Tesouras de ${out.ttypes.length} tamanhos: ${out.ttypes.map(t=>`${t.name} vão ${m2(out.trusses[t.rep].L)} m (${t.js.length} un.)`).join('; ')}. Cada tipo tem a sua folha de detalhamento.`);}
     // espaço da calha ao longo de cada beiral com calha: largura, profundidade indicativa, caimento 0,5% e saídas para condutor
@@ -3462,7 +3473,8 @@ const RAIL=[{g:'Painéis'},{id:'p:arq',lab:'Arquivos',ic:'folder'},{id:'p:aco',l
   {id:'v:concreto',lab:'Concreto',ic:'columns'}];
 const PTIT={arq:'Arquivos',aco:'Estrutura metálica',exib:'Exibição',plot:'Plotagem'};
 let PANE='aco',VIEW='3d';
-try{const st=JSON.parse(localStorage.getItem('eng-int-ui')||'{}');if(st.view)VIEW=st.view;if(st.sheet)SHEET=st.sheet;if('pane' in st)PANE=st.pane;}catch(e){}
+try{const st=JSON.parse(localStorage.getItem('eng-int-ui')||'{}');if('pane' in st)PANE=st.pane;}catch(e){}
+VIEW='desenho';SHEET='planta';   // o programa abre sempre na planta
 function saveUI(){try{localStorage.setItem('eng-int-ui',JSON.stringify({view:VIEW,sheet:SHEET,pane:PANE}));}catch(e){}}
 function railState(){document.querySelectorAll('#rail button').forEach(b=>{const [k,v]=b.dataset.t.split(':');
   b.setAttribute('aria-pressed',k==='p'?String(PANE===v):k==='v'?String(VIEW===v):String(VIEW==='desenho'&&SHEET===v));});}
