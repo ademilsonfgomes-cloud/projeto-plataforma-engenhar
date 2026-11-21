@@ -1781,13 +1781,15 @@ function runSteel(){setTimeout(()=>{mqInfo();mqPlanBind();mqPlan();mqSchema();ts
 
 /* ================= Desenhos 2D (mm, y para cima): SVG na tela e DXF ================= */
 const nint=v=>String(Math.round(v));
+// ampliação de escala usada na arrumação das pranchas (0 = escala própria do desenho)
+let ESCF=0;const ESC_UP=[1,2,2.5,5,7.5,10,12.5,15,20,25,30,40,50,60,75,80,100,125,150,200,250,300,400,500];
 class Dwg{
   constructor(ts,esc){this.ts=ts;this.esc=esc||0;this.e=[];this.z=[];}
   // junta um detalhe na folha e guarda a área dele para abrir ampliado
   put(sd,dx,dy){const bb=sd.bbox();sd.e.forEach(e=>{const q={...e};if(e.t==='l'){q.x1+=dx;q.x2+=dx;q.y1+=dy;q.y2+=dy;}else{q.x+=dx;q.y+=dy;}this.e.push(q);});
     if(sd.title)this.z.push({name:sd.title.split(' · ')[0],x0:bb.x0+dx,y0:bb.y0+dy,x1:bb.x1+dx,y1:bb.y1+dy});}
   // desenho em escala: texto padrão de 2,5 mm no papel
-  static at(esc){return new Dwg(2.5*esc,esc);}
+  static at(esc){if(ESCF>0){const i=ESC_UP.findIndex(e=>e>=esc);esc=ESC_UP[Math.max(0,(i<0?ESC_UP.length-1:i)-ESCF)];}return new Dwg(2.5*esc,esc);}
   L(x1,y1,x2,y2,ly){this.e.push({t:'l',x1,y1,x2,y2,ly});}
   T(x,y,s,ly='TEXTO',o={}){this.e.push({t:'t',x,y,s:String(s),h:o.h||this.ts,ly,an:o.an||'start',rot:o.rot||0,b:!!o.b});}
   I(x,y,w,h,href){this.e.push({t:'i',x,y,w,h,href,ly:'CARIMBO'});}
@@ -2980,7 +2982,7 @@ const ENG_PLOT=(()=>{
     dr.rect(x,y,w,h,'CARIMBO');dr.image(X(2),Y(1),w*176/180,h*19/70,d.logo||LOGO);
     L(0,21,180,21);dr.text(X(90),Y(29.8),d.title||DEFAULT.title,{h:5,an:'middle',bold:true,ly:'TEXTO'});L(0,32,180,32);
     const F=[[38,'CONTRATANTE:',d.contractor,0,113],[38,'CPF/CNPJ:',d.taxid,113,180],[44,'ENDEREÇO:',d.address,0,113],[44,'BAIRRO:',d.district,113,180],
-      [50,'COMPLEMENTO:',d.complement,0,64],[50,'LOTE:',d.lot,64,88],[50,'QUADRA:',d.block,88,113],[56,'CIDADE:',d.city,0,64],[56,'ESTADO:',d.state,64,88],[56,'FORMATO:',info.format,88,113],
+      [50,'COMPLEMENTO:',d.complement,0,64],[50,'LOTE:',d.lot,64,88],[50,'QUADRA:',d.block,88,113],[56,'CIDADE:',d.city,0,64],[56,'UF:',d.state,64,88],[56,'FORM.:',info.format,88,113],
       [62,'REVISÃO:',d.revision,0,36],[62,'UNIDADES:',d.units||DEFAULT.units,36,113]];
     const hh=Math.min(2.5,h*2.5/70);
     F.forEach(([bot,lab,val,l,r])=>{const lw=lab.length*hh*CWB;dr.text(X(l+1),Y(bot-1.7),lab,{h:hh,bold:true,ly:'ANOT'});dr.text(X(l+1)+lw+1.2,Y(bot-1.7),fit(val,X(r)-X(l+1)-lw-2,hh),{h:hh,ly:'TEXTO'});});
@@ -3043,49 +3045,112 @@ function savePLOT(){try{localStorage.setItem(plotKey(),JSON.stringify({...PLOT,l
 // desenhista do módulo comum sobre o nosso Dwg (y para cima): origem no canto superior esquerdo da folha
 function plotDr(D,ox){return {line:(x1,y1,x2,y2,ly)=>D.L(ox+x1,-y1,ox+x2,-y2,ly),rect:(x,y,w,h,ly)=>D.R(ox+x,-(y+h),w,h,ly),
   text:(x,y,str,o={})=>D.T(ox+x,-y,str,o.ly||'TEXTO',{h:o.h||2.5,an:o.an||'start',b:o.bold}),image:(x,y,w,h,href)=>D.I(ox+x,-(y+h),w,h,href)};}
-// separa uma folha de desenho em blocos (um por detalhe) para distribuir nas pranchas
-function plotBlocks(){const B=[];PLOT_GROUPS.forEach(([id,lab])=>{const sh=SHEETS.find(s=>s.id===id);if(!sh)return;let d;try{d=paper(sh.fn(STEEL));}catch(e){d=null;}if(!d||!d.e.length)return;
-  const esc=`1:${String(d.esc).replace('.',',')}`,mk=(els,name)=>{const q=new Dwg(d.ts,0);q.e=els;const bb=q.bbox();return {group:lab,name,scale:esc,d:q,bb,w:bb.x1-bb.x0,h:bb.y1-bb.y0};};
+// ---------- arrumação sem vazios: disciplina por prancha, faixa lateral aproveitada, escala ampliada e formato ajustado
+const PLOT_FUN=['locacao','fundacoes','baldrame'];
+const PLOT_NOTES_FUN=['Concreto C25 (fck 25 MPa) nas fundações e vigas baldrame, salvo indicação do projeto de fundação; aço CA-50 e CA-60.',
+  'Cobrimento: 5 cm em estacas, tubulões e blocos; 3 cm nas vigas baldrame.','Lastro de concreto magro de 5 cm sob blocos, sapatas e vigas baldrame.',
+  'Comprimento e capacidade das estacas e tubulões a confirmar com a sondagem (SPT) e o projeto de fundação.','Base dos tubulões aberta só após liberação do geotécnico.',
+  'Chumbadores e arranques posicionados com gabarito antes da concretagem.','Locar pelos eixos com gabarito; conferir esquadro pelas diagonais antes de concretar.',
+  'Cotas em mm e níveis em m. Conferir todas as medidas no local.','Qualquer alteração deve ser aprovada pelo responsável técnico.'];
+const PLOT_FMTS=['A3','A2','A1','A0'],PG=8,DRY={line(){},rect(){},text(){},image(){}};
+// blocos de um grupo, com a escala ampliada "step" vezes (1:25 → 1:20 → 1:15 …)
+function plotGen(id,step){const sh=SHEETS.find(s=>s.id===id),lab=(PLOT_GROUPS.find(g=>g[0]===id)||[])[1];if(!sh||!lab)return [];let d;
+  ESCF=step||0;try{d=paper(sh.fn(STEEL));}catch(e){d=null;}finally{ESCF=0;}if(!d||!d.e.length)return [];
+  const B=[],seen={},esc=`1:${String(d.esc).replace('.',',')}`,mk=(els,name)=>{const q=new Dwg(d.ts,0);q.e=els;const bb=q.bbox();let key=lab+'|'+name;seen[key]=(seen[key]||0)+1;if(seen[key]>1)key+='#'+seen[key];
+    return {group:lab,gid:id,step:step||0,key,name,scale:esc,d:q,bb,w:bb.x1-bb.x0,h:bb.y1-bb.y0};};
   if(d.z&&d.z.length>1){const rest=[],sets=d.z.map(()=>[]),anc=e=>e.t==='l'?[e.x1,e.y1]:[e.x,e.y];
     d.e.forEach(e=>{const [x,y]=anc(e),k=d.z.findIndex(z=>x>=z.x0-1&&x<=z.x1+1&&y>=z.y0-1&&y<=z.y1+1);(k<0?rest:sets[k]).push(e);});
     sets.forEach((els,k)=>{if(els.length)B.push(mk(els,d.z[k].name));});if(rest.length)B.push(mk(rest,lab));}
-  else B.push(mk(d.e,lab));});return B;}
-// arrumação das pranchas: automática (por grupo), manual (o usuário arrasta) ou otimizada (encaixe mais compacto)
-const plotLayOk=()=>PLOT.lay&&PLOT.layFmt===PLOT.format+'|'+PLOT.orient;
-function plotKeys(blocks){const seen={};blocks.forEach(b=>{let k=b.group+'|'+b.name;seen[k]=(seen[k]||0)+1;if(seen[k]>1)k+='#'+seen[k];b.key=k;});return blocks;}
-function plotArea(S,i){const A={...S.area};if(i===0)A.x1-=S.tableW+10;return A;}
-function plotFromLay(blocks,S){const L=PLOT.lay,sh=[],rest=[];
-  blocks.forEach(b=>{const p=L[b.key];if(!p){rest.push(b);return;}(sh[p.s]??=[]).push({b,x:p.x,y:p.y});});
-  let out=sh.filter(a=>a&&a.length);if(!out.length&&!rest.length)out=[[]];
-  if(rest.length){const extra=plotOptimize(rest,S,out);out=extra;}
-  return out.map((items,i)=>{const A=plotArea(S,i),groups=[];items.forEach(it=>{if(!groups.includes(it.b.group))groups.push(it.b.group);it.over=it.x<A.x-.5||it.y<A.y-.5||it.x+it.b.w>A.x1+.5||it.y+it.b.h>A.y1+.5;});return {A,items,groups};});}
-// encaixe compacto: maiores primeiro, cada desenho na posição mais alta e mais à esquerda que couber, na primeira prancha com espaço
-function plotOptimize(blocks,S,start){const gap=10,sh=(start||[]).map(a=>a.slice());
-  const fits=(items,A,x,y,w,h)=>x>=A.x-.01&&y>=A.y-.01&&x+w<=A.x1+.01&&y+h<=A.y1+.01&&items.every(o=>x+w+gap<=o.x||o.x+o.b.w+gap<=x||y+h+gap<=o.y||o.y+o.b.h+gap<=y);
-  const order=blocks.slice().sort((a,b)=>b.h*b.w-a.h*a.w);
-  order.forEach(b=>{let done=false;
-    for(let i=0;i<=sh.length&&!done;i++){if(i===sh.length)sh.push([]);const items=sh[i],A=plotArea(S,i);
-      const xs=[A.x,...items.map(o=>o.x+o.b.w+gap)],ys=[A.y,...items.map(o=>o.y+o.b.h+gap)];let best=null;
-      ys.forEach(y=>xs.forEach(x=>{if(fits(items,A,x,y,b.w,b.h)&&(!best||y<best.y-.5||(Math.abs(y-best.y)<.5&&x<best.x)))best={x,y};}));
-      if(best){items.push({b,x:best.x,y:best.y});done=true;}else if(!items.length){items.push({b,x:A.x,y:A.y});done=true;}}});
-  return sh.filter(a=>a.length);}
-function plotFreeze(P){const L={};P.sheets.forEach((s,i)=>s.items.forEach(it=>{L[it.key]={s:i,x:it.x,y:it.y};}));PLOT.lay=L;PLOT.layFmt=PLOT.format+'|'+PLOT.orient;}
-function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const S=ENG_PLOT.sheet(PLOT.format,PLOT.orient),blocks=plotKeys(plotBlocks());
-  const packed=plotLayOk()?plotFromLay(blocks,S):ENG_PLOT.pack(blocks,S,S.tableW),N=packed.length,R=romRows(),byP={};R.P.forEach(r=>{byP[r.perfil]=(byP[r.perfil]||0)+r.kg;});
+  else B.push(mk(d.e,lab));return B;}
+function plotBlocks(steps={}){const B=[];PLOT_GROUPS.forEach(([id])=>B.push(...plotGen(id,steps[id]||0)));return B;}
+function plotKeys(b){return b;}
+// folha-modelo: área principal, coluna sob as tabelas (1ª prancha) e faixa lateral sob as notas
+function plotSheetT(fmt,disc,first,nIdx,matN){const S=ENG_PLOT.sheet(fmt,PLOT.orient),nl=disc==='FUN'?PLOT_NOTES_FUN:PLOT_NOTES;
+  const nh=ENG_PLOT.notes(DRY,S.strip.x,S.strip.y,S.strip.w,S.stamp.y-4-S.strip.y,nl),A={...S.area},rects=[A];
+  if(first){A.x1-=S.tableW+10;const tx=S.strip.x-10-S.tableW;let cy=S.area.y;cy+=ENG_PLOT.index(DRY,tx,cy,S.tableW,Array.from({length:nIdx},()=>({title:'x',scale:''})))+4;
+    cy+=ENG_PLOT.table(DRY,tx,cy,S.tableW,'R',[['a',.7],['b',.3,'end']],Array.from({length:matN},()=>['a','b']),'T')+4;if(PLOT.revs.length)cy+=ENG_PLOT.revTable(DRY,tx,cy,S.tableW,PLOT.revs)+4;
+    rects.push({x:tx,y:cy+4,x1:tx+S.tableW,y1:S.area.y1},{x:A.x,y:cy+4,x1:tx+S.tableW,y1:S.area.y1});var yT=cy+4;}
+  const yN=S.strip.y+nh+6;rects.push({x:S.strip.x,y:yN,x1:S.strip.x+S.strip.w,y1:S.stamp.y-6});
+  // abaixo das notas (e das tabelas), a largura toda até o carimbo
+  {const y0=first?Math.max(yN,yT):yN;rects.push({x:first?S.strip.x-10-S.tableW:A.x,y:y0,x1:S.strip.x+S.strip.w,y1:S.stamp.y-6});if(first)rects.push({x:A.x,y:y0,x1:S.strip.x+S.strip.w,y1:S.stamp.y-6});}
+  return {fmt,disc,first,S,nl,rects:rects.filter(r=>r.x1-r.x>25&&r.y1-r.y>25),items:[]};}
+// encaixe por retângulos livres (MaxRects, melhor lado curto): aproveita buracos, coluna sob as tabelas e faixa sob as notas
+function mrInit(rects){return rects.map(r=>({x:r.x,y:r.y,w:r.x1-r.x+PG,h:r.y1-r.y+PG}));}
+function mrCut(free,P){const nf=[];free.forEach(f=>{if(P.x>=f.x+f.w-.01||P.x+P.w<=f.x+.01||P.y>=f.y+f.h-.01||P.y+P.h<=f.y+.01){nf.push(f);return;}
+    if(P.x>f.x)nf.push({x:f.x,y:f.y,w:P.x-f.x,h:f.h});if(P.x+P.w<f.x+f.w)nf.push({x:P.x+P.w,y:f.y,w:f.x+f.w-P.x-P.w,h:f.h});
+    if(P.y>f.y)nf.push({x:f.x,y:f.y,w:f.w,h:P.y-f.y});if(P.y+P.h<f.y+f.h)nf.push({x:f.x,y:P.y+P.h,w:f.w,h:f.y+f.h-P.y-P.h});});
+  const out=nf.filter((f,i)=>f.w>1&&f.h>1&&!nf.some((g,j)=>j!==i&&g.x<=f.x+.01&&g.y<=f.y+.01&&g.x+g.w>=f.x+f.w-.01&&g.y+g.h>=f.y+f.h-.01&&(j<i||!(g.x===f.x&&g.y===f.y&&g.w===f.w&&g.h===f.h))));
+  free.length=0;free.push(...out);}
+function mrPlace(free,w,h){w+=PG;h+=PG;let best=null;free.forEach(f=>{if(w<=f.w+.01&&h<=f.h+.01){const ss=Math.min(f.w-w,f.h-h),ls=Math.max(f.w-w,f.h-h);
+    const bot=f.y+h;if(!best||bot<best.bot-.5||(Math.abs(bot-best.bot)<=.5&&f.x<best.x))best={x:f.x,y:f.y,bot,ss,ls};}});
+  if(!best)return null;mrCut(free,{x:best.x,y:best.y,w,h});return best;}
+function pPlace(sh,b){if(!sh.free){sh.free=mrInit(sh.rects);sh.items.forEach(o=>mrCut(sh.free,{x:o.x,y:o.y,w:o.b.w+PG,h:o.b.h+PG}));}
+  const p=mrPlace(sh.free,b.w,b.h);if(!p)return false;sh.items.push({b,x:p.x,y:p.y});return true;}
+const P_ORD=[(a,b)=>b.h-a.h||b.w-a.w,(a,b)=>b.w*b.h-a.w*a.h,(a,b)=>b.w-a.w||b.h-a.h,(a,b)=>Math.max(b.w,b.h)-Math.max(a.w,a.h),(a,b)=>b.h/b.w-a.h/a.w||b.h-a.h,(a,b)=>a.h/a.w-b.h/b.w||b.w-a.w];
+function pRepack(tpl,blocks){for(const o of P_ORD){const sh={rects:tpl.rects,items:[]};let ok=true;for(const b of blocks.slice().sort(o))if(!pPlace(sh,b)){ok=false;break;}
+    if(ok){const it=sh.items;it.free=sh.free;return it;}}return null;}
+function plotFill(sh){let tot=0,used=0;const st=5;for(let x=sh.rects[0].x;x<sh.S.w;x+=st)for(let y=sh.rects[0].y;y<sh.S.h;y+=st){if(!sh.rects.some(r=>x>=r.x&&x<r.x1&&y>=r.y&&y<r.y1))continue;tot++;if(sh.items.some(o=>x>=o.x&&x<o.x+o.b.w&&y>=o.y&&y<o.y+o.b.h))used++;}return tot?used/tot:0;}
+function packSeq(blocks,T,fmt,first0){const sheets=[];let cur=null;
+  blocks.forEach(b=>{if(cur&&pPlace(cur,b))return;if(cur){const it=pRepack(cur,[...cur.items.map(o=>o.b),b]);if(it){cur.items=it;cur.free=it.free;return;}}
+    cur=T(fmt,first0&&!sheets.length);sheets.push(cur);if(!pPlace(cur,b))cur.items.push({b,x:cur.rects[0].x,y:cur.rects[0].y,over:true});});return sheets;}
+// steps: ampliação por desenho (chave do bloco); cada desenho sai da folha gerada na escala ampliada, com o título na escala certa
+function plotPick(gen,g,b0,st){if(!st)return b0;const L=gen(g,st);return L.find(b=>b.key===b0.key)||b0;}
+function packDisc(disc,ids,fmt,steps,first0,nIdx,matN){const C={},gen=(g,st)=>C[g+'|'+st]??=plotGen(g,st),
+    all=()=>ids.flatMap(g=>gen(g,0).map(b0=>plotPick(gen,g,b0,steps[b0.key]||0)));
+  const T=(f,first)=>plotSheetT(f,disc,first,nIdx,matN),pk=()=>packSeq(all(),T,fmt,first0);let best=pk();if(!best.length)return [];
+  const N=best.length,ok=t=>t.length<=N&&!t.some(sh=>sh.items.some(o=>o.over)),keys=g=>gen(g,0).map(b=>b.key);
+  // 1) amplia a escala de cada grupo inteiro, um passo por rodada, enquanto o número de pranchas não aumenta
+  for(let r=0;r<3;r++){let any=false;ids.forEach(g=>{const K=keys(g);if(!K.length)return;const st=steps[K[0]]||0;if(st>=3)return;const nb=gen(g,st+1);if(!nb.length||nb[0].scale===gen(g,st)[0].scale)return;
+      K.forEach(k=>steps[k]=st+1);const t=pk();if(ok(t)){best=t;any=true;}else K.forEach(k=>steps[k]=st);});if(!any)break;}
+  // 2) puxa desenhos das pranchas seguintes para os buracos das anteriores (a última fica mais leve)
+  for(let i=0;i<best.length-1;i++){const A=best[i];if(A.items.some(o=>o.over))continue;
+    for(let j=i+1;j<best.length;j++){const B=best[j];B.items.slice().sort((p,q)=>q.b.w*q.b.h-p.b.w*p.b.h).forEach(o=>{const it=pRepack(A,[...A.items.map(q=>q.b),o.b]);if(!it)return;
+        const rest=B.items.filter(q=>q!==o).map(q=>q.b),it2=rest.length?pRepack(B,rest):Object.assign([],{free:mrInit(B.rects)});if(!it2)return;A.items=it;A.free=it.free;B.items=it2;B.free=it2.free;});}}
+  best=best.filter(sh=>sh.items.length);
+  // 3) cada prancha: formato menor se couber; depois amplia desenho a desenho até não caber mais
+  best.forEach(sh=>{if(sh.items.some(o=>o.over))return;
+    for(const f of PLOT_FMTS.slice(0,PLOT_FMTS.indexOf(fmt))){const t=T(f,sh.first),it=pRepack(t,sh.items.map(o=>o.b));if(it){Object.assign(sh,t,{items:it,free:it.free});break;}}
+    for(let k=0;k<12;k++){let any=false;sh.items.slice().sort((a,b)=>b.b.w*b.b.h-a.b.w*a.b.h).forEach(o=>{const b=o.b,st=steps[b.key]||0;if(st>=7||!sh.items.includes(o))return;
+        const nb=plotPick(gen,b.gid,gen(b.gid,0).find(q=>q.key===b.key)||b,st+1);if(nb===b||nb.scale===b.scale)return;
+        const it=pRepack(sh,[...sh.items.map(q=>q.b).filter(q=>q!==b),nb]);if(it){sh.items=it;sh.free=it.free;steps[b.key]=st+1;any=true;}});if(!any)break;}});
+  return best;}
+function plotAuto(){const fmt=PLOT_FMTS.includes(PLOT.format)?PLOT.format:'A1',R=romRows(),matN=new Set(R.P.map(r=>r.perfil)).size+1;let nIdx=10,out=[],steps={};
+  const ids=PLOT_GROUPS.map(g=>g[0]);
+  for(let pass=0;pass<3;pass++){out=[];steps={};
+    [['FUN',ids.filter(i=>PLOT_FUN.includes(i))],['EST',ids.filter(i=>!PLOT_FUN.includes(i))]].forEach(([disc,gs])=>{out.push(...packDisc(disc,gs,fmt,steps,!out.length,nIdx,matN));});
+    if(out.length<=nIdx)break;nIdx=out.length;}
+  return {sheets:out,steps};}
+// arrumação salva pelo usuário (Mover desenhos)
+function plotFromLay(){const L=PLOT.lay,steps=PLOT.laySteps||{},meta=PLOT.layS||[],R=romRows(),matN=new Set(R.P.map(r=>r.perfil)).size+1,sh=[],rest=[];
+  const C={},gen=(g,st)=>C[g+'|'+st]??=plotGen(g,st),BL=PLOT_GROUPS.flatMap(([g])=>gen(g,0).map(b0=>plotPick(gen,g,b0,steps[b0.key]||0)));
+  BL.forEach(b=>{const p=L[b.key];if(!p){rest.push(b);return;}(sh[p.s]??=[]).push({b,x:p.x,y:p.y});});
+  const n=Math.max(sh.length,1),out=[];
+  for(let i=0;i<sh.length;i++){if(!sh[i])continue;const m=meta[i]||{},disc=m.disc||(sh[i].every(o=>PLOT_FUN.includes(o.b.gid))?'FUN':'EST');out.push({...plotSheetT(m.fmt||PLOT.format,disc,!out.length,Math.max(n,10),matN),items:sh[i]});}
+  rest.forEach(b=>{const disc=PLOT_FUN.includes(b.gid)?'FUN':'EST';let s=out.filter(o=>o.disc===disc).find(o=>pPlace(o,b));if(!s){s={...plotSheetT(PLOT.format,disc,!out.length,10,matN),items:[]};out.push(s);if(!pPlace(s,b))s.items.push({b,x:s.rects[0].x,y:s.rects[0].y});}});
+  out.forEach(s=>s.items.forEach(it=>{it.over=!s.rects.some(R=>it.x>=R.x-.5&&it.y>=R.y-.5&&it.x+it.b.w<=R.x1+.5&&it.y+it.b.h<=R.y1+.5);}));
+  return {sheets:out,steps};}
+function plotFreeze(P){const L={};P.sheets.forEach((s,i)=>s.items.forEach(it=>{L[it.key]={s:i,x:it.x,y:it.y};}));PLOT.lay=L;PLOT.layFmt=PLOT.format+'|'+PLOT.orient;PLOT.layV=2;
+  PLOT.layS=P.sheets.map(s=>({fmt:s.fmt,disc:s.disc}));PLOT.laySteps={...(P.steps||{})};}
+function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const base=ENG_PLOT.sheet(PLOT.format,PLOT.orient),Q=plotLayOk()?plotFromLay():plotAuto(),packed=Q.sheets,N=packed.length;
+  const R=romRows(),byP={};R.P.forEach(r=>{byP[r.perfil]=(byP[r.perfil]||0)+r.kg;});
   const matRows=Object.entries(byP).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,nf0.format(v)]);matRows.push(['Chapas de ligação',nf0.format(R.kgC)]);
-  const list=packed.map(ps=>({title:ps.groups.join(' · '),scale:[...new Set(ps.items.map(it=>it.b.scale))].join(' / ')}));
-  const sheets=packed.map((ps,i)=>{const D=new Dwg(2.5,0),dr=plotDr(D,0);ENG_PLOT.frame(dr,S);
+  const cnt={};packed.forEach(ps=>{cnt[ps.disc]=(cnt[ps.disc]||0)+1;ps.no=`${ps.disc}-${String(cnt[ps.disc]).padStart(2,'0')}`;ps.groups=[...new Set(ps.items.map(it=>it.b.group))];});
+  const list=packed.map(ps=>({title:`${ps.no} · ${ps.groups.join(' · ')} (${ps.fmt})`,scale:[...new Set(ps.items.map(it=>it.b.scale))].join(' / ')}));
+  const sheets=packed.map((ps,i)=>{const S=ps.S,D=new Dwg(2.5,0),dr=plotDr(D,0);ENG_PLOT.frame(dr,S);
     ps.items.forEach(it=>D.put(it.b.d,it.x-it.b.bb.x0,-it.y-it.b.bb.y1));
-    const used=ENG_PLOT.notes(dr,S.strip.x,S.strip.y,S.strip.w,S.stamp.y-4-S.strip.y,PLOT_NOTES);
-    ENG_PLOT.stamp(dr,S,{...PLOT.stamp,logo:PLOT.logo||''},{format:PLOT.format,content:list[i].title,no:i+1,total:N});
+    ENG_PLOT.notes(dr,S.strip.x,S.strip.y,S.strip.w,S.stamp.y-4-S.strip.y,ps.nl);
+    ENG_PLOT.stamp(dr,S,{...PLOT.stamp,logo:PLOT.logo||''},{format:ps.fmt,content:ps.groups.join(' · '),no:ps.no,total:N});
     if(i===0){const tx=S.strip.x-10-S.tableW;let cy=S.area.y;cy+=ENG_PLOT.index(dr,tx,cy,S.tableW,list)+4;
       cy+=ENG_PLOT.table(dr,tx,cy,S.tableW,'RESUMO DE MATERIAL',[['PERFIL / ITEM',.7],['PESO (kg)',.3,'end']],matRows,`TOTAL: ${nf0.format(R.kgP+R.kgC)} kg (sem soldas)`)+4;
       if(PLOT.revs.length)ENG_PLOT.revTable(dr,tx,cy,S.tableW,PLOT.revs);}
-    const over=ps.items.filter(it=>it.over).map(it=>it.b.name);return {D,w:S.w,h:S.h,title:list[i].title,over,A:ps.A||plotArea(S,i),items:ps.items.map(it=>({key:it.b.key,name:it.b.name,x:it.x,y:it.y,w:it.b.w,h:it.b.h,over:!!it.over}))};});
-  return {S,sheets};}
+    const over=ps.items.filter(it=>it.over).map(it=>it.b.name);
+    return {D,w:S.w,h:S.h,fmt:ps.fmt,disc:ps.disc,no:ps.no,fill:plotFill(ps),title:`${ps.no} · ${ps.groups.join(' · ')}`,over,A:ps.rects[0],items:ps.items.map(it=>({key:it.b.key,name:it.b.name,x:it.x,y:it.y,w:it.b.w,h:it.b.h,over:!!it.over}))};});
+  return {S:base,sheets,steps:Q.steps};}
+const plotLayOk=()=>PLOT.lay&&PLOT.layV===2&&PLOT.layFmt===PLOT.format+'|'+PLOT.orient;
+function plotArea(S,i){const A={...S.area};if(i===0)A.x1-=S.tableW+10;return A;}
 let PLOT_VIEW=null;
 function drawPranchas(){const P=buildPlot();PLOT_LAST=P;if(!P)return null;const D=new Dwg(2.5,0);let ox=0;PLOT_VIEW={sheets:[],hits:[]};
-  P.sheets.forEach((sh,i)=>{D.put(sh.D,ox,0);PLOT_VIEW.sheets.push({ox,w:sh.w,h:sh.h,A:sh.A});sh.items.forEach(it=>PLOT_VIEW.hits.push({...it,s:i,ox}));D.T(ox,8,`PRANCHA ${String(i+1).padStart(2,'0')} · ${PLOT.format} · ${sh.w}×${sh.h} mm · ${sh.title}${sh.over.length?' · ATENÇÃO: desenho maior que a área útil, use formato maior':''}`,'ANOT',{h:5});
+  P.sheets.forEach((sh,i)=>{D.put(sh.D,ox,0);PLOT_VIEW.sheets.push({ox,w:sh.w,h:sh.h,A:sh.A});sh.items.forEach(it=>PLOT_VIEW.hits.push({...it,s:i,ox}));D.T(ox,8,`PRANCHA ${String(i+1).padStart(2,'0')} · ${sh.fmt||PLOT.format} · ${sh.w}×${sh.h} mm · ${sh.title}${sh.over.length?' · ATENÇÃO: desenho maior que a área útil, use formato maior':''}`,'ANOT',{h:5});
     D.z.push({name:'P'+String(i+1).padStart(2,'0'),x0:ox,y0:-sh.h,x1:ox+sh.w,y1:14});ox+=sh.w+80;});
   return D;}
 // ---------- PDF vetorial das pranchas
@@ -3223,7 +3288,7 @@ function pmDrop(h,nx,ny){const V=PLOT_VIEW,cx=nx+h.w/2;let s=V.sheets.findIndex(
   let x=Math.round(nx-ox),y=Math.round(ny);x=Math.min(Math.max(x,A.x),Math.max(A.x,A.x1-h.w));y=Math.min(Math.max(y,A.y),Math.max(A.y,A.y1-h.h));
   if(!plotLayOk())plotFreeze(PLOT_LAST);PLOT.lay[h.key]={s,x,y};pmRenum();savePLOT();KEEPVB=true;renderSheet();}
 // tira pranchas vazias e renumera
-function pmRenum(){const used=[...new Set(Object.values(PLOT.lay).map(p=>p.s))].sort((a,b)=>a-b),map={};used.forEach((s,i)=>map[s]=i);Object.values(PLOT.lay).forEach(p=>p.s=map[p.s]);}
+function pmRenum(){const used=[...new Set(Object.values(PLOT.lay).map(p=>p.s))].sort((a,b)=>a-b),map={};used.forEach((s,i)=>map[s]=i);Object.values(PLOT.lay).forEach(p=>p.s=map[p.s]);if(PLOT.layS)PLOT.layS=used.map(s=>PLOT.layS[s]||{});}
 function dxfOf(list){
   const o=[],w=(c,v)=>o.push(String(c),String(v)),f=v=>(Math.round(v*1000)/1000).toFixed(3),st=s=>s.replace(/[^\x20-\x7e]/g,c=>'\\U+'+c.charCodeAt(0).toString(16).toUpperCase().padStart(4,'0'));
   w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(0,'ENDSEC');w(0,'SECTION');w(2,'TABLES');
@@ -3292,8 +3357,7 @@ function bindSheets(){
   svg.addEventListener('dblclick',()=>{if(DFIT){DVB={...DFIT};ap2();}});
   $('#dFit').onclick=()=>{if(DFIT){DVB={...DFIT};ap2();}};
   $('#pmMove').onclick=()=>{PMOVE=!PMOVE;pmOverlay();};
-  $('#pmOpt').onclick=()=>{if(!STEEL||!STEEL.mem.length)return;const S=ENG_PLOT.sheet(PLOT.format,PLOT.orient),sh=plotOptimize(plotKeys(plotBlocks()),S);
-    const L={};sh.forEach((items,i)=>items.forEach(it=>{L[it.b.key]={s:i,x:it.x,y:it.y};}));PLOT.lay=L;PLOT.layFmt=PLOT.format+'|'+PLOT.orient;savePLOT();renderSheet();note(`Pranchas otimizadas: ${sh.length} prancha${sh.length>1?'s':''}. Arraste os desenhos para ajustar.`);};
+  $('#pmOpt').onclick=()=>{if(!STEEL||!STEEL.mem.length)return;delete PLOT.lay;delete PLOT.layFmt;savePLOT();renderSheet();if(PLOT_LAST){plotFreeze(PLOT_LAST);savePLOT();}note(`Pranchas rearrumadas sem vazios: ${PLOT_LAST?PLOT_LAST.sheets.length:0} prancha(s). Arraste os desenhos para ajustar.`);};
   $('#pmAuto').onclick=()=>{delete PLOT.lay;delete PLOT.layFmt;savePLOT();renderSheet();};
   $('#dDxf').onclick=()=>{const s=SHEETS.find(x=>x.id===SHEET);if(!s.fn||!STEEL)return;const d=paper(s.fn(STEEL));if(d)saveFile(`${SHEET}.dxf`,dxfOf([{d,ox:0,oy:0}]),'application/dxf');};
   $('#dDxfAll').onclick=()=>{if(STEEL&&STEEL.mem.length)saveFile('estrutura_metalica_completo.dxf',dxfAll(),'application/dxf');};
@@ -3710,7 +3774,7 @@ const hdr=document.querySelector('header.top');new ResizeObserver(()=>document.d
 {const p=PANE;PANE=null;if(p)setPane(p);else{$('#app').classList.add('nopanel');document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=true);}}
 setView(VIEW);
 initScene();bindSheets();bindPlot();loadPLOT();renderAll();loadExample();
-window.__eng={MODELS,IFC,sampleEst,sampleArq,select,selectSteel,mqAddPoint:h=>mqAddPoint(h),get ORIGIN(){return ORIGIN;},get STEEL(){return STEEL;},runSteel,get cam(){return camera;},get ctl(){return controls;},man:l=>{OVR.man=l;saveOVR();runSteel();}};
+window.__eng={get PLOT_LAST(){return PLOT_LAST;},MODELS,IFC,sampleEst,sampleArq,select,selectSteel,mqAddPoint:h=>mqAddPoint(h),get ORIGIN(){return ORIGIN;},get STEEL(){return STEEL;},runSteel,get cam(){return camera;},get ctl(){return controls;},man:l=>{OVR.man=l;saveOVR();runSteel();}};
 })();
 </script>
 </body>

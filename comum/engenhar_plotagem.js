@@ -27,7 +27,7 @@ const ENG_PLOT=(()=>{
     dr.rect(x,y,w,h,'CARIMBO');dr.image(X(2),Y(1),w*176/180,h*19/70,d.logo||LOGO);
     L(0,21,180,21);dr.text(X(90),Y(29.8),d.title||DEFAULT.title,{h:5,an:'middle',bold:true,ly:'TEXTO'});L(0,32,180,32);
     const F=[[38,'CONTRATANTE:',d.contractor,0,113],[38,'CPF/CNPJ:',d.taxid,113,180],[44,'ENDEREÇO:',d.address,0,113],[44,'BAIRRO:',d.district,113,180],
-      [50,'COMPLEMENTO:',d.complement,0,64],[50,'LOTE:',d.lot,64,88],[50,'QUADRA:',d.block,88,113],[56,'CIDADE:',d.city,0,64],[56,'ESTADO:',d.state,64,88],[56,'FORMATO:',info.format,88,113],
+      [50,'COMPLEMENTO:',d.complement,0,64],[50,'LOTE:',d.lot,64,88],[50,'QUADRA:',d.block,88,113],[56,'CIDADE:',d.city,0,64],[56,'UF:',d.state,64,88],[56,'FORM.:',info.format,88,113],
       [62,'REVISÃO:',d.revision,0,36],[62,'UNIDADES:',d.units||DEFAULT.units,36,113]];
     const hh=Math.min(2.5,h*2.5/70);
     F.forEach(([bot,lab,val,l,r])=>{const lw=lab.length*hh*CWB;dr.text(X(l+1),Y(bot-1.7),lab,{h:hh,bold:true,ly:'ANOT'});dr.text(X(l+1)+lw+1.2,Y(bot-1.7),fit(val,X(r)-X(l+1)-lw-2,hh),{h:hh,ly:'TEXTO'});});
