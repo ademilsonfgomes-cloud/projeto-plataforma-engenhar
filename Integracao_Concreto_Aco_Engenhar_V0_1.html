@@ -235,10 +235,8 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f"><label for="nv_alv">Alvenaria até (m) · 0 = só telha</label><input id="nv_alv" type="number" step="0.1" min="0" max="15" value="2.5"></div>
         <div class="f"><label for="nv_oit">Pilares no oitão</label><select id="nv_oit"><option value="sim">Sim</option><option value="nao">Só cantos</option></select></div>
       </fieldset>
-      <div class="f w"><label for="nv_perf">Perfil do pilar</label><select id="nv_perf">
-        <optgroup label="Perfil enrijecido (dobrado)"><option value="Ue200x3.00">Ue 200x75x25x3,00</option><option value="Ue150x3.00">Ue 150x60x20x3,00</option><option value="CX200x3.00" selected>Caixa 2 Ue 200x75x25x3,00</option><option value="CX200x2.65">Caixa 2 Ue 200x75x25x2,65</option><option value="CX150x3.00">Caixa 2 Ue 150x60x20x3,00</option></optgroup>
-        <optgroup label="H laminado"><option value="W150x22.5">W150x22,5 (H)</option><option value="W150x29.8">W150x29,8 (H)</option><option value="W200x35.9">W200x35,9 (H)</option><option value="W200x46.1">W200x46,1 (H)</option></optgroup></select></div>
-      <div class="f w"><label for="nv_tv">Travessas da telha lateral</label><select id="nv_tv"><option value="Ue127x2.65">Ue 127x50x17x2,65</option><option value="Ue100x2.65">Ue 100x50x17x2,65</option><option value="Ue150x2.00">Ue 150x60x20x2,00</option></select></div>
+      <div class="f w"><label for="nv_perf">Perfil do pilar (formado a frio)</label><select id="nv_perf"></select></div>
+      <div class="f w"><label for="nv_tv">Travessas da telha lateral</label><select id="nv_tv"></select></div>
       <fieldset><legend>Fundação</legend>
         <div class="f"><label for="fd_tipo">Tipo</label><select id="fd_tipo"><option value="estaca">Estaca escavada</option><option value="tubulao">Tubulão</option><option value="sapata">Sapata (sem detalhe)</option></select></div>
         <div class="f" data-fd="pile"><label for="fd_bloco">Bloco de coroamento</label><select id="fd_bloco"><option value="1">Com bloco</option><option value="0">Sem bloco</option></select></div>
@@ -754,7 +752,7 @@ function bindPick(cv){
 }
 let selSteel=null,PICK=false;
 const TS_CAT=[['trap','Trapezoidal'],['tri','Triangular'],['meia','Uma água'],['paral','Banzos paralelos'],['arco','Em arco'],['tes','Tesoura-tesoura']];
-const MQ_CAT=[['trelica','Cônica'],['warren','Cônica Warren'],['arco','Em arco'],['paralela','Altura constante'],['nivelada','Nivelada c/ calços'],['vier','Vierendeel'],['atir','Atirantada'],['mf','Mão-francesa'],['w','Console W']];
+const MQ_CAT=[['trelica','Cônica'],['warren','Cônica Warren'],['arco','Em arco'],['paralela','Altura constante'],['nivelada','Nivelada c/ calços'],['vier','Vierendeel'],['atir','Atirantada'],['mf','Mão-francesa'],['w','Console em caixa']];
 const icoP=(f,a,b,n=16)=>Array.from({length:n+1},(_,k)=>{const x=a+(b-a)*k/n;return `${x.toFixed(1)} ${f(x).toFixed(1)}`;}).join(' L');
 function icoWebs(t,b,a,z,n,war){let s='';for(let k=0;k<=n;k++){const x=a+(z-a)*k/n;if(!war&&t(x)<b(x)-1)s+=`<path class="iw" d="M${x} ${b(x)} L${x} ${t(x)}"/>`;if(k<n){const y=a+(z-a)*(k+1)/n,dn=war?k%2===0:(x+y)/2<(a+z)/2;s+=dn?`<path class="iw" d="M${x} ${t(x)} L${y} ${b(y)}"/>`:`<path class="iw" d="M${x} ${b(x)} L${y} ${t(y)}"/>`;}}return s;}
 function icoTs(k){const a=8,z=112,C=60,B=48,hf=x=>1-Math.abs(x-C)/(z-C);let t,b=()=>B;
@@ -886,8 +884,8 @@ function note3d(s){const h=document.querySelector('.hint');if(!h)return;h.textCo
 const PEDIT={BS:['chord','g_pBanzo','Banzos (superior e inferior), todas as tesouras'],BI:['chord','g_pBanzo','Banzos (superior e inferior), todas as tesouras'],MO:['web','g_pAlma','Montantes de todas as tesouras'],DG:['web','g_pDg','Diagonais de todas as tesouras'],
   PM:['col','nv','Todos os pilares metálicos'],TV:['ue','nvtv','Todas as travessas do fechamento'],EB:['ue','ovr','Escoras do beiral'],CC:['bar','ovr','Contraventamento da cobertura'],CL:['bar','ovr','Contraventamento lateral'],LC:['bar','lcd','Todas as linhas de corrente']};
 function pOpts(kind,src){if(src.startsWith('g_'))return [...document.querySelectorAll('#'+src+' option')].map(o=>o.value);if(kind==='col')return [...document.querySelectorAll('#nv_perf option')].map(o=>o.value);
-  if(kind==='bar')return Object.keys(STP).filter(k=>/^BR/.test(k));return Object.keys(STP).filter(k=>/^Ue\d/.test(k)).sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);}
-function pCur(m,src){if(src.startsWith('g_'))return $('#'+src).value;return Object.keys(STP).find(k=>STP[k]===m.prof)||'';}
+  if(kind==='bar')return Object.keys(STP).filter(k=>/^BR/.test(k));return CFK.Ue.slice().sort((a,b)=>STP[a].h-STP[b].h||STP[a].kgm-STP[b].kgm);}
+function pCur(m,src){if(src.startsWith('g_'))return $('#'+src).value;return (m.prof&&m.prof.key)||Object.keys(STP).find(k=>STP[k]===m.prof)||'';}
 function peditHTML(m){const P=PEDIT[m.type];if(!P)return '';if((P[1]==='nv'||P[1]==='nvtv')&&!(MODELS.est&&MODELS.est.novo))return '';const cur=pCur(m,P[1]),ops=pOpts(P[0],P[1]);
   let h=`<div class="ed"><b>Trocar perfil</b><label for="peSel">${esc(P[2])}</label><div class="row"><select id="peSel">${ops.map(k=>`<option value="${k}"${k===cur?' selected':''}>${esc(STP[k]?STP[k].label:k)}</option>`).join('')}</select><button type="button" id="peOk" class="primary">Aplicar</button></div></div>`;
   if(m.type==='LC'){const o=(OVR.lc||{})[m.bay]||{},n=o.n!=null?o.n:(m.bayL>6500?2:1),pos=o.pos&&o.pos.length?o.pos:STEEL.mem.filter(x=>x.type==='LC'&&x.bay===m.bay).map(x=>x.lcPos).filter((v,i,a)=>a.indexOf(v)===i);
@@ -984,11 +982,30 @@ const STP={
  'BR20':{label:'Barra redonda ø20',w:20,h:20,kgm:2.47,A:3.14,r:.5},
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 // caixa: 2 Ue soldados pelas pontas dos enrijecedores (pilar)
-[['Ue150x3.00','CX150x3.00'],['Ue200x3.00','CX200x3.00'],['Ue200x2.65','CX200x2.65']].forEach(([u,k])=>{const P=STP[u];STP[k]={label:'2 '+P.label.replace('Ue ','Ue ')+' (caixa)',w:2*P.b,h:P.h,kgm:2*P.kgm,base:P,box:1};});
+// ===== catálogo de perfis formados a frio (NBR 6355): U simples, Ue enrijecido e caixa (2 Ue ou 2 U soldados pelas pontas)
+// propriedades pela linha média, cantos retos; cm, cm², cm³, cm⁴; aço ZAR 250 (fy 250 MPa)
+function cfSec(kind,h,b,c,t){const hm=h-t,bm=b-(c>0?t:t/2),cm=c>0?c-t/2:0,A=t*(hm+2*bm+2*cm);
+  const Ix=t*(hm**3/12+2*bm*(hm/2)**2+2*(cm**3/12+cm*(hm/2-cm/2)**2)),xc=t*(bm*bm+2*cm*bm)/A,Iy=t*(hm*xc*xc+2*(bm**3/12+bm*(bm/2-xc)**2)+2*cm*(bm-xc)**2),J=t**3*(hm+2*bm+2*cm)/3;
+  return {A,Ix,Iy,xc,J,bm};}
+const CF={U:[[75,40],[100,40],[100,50],[127,50],[150,50],[150,60],[200,50],[200,75],[250,85],[300,85]],Ue:[[75,40,15],[100,50,17],[127,50,17],[150,60,20],[200,75,25],[250,85,25],[300,85,25]],
+  T:[1.50,2.00,2.25,2.65,3.00,3.35,3.75,4.25,4.75]};const CFK={U:[],Ue:[],CX:[],CU:[]};
+(()=>{const f2=v=>v.toFixed(2),lb=v=>f2(v).replace('.',','),tOk=(h,t)=>t>=h/130&&t<=Math.max(3,h/42);
+  const mk=(key,o)=>{o.key=key;o.cf=1;o.kgm=o.A*.785;o.Zx=o.Wx;STP[key]=o;return o;};
+  CF.U.forEach(([h,b])=>CF.T.filter(t=>tOk(h,t)).forEach(t=>{const q=cfSec('U',h,b,0,t),k=`U${h}x${b}x${f2(t)}`;
+    mk(k,{label:`U ${h}x${b}x${lb(t)}`,w:b,h,b,c:0,t,A:q.A/100,Ix:q.Ix/1e4,Iy:q.Iy/1e4,Wx:q.Ix/(h/2)/1e3,Wy:q.Iy/Math.max(q.xc,b-q.xc)/1e3,rx:Math.sqrt(q.Ix/q.A)/10,ry:Math.sqrt(q.Iy/q.A)/10,J:q.J/1e4,xc:q.xc/10,fam:'U'});CFK.U.push(k);
+    const k2=`CU${h}x${b}x${f2(t)}`,d=(q.bm-q.xc),A2=2*q.A,Iy2=2*(q.Iy+q.A*d*d);mk(k2,{label:`2 U ${h}x${b}x${lb(t)} (caixa)`,w:2*b,h,b,c:0,t,A:A2/100,Ix:2*q.Ix/1e4,Iy:Iy2/1e4,Wx:2*q.Ix/(h/2)/1e3,Wy:Iy2/b/1e3,rx:Math.sqrt(q.Ix/q.A)/10,ry:Math.sqrt(Iy2/A2)/10,box:1,closed:1,fam:'CU'});CFK.CU.push(k2);}));
+  CF.Ue.forEach(([h,b,c])=>CF.T.filter(t=>tOk(h,t)&&t<=c/5).forEach(t=>{const q=cfSec('Ue',h,b,c,t),k=`Ue${h}x${b}x${c}x${f2(t)}`;
+    const o=mk(k,{label:`Ue ${h}x${b}x${c}x${lb(t)}`,w:b,h,b,c,t,A:q.A/100,Ix:q.Ix/1e4,Iy:q.Iy/1e4,Wx:q.Ix/(h/2)/1e3,Wy:q.Iy/Math.max(q.xc,b-q.xc)/1e3,rx:Math.sqrt(q.Ix/q.A)/10,ry:Math.sqrt(q.Iy/q.A)/10,J:q.J/1e4,xc:q.xc/10,fam:'Ue'});CFK.Ue.push(k);
+    const k2=`CX${h}x${b}x${c}x${f2(t)}`,d=(q.bm-q.xc),A2=2*q.A,Iy2=2*(q.Iy+q.A*d*d);mk(k2,{label:`2 Ue ${h}x${b}x${c}x${lb(t)} (caixa)`,w:2*b,h,b,c,t,A:A2/100,Ix:2*q.Ix/1e4,Iy:Iy2/1e4,Wx:2*q.Ix/(h/2)/1e3,Wy:Iy2/b/1e3,rx:Math.sqrt(q.Ix/q.A)/10,ry:Math.sqrt(Iy2/A2)/10,base:o,box:1,closed:1,fam:'CX'});CFK.CX.push(k2);}));
+  // nomes antigos continuam valendo (projetos salvos)
+  [['Ue200x2.65','Ue200x75x25x2.65'],['Ue200x3.00','Ue200x75x25x3.00'],['Ue150x3.00','Ue150x60x20x3.00'],['Ue127x2.65','Ue127x50x17x2.65'],['Ue100x2.65','Ue100x50x17x2.65'],['Ue100x2.00','Ue100x50x17x2.00'],['Ue75x2.00','Ue75x40x15x2.00'],['Ue150x2.65','Ue150x60x20x2.65'],['Ue150x2.00','Ue150x60x20x2.00'],
+   ['CX150x3.00','CX150x60x20x3.00'],['CX200x3.00','CX200x75x25x3.00'],['CX200x2.65','CX200x75x25x2.65']].forEach(([o,n])=>{if(STP[n])STP[o]=STP[n];});
+  Object.values(CFK).forEach(a=>a.sort((p,q)=>STP[p].kgm-STP[q].kgm));})();
+const isCan=k=>STP[k]&&STP[k].key===k;const fyOf=P=>P&&P.cf?25:P&&(P.H||/^W/.test(P.label||''))?34.5:25;
 const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise',TB:'Mão-francesa de travamento do banzo inferior',BX:'Prolongamento do banzo superior (beiral da calha)',MF:'Mão-francesa pilar–tesoura (pórtico)',PM:'Pilar metálico',TV:'Travessa do fechamento lateral',EB:'Escora do beiral (topo dos pilares)',LC:'Linha de corrente das terças (barra redonda)',CL:'Contraventamento lateral (barra redonda)',CC:'Contraventamento da cobertura (barra redonda)'};
 const TORD=['PM','MF','EB','CL','BI','BX','BS','MO','DG','LP','LR','TC','LC','CC','TB','PT','TV','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,cvOn:true,lcOn:true,calha:'nao',cw:35,cLado:'ambos',v0:35,cat:'IV',s3:1,mfOn:false,tbN:'2',tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
-  tg:6.3,mOn:false,mLanc:'fach',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
+const GP={tOn:true,cvOn:true,lcOn:true,calha:'nao',cw:35,cLado:'ambos',v0:35,cat:'IV',s3:1,mfOn:false,tbN:'2',tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x75x25x2.65',
+  tg:6.3,mOn:false,mLanc:'fach',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'CX150x60x20x3.00',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
   const Ix=t*(h**3/12+2*b*(h/2)**2+2*(c**3/12+c*(h/2-c/2)**2)),Iy=t*(h*xc*xc+2*(b**3/12+b*(b/2-xc)**2)+2*c*(b-xc)**2);
@@ -1290,7 +1307,7 @@ function genSteel(G){
         out.pre.push({item:'Flecha na ponta da marquise',sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'limite 2L/250; inércia pelos banzos + 15% pela alma'});
         out.pre.push({item:'Barra passante do banzo superior',sol:`${nf1.format(N/2)} kN`,res:`${nf1.format(FtRd)} kN`,u:N/2/FtRd,obs:'2 barras ø16 ASTM A36 tracionadas'});
       }else{
-        const MRd=Co.Zx*34.5/1.1/100,dl=wk*Math.pow(proj,4)/(8*200000*Co.Ix*1e4),z=(Co.h+90)/10,T=Md*100/z/2;
+        const MRd=Co.Wx*fyOf(Co)/1.1/100,dl=wk*Math.pow(proj,4)/(8*200000*Co.Ix*1e4),z=(Co.h+90)/10,T=Md*100/z/2;
         out.pre.push({item:'Console da marquise (flexão)',sol:`${nf1.format(Md)} kN·m`,res:`${nf1.format(MRd)} kN·m`,u:Md/MRd,obs:`${Co.label}, ASTM A572 Gr.50`});
         out.pre.push({item:'Flecha na ponta do console',sol:`${nf1.format(dl)} mm`,res:`${nf1.format(dlim)} mm`,u:dl/dlim,obs:'limite 2L/250 para balanço'});
         out.pre.push({item:'Chumbador mais tracionado',sol:`${nf1.format(T)} kN`,res:`${nf1.format(FtRd)} kN`,u:T/FtRd,obs:'barra ø16 ASTM A36, 2 por linha'});}
@@ -1353,7 +1370,7 @@ function genSteel(G){
     if(zl.length)out.notes.push(`Fechamento lateral em telha de ${n.alv>0?`${m2(n.alv*1000)} m`:'0,30 m'} até o beiral (${nf1.format(aTel)} m², sem o triângulo do oitão): ${zl.length} linhas de travessas ${TV.label} por fora dos pilares, a cada ${m2((zTop-z0)/nT)} m no máximo${n.alv>0?'; a telha transpassa 10 cm sobre a cinta':''}.`);
     // pré-dimensionamento: vento como estimativa (q = 0,60 kN/m², Cpe 0,7 barlavento e 0,3 sotavento), pilares em balanço ligados pela tesoura
     const W=out.wind||windQ(G,zs+1500),qk=W.q,IxW=P=>P.Ix?P.Ix:P.box?2*ueProps(P.base).A*ueProps(P.base).rx**2:ueProps(P).A*ueProps(P).rx**2,
-      MRc=P=>P.Zx?P.Zx*34.5/1.1/100:IxW(P)/(P.h/20)*25/1.1/100,H=zs/1000,Ixc=IxW(PC),EI=2e8*Ixc*1e-8,mf=!!G.mfOn&&out.trusses.length>0;
+      MRc=P=>(P.Wx||IxW(P)/(P.h/20))*fyOf(P)/1.1/100,H=zs/1000,Ixc=IxW(PC),EI=2e8*Ixc*1e-8,mf=!!G.mfOn&&out.trusses.length>0;
     // mão-francesa: barra do pilar (1,0 m abaixo do topo) ao banzo inferior da tesoura; o conjunto vira pórtico
     if(mf){const MFp=STP['Ue100x2.65'],a=1000;out.trusses.forEach(T=>{[[0,1],[T.L,-1]].forEach(([s0,g])=>{const c=T.at(s0,zs-a),t=T.at(s0+g*a,T.zbf(s0+g*a)-T.Bz.h/2);add('MF',MFp,c,t,{tbTr:T.j});});});
       out.notes.push(`Mão-francesa ${MFp.label} entre cada pilar e a tesoura (1,0 m abaixo do apoio até o banzo inferior a 1,0 m do apoio): o pilar e a tesoura trabalham como pórtico; a ligação de topo TP passa a transmitir momento (parafusos verificados no cálculo).`);}
@@ -2744,17 +2761,20 @@ $('#vEdge').addEventListener('change',e=>{if(MODELS.est)MODELS.est.els.forEach(e
 $('#opArq').addEventListener('input',()=>{if(MATS.arq)MATS.arq.opacity=+$('#opArq').value/100;});
 $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.target.checked;});
 {const opt=(id,keys,def)=>{$('#'+id).innerHTML=keys.map(k=>`<option value="${k}"${k===def?' selected':''}>${esc(STP[k].label)} · ${nf2.format(STP[k].kgm)} kg/m</option>`).join('');};
- const LISTS={enc:{B:['U150x50x2.65','U150x50x3.00','U150x60x3.00','U200x50x3.00','U200x75x3.00','U127x50x2.65','U100x50x2.65'],A:['U100x40x2.00','U100x40x2.65','U100x50x2.65','U75x40x2.00'],MB:['U100x40x2.65','U100x50x2.65','U127x50x2.65','U150x50x2.65'],MA:['U75x40x2.00','U100x40x2.00'],
+ const LISTS={enc:{B:CFK.U.filter(k=>STP[k].h>=127&&STP[k].t>=2),A:CFK.U.filter(k=>STP[k].h<=100),MB:CFK.U.filter(k=>STP[k].h>=100&&STP[k].h<=150),MA:CFK.U.filter(k=>STP[k].h<=100),
    d:{B:'U200x75x3.00',A:'U100x40x2.65',MB:'U100x50x2.65',MA:'U75x40x2.00'}},
-  ue:{B:['Ue150x2.65','Ue150x3.00','Ue200x2.65','Ue200x3.00','Ue127x2.65'],A:['Ue75x2.00','Ue100x2.00','Ue100x2.65'],MB:['Ue100x2.00','Ue100x2.65','Ue127x2.65','Ue150x2.65'],MA:['Ue75x2.00','Ue100x2.00'],
-   d:{B:'Ue150x3.00',A:'Ue100x2.65',MB:'Ue100x2.00',MA:'Ue75x2.00'}},
+  ue:{B:CFK.Ue.filter(k=>STP[k].h>=127),A:CFK.Ue.filter(k=>STP[k].h<=127),MB:CFK.Ue.filter(k=>STP[k].h>=100&&STP[k].h<=150),MA:CFK.Ue.filter(k=>STP[k].h<=100),
+   d:{B:'Ue150x60x20x3.00',A:'Ue100x50x17x2.65',MB:'Ue100x50x17x2.00',MA:'Ue75x40x15x2.00'}},
   L:{B:['2L51x4.8','2L64x4.8'],A:['L38x3.2','L51x3.2','L51x4.8'],MB:['2L51x4.8','L51x4.8','2L64x4.8'],MA:['L38x3.2','L51x3.2','L51x4.8'],d:{B:'2L51x4.8',A:'L51x4.8',MB:'2L51x4.8',MA:'L38x3.2'}}};
  const fillT=t=>{const L=LISTS[t];opt('g_pBanzo',L.B,L.d.B);opt('g_pAlma',L.A,L.d.A);opt('g_pDg',L.A,L.d.A);opt('g_pMB',L.MB,L.d.MB);opt('g_pMA',L.MA,L.d.MA);
    document.querySelectorAll('[data-tL]').forEach(x=>x.hidden=t!=='L');document.querySelectorAll('[data-tEnc]').forEach(x=>x.hidden=t!=='enc');
    $('label[for=g_pAlma]').textContent=t==='enc'?'Montantes (aba e espessura; largura sob medida)':'Montantes';$('label[for=g_pDg]').textContent=t==='enc'?'Diagonais (aba e espessura; largura sob medida)':'Diagonais';
    $('label[for=g_pMA]').textContent=t==='enc'?'Montantes e diagonais da treliça (aba e espessura; largura sob medida)':'Montantes e diagonais da treliça';};
- $('#g_tTipo').value=GP.tTipo;fillT(GP.tTipo);$('#g_tTipo').addEventListener('change',e=>{fillT(e.target.value);selectSteel(null);runSteel();});$('#g_fEnc').addEventListener('change',()=>{selectSteel(null);runSteel();});opt('g_pTerca',['Ue200x2.65','Ue150x2.65','Ue150x2.00'],GP.pTerca);
- opt('g_pCon',['W150x13.0','W150x18.0','W200x15.0','W200x19.3','W250x17.9'],GP.pCon);
+ $('#g_tTipo').value=GP.tTipo;fillT(GP.tTipo);$('#g_tTipo').addEventListener('change',e=>{fillT(e.target.value);selectSteel(null);runSteel();});$('#g_fEnc').addEventListener('change',()=>{selectSteel(null);runSteel();});opt('g_pTerca',CFK.Ue.filter(k=>STP[k].h>=127),GP.pTerca);
+ opt('g_pCon',CFK.CX.filter(k=>STP[k].h>=150),GP.pCon);
+ {const nv=$('#nv_perf'),grp=(lab,ks)=>`<optgroup label="${lab}">${ks.map(k=>`<option value="${k}">${esc(STP[k].label)}</option>`).join('')}</optgroup>`;
+  nv.innerHTML=grp('Caixa 2 Ue (enrijecido)',CFK.CX.filter(k=>STP[k].h>=150))+grp('Caixa 2 U (simples)',CFK.CU.filter(k=>STP[k].h>=150))+grp('Ue simples',CFK.Ue.filter(k=>STP[k].h>=150));nv.value='CX200x75x25x3.00';
+  const tv=$('#nv_tv');tv.innerHTML=CFK.Ue.filter(k=>STP[k].h>=100&&STP[k].h<=200).map(k=>`<option value="${k}">${esc(STP[k].label)}</option>`).join('');tv.value='Ue127x50x17x2.65';}
  const mqKids=()=>{const fs=$('#g_mOn').closest('fieldset');return fs?[...fs.querySelectorAll(':scope > div, :scope > figure')]:[];};
  const mqForm=()=>{mqSchema();if($('#g_mOn').checked)mqKids().forEach(x=>{if(x.dataset.off){delete x.dataset.off;x.hidden=false;}});document.querySelectorAll('[data-bei]').forEach(x=>x.hidden=$('#g_tMod').value!=='bei');const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
    if(t)document.querySelectorAll('[data-hT]').forEach(x=>x.hidden=['paralela','nivelada','atir','mf'].includes(v));document.querySelectorAll('[data-incM]').forEach(x=>x.hidden=['trelica','arco','warren','vier'].includes(v));
