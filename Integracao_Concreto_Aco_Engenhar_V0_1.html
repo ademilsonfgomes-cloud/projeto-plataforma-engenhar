@@ -270,6 +270,9 @@ svg text{font-family:var(--f-disp);font-weight:500}
       <fieldset><legend>Cobertura com tesouras</legend>
         <figure class="schema" id="tsSchema" aria-label="Esquema das medidas da tesoura"></figure>
         <label class="chk"><input type="checkbox" id="g_tOn" checked> Gerar tesouras e terças</label>
+        <div class="f"><label for="g_calha">Calha</label><select id="g_calha"><option value="nao">Sem calha</option><option value="int">Interna: entre a parede (platibanda) e a telha</option><option value="ext">Externa: no beiral, para fora da parede</option></select></div>
+        <div class="f" data-calha hidden><label for="g_cw">Espaço para a calha (cm)</label><input id="g_cw" type="number" step="5" min="20" max="80" value="35"></div>
+        <div class="f" data-calha hidden><label for="g_cLado">Lados com calha</label><select id="g_cLado"><option value="ambos">Os dois lados (pontas da água)</option><option value="A">Só o lado do apoio fixo (AT1/TP fixo)</option><option value="B">Só o lado do apoio deslizante</option></select></div>
         <label class="chk"><input type="checkbox" id="g_cvOn" checked> Contraventamento da cobertura (X nos vãos das pontas)</label>
         <label class="chk"><input type="checkbox" id="g_lcOn" checked> Linhas de corrente nas terças (ø10 no meio do vão; clique para mudar)</label>
         <div class="f w"><span class="lbl" id="tsCatL">Modelo da tesoura (toque para escolher)</span><div class="cat" id="tsCat" role="group" aria-labelledby="tsCatL"></div>
@@ -982,9 +985,9 @@ const STP={
  'TQ100x3':{label:'Tubo □100x100x3,0',w:100,h:100,kgm:9.14}};
 // caixa: 2 Ue soldados pelas pontas dos enrijecedores (pilar)
 [['Ue150x3.00','CX150x3.00'],['Ue200x3.00','CX200x3.00'],['Ue200x2.65','CX200x2.65']].forEach(([u,k])=>{const P=STP[u];STP[k]={label:'2 '+P.label.replace('Ue ','Ue ')+' (caixa)',w:2*P.b,h:P.h,kgm:2*P.kgm,base:P,box:1};});
-const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise',TB:'Mão-francesa de travamento do banzo inferior',MF:'Mão-francesa pilar–tesoura (pórtico)',PM:'Pilar metálico',TV:'Travessa do fechamento lateral',EB:'Escora do beiral (topo dos pilares)',LC:'Linha de corrente das terças (barra redonda)',CL:'Contraventamento lateral (barra redonda)',CC:'Contraventamento da cobertura (barra redonda)'};
-const TORD=['PM','MF','EB','CL','BI','BS','MO','DG','LP','LR','TC','LC','CC','TB','PT','TV','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
-const GP={tOn:true,cvOn:true,lcOn:true,v0:35,cat:'IV',s3:1,mfOn:false,tbN:'2',tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
+const TDESC={LP:'Montante do lanternim',LR:'Caibro do lanternim',MTI:'Tirante da marquise',MBS:'Banzo superior da marquise',MBI:'Banzo inferior da marquise',MMO:'Montante da marquise',MDG:'Diagonal da marquise',BI:'Banzo inferior',BS:'Banzo superior',MO:'Montante da tesoura',DG:'Diagonal da tesoura',TC:'Terça da cobertura',PT:'Montante de apoio da terça',CM:'Console da marquise',VB:'Viga de borda da marquise',TM:'Terça da marquise',TB:'Mão-francesa de travamento do banzo inferior',BX:'Prolongamento do banzo superior (beiral da calha)',MF:'Mão-francesa pilar–tesoura (pórtico)',PM:'Pilar metálico',TV:'Travessa do fechamento lateral',EB:'Escora do beiral (topo dos pilares)',LC:'Linha de corrente das terças (barra redonda)',CL:'Contraventamento lateral (barra redonda)',CC:'Contraventamento da cobertura (barra redonda)'};
+const TORD=['PM','MF','EB','CL','BI','BX','BS','MO','DG','LP','LR','TC','LC','CC','TB','PT','TV','MTI','MBS','MBI','MMO','MDG','CM','TM','VB'];
+const GP={tOn:true,cvOn:true,lcOn:true,calha:'nao',cw:35,cLado:'ambos',v0:35,cat:'IV',s3:1,mfOn:false,tbN:'2',tForma:'trap',lant:'nao',lw:2,lh:.8,hA:1.5,tMod:'trap',bei:1.2,alma:'pratt',zs:'',incl:10,h0:.5,pT:1.5,tTipo:'enc',fEnc:1,fab:'obra',lBar:6,nP:0,pBanzo:'U200x75x3.00',pAlma:'U100x40x2.65',pDg:'U100x40x2.65',pTerca:'Ue200x2.65',
   tg:6.3,mOn:false,mLanc:'fach',side:'A',zm:4,proj:2,incM:3,mTipo:'trelica',hS:.6,hT:.15,pMB:'U100x50x2.65',pMA:'U75x40x2.00',pCon:'W150x13.0',pTm:'Ue150x2.00'};
 // propriedades do Ue pela linha média (perfil formado a frio)
 function ueProps(P){const t=P.t,h=P.h-t,b=P.b-(P.c>0?t:t/2),c=P.c>0?P.c-t/2:0,A=t*(h+2*b+2*c),xc=t*(b*b+2*c*b)/A;
@@ -1072,9 +1075,14 @@ function genSteel(G){
       const lant=G.lant==='sim'&&fmT!=='meia',lw=lant?Math.max(800,(+G.lw||2)*1000):0,hl=lant?Math.max(300,(+G.lh||.8)*1000):0,ovL=300,LPr=STP['Ue100x2.00'],zLa=s=>zt(L/2)+hl-i*Math.abs(s-L/2);
       if(G.lant==='sim'&&fmT==='meia'&&j===0)out.warns.push('Lanternim: só nas tesouras de duas águas (a de uma água não tem cumeeira).');
       const topN=[];for(let q=na;q>=1;q--)topN.push(-q*pa);for(let k=0;k<=n;k++)if((!war||k%2===0||k===nh)&&!(lant&&Math.abs(sk(k)-L/2)<=lw/2+1))topN.push(sk(k));for(let q=1;q<=na;q++)topN.push(L+q*pa);
+      // calha: interna = a terça da ponta recua o espaço da calha; externa = banzo superior prolongado para fora, com a terça na ponta
+      const cw=Math.max(200,(+G.cw||35)*10),cSides=[];
+      if(G.calha&&G.calha!=='nao'&&!ab)[0,L].forEach(s0=>{const low=fmT==='meia'?s0>L/2:true;if(!low)return;if(G.cLado==='A'&&s0>0)return;if(G.cLado==='B'&&s0===0)return;cSides.push(s0===0?'A':'B');
+        const g=s0===0?1:-1;if(G.calha==='int'){const q=topN.findIndex(v=>Math.abs(v-s0)<1);if(q>=0)topN[q]=s0+g*cw;}
+        else{const se=s0-g*cw;if(s0===0)topN.unshift(se);else topN.push(se);add('BX',Bz,at(s0,zt(s0)),at(se,zt(se)),{truss:j});}});
       const tops=topN.map(s2=>at(s2,zt(s2)+Bz.h/2+Te.h/2));
       if(lant){const ls=[L/2-lw/2-ovL+60,L/2-120,L/2+120,L/2+lw/2+ovL-60];const mid=tops.findIndex((p2,q)=>topN[q]>L/2);ls.forEach((s2,q)=>tops.splice(mid+q,0,at(s2,zLa(s2)+LPr.h/2+Te.h/2)));}
-      const T={j,pj,L,n,nh,ab,na,pa,war,topN,tops,fmT,zbf,lant,lw,hl,topS:s=>at(s,zt(s)+Bz.h/2+Te.h/2),at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
+      const T={j,pj,L,n,nh,ab,na,pa,war,topN,tops,cSides,cw,fmT,zbf,lant,lw,hl,topS:s=>at(s,zt(s)+Bz.h/2+Te.h/2),at,zt,sk,zb,Bz,Al,Dg,Te,i,h0,top:k=>at(sk(k),zt(sk(k))+Bz.h/2+Te.h/2),sup:[sA,sB],uv:[A2,B2],proj:p=>{const u=U(p),v=Vv(p);return [(u-ua)*e[0]+(v-va)*e[1],p[2]-zs];}};out.trusses.push(T);
       const lb=G.tTipo==='enc'&&+G.lBar>0?+G.lBar*1000:0,csI=Math.cos(Math.atan(i));
       // banzo de cada metade, a partir do apoio: barra mais longa possível até lb, emenda no meio de um painel (fora dos nós)
       const piece=(type,zf,s0,s1)=>{const len=(a,b)=>Math.hypot(b-a,zf(b)-zf(a)),dir=Math.sign(s1-s0),cuts=[];
@@ -1118,6 +1126,13 @@ function genSteel(G){
     {const ty=new Map();out.trusses.forEach(T=>{const k=`${T.fmT}|${Math.round(T.L/10)}|${T.n}|${T.ab}|${T.lant?1:0}`;if(!ty.has(k))ty.set(k,{rep:T.j,js:[]});ty.get(k).js.push(T.j);});
       out.ttypes=[...ty.values()];out.ttypes.forEach((t,q)=>{t.name='TS'+(q+1);t.js.forEach(j=>out.trusses[j].tname=t.name);});
       if(out.ttypes.length>1)out.notes.push(`Tesouras de ${out.ttypes.length} tamanhos: ${out.ttypes.map(t=>`${t.name} vão ${m2(out.trusses[t.rep].L)} m (${t.js.length} un.)`).join('; ')}. Cada tipo tem a sua folha de detalhamento.`);}
+    // espaço da calha ao longo de cada beiral com calha: largura, profundidade indicativa, caimento 0,5% e saídas para condutor
+    out.gutters=[];if(G.calha&&G.calha!=='nao'&&out.trusses.length>=2){const ext=G.calha==='ext',T0=out.trusses[0];
+      (T0.cSides||[]).forEach(sd0=>{const g=sd0==='A'?1:-1,pts=out.trusses.filter(T=>(T.cSides||[]).includes(sd0)).map(T=>{const sl=sd0==='B'?T.L:0,sc=ext?sl-g*(T.cw+T.Te.w/2+10+125):sl+g*T.cw/2,zt0=T.zt(ext?sl-g*T.cw:sl+g*(T.cw-75))+T.Bz.h/2;return {p:T.at(sc,0),z:zt0-(ext?120:60)};});
+        if(pts.length<2)return;let Lg=0;for(let q=1;q<pts.length;q++)Lg+=D2(pts[q-1].p,pts[q].p);const nO=Math.max(2,Math.ceil(Lg/20000)+1),wg=ext?250:out.trusses[0].cw-75;
+        const at2=t=>{let acc=0;for(let q=1;q<pts.length;q++){const d=D2(pts[q-1].p,pts[q].p);if(acc+d>=t-1e-6){const f=(t-acc)/d;return [pts[q-1].p[0]+(pts[q].p[0]-pts[q-1].p[0])*f,pts[q-1].p[1]+(pts[q].p[1]-pts[q-1].p[1])*f,pts[q-1].z+(pts[q].z-pts[q-1].z)*f];}acc+=d;}const e=pts[pts.length-1];return [e.p[0],e.p[1],e.z];};
+        const outs=Array.from({length:nO},(_,q)=>at2(Lg*q/(nO-1)));out.gutters.push({ext,side:sd0,pts:pts.map(q=>[q.p[0],q.p[1],q.z]),w:wg,d:200,L:Lg,outs,slope:.005});});
+      if(out.gutters.length)out.notes.push(`Calha ${ext?'externa, no beiral':'interna, entre a parede e a telha'}: espaço de ${m2(+G.cw*10||350)} m ${ext?'com o banzo superior prolongado (BX) e a terça na ponta':'com a terça da ponta recuada'}; a telha avança 7,5 cm sobre a calha. ${out.gutters.map(gt=>`Lado ${gt.side}: ${m2(gt.L)} m de calha, ${gt.outs.length} saídas para condutor, caimento 0,5% para as saídas`).join('; ')}. A calha em si (chapa, rufo e condutores) é do projeto de cobertura.`);}
     // terças: entre tesouras vizinhas, no nó de cada painel do banzo superior
     const lbT=+G.lBar>0?Math.floor(+G.lBar*1000/50)*50:0;
     const addTC=(prof,a,b,x)=>{const len=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]),u=[(b[0]-a[0])/len,(b[1]-a[1])/len,(b[2]-a[2])/len],P=t=>[a[0]+u[0]*t,a[1]+u[1]*t,a[2]+u[2]*t];
@@ -1416,6 +1431,10 @@ function renderSteel(){
   if(STEEL.clad&&STEEL.clad.length){if(!MATS.telha)MATS.telha=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,opacity:.28,depthWrite:false});MATS.telha.color.set(tok('--c-aco'));
     const O=ORIGIN||[0,0,0];STEEL.clad.forEach(q=>{const ix=[];for(let k=1;k<q.length-1;k++)ix.push(0,k,k+1);const f=ix.flatMap(i=>[q[i][0]-O[0],q[i][1]-O[1],q[i][2]-O[2]]),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(f),3));g.computeVertexNormals();
       const mesh=new THREE.Mesh(g,MATS.telha);mesh.userData={k:'telha'};mesh.renderOrder=2;steelGroup.add(mesh);});}
+  if(STEEL.gutters&&STEEL.gutters.length){if(!MATS.calha)MATS.calha=new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,opacity:.45,depthWrite:false});MATS.calha.color.set(tok('--c-placa'));
+    STEEL.gutters.forEach(gt=>{for(let q=1;q<gt.pts.length;q++){const a=gt.pts[q-1],b=gt.pts[q],L=Math.hypot(b[0]-a[0],b[1]-a[1]),u=[(b[0]-a[0])/L,(b[1]-a[1])/L,0];
+        const mesh=boxMesh(L,gt.w,gt.d,u,[-u[1],u[0],0],[0,0,1],[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2-gt.d/2],MATS.calha);mesh.userData={k:'telha'};mesh.renderOrder=3;steelGroup.add(mesh);}
+      gt.outs.forEach(o=>{const len=1500,mesh=boxMesh(len,100,100,[0,0,1],[1,0,0],[0,1,0],[o[0],o[1],o[2]-gt.d-len/2],MATS.calha);mesh.userData={k:'telha'};steelGroup.add(mesh);});});}
   steelGroup.visible=$('#vAco').checked;scene.add(steelGroup);
 }
 function renderSteelTables(){
@@ -1590,16 +1609,35 @@ function drawPlanta(S){
   S.nodes.forEach(n=>{if(n.kind==='AT'||n.kind==='AP'||n.kind==='TP'){const p=n.pos;d.C(p[0],p[1],ts*.25,'CHAPA');}});
   (S.tcSp||[]).forEach(e=>{const q=[-e.u[1],e.u[0]];d.L(e.p[0]-q[0]*ts*.6,e.p[1]-q[1]*ts*.6,e.p[0]+q[0]*ts*.6,e.p[1]+q[1]*ts*.6,'CHAPA');});
   if(S.canopy)d.T((x0+x1)/2,y0-ts*1.5,'','ANOT');
-  d.notes(x0,y0-ts*7,['Tesouras (TS), terças (TC), montantes de apoio (□100) e marquise sobre o concreto da cota de apoio.',...(S.mem.some(m=>m.type==='CC')?['Contraventamento da cobertura (CC): X em barra redonda ø16 com esticador nos vãos das pontas.']:[]),'Pontos laranja: ligações aço-concreto (ver folha de ligações).',...((S.tcSp||[]).length?['Traços laranja nas terças: emendas soldadas ET (detalhe na folha das terças).']:[])],
+  (S.gutters||[]).forEach(gt=>{for(let q=1;q<gt.pts.length;q++){const a=gt.pts[q-1],b=gt.pts[q],L=Math.hypot(b[0]-a[0],b[1]-a[1]),nx=-(b[1]-a[1])/L*gt.w/2,ny=(b[0]-a[0])/L*gt.w/2;
+      d.L(a[0]+nx,a[1]+ny,b[0]+nx,b[1]+ny,'CHAPA');d.L(a[0]-nx,a[1]-ny,b[0]-nx,b[1]-ny,'CHAPA');}
+    gt.outs.forEach(o=>{d.C(o[0],o[1],Math.max(60,ts*.5),'CHAPA');d.T(o[0]+ts*.8,o[1]+ts*.6,'CP','TEXTO',{h:ts*.6});});
+    for(let q=0;q<gt.outs.length-1;q++){const a=gt.outs[q],b=gt.outs[q+1],m=[(a[0]+b[0])/2,(a[1]+b[1])/2];d.T(m[0],m[1]+ts*.8,'calha · i = 0,5% ← →','TEXTO',{an:'middle',h:ts*.6,rot:Math.abs(b[0]-a[0])>Math.abs(b[1]-a[1])?0:90});}});
+  d.notes(x0,y0-ts*7,['Tesouras (TS), terças (TC), montantes de apoio (□100) e marquise sobre o concreto da cota de apoio.',...(S.mem.some(m=>m.type==='CC')?['Contraventamento da cobertura (CC): X em barra redonda ø16 com esticador nos vãos das pontas.']:[]),...((S.gutters||[]).length?['Faixa laranja: espaço da calha (detalhe CA); CP = saída para condutor; caimento de 0,5% para as saídas.']:[]),'Pontos laranja: ligações aço-concreto (ver folha de ligações).',...((S.tcSp||[]).length?['Traços laranja nas terças: emendas soldadas ET (detalhe na folha das terças).']:[])],
     `PLANTA DA COBERTURA · COTA DE APOIO ${m2(zs)} m`,sub());
   return d;}
 
 const holeOfAP=d=>d+1.5;
 /* ================= Ligações do galpão: travessa, escora, X com esticador, corrente, mãos-francesas e alvenaria ================= */
 function drawLigMet(S){const by=t=>S.mem.filter(m=>m.type===t),TV=by('TV'),EB=by('EB'),rods=[...by('CC'),...by('CL')],LC=by('LC'),MF=by('MF'),TB=by('TB'),M=MODELS.est,nv=M&&M.novo;
-  if(!TV.length&&!EB.length&&!rods.length&&!LC.length&&!MF.length&&!TB.length)return null;const d=Dwg.at(10),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*10,P=nv?STP[nv.perf]:null;
+  if(!TV.length&&!EB.length&&!rods.length&&!LC.length&&!MF.length&&!TB.length&&!(S.gutters||[]).length)return null;const d=Dwg.at(10),ts=d.ts;let x=0,y=0,col=0,rowH=0;const gap=ts*10,P=nv?STP[nv.perf]:null;
   const place=sd=>{const bb=sd.bbox();if(col===3){col=0;x=0;y-=rowH+gap;rowH=0;}d.put(sd,x-bb.x0,y-bb.y1);x+=bb.x1-bb.x0+gap;rowH=Math.max(rowH,bb.y1-bb.y0);col++;};
   const nut=(sd,cx,cy,dd,vert)=>{const a=dd*1.6,b=dd*.8;vert?sd.R(cx-a/2,cy-b/2,a,b,'ANOT'):sd.R(cx-b/2,cy-a/2,b,a,'ANOT');};
+  // CA: espaço para a calha (corte perpendicular ao beiral)
+  (S.gutters||[]).slice(0,1).forEach(gt=>{const T=S.trusses[0],sd=new Dwg(ts,10),Bz=T.Bz,Te=T.Te,cw=T.cw,ext=gt.ext,i=T.i||.1,zr=s2=>T.zt(s2)-S.zs,L1=ext?-cw-300:-250,L2=1400;
+    // banzo superior e telha
+    const top=s2=>zr(s2)+Bz.h/2,xs=ext?[-cw,L2]:[0,L2];sd.L(xs[0],zr(xs[0])+Bz.h/2,xs[1],zr(xs[1])+Bz.h/2,'ACO');sd.L(xs[0],zr(xs[0])-Bz.h/2,xs[1],zr(xs[1])-Bz.h/2,'ACO');
+    const sT=ext?-cw:cw;sd.R(sT-Te.w/2,top(sT),Te.w,Te.h,'TERCA');const tE=ext?-cw-75:cw-75,tz=s2=>top(s2)+Te.h+(s2-sT)*i;sd.L(tE,tz(tE),L2,tz(L2),'ACO');sd.T(L2*.7,tz(L2*.7)+ts*.9,'telha','ANOT',{h:ts*.7});
+    if(ext){sd.R(-200,zr(0)-1400,200,1400-Bz.h/2,'ACO');sd.L(-300,zr(0)-1400,-300,top(0)-60,'ANOT');sd.T(-320,zr(0)-900,'telha lateral','ANOT',{an:'end',h:ts*.65});}
+    else{sd.hatch(-250,zr(0)-900,250,top(0)+Te.h+700-(zr(0)-900),'CONCRETO');sd.P([[0,top(0)+Te.h+650],[60,top(0)+Te.h+650],[60,top(0)+Te.h+420]],'ANOT',false);sd.T(-270,top(0)+Te.h+500,'platibanda / parede (rufo e contra-rufo)','ANOT',{an:'end',h:ts*.65});}
+    // espaço da calha (tracejado) e condutor
+    const gx1=ext?-cw-Te.w/2-10:cw-75,gx0=ext?gx1-250:0,gz1=tz(tE)-40,gz0=gz1-gt.d;sd.R(gx0,gz0,gx1-gx0,gt.d,'EIXO');sd.T((gx0+gx1)/2,gz0+gt.d/2,'CALHA','TEXTO',{an:'middle',h:ts*.8});sd.T((gx0+gx1)/2,gz0+gt.d/2-ts*1.1,'(a definir)','ANOT',{an:'middle',h:ts*.65});
+    sd.R((gx0+gx1)/2-50,gz0-700,100,700,'EIXO');sd.T((gx0+gx1)/2+70,gz0-400,'condutor (CP)','ANOT',{h:ts*.65});
+    sd.D(ext?-cw:0,top(ext?-cw:0)+Te.h+(ext?0:0)+ts*2.5,ext?0:cw,top(ext?0:cw)+Te.h+ts*2.5,ts*.5,`${cw}`);sd.D(tE,gz1,ext?-cw:cw,gz1,-ts*1.2,'75');sd.D(gx1,gz0,gx1,gz1,-ts*1.4,`${gt.d}`);
+    sd.T(sT,top(sT)+Te.h+ts*.8,ext?'terça na ponta do prolongamento (BX)':'terça recuada','ANOT',{an:'middle',h:ts*.65});
+    sd.notes(ext?-cw-300:-250,zr(0)-1500-ts*3,[ext?`Banzo superior prolongado ${cw} mm para fora do apoio (BX, mesmo perfil do banzo), com a terça na ponta; a calha fica pendurada fora da parede.`:`Terça da ponta recuada ${cw} mm a partir do apoio, deixando o espaço da calha entre a parede (platibanda) e a telha.`,
+      'A telha avança 75 mm sobre a calha (pingadeira). Profundidade de 200 mm só indicativa: a calha, o rufo e os condutores são definidos no projeto de cobertura.',
+      `Caimento da calha de 0,5% para as saídas (CP): ${S.gutters.map(g=>`${g.outs.length} saídas no lado ${g.side}`).join(', ')}; posições na planta da cobertura.`],`CA · ESPAÇO PARA CALHA ${ext?'EXTERNA':'INTERNA'}`,`${S.gutters.map(g=>`${m2(g.L)} m no lado ${g.side}`).join(' · ')}`);place(sd);});
   // LT: travessa apoiada em cantoneira soldada no pilar
   if(TV.length){const sd=new Dwg(ts,10),T=TV[0].prof,hc=P?P.h:200,cl=76,tc=6.3,g=10,h=T.h,b=T.b,c=T.c,t=T.t;
     sd.R(-hc,-260,hc,520,'ACO');sd.L(-hc-20,-260,20,-260,'EIXO');sd.L(-hc-20,260,20,260,'EIXO');
@@ -2720,11 +2758,11 @@ $('#vAco').addEventListener('change',e=>{if(steelGroup)steelGroup.visible=e.targ
  const mqKids=()=>{const fs=$('#g_mOn').closest('fieldset');return fs?[...fs.querySelectorAll(':scope > div, :scope > figure')]:[];};
  const mqForm=()=>{mqSchema();if($('#g_mOn').checked)mqKids().forEach(x=>{if(x.dataset.off){delete x.dataset.off;x.hidden=false;}});document.querySelectorAll('[data-bei]').forEach(x=>x.hidden=$('#g_tMod').value!=='bei');const v=$('#g_mTipo').value,t=v!=='w';document.querySelectorAll('[data-tre]').forEach(x=>x.hidden=!t);document.querySelectorAll('[data-w]').forEach(x=>x.hidden=t);
    if(t)document.querySelectorAll('[data-hT]').forEach(x=>x.hidden=['paralela','nivelada','atir','mf'].includes(v));document.querySelectorAll('[data-incM]').forEach(x=>x.hidden=['trelica','arco','warren','vier'].includes(v));
-   document.querySelectorAll('[data-hA]').forEach(x=>x.hidden=v!=='atir');const tf=$('#g_tForma').value;document.querySelectorAll('[data-lantSel]').forEach(x=>x.hidden=tf==='meia');
+   document.querySelectorAll('[data-hA]').forEach(x=>x.hidden=v!=='atir');document.querySelectorAll('[data-calha]').forEach(x=>x.hidden=$('#g_calha').value==='nao');const tf=$('#g_tForma').value;document.querySelectorAll('[data-lantSel]').forEach(x=>x.hidden=tf==='meia');
    document.querySelectorAll('[data-lant]').forEach(x=>x.hidden=tf==='meia'||$('#g_lant').value!=='sim');
    document.querySelectorAll('#tsCat .ci').forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===tf));document.querySelectorAll('#mqCat .ci').forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===v));const pts=$('#g_mLanc').value==='pts';
    document.querySelectorAll('[data-pts]').forEach(x=>x.hidden=!pts);document.querySelectorAll('[data-auto]').forEach(x=>x.hidden=true);document.querySelectorAll('[data-fach]').forEach(x=>x.hidden=$('#g_mLanc').value!=='fach');if(!pts)mqPickOn(false);if(!$('#g_mOn').checked){mqKids().forEach(x=>{if(!x.hidden){x.dataset.off='1';x.hidden=true;}});mqPickOn(false);}};
- $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});['g_mOn','g_tOn','g_cvOn','g_lcOn','g_v0','g_cat','g_s3','g_mfOn','g_tbN'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();}));['g_tMod','g_alma','g_lant','g_tForma'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();tsSchema();selectSteel(null);runSteel();}));['g_lw','g_lh'].forEach(id=>$('#'+id).addEventListener('input',tsSchema));
+ $('#g_mTipo').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});['g_mOn','g_tOn','g_cvOn','g_lcOn','g_calha','g_cw','g_cLado','g_v0','g_cat','g_s3','g_mfOn','g_tbN'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();}));['g_tMod','g_alma','g_lant','g_tForma'].forEach(id=>$('#'+id).addEventListener('change',()=>{mqForm();tsSchema();selectSteel(null);runSteel();}));['g_lw','g_lh'].forEach(id=>$('#'+id).addEventListener('input',tsSchema));
  buildCat('tsCat',TS_CAT,icoTs,'g_tForma');buildCat('mqCat',MQ_CAT,icoMq,'g_mTipo');$('#g_bei').addEventListener('input',tsSchema);$('#g_mLanc').addEventListener('change',()=>{mqForm();selectSteel(null);runSteel();});
  $('#mqPick').onclick=()=>mqPickOn(!PICK);
  $('#mqUndo').onclick=()=>{if(OVR.mq&&OVR.mq.length){OVR.mq.pop();saveOVR();runSteel();}};
@@ -3073,7 +3111,7 @@ const hdr=document.querySelector('header.top');new ResizeObserver(()=>document.d
 {const p=PANE;PANE=null;if(p)setPane(p);else{$('#app').classList.add('nopanel');document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=true);}}
 setView(VIEW);
 initScene();bindSheets();bindPlot();loadPLOT();renderAll();loadExample();
-window.__eng={MODELS,IFC,sampleEst,sampleArq,select,selectSteel,mqAddPoint:h=>mqAddPoint(h),get ORIGIN(){return ORIGIN;},get STEEL(){return STEEL;},runSteel};
+window.__eng={MODELS,IFC,sampleEst,sampleArq,select,selectSteel,mqAddPoint:h=>mqAddPoint(h),get ORIGIN(){return ORIGIN;},get STEEL(){return STEEL;},runSteel,get cam(){return camera;},get ctl(){return controls;}};
 })();
 </script>
 </body>
