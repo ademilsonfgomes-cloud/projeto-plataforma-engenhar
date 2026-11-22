@@ -1655,10 +1655,11 @@ function genSteel(G){
   // ================= GALPÃO NOVO: pilares metálicos, bases, travessas e telha lateral =================
   if(M.novo){const n=M.novo,PC=STP[n.perf],{cols:gc,sides:SD}=nvGrid(n),heavy=PC.H||PC.box,tb=heavy?19:16,dch=+((G.ovr&&G.ovr.ancD)||(heavy?19:16)),TV=STP[n.tv];out.clad=[];
     const hx=c=>c.rot?PC.w:PC.h,hy=c=>c.rot?PC.h:PC.w;
-    gc.forEach((c,i)=>{const x=c.x*1000,y=c.y*1000;add('PM',PC,[x,y,tb],[x,y,zs],{rot:c.rot,oit:c.oit,nm:pName('n'+i,i,`PM${i+1}`),pk:'n'+i,pi:i});
+    const RK=nvRank(gc);
+    gc.forEach((c,i)=>{const x=c.x*1000,y=c.y*1000;add('PM',PC,[x,y,tb],[x,y,zs],{rot:c.rot,oit:c.oit,nm:pName('n'+i,RK[i],`P${RK[i]+1}`),pk:'n'+i,pi:RK[i]});
       const Lb=Math.ceil((hx(c)+200)/50)*50,Bb=Math.ceil((hy(c)+200)/50)*50;
       out.plates.push({c:[x,y,tb/2],X:[1,0,0],Y:[0,1,0],dims:[Lb,Bb,tb]});
-      out.nodes.push({kind:'BA',prof:PC,Lb,Bb,t:tb,d:dch,rot:c.rot,pos:[x,y,0],name:pName('n'+i,i,`PM${i+1}`)});});
+      out.nodes.push({kind:'BA',prof:PC,Lb,Bb,t:tb,d:dch,rot:c.rot,pos:[x,y,0],name:pName('n'+i,RK[i],`P${RK[i]+1}`)});});
     // travessas por fora dos pilares (alma na horizontal, contra o vento), da alvenaria ao beiral
     const z0=n.alv>0?n.alv*1000+100:300,zTop=zs-150,nT=Math.max(1,Math.ceil((zTop-z0)/1800)),zl=zTop-z0>300?Array.from({length:nT+1},(_,k)=>Math.round(z0+k*(zTop-z0)/nT)):[];
     const V=n.vao*1000,Cc=n.comp*1000,CT=nvCtr(gc),SG={x0:nvSegs(SD.x0,CT),x1:nvSegs(SD.x1,CT),y0:nvSegs(SD.y0,CT),y1:nvSegs(SD.y1,CT)},ys=SD.x0.map(c=>c.y*1000),OVp=(G.ovr&&G.ovr.prof)||{};
@@ -1712,7 +1713,7 @@ function genSteel(G){
     // fundação e cargas por pilar para o projeto de fundação
     {const bMax=ysL.length?Math.max(...ysL)/1000:n.esp,Nk=(.20+.25)*bMax*n.vao/2+PC.kgm*zs/1e5+(n.alv>0?14*.14*n.alv*bMax:0),Mk=out.colWind?out.colWind.Mk:.275*qk*bMax*(zs/1000)**2,Hk=(qk*bMax*zs/1000)*(G.mfOn?.6:5/8);
       out.fundLoads={Nk,Mk,Hk};const FS=fundSpec(n);
-      if(FS){FS.count=gc.length;FS.prof=PC;FS.names=gc.map((c,i)=>`${FS.tub?'T':'E'}${i+1}`);out.fund=FS;
+      if(FS){FS.count=gc.length;FS.prof=PC;{const RK2=nvRank(gc);FS.names=gc.map((c,i)=>pName('n'+i,RK2[i],`P${RK2[i]+1}`)).sort((a,b)=>a.localeCompare(b,'pt',{numeric:true}));}out.fund=FS;
         out.notes.push(`Fundação: ${gc.length} ${FS.tub?`tubulões ø${FS.D/10} cm com base ø${FS.Bd/10} cm`:`estacas escavadas ø${FS.D/10} cm`}, ${m2(FS.dep)} m${FS.bloco?`, blocos ${FS.B.side/10} x ${FS.B.side/10} x ${FS.B.H/10} cm`:`, sem bloco (chumbadores no topo do ${FS.tub?'tubulão':'fuste da estaca'})`}; concreto ${nf1.format(FS.vol*gc.length)} m³ e aço CA-50 ${nf0.format(FS.kg*gc.length)} kg no total.`);
         if(!FS.bloco&&FS.plate>FS.D)out.warns.push(`Fundação sem bloco: a placa de base (${FS.plate} mm) é maior que a estaca (ø${FS.D} mm). Use bloco de coroamento ou aumente o diâmetro.`);}
       out.notes.push(`Cargas por pilar para a fundação (características, estimativa): N ≈ ${nf1.format(Nk)} kN, M ≈ ${nf1.format(Mk)} kN·m e H ≈ ${nf1.format(Hk)} kN na base (vento ${nf2.format(qk)} kN/m²). Confirmar com o cálculo e a sondagem.`);}
@@ -1895,7 +1896,7 @@ function drawTesouraJ(S,ty,esc){const j=ty.rep;
   d.chain(Array.from({length:n+1},(_,k)=>sk(k)),zb-Bz.h/2,-ts*5.6,false);d.D(0,zb-Bz.h/2,T.L,zb-Bz.h/2,-ts*7.4);
   d.D(0,0,0,ztop(0)+Bz.h/2,ts*2,`${nint(ztop(0)+Bz.h/2)}`);d.D(T.L/2,0,T.L/2,ztop(T.nh)+Bz.h/2,-ts*1.5);
   d.T(T.L*.72,ztop(Math.round(n*.72))+Bz.h/2+ts*1.2,`i = ${nf0.format(T.i*100)}%`,'TEXTO',{an:'middle',rot:-Math.atan(T.i)*180/Math.PI});
-  {const cL=ts*1.1,k2=Math.min(2,T.nh-1);
+  {const cL=ts*2.2,k2=Math.min(2,T.nh-1);
    const sA=T.sk(k2)+T.L/T.n*.5,pA=[sA,zb+(T.zt(sA)-T.zb)],uA=v2.norm([1,T.i]);cutMark(d,pA,uA,'A',cL,1);
    cutMark(d,[T.sk(k2+1)+T.L/T.n*.25,zb],[1,0],'B',cL,-1);
    const dg=ms.filter(m=>m.type==='DG')[1];if(dg){const a=pr(dg.a),b=pr(dg.b),mid=v2.mul(v2.add(a,b),.5);cutMark(d,mid,v2.norm(v2.sub(b,a)),'C',cL*.8,1);}
@@ -1955,6 +1956,13 @@ function drawPlanta(S){
   S.nodes.forEach(n=>{if(n.kind==='AT'||n.kind==='AP'||n.kind==='TP'){const p=n.pos;d.C(p[0],p[1],ts*.25,'CHAPA');}});
   (S.tcSp||[]).forEach(e=>{const q=[-e.u[1],e.u[0]];d.L(e.p[0]-q[0]*ts*.6,e.p[1]-q[1]*ts*.6,e.p[0]+q[0]*ts*.6,e.p[1]+q[1]*ts*.6,'CHAPA');});
   if(S.canopy)d.T((x0+x1)/2,y0-ts*1.5,'','ANOT');
+  {const T_=(p,x,y,tx,ty)=>{const nm=detPick(S,p);if(nm)d.tag(x,y,tx,ty,nm);},mid=m=>[(m.a[0]+m.b[0])/2,(m.a[1]+m.b[1])/2],tr=S.trusses.filter(t=>!t.mestra);
+    const tc=S.mem.find(m=>m.type==='TC');if(tc)T_('LTT',tc.b[0],tc.b[1],tc.b[0]+ts*4,tc.b[1]+ts*4);
+    const lc=S.mem.find(m=>m.type==='LC');if(lc){const p=mid(lc);T_('LCR',p[0],p[1],p[0]+ts*4,p[1]-ts*3);}
+    const cc=S.mem.find(m=>m.type==='CC');if(cc){const p=mid(cc);T_('LX',p[0],p[1],p[0]-ts*4,p[1]+ts*3);}
+    const tb=S.mem.find(m=>m.type==='TB');if(tb){const p=mid(tb);T_('TB',p[0],p[1],p[0]+ts*4,p[1]+ts*3);}
+    if(tr[1]){const p=tr[1].at(0,0);T_('TP',p[0],p[1],p[0]-ts*4,p[1]-ts*3);}
+    if(tr[0]){const p=tr[0].at(tr[0].L/2,0);T_('ES',p[0],p[1],p[0]+ts*3,p[1]-ts*4);}}
   (S.gutters||[]).forEach(gt=>{for(let q=1;q<gt.pts.length;q++){const a=gt.pts[q-1],b=gt.pts[q],L=Math.hypot(b[0]-a[0],b[1]-a[1]),nx=-(b[1]-a[1])/L*gt.w/2,ny=(b[0]-a[0])/L*gt.w/2;
       d.L(a[0]+nx,a[1]+ny,b[0]+nx,b[1]+ny,'CHAPA');d.L(a[0]-nx,a[1]-ny,b[0]-nx,b[1]-ny,'CHAPA');}
     gt.outs.forEach(o=>{d.C(o[0],o[1],Math.max(60,ts*.5),'CHAPA');d.T(o[0]+ts*.8,o[1]+ts*.6,'CP','TEXTO',{h:ts*.6});});
@@ -2059,7 +2067,10 @@ function drawLocacao(S){const N=nvData(S);if(!N)return S.fdIfc?drawLocIFC(S):nul
   cols.forEach((c,i)=>{const x=c.x*1000,y=c.y*1000;
     if(FS){if(FS.bloco)d.R(x-FS.B.side/2,y-FS.B.side/2,FS.B.side,FS.B.side,'CONCRETO');d.C(x,y,FS.D/2,'ANOT');}
     d.R(x-hx(c)/2,y-hy(c)/2,hx(c),hy(c),'ACO');d.L(x-hx(c)/2,y-hy(c)/2,x+hx(c)/2,y+hy(c)/2,'ACO');
-    const sx=x<CT[0]?-1:1,sy=y<CT[1]?-1:1;d.T(x+sx*ts*1.2,y+sy*ts*1.2+(sy<0?-ts*.8:0),`${pName('n'+i,i,`PM${i+1}`)}${FS?` / ${FS.tub?'T':'E'}${i+1}${FS.bloco?` / B${i+1}`:''}`:''}`,'TEXTO',{h:ts*.7,an:sx<0?'end':'start'});});
+    const sx=x<CT[0]?-1:1,RK=nvRank(cols),ext=FS?(FS.bloco?FS.B.side/2:FS.D/2):Math.max(hx(c),hy(c))/2,top=y>Y1-300,bot=y<Y0+300;
+    let an,tx,ty;if(top||bot){an=sx<0?'end':'start';tx=x+sx*ts*.3;ty=top?y+ext+ts*1.4:y-ext-ts*2.6;}else{an=sx<0?'start':'end';tx=x-sx*(ext+ts*.8);ty=y+ts*.15;}
+    d.T(tx,ty+ts*.9,`${pName('n'+i,RK[i],`P${RK[i]+1}`)} · ${PC.label}`,'TEXTO',{h:ts*.7,an});
+    d.T(tx,ty-ts*.2,FS?`${FS.bloco?`B1 ${FS.B.side/10}x${FS.B.side/10}x${FS.B.H/10} · `:''}${FS.tub?'T1':'E1'} ø${FS.D/10}${FS.tub?`/${FS.Bd/10}`:''}`:'sapata','ANOT',{h:ts*.6,an});});
   // cotas: ao longo de cada lateral (alinhadas) e nas filas da frente e do fundo
   [sides.x0,sides.x1].forEach(cs=>nvSegs(cs,CT).forEach(sg=>{const lft=[-sg.u[1],sg.u[0]],sgn=lft[0]*sg.n[0]+lft[1]*sg.n[1]>0?1:-1;d.D(sg.a[0],sg.a[1],sg.b[0],sg.b[1],sgn*ts*8);}));
   [[sides.y0,-1],[sides.y1,1]].forEach(([cs,g])=>{if(cs.length<2)return;const y=cs[0].y*1000;d.chain(cs.map(c=>c.x*1000),y+g*ts*7,0,false);d.D(cs[0].x*1000,y+g*ts*10,cs[cs.length-1].x*1000,y+g*ts*10,0);});
@@ -2118,6 +2129,9 @@ function drawPilares(S){const N=nvData(S);if(!N)return null;const {PC}=N,d=Dwg.a
     sd.notes(0,y-ts*2,['Pesos sem soldas e sem pintura.'],'TABELA DE AÇO DOS PILARES','');const bb=sd.bbox();d.put(sd,X-bb.x0,-bb.y1);}
   return d;}
 // vistas das 4 faces: pilares, alvenaria, travessas, escora, contraventamento e a tesoura do oitão
+// marcas dos detalhes de ligação que existem nas folhas (para chamar nos desenhos de conjunto)
+function detNames(S){if(S._dn)return S._dn;const set=new Set();S._dn=set;[drawLigMet,drawPilares,drawTercas,drawLigacoes,drawCortes].forEach(f=>{try{const d=f(S);if(d)(d.z||[]).forEach(z=>set.add(z.name));}catch(e){}});return set;}
+function detPick(S,p){return [...detNames(S)].find(n=>new RegExp('^'+p+'\\d*$').test(n))||null;}
 function drawVistas(S){const N=nvData(S);if(!N)return null;const {n,sides,PC,cols,zs}=N,CT=nvCtr(cols),alv=n.alv*1000;
   const ridge=Math.max(...S.mem.filter(m=>m.truss!=null&&m.mq==null).flatMap(m=>[m.a[2],m.b[2]]),zs+1000),big=Math.max(...[sides.x0,sides.x1,sides.y0,sides.y1].map(cs=>nvSegs(cs,CT).reduce((a,g)=>a+g.L,0)));
   const d=Dwg.at(escN(big/300)),ts=d.ts;
@@ -2136,6 +2150,13 @@ function drawVistas(S){const N=nvData(S);if(!N)return null;const {n,sides,PC,col
     if(lat){sd.L(0,ridge,len,ridge,'ANOT');sd.T(len+ts,ridge,`cumeeira +${m2(ridge)}`,'ANOT',{h:ts*.7});}
     const cl=S.mem.find(m=>m.type==='CL'&&loc(m.a).dd<700&&loc(m.b).dd<700);if(cl){const A=loc(cl.a),B=loc(cl.b);sd.T((A.h+B.h)/2,(cl.a[2]+cl.b[2])/2+ts*.6,`CL ${cl.prof.label.replace(/Barra redonda |\s*\(tirante\)/g,'')}`,'TEXTO',{an:'middle',h:ts*.7});}
     sd.chain([0,...sgs.map(g=>g.cum+g.L)],-ts*3,0,false);
+    // chamadas dos detalhes (um de cada, no 2º pilar do lado)
+    if(vi===0||vi===2){const pm=S.mem.filter(m=>m.type==='PM'&&loc(m.a).dd<700).map(m=>loc(m.a).h).sort((a,b)=>a-b),h=pm[Math.min(1,pm.length-1)],h2=pm[Math.min(2,pm.length-1)],T_=(p,x,y,tx,ty)=>{const nm=detPick(S,p);if(nm)sd.tag(x,y,tx,ty,nm);};
+      if(h!=null){T_('TP',h,zs,h+ts*5,zs+ts*4);T_('BA',h,0,h+ts*5,ts*2.5);
+        const tv=S.mem.find(m=>m.type==='TV'&&loc(m.a).dd<700);if(tv)T_('LT',h,tv.a[2],h+ts*5,tv.a[2]+ts*2.5);
+        const eb=S.mem.find(m=>m.type==='EB'&&loc(m.a).dd<700);if(eb)T_('LE',h,eb.a[2],h-ts*5,eb.a[2]+ts*3);
+        if(alv>0&&h2>h)T_('AL',(h+h2)/2,alv*.5,(h+h2)/2+ts*4,alv*.5+ts*2);}
+      const cx=S.mem.find(m=>m.type==='CL'&&loc(m.a).dd<700&&loc(m.b).dd<700);if(cx){const A=loc(cx.a),B=loc(cx.b),mx=(A.h+B.h)/2,mz=(cx.a[2]+cx.b[2])/2;T_('LX',mx,mz,mx+ts*4,mz-ts*3);}}
     [[0,'±0,00'],...(alv>0?[[alv,`+${m2(alv)} alvenaria`]]:[]),[zs,`+${m2(zs)} apoio`]].forEach(([z,t])=>{sd.L(len+ts*.5,z,len+ts*2,z,'ANOT');sd.T(len+ts*2.4,z-ts*.3,t,'ANOT',{h:ts*.7});});
     sd.notes(0,-ts*8,[lat?'Travessas da telha por fora dos pilares; escora do beiral (EB) no topo; X de contraventamento (CL) nos vãos das pontas.':'Tesoura do oitão em elevação; travessas e telha do oitão até a cobertura, por fora dos pilares do oitão.',
       ...(sgs.some(g=>Math.abs(g.u[0])>.02&&Math.abs(g.u[1])>.02)?['Lado inclinado em planta: vista desdobrada ao longo do lado (cotas em verdadeira grandeza).']:[])],title,sub());
@@ -2242,6 +2263,9 @@ function fdColDim(c){const ex=c.ex[0],pr=ex&&ex.prof,bx=c.bb.x1-c.bb.x0,by=c.bb.
   return {a,b,D,bx,by,h:b,w:a,hull:hull(pts).map(q=>[q[0]-cx,q[1]-cy])};}
 /* ================= Painéis da folha aberta: Fundações e Locação ================= */
 // nome do pilar: o que o usuário digitou, senão prefixo + número (renumerar), senão o nome original
+// posição de cada pilar na numeração: de cima para baixo (filas) e da esquerda para a direita
+function nvRank(gc){const ord=gc.map((c,i)=>i).sort((a,b)=>{const dy=gc[b].y-gc[a].y;return Math.abs(dy)>.3?dy:gc[a].x-gc[b].x;}),r=[];ord.forEach((i,k)=>r[i]=k);return r;}
+function fdRank(){const L=OVR.fd||[],ord=L.map((e,i)=>i).sort((a,b)=>{const dy=L[b].y-L[a].y;return Math.abs(dy)>300?dy:L[a].x-L[b].x;}),r=[];ord.forEach((i,k)=>r[i]=k);return r;}
 function pName(key,idx,def){const o=OVR.pn||{};if(o[key])return o[key];if(OVR.pnPre)return OVR.pnPre+((OVR.pnStart!=null?+OVR.pnStart:1)+idx);return def;}
 function ctxRender(){if(PANE==='fund')renderFundPane();else if(PANE==='loc')renderLocPane();}
 const fmtN=v=>String(v).replace('.',',');
@@ -2265,8 +2289,8 @@ function renderFundPane(){const M=MODELS.est,nv=!!(M&&M.novo);$('#fundNv').hidde
       else{if(v.D!==f.D&&(f.nE||1)>1){delete f.pp;delete f.bx;delete f.by;}Object.assign(f,{D:v.D,prof:v.prof,nb:v.nb,dia:v.dia,stD:v.stD,sp:v.sp});if(v.B)f.B=v.B;}
       e.f=f;e.ed=1;});saveOVR();runSteel();});}
 function renderLocPane(){const box=$('#locList');if(!box)return;const M=MODELS.est;let L=[];
-  if(M&&M.novo)L=(STEEL?STEEL.mem.filter(m=>m.type==='PM'&&m.pk):[]).map(m=>({key:m.pk,idx:m.pi,def:`PM${m.pi+1}`,cur:m.nm}));
-  else if(STEEL&&STEEL.fdIfc)L=STEEL.fdIfc.list.map(p=>({key:'c'+p.c.id,idx:p.i,def:fdName0(p.c,p.i),cur:p.nm}));
+  if(M&&M.novo)L=(STEEL?STEEL.mem.filter(m=>m.type==='PM'&&m.pk):[]).map(m=>({key:m.pk,idx:m.pi,def:`P${m.pi+1}`,cur:m.nm})).sort((a,b)=>a.idx-b.idx);
+  else if(STEEL&&STEEL.fdIfc){const R=fdRank();L=STEEL.fdIfc.list.map(p=>({key:'c'+p.c.id,idx:R[p.i],def:fdName0(p.c,p.i),cur:p.nm})).sort((a,b)=>a.idx-b.idx);}
   $('#ln_pre').value=OVR.pnPre||'';$('#ln_st').value=OVR.pnStart!=null?OVR.pnStart:1;
   box.innerHTML=L.length?L.map(r=>`<div class="f"><label>${esc(r.def)}</label><input data-key="${r.key}" value="${esc(r.cur)}" maxlength="12"></div>`).join(''):'<p class="note" style="margin:0">Sem pilares na locação ainda (crie o galpão ou abra o IFC).</p>';
   box.querySelectorAll('input[data-key]').forEach(i=>i.onchange=()=>{OVR.pn=OVR.pn||{};const v=i.value.trim();if(v)OVR.pn[i.dataset.key]=v;else delete OVR.pn[i.dataset.key];saveOVR();runSteel();});}
@@ -2274,7 +2298,7 @@ function bindCtx(){
   $('#fdNvAp').onclick=()=>{$('#bNovo').click();setTimeout(ctxRender,800);};
   $('#ln_ap').onclick=()=>{const p=$('#ln_pre').value.trim();OVR.pnPre=p||null;OVR.pnStart=Math.max(0,Math.round(+$('#ln_st').value||1));OVR.pn={};saveOVR();runSteel();};
   $('#ln_rs').onclick=()=>{delete OVR.pnPre;delete OVR.pnStart;OVR.pn={};saveOVR();runSteel();};}
-function fdName(c,i){return pName('c'+c.id,i,fdName0(c,i));}
+function fdName(c,i){const R=fdRank();return pName('c'+c.id,R[i]!=null?R[i]:i,fdName0(c,i));}
 function fdName0(c,i){const m=/^\s*(P\s*-?\s*\d+[A-Za-z]?)/i.exec(c.name||'')||/^\s*(P\s*-?\s*\d+[A-Za-z]?)/i.exec(c.tag||'');return m?m[1].replace(/\s|-/g,'').toUpperCase():`P${i+1}`;}
 // reconhece no IFC o bloco/sapata e as estacas/tubulões sob o pilar
 function fdRecog(c){const M=MODELS.est,b=c.bb,ov=(e,B,t)=>!(e.bb.x1<B.x0-t||e.bb.x0>B.x1+t||e.bb.y1<B.y0-t||e.bb.y0>B.y1+t);
@@ -2402,7 +2426,9 @@ function drawLocIFC(S){const Q=S.fdIfc;if(!Q)return null;const L=Q.list,xs=L.map
     else{if(F.bloco)d.R(x+F.ox-F.B.bx/2,y+F.oy-F.B.by/2,F.B.bx,F.B.by,'ANOT');F.pp.forEach(q=>{d.C(x+q[0],y+q[1],F.D/2,'ANOT');if(F.tub)d.C(x+q[0],y+q[1],F.Bd/2,'EIXO');});}
     const h=p.cd.hull.map(q=>[x+q[0],y+q[1]]);d.P(h,'CONCRETO');if(h.length===4){d.L(h[0][0],h[0][1],h[2][0],h[2][1],'HACH');d.L(h[1][0],h[1][1],h[3][0],h[3][1],'HACH');}
     const ext=F.sap?Math.max(F.a,F.b)/2:F.bloco?Math.max(F.B.bx,F.B.by)/2:Math.max(p.cd.b/2,F.D/2),sx=x<cx0?-1:1,sy=y<cy0?-1:1;
-    d.T(x+sx*(ext+ts*.6),y+sy*(ext+ts*.4)+(sy<0?-ts*.7:0),`${p.nm} / ${p.marks.join(' / ')}`,'TEXTO',{h:ts*.7,an:sx<0?'end':'start'});});
+    const an=sx<0?'end':'start',tx=x+sx*(ext+ts*.6),ty=y+sy*(ext+ts*.4)+(sy<0?-ts*1.6:0),pc=`${Math.round(p.cd.a/10)}x${Math.round(p.cd.b/10)}`;
+    d.T(tx,ty+ts*.9,`${p.nm} · ${pc}`,'TEXTO',{h:ts*.7,an});
+    d.T(tx,ty-ts*.2,F.sap?`${p.marks[0]} ${F.a/10}x${F.b/10}x${F.h/10}`:`${F.bloco?`${p.marks[0]} ${F.B.bx/10}x${F.B.by/10}x${F.B.H/10} · `:''}${p.marks[p.marks.length-1]} ${F.nE>1?F.nE+'x':''}ø${F.D/10}`,'ANOT',{h:ts*.6,an});});
   // quadro das fundações
   {const tx=X1+ts*14,ty=Y1+ts*8,cw=[0,ts*7,ts*13,ts*40];let yy=ty;d.T(tx,yy,'QUADRO DE FUNDAÇÕES','TEXTO',{h:ts*.9});yy-=ts*1.8;
     ['Pilar','Marca','Descrição','Origem'].forEach((h,k)=>d.T(tx+cw[k],yy,h,'TEXTO',{h:ts*.7}));yy-=ts*.6;d.L(tx,yy,tx+ts*47,yy,'ANOT');yy-=ts*1.2;
@@ -2908,12 +2934,12 @@ function fillet(d,x,y,a,sx,sy){d.P([[x,y],[x+sx*a,y],[x,y+sy*a]],'CHAPA');}
 // marca de corte: traço atravessando a peça e a letra só do lado de fora (side = +1 ou -1)
 function cutMark(d,p,u,lab,len,side=1){const n=v2.mul([-u[1],u[0]],side),a=v2.add(p,v2.mul(n,len)),b=v2.sub(p,v2.mul(n,len*.6));
   d.L(b[0],b[1],a[0],a[1],'TEXTO');const ar=v2.add(a,v2.mul(u,len*.5));d.L(a[0],a[1],ar[0],ar[1],'TEXTO');
-  const ta=v2.add(a,v2.mul(n,len*.55));d.T(ta[0],ta[1]-d.ts*.35,lab,'TEXTO',{an:'middle',h:d.ts*.9});}
+  const ta=v2.add(a,v2.mul(n,len*.6));d.C(ta[0],ta[1],d.ts*.95,'TEXTO');d.T(ta[0],ta[1]-d.ts*.45,lab,'TEXTO',{an:'middle',h:d.ts*1.1,b:true});}
 function secUe(d,cx,cy,P,dir,ly){ // Ue com alma vertical em cx; abas para o lado dir (+1/-1)
   const h=P.h,b=P.b,c=P.c,t=P.t,X=x=>cx+dir*x;
   d.P([[X(0),cy-h/2],[X(b),cy-h/2],[X(b),cy-h/2+c],[X(b-t),cy-h/2+c],[X(b-t),cy-h/2+t],[X(t),cy-h/2+t],[X(t),cy+h/2-t],[X(b-t),cy+h/2-t],[X(b-t),cy+h/2-c],[X(b),cy+h/2-c],[X(b),cy+h/2],[X(0),cy+h/2]],ly);}
 function drawCortesUe(S){
-  const T=S.trusses[0];const d=Dwg.at(2),ts=d.ts,B=T.Bz,A=T.Al,gap=ts*14;let ox=0;
+  const T=S.trusses[0];const d=Dwg.at(5),ts=d.ts,B=T.Bz,A=T.Al,gap=ts*14;let ox=0;
   const panel=(x,title,sub,y)=>{(d.pn??=[]).push({name:title.split(' · ')[0].replace('CORTE ',''),x,y});d.T(x,y,title,'TEXTO',{h:ts*1.3});d.T(x,y-ts*1.6,sub,'ANOT',{h:ts*.7});};
   const lab=(x,y,s2,an='start')=>d.T(x,y,s2,'TEXTO',{h:ts*.75,an});
   // A-A banzo superior: alma vertical, abas para fora (direita); peças encostadas pela esquerda; suporte da terça na aba de cima
@@ -2940,7 +2966,7 @@ function drawCortesUe(S){
     'Limpeza e proteção da solda após a execução (pintura com fundo anticorrosivo nas áreas soldadas).'],'CORTES DAS PEÇAS DA TESOURA · PERFIL Ue',sub());
   return d;}
 function drawCortesEnc(S){
-  const T=S.trusses[0],B=T.Bz.base,A=T.Al.base,d=Dwg.at(2),ts=d.ts,gap=ts*14;let ox=0;
+  const T=S.trusses[0],B=T.Bz.base,A=T.Al.base,d=Dwg.at(5),ts=d.ts,gap=ts*14;let ox=0;
   const panel=(x,title,sub2,y)=>{(d.pn??=[]).push({name:title.split(' · ')[0].replace('CORTE ',''),x,y});d.T(x,y,title,'TEXTO',{h:ts*1.3});d.T(x,y-ts*1.6,sub2,'ANOT',{h:ts*.7});};
   const lab=(x,y,s2,an='start')=>d.T(x,y,s2,'TEXTO',{h:ts*.75,an});const yb=-B.b-ts*6;
   // A-A banzo superior: alma em cima (apoio do suporte da terça), abas para baixo
@@ -2975,7 +3001,7 @@ function cutMarks(S){const T=S.trusses[0];if(!T)return {A:'',B:'',C:''};const ms
 function drawCortes(S){
   if(S.det&&S.det.enc)return drawCortesEnc(S);
   if(S.det&&S.det.ue)return drawCortesUe(S);
-  const T=S.trusses[0];if(!T)return null;const D=S.det||{};const d=Dwg.at(2),ts=d.ts;
+  const T=S.trusses[0];if(!T)return null;const D=S.det||{};const d=Dwg.at(5),ts=d.ts;
   const Bz=T.Bz,Al=T.Al,b=Bz.h===51?50.8:Bz.h===64?63.5:Bz.h,t=tOf(Bz)===4.8?4.76:tOf(Bz),ba=Al.h===51?50.8:Al.h===38?38.1:Al.h===64?63.5:Al.h,ta=tOf(Al)===4.8?4.76:tOf(Al)===3.2?3.18:tOf(Al);
   const tg=(D.nodeSets&&D.nodeSets[0]&&D.nodeSets[0].sets[0]&&D.nodeSets[0].sets[0].rep.tg)||6.3,af=3,ac=filete(tg,t).a,gap=tg,W=2*b+gap,hg=140;
   const lab=(x,y,s,an='start')=>d.T(x,y,s,'TEXTO',{h:ts*.75,an});
@@ -3120,7 +3146,7 @@ const PLOT_NOTES_FUN=['Concreto C25 (fck 25 MPa) nas fundações e vigas baldram
   'Comprimento e capacidade das estacas e tubulões a confirmar com a sondagem (SPT) e o projeto de fundação.','Base dos tubulões aberta só após liberação do geotécnico.',
   'Chumbadores e arranques posicionados com gabarito antes da concretagem.','Locar pelos eixos com gabarito; conferir esquadro pelas diagonais antes de concretar.',
   'Cotas em mm e níveis em m. Conferir todas as medidas no local.','Qualquer alteração deve ser aprovada pelo responsável técnico.'];
-const PLOT_FMTS=['A3','A2','A1','A0'],PG=8,DRY={line(){},rect(){},text(){},image(){}};
+const PLOT_NOGROW=['cortes'],PLOT_FMTS=['A3','A2','A1','A0'],PG=8,DRY={line(){},rect(){},text(){},image(){}};
 // blocos de um grupo, com a escala ampliada "step" vezes (1:25 → 1:20 → 1:15 …)
 function plotGen(id,step){const sh=SHEETS.find(s=>s.id===id),lab=(PLOT_GROUPS.find(g=>g[0]===id)||[])[1];if(!sh||!lab)return [];let d;
   ESCF=step||0;try{d=paper(sh.fn(STEEL));}catch(e){d=null;}finally{ESCF=0;}if(!d||!d.e.length)return [];
@@ -3168,7 +3194,7 @@ function packDisc(disc,ids,fmt,steps,first0,nIdx,matN){const C={},gen=(g,st)=>C[
   const T=(f,first)=>plotSheetT(f,disc,first,nIdx,matN),pk=()=>packSeq(all(),T,fmt,first0);let best=pk();if(!best.length)return [];
   const N=best.length,ok=t=>t.length<=N&&!t.some(sh=>sh.items.some(o=>o.over)),keys=g=>gen(g,0).map(b=>b.key);
   // 1) amplia a escala de cada grupo inteiro, um passo por rodada, enquanto o número de pranchas não aumenta
-  for(let r=0;r<3;r++){let any=false;ids.forEach(g=>{const K=keys(g);if(!K.length)return;const st=steps[K[0]]||0;if(st>=3)return;const nb=gen(g,st+1);if(!nb.length||nb[0].scale===gen(g,st)[0].scale)return;
+  for(let r=0;r<3;r++){let any=false;ids.forEach(g=>{const K=keys(g);if(!K.length||PLOT_NOGROW.includes(g))return;const st=steps[K[0]]||0;if(st>=3)return;const nb=gen(g,st+1);if(!nb.length||nb[0].scale===gen(g,st)[0].scale)return;
       K.forEach(k=>steps[k]=st+1);const t=pk();if(ok(t)){best=t;any=true;}else K.forEach(k=>steps[k]=st);});if(!any)break;}
   // 2) puxa desenhos das pranchas seguintes para os buracos das anteriores (a última fica mais leve)
   for(let i=0;i<best.length-1;i++){const A=best[i];if(A.items.some(o=>o.over))continue;
@@ -3178,7 +3204,7 @@ function packDisc(disc,ids,fmt,steps,first0,nIdx,matN){const C={},gen=(g,st)=>C[
   // 3) cada prancha: formato menor se couber; depois amplia desenho a desenho até não caber mais
   best.forEach(sh=>{if(sh.items.some(o=>o.over))return;
     for(const f of PLOT_FMTS.slice(0,PLOT_FMTS.indexOf(fmt))){const t=T(f,sh.first),it=pRepack(t,sh.items.map(o=>o.b));if(it){Object.assign(sh,t,{items:it,free:it.free});break;}}
-    for(let k=0;k<12;k++){let any=false;sh.items.slice().sort((a,b)=>b.b.w*b.b.h-a.b.w*a.b.h).forEach(o=>{const b=o.b,st=steps[b.key]||0;if(st>=7||!sh.items.includes(o))return;
+    for(let k=0;k<12;k++){let any=false;sh.items.slice().sort((a,b)=>b.b.w*b.b.h-a.b.w*a.b.h).forEach(o=>{const b=o.b,st=steps[b.key]||0;if(st>=7||PLOT_NOGROW.includes(b.gid)||/^(AL|CORTES)/.test(b.name)||!sh.items.includes(o))return;
         const nb=plotPick(gen,b.gid,gen(b.gid,0).find(q=>q.key===b.key)||b,st+1);if(nb===b||nb.scale===b.scale)return;
         const it=pRepack(sh,[...sh.items.map(q=>q.b).filter(q=>q!==b),nb]);if(it){sh.items=it;sh.free=it.free;steps[b.key]=st+1;any=true;}});if(!any)break;}});
   return best;}
@@ -3207,7 +3233,7 @@ function buildPlot(){if(!STEEL||!STEEL.mem.length)return null;const base=ENG_PLO
   const sheets=packed.map((ps,i)=>{const S=ps.S,D=new Dwg(2.5,0),dr=plotDr(D,0);ENG_PLOT.frame(dr,S);
     ps.items.forEach(it=>D.put(it.b.d,it.x-it.b.bb.x0,-it.y-it.b.bb.y1));
     ENG_PLOT.notes(dr,S.strip.x,S.strip.y,S.strip.w,S.stamp.y-4-S.strip.y,ps.nl);
-    ENG_PLOT.stamp(dr,S,{...PLOT.stamp,logo:PLOT.logo||''},{format:ps.fmt,content:ps.groups.join(' · '),no:ps.no,total:N});
+    ENG_PLOT.stamp(dr,S,{...PLOT.stamp,logo:PLOT.logo||''},{format:ps.fmt,content:`${ps.no} · ${ps.groups.join(' · ')}`,no:i+1,total:N});
     if(i===0){const tx=S.strip.x-10-S.tableW;let cy=S.area.y;cy+=ENG_PLOT.index(dr,tx,cy,S.tableW,list)+4;
       cy+=ENG_PLOT.table(dr,tx,cy,S.tableW,'RESUMO DE MATERIAL',[['PERFIL / ITEM',.7],['PESO (kg)',.3,'end']],matRows,`TOTAL: ${nf0.format(R.kgP+R.kgC)} kg (sem soldas)`)+4;
       if(PLOT.revs.length)ENG_PLOT.revTable(dr,tx,cy,S.tableW,PLOT.revs);}
