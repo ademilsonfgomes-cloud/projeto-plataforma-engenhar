@@ -33,7 +33,8 @@
     'É proibido rasgar a alvenaria estrutural para embutir tubulações horizontais ou abrir vãos não previstos.',
     'Qualquer alteração deve ser autorizada pelo responsável técnico antes da execução.'
   ];
-  const notas = () => { const t = store().notas; if (typeof t === 'string' && t.trim()) return t.split(/\n+/).map(s => s.replace(/^\s*\d+[.)-]?\s*/, '').trim()).filter(Boolean); return NOTAS0; };
+  const notasBase = () => { const t = store().notas; if (typeof t === 'string' && t.trim()) return t.split(/\n+/).map(s => s.replace(/^\s*\d+[.)-]?\s*/, '').trim()).filter(Boolean); return NOTAS0; };
+  const notas = () => { let extra = []; try { extra = window.notasParedes152?.() || []; } catch {} return [...notasBase(), ...extra]; };
 
   // ---------------------------------------------------------------- temas
   const nivelDe = (t, q) => {
