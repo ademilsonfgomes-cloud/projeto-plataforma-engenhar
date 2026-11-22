@@ -12368,7 +12368,18 @@ const ENG_PLOT=(()=>{
   const numParede = t => { const m = String(t).match(/^Paredes? (\d+)/); return m ? +m[1] : 0; };
 
   // ---------------------------------------------------------------- encaixe (retângulos livres; de cima para baixo, da esquerda para a direita)
-  function novaFolha(A) { return { items: [], livres: [{ x: A.x, y: A.y, w: A.x1 - A.x + GAP, h: A.y1 - A.y + GAP }] }; }
+  // V152 — sem vazios: além da área de desenho, a faixa da direita ABAIXO das notas (e do índice, na 1ª folha) também
+  // recebe desenhos, como na metálica
+  const nulo = { line() {}, rect() {}, text() {}, image() {} };
+  function faixaLivre(i, n) {
+    try {
+      const S = geo(), x = S.strip.x, w = S.strip.w, fim = S.stamp.y - 4; let y = S.strip.y;
+      if (i === 0 && n > 0) { y += E.index(nulo, x, y, w, Array.from({ length: n }, () => ({ title: 'X', scale: '1:50' }))) + 4; const revs = store().revs || []; if (revs.length) y += E.revTable(nulo, x, y, w, revs) + 4; }
+      if (fim - y > 30) y += E.notes(nulo, x, y, w, fim - y, notas()) + 6;
+      const h = fim - y; return h >= 30 ? { x: x + 2, y, w: w - 4, h } : null;
+    } catch { return null; }
+  }
+  function novaFolha(A, i, n) { const F = { items: [], livres: [{ x: A.x, y: A.y, w: A.x1 - A.x + GAP, h: A.y1 - A.y + GAP }] }; const r = faixaLivre(i, n); if (r) F.livres.push({ x: r.x, y: r.y, w: r.w + GAP, h: r.h + GAP }); return F; }
   function lugar(F, w, h) { let best = null; for (const r of F.livres) { if (w + GAP <= r.w + 1e-6 && h + GAP <= r.h + 1e-6) { const sc = r.y * 10000 + r.x; if (!best || sc < best.sc) best = { x: r.x, y: r.y, sc }; } } return best; }
   function ocupa(F, x, y, w, h) {
     const W = w + GAP, H = h + GAP, nov = [];
@@ -12387,27 +12398,40 @@ const ENG_PLOT=(()=>{
     if (!best) return false;
     ocupa(F, best.p.x, best.p.y, best.v.w, best.v.h); F.items.push({ ...best.v, x: best.p.x, y: best.p.y }); return true;
   }
-  function empacotar(items, compacto) {
-    const A = geo().area, out = [];
-    const grupos = new Map();
-    for (const q of items) { const t = temaDe(q); if (!grupos.has(t.k)) grupos.set(t.k, { t, its: [] }); grupos.get(t.k).its.push(q); }
-    const G = [...grupos.values()].sort((a, b) => a.t.o - b.t.o || (a.t.v || 0) - (b.t.v || 0));
+  function grupos(items) {
+    const m = new Map();
+    for (const q of items) { const t = temaDe(q); if (!m.has(t.k)) m.set(t.k, { t, its: [] }); m.get(t.k).its.push(q); }
+    const G = [...m.values()].sort((a, b) => a.t.o - b.t.o || (a.t.v || 0) - (b.t.v || 0));
     for (const g of G) {
       if (g.t.o === 2) g.its.sort((a, b) => numParede(a.title) - numParede(b.title));
       if (g.t.o === 1) g.its.sort((a, b) => (/^Segunda/.test(a.title) ? 1 : 0) - (/^Segunda/.test(b.title) ? 1 : 0));
     }
-    let folhasTema = [];
-    for (const g of G) {
-      // lajes, cargas e quantitativos podem dividir folha entre si; plantas e elevações começam folha nova
-      const junta = compacto || (g.t.o >= 3 && folhasTema.length && folhasTema[0].tema >= 3);
-      if (!junta) folhasTema = [];
-      for (const q of g.its) {
-        let ok = false;
-        for (const F of (compacto ? out : folhasTema)) if (poe(F, q)) { ok = true; break; }
-        if (!ok) { const F = novaFolha(A); F.tema = g.t.o; out.push(F); folhasTema.push(F); if (!poe(F, q)) F.items.push({ ...q, x: A.x, y: A.y }); }
-      }
+    return G;
+  }
+  // encaixa na ordem dada: cada quadro vai no primeiro espaço livre que couber, olhando as folhas já abertas (preenche os
+  // buracos das folhas anteriores antes de abrir folha nova)
+  function fluxo(lista, n) {
+    const A = geo().area, out = [];
+    for (const q of lista) {
+      let ok = false; for (const F of out) if (poe(F, q)) { ok = true; break; }
+      if (!ok) { const F = novaFolha(A, out.length, n); out.push(F); if (!poe(F, q)) F.items.push({ ...q, x: A.x, y: A.y }); }
     }
-    return out.map(F => ({ items: F.items }));
+    return out;
+  }
+  const area = F => F.items.reduce((s, q) => s + q.w * q.h, 0);
+  function empacotar(items, otimizar) {
+    const G = grupos(items);
+    const ordens = [G.flatMap(g => g.its)];                                                 // ordem dos temas e da numeração
+    ordens.push(G.flatMap(g => g.its.slice().sort((a, b) => b.h - a.h || b.w - a.w)));          // por tema, maiores primeiro
+    if (otimizar) { ordens.push(items.slice().sort((a, b) => b.w * b.h - a.w * a.h)); ordens.push(items.slice().sort((a, b) => b.h - a.h || b.w - a.w)); }
+    let best = null;
+    for (const [k, L] of ordens.entries()) {
+      let n = Math.max(1, Math.ceil(items.reduce((s, q) => s + q.w * q.h, 0) / 2e5)), F = null;
+      for (let it = 0; it < 4; it++) { F = fluxo(L, n); if (F.length === n) break; n = F.length; }
+      const sc = F.length * 1000 + k;                                                       // menos folhas; empate: ordem natural
+      if (!best || sc < best.sc) best = { F, sc };
+    }
+    return best.F.map(F => ({ items: F.items }));
   }
 
   // ---------------------------------------------------------------- área útil vista pela montagem dos quadros
@@ -12422,7 +12446,7 @@ const ENG_PLOT=(()=>{
     };
   } catch (e) { console.error('V151 área', e); }
   try { const pk = packPlot29; packPlot29 = function (items, w, h) { if (!on()) return pk.call(this, items, w, h); return empacotar(items, !!window.__otim151); }; } catch (e) { console.error('V151 encaixe', e); }
-  try { const pf = plotPositionFree33; plotPositionFree33 = function (sheet, item, x, y) { if (!on()) return pf.apply(this, arguments); const A = geo().area; return x >= A.x - .01 && y >= A.y - .01 && x + item.w <= A.x1 + .01 && y + item.h <= A.y1 + .01 && !sheet.items.some(q => q !== item && overlap25({ x, y, w: item.w, h: item.h }, q, 0)); }; } catch (e) { console.error('V151 posição', e); }
+  try { const pf = plotPositionFree33; plotPositionFree33 = function (sheet, item, x, y) { if (!on()) return pf.apply(this, arguments); const A = geo().area, fx = faixaLivre(plotSheets26.indexOf(sheet), plotSheets26.length), dentro = (x >= A.x - .01 && y >= A.y - .01 && x + item.w <= A.x1 + .01 && y + item.h <= A.y1 + .01) || (fx && x >= fx.x - .01 && y >= fx.y - .01 && x + item.w <= fx.x + fx.w + .01 && y + item.h <= fx.y + fx.h + .01); return dentro && !sheet.items.some(q => q !== item && overlap25({ x, y, w: item.w, h: item.h }, q, 0)); }; } catch (e) { console.error('V151 posição', e); }
 
   // ---------------------------------------------------------------- folha: moldura, faixa técnica e carimbo (SVG em mm)
   function desenhista() {
