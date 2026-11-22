@@ -2657,7 +2657,13 @@ function trussNodes(mems,chordTypes,topType,opt){
     const key=`${top?'S':'I'}|${ch.length}|${sp?'E':''}|${webs.map(w=>w.m.type+Math.min(w.ang,180-w.ang)).sort().join(',')}`;
     out.push({p:P,top,d,n,hC,ch,webs,hull:H,Lg:Math.ceil((t1-t0)/5)*5,Hg:Math.ceil((n1-n0)/5)*5,tg,fw,fc,key:key+'|'+webs.map(w=>w.Lw).sort().join(','),adj,sp,bolts});});
   // agrupar nós iguais (os espelhados ficam com a mesma marca)
-  const g=new Map();out.forEach(o=>{if(!g.has(o.key))g.set(o.key,{rep:o,count:0,ps:[]});const q=g.get(o.key);q.count++;q.ps.push({p:o.p,top:o.top});});
+  // nós do mesmo tipo (mesma posição no banzo, mesmas peças e perfis) ficam com a mesma marca: muda só o ângulo e a solda, listados na folha de nós;
+  // nó com alerta (excentricidade grande, diagonal abatida, solda insuficiente) fica com marca própria
+  const akind=o=>[...new Set((o.alerts||[]).map(t=>/excentricidade/.test(t)?'X':/abatida/.test(t)?'A':/não resiste/.test(t)?'S':/sobreposição/.test(t)?'O':'?'))].sort().join(''),
+    tkey=o=>{if(!(o.enc||o.ue))return o.key;return o.key.split('|').slice(0,4).join('|')+'|'+o.webs.map(w=>w.m.type+':'+(w.m.prof&&w.m.prof.label)).sort().join(',')+'|'+akind(o);};
+  const sol=w=>w.Lc!=null?`2×${w.Lc}${w.Lt?`+${w.Lt}`:''}`:w.L1!=null?`${w.L1}+${w.L2}`:w.Lw?`2×${w.Lw}`:'';
+  const g=new Map();out.forEach(o=>{const k=tkey(o);if(!g.has(k))g.set(k,{rep:o,count:0,ps:[]});const q=g.get(k);q.count++;
+    q.ps.push({p:o.p,top:o.top,alerts:o.alerts||[],info:o.webs.map(w=>({mark:w.m.mark,ang:Math.round(Math.min(w.ang,180-w.ang)),sh:Math.abs(w.sh||0),sol:sol(w)}))});});
   return [...g.values()].sort((a,b)=>a.rep.p[0]-b.rep.p[0]||b.rep.p[1]-a.rep.p[1]);
 }
 function cleatT(T,d=12.5,gap=10){const e=22,s=Math.round(Math.max(40,T.h*.4)/5)*5,xh=gap/2+e;return {d,hole:d+1.5,e,s,xh,gap,t:6.3,W:Math.max(100,Math.ceil(2*(xh+e)/5)*5),H:Math.ceil((T.h/2+s/2+e)/5)*5};}
@@ -2836,6 +2842,11 @@ function drawNos(S){
     o.webs.filter(w=>/DG/.test(w.m.type)&&Math.min(w.ang,180-w.ang)<25).forEach(w=>lines.push(`ALERTA: diagonal ${w.m.mark} a ${w.ang}° do banzo, muito abatida (recomendado ≥ 30°): aumente a altura da treliça ou reduza o painel.`));
     sd.notes(bb.x0,bb.y0-ts*2.2,lines,`${s.mark} · ${ns.name.toUpperCase()} · ${o.top?'NÓ DO BANZO SUPERIOR':'NÓ DO BANZO INFERIOR'}${o.sp?' COM EMENDA':''}`,`${s.count} unidades`);
     }
+    // posições do mesmo tipo: o detalhe vale para todas; muda só o ângulo e a solda
+    {const rows=[...new Set((s.ps||[]).map(q=>(q.info||[]).map(w=>`${w.mark} ${w.ang}°${w.sh?` (exc. ${w.sh})`:''}${w.sol?` · solda ${w.sol} mm`:''}`).join('  |  ')).filter(Boolean))];
+      if(rows.length>1){const bb=sd.bbox();let yy=bb.y0-ts*1.6;sd.T(bb.x0,yy,`POSIÇÕES DO ${s.mark}: mesmo detalhe, muda só o ângulo e a solda`,'TEXTO',{h:ts*.8});yy-=ts*1.5;
+        rows.forEach(r=>{sd.T(bb.x0,yy,'· '+r,'TEXTO',{h:ts*.7});yy-=ts*1.2;});
+        const al=[...new Set((s.ps||[]).flatMap(q=>q.alerts||[]))].filter(t=>!(o.alerts||[]).includes(t));al.forEach(t=>{sd.T(bb.x0,yy,'ALERTA: '+t,'TEXTO',{h:ts*.65});yy-=ts*1.1;});}}
     const b2=sd.bbox();if(col===3){col=0;x=0;y-=rowH+gap;rowH=0;}const dx=x-b2.x0,dy=y-b2.y1;
     d.put(sd,dx,dy);x+=b2.x1-b2.x0+gap;rowH=Math.max(rowH,b2.y1-b2.y0);col++;}));
   if(D.shopSp){const sd=new Dwg(ts,d.esc/2);shopDraw(sd,S,ts);const b2=sd.bbox();if(col===3){col=0;x=0;y-=rowH+gap;rowH=0;}d.put(sd,x-b2.x0,y-b2.y1);}
