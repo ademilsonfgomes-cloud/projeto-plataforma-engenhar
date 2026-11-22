@@ -53,17 +53,26 @@ body[data-v85="elev"] #conf148{display:flex}body.plotPrinting26 #conf148{display
 #conf148 .vazio{padding:8px;color:#6a7c8e}#conf148 .leg{padding:4px 8px 6px;border-top:1px solid #e3eaf1;color:#6a7c8e;font-size:10.5px;display:flex;flex-wrap:wrap;gap:2px 8px}#conf148 .leg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px}
 #conf148.min{width:auto;max-height:none}#conf148.min .pg,#conf148.min .f,#conf148.min .l,#conf148.min .leg{display:none}#conf148.min .t{border-radius:8px}
 .conf148h{margin-left:8px!important;font-size:13px!important;border:1.5px solid #9fb0c0!important;background:#fff!important;color:#36536f!important;border-radius:14px!important;padding:3px 12px!important;cursor:pointer;vertical-align:middle;font-weight:600!important;box-shadow:none!important;min-height:0!important;height:auto!important;width:auto!important}.conf148h.sim{background:#e3f4e8!important;border-color:#2e9d4f!important;color:#1f7a3a!important}.conf148h.mudou{background:#fff4dc!important;border-color:#e0a106!important;color:#8a5a00!important}
-@media print{#conf148,.conf148h{display:none!important}}`;
+@media print{#conf148,.conf148h{display:none!important}}
+/* V149 — elevações limpas: só a parede, a especificação e os desenhos (avisos e notas técnicas escondidos) */
+body.limpo149 #output article.wallResult[id^="wall-result-"]>p.warning,body.limpo149 #output article.wallResult[id^="wall-result-"]>p.note,body.limpo149 #output article.wallResult[id^="wall-result-"]>div.note,
+body.limpo149 #output article.wallResult[id^="wall-result-"]>div.manualPanel,body.limpo149 #output article.wallResult[id^="wall-result-"]>p:not([class]),body.limpo149 #output article.wallResult[id^="wall-result-"]>.steelTools53,
+body.limpo149 #output article.wallResult[id^="wall-result-"]>p.drawingScale29,body.limpo149 #output article.wallResult[id^="wall-result-"] .warn74,body.limpo149 #output article.wallResult[id^="wall-result-"] .fx76ok{display:none!important}
+#conf148 .lp{display:flex!important;flex-direction:row!important;align-items:center;gap:6px;margin:0!important;font-weight:400!important;padding:4px 8px;border-top:1px solid #e3eaf1;color:#36536f;font-size:11px;cursor:pointer}#conf148.min .lp{display:none}`;
   document.head.append(css);
   const box = document.createElement('div'); box.id = 'conf148'; box.className = 'noPrint';
   box.innerHTML = `<div class="t"><b>✔ Conferência das paredes</b><button data-a="min" title="Recolher / abrir">▾</button></div><div class="pg"><div class="bar"><i></i></div><div class="n"></div></div>
 <div class="f"><button data-f="todas">Todas</button><button data-f="fazer">A fazer</button><button data-f="ok">Conferidas</button></div><div class="l"></div>
-<div class="leg"><span><i style="background:#2e9d4f"></i>OK</span><span><i style="background:#e0a106"></i>pendente</span><span><i style="background:#d03a2f"></i>sem modulação</span><span>☑ conferida por mim</span><span>⚠ mudou depois</span></div>`;
+<label class="lp"><input type="checkbox" data-lp style="width:auto!important;margin:0!important;flex:0 0 auto"> Mostrar avisos e notas nas elevações</label><div class="leg"><span><i style="background:#2e9d4f"></i>OK</span><span><i style="background:#e0a106"></i>pendente</span><span><i style="background:#d03a2f"></i>sem modulação</span><span>☑ conferida por mim</span><span>⚠ mudou depois</span></div>`;
   document.body.append(box);
   let filtro = LS('conf148f') || 'fazer', visivel = -1;
   if (LS('conf148min') === '1') box.classList.add('min');
   try { const p = JSON.parse(LS('conf148pos') || 'null'); if (p) { box.style.left = p.x + 'px'; box.style.top = p.y + 'px'; box.style.right = 'auto'; } } catch {}
   const lista = box.querySelector('.l');
+  // elevações limpas por padrão; a opção mostra os avisos de novo (fica lembrada)
+  const lp = box.querySelector('[data-lp]'), limpo = () => LS('limpo149') !== '0';
+  document.body.classList.toggle('limpo149', limpo()); lp.checked = !limpo();
+  lp.addEventListener('change', () => { LS('limpo149', lp.checked ? '0' : '1'); document.body.classList.toggle('limpo149', !lp.checked); });
   function desenhar() {
     const W = state.walls || [];
     box.querySelectorAll('.f button').forEach(b => b.classList.toggle('on', b.dataset.f === filtro));
