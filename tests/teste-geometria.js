@@ -159,7 +159,7 @@ const CASOS = [
     const r = await p.evaluate(() => {
       buildPlot26(); const S = plotSheets26, si = S.findIndex(s => s.items.length >= 2); if (si < 0) return { erro: 'sem folha com 2 quadros' };
       const alvo = S[si].items[1], x = alvo.x, y = alvo.y, mov = S[si].items[0], res = window.colocar121(si, 0, si, x, y);
-      const T = plotSheets26.find(s => s.items.includes(mov)), ov = [];
+      previewPlot26(); const T = plotSheets26.find(s => s.items.includes(mov)), ov = []; // como a tela faz ao soltar o quadro
       plotSheets26.forEach(s => s.items.forEach((q, j) => s.items.forEach((o, k) => { if (k > j && overlap25(q, o, 0)) ov.push(q.title + ' × ' + o.title); })));
       return { noLugar: Math.abs(mov.x - x) < .01 && Math.abs(mov.y - y) < .01, mesmaFolha: plotSheets26.indexOf(T) === si, realocados: res?.rel.length || 0, sobrepostos: ov.length, ui: !!document.querySelector('#pr121rib [data-a="montar"]') && document.querySelectorAll('.th121').length === plotSheets26.length };
     });

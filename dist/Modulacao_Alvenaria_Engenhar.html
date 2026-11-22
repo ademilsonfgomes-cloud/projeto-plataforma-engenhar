@@ -12359,8 +12359,8 @@ const ENG_PLOT=(()=>{
   };
   function temaDe(q) {
     const t = q.title || '';
-    if (q.load77 || /^Mapa de cargas/.test(t)) return { k: 'CAR', o: 4, nome: 'MAPA DE CARGAS', cod: 'CAR' };
-    if (q.slab95 || q.slab82 || q.arm106 || q.el97 || (!/fiada · planta|^Paredes? \d/.test(t) && /lajes?\b|^Vigas|^Reforços|^Armaduras das lajes|^Detalhe/i.test(t))) return { k: 'LAJ', o: 3, nome: 'LAJES, VIGAS E REFORÇOS', cod: 'LAJ' };
+    if (q.load77 || /^(Mapa|Tabela) de cargas/.test(t)) return { k: 'CAR', o: 0, nome: 'MAPA DE CARGAS', cod: 'CAR' };
+    if (q.slab95 || q.slab82 || q.arm106 || q.el97 || (!/fiada · planta|^Paredes? \d/.test(t) && /lajes?\b|^Vigas|^Reforços|^Armaduras das lajes|^Detalhe/i.test(t))) { const m = t.match(/[Ll]aje[^(·]*?([+\-−]?\d+[.,]\d+)\s*m/) || t.match(/\(([+\-−]?\d+[.,]\d+)\s*m\)/); const z = m ? N(m[1].replace('−', '-').replace(',', '.')) : null; return { k: 'LAJ|' + (z ?? 'x'), o: 3, z, nome: 'LAJES, VIGAS E REFORÇOS', cod: 'LAJ' }; }
     if (/fiada · planta/.test(t)) { const n = nivelDe(t); return { k: 'PLA|' + n.v, o: 1, v: n.v, nome: 'PLANTAS DE 1ª E 2ª FIADAS' + (n.nome ? ' · ' + n.nome.toUpperCase().replace(/ M\)$/, ' m)') : ''), cod: 'PAG' }; }
     if (/^Parede(s)? \d+/.test(t)) { const n = nivelDe(t); return { k: 'ELE|' + n.v, o: 2, v: n.v, nome: 'ELEVAÇÕES' + (n.nome ? ' · ' + n.nome.toUpperCase().replace(/ M\)$/, ' m)') : ''), cod: 'ELE' }; }
     return { k: 'QUA', o: 5, nome: 'QUANTITATIVOS E RESISTÊNCIAS', cod: 'QUA' };
@@ -12398,15 +12398,39 @@ const ENG_PLOT=(()=>{
     if (!best) return false;
     ocupa(F, best.p.x, best.p.y, best.v.w, best.v.h); F.items.push({ ...best.v, x: best.p.x, y: best.p.y }); return true;
   }
+  // V153 — sequência construtiva: cargas → (por pavimento, de baixo para cima) plantas de 1ª/2ª fiada → elevações →
+  // laje que fica sobre esse pavimento (vigas, reforços, armaduras) → quantitativos
   function grupos(items) {
     const m = new Map();
     for (const q of items) { const t = temaDe(q); if (!m.has(t.k)) m.set(t.k, { t, its: [] }); m.get(t.k).its.push(q); }
-    const G = [...m.values()].sort((a, b) => a.t.o - b.t.o || (a.t.v || 0) - (b.t.v || 0));
+    const G = [...m.values()];
+    const pavs = [...new Set(G.filter(g => g.t.o === 1 || g.t.o === 2).map(g => g.t.v || 0))].sort((a, b) => a - b);
+    const pavDe = g => { if (g.t.o === 1 || g.t.o === 2) return g.t.v || 0; if (g.t.o === 3) { if (g.t.z == null || !pavs.length) return pavs.at(-1) ?? 0; const abaixo = pavs.filter(v => v < g.t.z - .01); return abaixo.length ? abaixo.at(-1) : pavs[0]; } return 0; };
+    const chave = g => g.t.o === 0 ? [0, 0, 0] : g.t.o === 5 ? [2, 0, 0] : [1, pavDe(g), g.t.o * 1000 + (g.t.z || 0)];
+    G.sort((a, b) => { const A = chave(a), B = chave(b); return A[0] - B[0] || A[1] - B[1] || A[2] - B[2]; });
     for (const g of G) {
       if (g.t.o === 2) g.its.sort((a, b) => numParede(a.title) - numParede(b.title));
       if (g.t.o === 1) g.its.sort((a, b) => (/^Segunda/.test(a.title) ? 1 : 0) - (/^Segunda/.test(b.title) ? 1 : 0));
+      if (g.t.o === 0) g.its.sort((a, b) => (/^Mapa/.test(a.title) ? 0 : 1) - (/^Mapa/.test(b.title) ? 0 : 1));
+      if (g.t.o === 3) g.its.sort((a, b) => (a.slab95 && !a.arm106 ? 0 : a.arm106 ? 1 : 2) - (b.slab95 && !b.arm106 ? 0 : b.arm106 ? 1 : 2));
     }
     return G;
+  }
+  // encaixe SEMPRE PARA A FRENTE: cada desenho entra na folha atual (preenchendo os espaços livres dela) ou abre a próxima;
+  // nunca volta para uma folha anterior. Para não deixar buraco, pode adiantar até `olhar` desenhos do MESMO grupo
+  // (ex.: a Parede 9 entra antes da 8 se só ela couber no fim da folha); plantas de fiada e cargas mantêm a ordem exata.
+  function fluxoSeq(G, n, olhar) {
+    const A = geo().area, out = [];
+    for (const g of G) {
+      const list = g.its.slice(), fixo = g.t.o === 0 || g.t.o === 1;
+      while (list.length) {
+        const cur = out.at(-1), q = list[0];
+        if (cur && poe(cur, q)) { list.shift(); continue; }
+        if (cur && !fixo) { let ok = false; for (let k = 1; k <= olhar && k < list.length; k++) if (poe(cur, list[k])) { list.splice(k, 1); ok = true; break; } if (ok) continue; }
+        const F = novaFolha(A, out.length, n); out.push(F); if (!poe(F, q)) F.items.push({ ...q, x: A.x, y: A.y }); list.shift();
+      }
+    }
+    return out;
   }
   // encaixa na ordem dada: cada quadro vai no primeiro espaço livre que couber, olhando as folhas já abertas (preenche os
   // buracos das folhas anteriores antes de abrir folha nova)
@@ -12421,14 +12445,14 @@ const ENG_PLOT=(()=>{
   const area = F => F.items.reduce((s, q) => s + q.w * q.h, 0);
   function empacotar(items, otimizar) {
     const G = grupos(items);
-    const ordens = [G.flatMap(g => g.its)];                                                 // ordem dos temas e da numeração
-    ordens.push(G.flatMap(g => g.its.slice().sort((a, b) => b.h - a.h || b.w - a.w)));          // por tema, maiores primeiro
-    if (otimizar) { ordens.push(items.slice().sort((a, b) => b.w * b.h - a.w * a.h)); ordens.push(items.slice().sort((a, b) => b.h - a.h || b.w - a.w)); }
+    // padrão: ordem da sequência e da numeração, adiantando no máximo 2 desenhos; Otimizar: adianta mais (até 8) e testa
+    // também os maiores primeiro dentro de cada grupo — fica com o que gastar menos folhas
+    const variantes = otimizar ? [[G, 2], [G, 8], [G.map(g => ({ ...g, its: g.t.o <= 1 ? g.its : g.its.slice().sort((a, b) => b.h - a.h || b.w - a.w) })), 8]] : [[G, 2]];
     let best = null;
-    for (const [k, L] of ordens.entries()) {
+    for (const [k, [V, olhar]] of variantes.entries()) {
       let n = Math.max(1, Math.ceil(items.reduce((s, q) => s + q.w * q.h, 0) / 2e5)), F = null;
-      for (let it = 0; it < 4; it++) { F = fluxo(L, n); if (F.length === n) break; n = F.length; }
-      const sc = F.length * 1000 + k;                                                       // menos folhas; empate: ordem natural
+      for (let it = 0; it < 4; it++) { F = fluxoSeq(V, n, olhar); if (F.length === n) break; n = F.length; }
+      const sc = F.length * 1000 + k;
       if (!best || sc < best.sc) best = { F, sc };
     }
     return best.F.map(F => ({ items: F.items }));
@@ -12475,7 +12499,7 @@ const ENG_PLOT=(()=>{
   const escalaBase = () => N(document.getElementById('plotScale26')?.value) || 50;
   function rotulo(sheet) {
     const ts = new Map(); for (const q of sheet.items || []) { const t = temaDe(q); if (!ts.has(t.k)) ts.set(t.k, { t, n: [], esc: q.scale82 || escalaBase() }); const p = numParede(q.title); if (p) ts.get(t.k).n.push(p); }
-    const L = [...ts.values()].sort((a, b) => a.t.o - b.t.o || (a.t.v || 0) - (b.t.v || 0));
+    const L = [...ts.values()].sort((a, b) => ((a.t.o === 5) - (b.t.o === 5)) || (a.t.o === 0 ? -1 : 0) - (b.t.o === 0 ? -1 : 0) || (a.t.v ?? a.t.z ?? 0) - (b.t.v ?? b.t.z ?? 0) || a.t.o - b.t.o);
     const txt = L.map(x => x.t.nome + (x.n.length ? ' · P' + Math.min(...x.n) + (x.n.length > 1 ? ' A P' + Math.max(...x.n) : '') : '')).join(' + ');
     const escs = [...new Set(L.map(x => x.esc))];
     return { txt: txt || 'PRANCHA', cod: (L[0]?.t.cod || 'ALV'), esc: escs.length === 1 ? '1:' + escs[0] : 'INDICADA' };
