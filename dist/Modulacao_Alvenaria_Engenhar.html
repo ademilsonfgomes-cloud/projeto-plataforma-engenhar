@@ -12363,6 +12363,8 @@ const ENG_PLOT=(()=>{
     if (q.slab95 || q.slab82 || q.arm106 || q.el97 || (!/fiada · planta|^Paredes? \d/.test(t) && /lajes?\b|^Vigas|^Reforços|^Armaduras das lajes|^Detalhe/i.test(t))) { const m = t.match(/[Ll]aje[^(·]*?([+\-−]?\d+[.,]\d+)\s*m/) || t.match(/\(([+\-−]?\d+[.,]\d+)\s*m\)/); const z = m ? N(m[1].replace('−', '-').replace(',', '.')) : null; return { k: 'LAJ|' + (z ?? 'x'), o: 3, z, nome: 'LAJES, VIGAS E REFORÇOS', cod: 'LAJ' }; }
     if (/fiada · planta/.test(t)) { const n = nivelDe(t); return { k: 'PLA|' + n.v, o: 1, v: n.v, nome: 'PLANTAS DE 1ª E 2ª FIADAS' + (n.nome ? ' · ' + n.nome.toUpperCase().replace(/ M\)$/, ' m)') : ''), cod: 'PAG' }; }
     if (/^Parede(s)? \d+/.test(t)) { const n = nivelDe(t); return { k: 'ELE|' + n.v, o: 2, v: n.v, nome: 'ELEVAÇÕES' + (n.nome ? ' · ' + n.nome.toUpperCase().replace(/ M\)$/, ' m)') : ''), cod: 'ELE' }; }
+    // V154 — quantitativo de cada nível logo depois do nível (fiadas → elevações → laje → quantitativo)
+    if (q.summary && q.lvl103) { const [vz, nm] = String(q.lvl103).split('|'), v = N(vz); return { k: 'QNV|' + v, o: 4, v, nome: 'QUANTITATIVOS · ' + ((nm || '') + ' (' + (v >= 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + ' m)').toUpperCase().replace(/ M\)$/, ' m)'), cod: 'QUA' }; }
     return { k: 'QUA', o: 5, nome: 'QUANTITATIVOS E RESISTÊNCIAS', cod: 'QUA' };
   }
   const numParede = t => { const m = String(t).match(/^Paredes? (\d+)/); return m ? +m[1] : 0; };
@@ -12406,7 +12408,7 @@ const ENG_PLOT=(()=>{
     const G = [...m.values()];
     const pavs = [...new Set(G.filter(g => g.t.o === 1 || g.t.o === 2).map(g => g.t.v || 0))].sort((a, b) => a - b);
     const pavDe = g => { if (g.t.o === 1 || g.t.o === 2) return g.t.v || 0; if (g.t.o === 3) { if (g.t.z == null || !pavs.length) return pavs.at(-1) ?? 0; const abaixo = pavs.filter(v => v < g.t.z - .01); return abaixo.length ? abaixo.at(-1) : pavs[0]; } return 0; };
-    const chave = g => g.t.o === 0 ? [0, 0, 0] : g.t.o === 5 ? [2, 0, 0] : [1, pavDe(g), g.t.o * 1000 + (g.t.z || 0)];
+    const chave = g => g.t.o === 0 ? [0, 0, 0] : g.t.o === 5 ? [2, 0, 0] : [1, g.t.o === 4 ? (g.t.v || 0) : pavDe(g), g.t.o * 1000 + (g.t.o === 3 ? (g.t.z || 0) : 0)];
     G.sort((a, b) => { const A = chave(a), B = chave(b); return A[0] - B[0] || A[1] - B[1] || A[2] - B[2]; });
     for (const g of G) {
       if (g.t.o === 2) g.its.sort((a, b) => numParede(a.title) - numParede(b.title));
