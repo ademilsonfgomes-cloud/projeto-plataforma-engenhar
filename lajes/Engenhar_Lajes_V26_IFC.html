@@ -643,6 +643,9 @@ function floor(st){const warn=[],skipped=[],rooms=[],beams=st.beams.map(b=>({...
   panels.forEach(p=>{const k=p.sl.kind,fr=p.free.map((f,e)=>f?['Esq','Dir','Sup','Inf'][e]:null).filter(Boolean);
     rooms.push({id:p.id,name:String(p.sl.name).replace(/\s*\(.*\)\s*$/,'')+(p.part?' (parte)':''),x:p.ax.x0,y:p.ax.y0,w:p.ax.x1-p.ax.x0,h:p.ax.y1-p.ax.y0,face:{x0:p.x0,y0:p.y0,x1:p.x1,y1:p.y1},
       kind:k,hcm:p.hcm,free:p.free,skip:k!=='Maciça'?`laje ${k.toLowerCase()} (cálculo ainda não disponível)`:fr.length?`borda livre (${fr.join(', ')}): balanço, cálculo na próxima etapa`:'',src:p.sl.id,poly:p.sl.poly});});
+  // numeração L1, L2… de cima para baixo e da esquerda para a direita (linhas pela borda superior)
+  {const ord=rooms.slice().sort((a,b)=>a.y-b.y||a.x-b.x),rows=[];ord.forEach(r=>{const row=rows.find(w=>Math.abs(w.y-r.y)<.3);if(row)row.list.push(r);else rows.push({y:r.y,list:[r]});});
+   let n=0;rows.sort((a,b)=>a.y-b.y).forEach(w=>w.list.sort((a,b)=>a.x-b.x).forEach(r=>{r.ifc=r.id;r.id='L'+(++n);}));rooms.sort((a,b)=>+a.id.slice(1)-+b.id.slice(1));}
   // largura de viga predominante (ponderada pelo comprimento)
   const W={};beams.forEach(b=>{const k=Math.round(b.b*100);W[k]=(W[k]||0)+Math.hypot(b.x2-b.x1,b.y2-b.y1);});
   const bw=+(Object.entries(W).sort((a,b)=>b[1]-a[1])[0]||[14])[0];
@@ -672,7 +675,7 @@ function loadIfcText(text,file){const t0=performance.now();IFCM=IFCL.model(text)
   $('level').value=best;IFCM.ms=performance.now()-t0;loadStorey(best);}
 function loadStorey(i,fresh){if(!IFCM)return;saveCfg();
   const st=IFCM.storeys[i],F=IFCM.floors[i],S=SCALE,b=F.bounds,tx=x=>(x-b.x0)*S+40,ty=y=>(y-b.y0)*S+40;STOREY=i;
-  const list=F.rooms.map(r=>({id:r.id,name:r.name,x:tx(r.x),y:ty(r.y),w:r.w*S,h:r.h*S,kind:r.kind,hcm:r.hcm,free:r.free,skip:r.skip,face:{x0:tx(r.face.x0),y0:ty(r.face.y0),x1:tx(r.face.x1),y1:ty(r.face.y1)},poly:r.poly.map(p=>[tx(p[0]),ty(p[1])])}));
+  const list=F.rooms.map(r=>({id:r.id,ifc:r.ifc,name:r.name,x:tx(r.x),y:ty(r.y),w:r.w*S,h:r.h*S,kind:r.kind,hcm:r.hcm,free:r.free,skip:r.skip,face:{x0:tx(r.face.x0),y0:ty(r.face.y0),x1:tx(r.face.x1),y1:ty(r.face.y1)},poly:r.poly.map(p=>[tx(p[0]),ty(p[1])])}));
   MODEL={kind:'ifc',file:IFCM.file,storey:decIfc(st.name),elev:st.elev,warn:F.warn,bw:F.bw,schema:IFCM.schema,
     beams:F.beams.map(q=>({...q,x1:tx(q.x1),y1:ty(q.y1),x2:tx(q.x2),y2:ty(q.y2),bu:q.b*S})),cols:F.cols.map(c=>({...c,poly:c.poly.map(p=>[tx(p[0]),ty(p[1])])})),
     bu:{x0:40,y0:40,x1:tx(b.x1),y1:ty(b.y1)}};
@@ -689,7 +692,7 @@ function ifcInfo(){const el=$('ifcInfo');if(!el)return;if(!MODEL){el.innerHTML='
    `${cnt(r=>!r.skip)} painel(is) calculável(is) · ${cnt(r=>r.skip&&r.kind==='Maciça')} em balanço/borda livre · ${cnt(r=>r.kind!=='Maciça')} de outro tipo</p>`+
    (sk.length?`<p>Fora do cálculo: ${sk.map(r=>`${esc2(r.id)} (${esc2(r.skip.split(':')[0])})`).join(', ')}.</p>`:'')+
    (MODEL.warn.length?`<p>${MODEL.warn.map(esc2).join('<br>')}</p>`:'')+
-   `<p>Lajes com recorte foram divididas em painéis retangulares (a, b, c…), contínuos entre si. Bordas sem viga e sem laje vizinha são tratadas como livres.</p>`;}
+   `<p>Lajes numeradas L1, L2… de cima para baixo e da esquerda para a direita. Lajes com recorte foram divididas em painéis retangulares, cada um com o seu número e contínuos entre si. Bordas sem viga e sem laje vizinha são tratadas como livres.</p>`;}
 const esc2=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 // vigas e pilares reais na tela
 function frameSvg(){if(!MODEL){let s='<path class="beam" d="M90 85 H640 V465 H90 Z M385 85 V465 M90 290 H640"/>';for(let x of [90,385,640])for(let y of [85,290,465])s+=`<rect class="column" x="${x-11}" y="${y-11}" width="22" height="22"/>`;return s;}
@@ -707,7 +710,7 @@ function formaIfc(K){let g='';const L=(x1,y1,x2,y2,w=0.7,da='')=>`<line x1="${x1
   return g;}
 function ifcProps(r){if(!MODEL||!r)return;const fw=(r.face.x1-r.face.x0)/SCALE,fh=(r.face.y1-r.face.y0)/SCALE;
   const box=document.createElement('div');box.className='rep';
-  box.innerHTML=`<h4>Origem IFC</h4><p>${esc2(r.name)} · ${esc2(r.kind)} · h = ${f2(r.hcm,1)} cm (do IFC)<br>Face a face: ${f2(fw)} × ${f2(fh)} m · eixo a eixo: ${f2(r.w/SCALE)} × ${f2(r.h/SCALE)} m</p>${r.skip?`<p class="bad">Fora do cálculo: ${esc2(r.skip)}.</p>`:''}`;
+  box.innerHTML=`<h4>Origem IFC</h4><p>${esc2(r.id)} = ${esc2(r.name)} (${esc2(r.ifc||'')} no IFC) · ${esc2(r.kind)} · h = ${f2(r.hcm,1)} cm (do IFC)<br>Face a face: ${f2(fw)} × ${f2(fh)} m · eixo a eixo: ${f2(r.w/SCALE)} × ${f2(r.h/SCALE)} m</p>${r.skip?`<p class="bad">Fora do cálculo: ${esc2(r.skip)}.</p>`:''}`;
   $('properties').prepend(box);
   if(r.skip)['type','h','g','q'].forEach(k=>{const e=$(k);if(e)e.disabled=true;});}
 async function changeProjectIfc(){const v=$('project').value;
