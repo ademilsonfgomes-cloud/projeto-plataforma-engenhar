@@ -638,6 +638,10 @@ function floor(st,MM){const warn=[],skipped=[],rooms=[],beams=st.beams.map(b=>({
   for(const S of (MM?MM.storeys:[st]))for(const c of S.cols){const z0=c.z0??zs,z1=c.z1??zs+3;
     if(z0<zs-.05&&z1>=zs-.05)put(c,zs-z0,Math.max(0,z1-zs));else if(Math.abs(z0-zs)<=.15)put(c,0,z1-zs);}
   if(!MM)for(const c of st.cols)put(c,0,3);
+  // lacuna no IFC: pilar que nasce na laje e tem lance mais abaixo na mesma posição → contínuo (apoio)
+  const gaps=[];if(MM)for(const o of CM.values()){if(o.below>0||o.above<=0)continue;let zt=-1e9;for(const S of MM.storeys)for(const c of S.cols){const [x,y]=cen(c);if(Math.hypot(x-o.x,y-o.y)<.05&&(c.z1??-1e9)<zs-.05)zt=Math.max(zt,c.z1);}
+    if(zt>-1e8){o.below=zs-zt;o.gap=true;gaps.push(o.name.split(' ')[0]);}}
+  if(gaps.length)warn.push(`Pilares sem o lance logo abaixo da laje no IFC (${gaps.join(', ')}): considerados contínuos, como apoio. Conferir.`);
   const colsF=[...CM.values()],sup=colsF.filter(c=>c.below>0);
   // lajes lisas (nervuradas ou maciças apoiadas direto em pilares) e seus capitéis (zonas maciças encostadas)
   const segD=(px,py,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],L2=dx*dx+dy*dy||1e-9;let t=((px-a[0])*dx+(py-a[1])*dy)/L2;t=Math.max(0,Math.min(1,t));return Math.hypot(px-a[0]-t*dx,py-a[1]-t*dy);};
@@ -769,7 +773,9 @@ function lisaModel(fl,P){const a=P.a/100,dom=[fl.poly,...fl.caps.map(c=>c.poly)]
   const trib=(L,i)=>i<=0?(L[1]-L[0]):i>=L.length-1?(L.at(-1)-L.at(-2)):(L[i+1]-L[i-1])/2;
   const ribI=w=>tSec(w*100,P.bw,P.hn,P.hf);
   const addLine=(vert,c,li,TL)=>{const w=Math.min(trib(vert?XL:YL,li),a*1.5);
-    for(const [s0,s1] of ivs(vert,c)){const pos=[s0,...TL.filter(v=>v>s0+.02&&v<s1-.02),s1];let prev=null;
+    for(const [s0,s1] of ivs(vert,c)){const inn=TL.filter(v=>v>s0-1e-9&&v<s1+1e-9),nA=inn.find(v=>Math.abs(v-s0)<=.03),nB=[...inn].reverse().find(v=>Math.abs(v-s1)<=.03),a0=nA??s0,a1=nB??s1;
+      // linha de nervura colada na borda (< 3 cm): a transversal termina nela (malha conectada)
+      const pos=[a0,...inn.filter(v=>v>a0+.02&&v<a1-.02),a1];if(a1-a0<.05)continue;let prev=null;
       pos.forEach((s,k)=>{const i=vert?nid(c,s,k===0||k===pos.length-1):nid(s,c,k===0||k===pos.length-1);
         if(prev!==null){const A=nodes[prev],B=nodes[i],mx=(A.x+B.x)/2,my=(A.y+B.y)/2,cp=capAt(mx,my);let EI,GJ,tp,pp,hh;
           if(cp){hh=(cp.h||P.hc/100);EI=E*w*hh**3/12;GJ=G*w*hh**3/6;tp='cap';pp=25*hh;}
@@ -795,8 +801,9 @@ function lisaCalc(fl,k){const P=lisaPrm(fl,k),t0=performance.now(),M=lisaModel(f
   const red=M.bars.map((b,i)=>{if(b.tp!=='rib')return 1;const S=tSec(b.w*100,P.bw,P.hn,P.hf),Ic=S.I*1e-8,Mr=1.2*m.fctm*1000*Ic/(S.yc/100),q=Q.bar[i],Ma=Math.max(Math.abs(q.M1),Math.abs(q.M2),Math.abs(q.Mmid));
     if(Ma<=Mr)return 1;const d=(P.hn+P.hf-N(c.c)-0.6)/100,As=1.6e-4,ae=m.ae,bf=b.w,x=(-ae*As+Math.sqrt((ae*As)**2+2*bf*ae*As*d))/bf,III=bf*x**3/3+ae*As*(d-x)**2,r3=(Mr/Ma)**3;return Math.max(.2,(r3*Ic+(1-r3)*III)/Ic);});
   const M2={...M,bars:M.bars.map((b,i)=>({...b,EI:b.EI*red[i]}))};Q=GRELHA.solve(M2,'qqp');
-  const W=M.nodes.map((n,i)=>Q.u[3*i]*(1+af));let wmax=0,wn=0;W.forEach((w,i)=>{if(w>wmax){wmax=w;wn=i;}});
-  const nd=M.nodes[wn],cs=fl.cols.map(cc=>Math.hypot(cc.x-nd.x,cc.y-nd.y)).sort((p,q)=>p-q),Lref=Math.max(1,Math.SQRT2*(cs[0]||5));
+  // flecha: pior relação a∞/(ℓ/250), com ℓ ≈ √2 × distância ao pilar de apoio mais próximo (vão do painel)
+  const W=M.nodes.map((n,i)=>Q.u[3*i]*(1+af)),sc=M.sup.map(s=>M.nodes[s.n]);let wmax=0,wn=0,best=-1,Lref=1;
+  W.forEach((w,i)=>{const n=M.nodes[i];let dm=1e9;for(const q of sc)dm=Math.min(dm,Math.hypot(q.x-n.x,q.y-n.y));const Lr=Math.max(1,Math.SQRT2*dm),rt=w/(Lr/250);if(rt>best){best=rt;wmax=w;wn=i;Lref=Lr;}});
   return {fl,P,M,R,Q,W,wmax,wn,Lref,lim:Lref/250,ms:performance.now()-t0};}
 // --- dimensionamento por linha de nervura
 function lisaDesign(L){const {P,M,R}=L,c=C(),cv=N(c.c),cn=N(c.cn||c.c),nv={a:P.a,bw:P.bw,hn:P.hn,hf:P.hf,h:P.hn+P.hf,A:tSec(P.a,P.bw,P.hn,P.hf).A},h=nv.h,rmin=rhoMin(N(c.fck)),m=mat();
