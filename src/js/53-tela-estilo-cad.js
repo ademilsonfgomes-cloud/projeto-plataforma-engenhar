@@ -125,7 +125,7 @@
     ['Novo projeto', () => $('newProject')?.click()], ['Abrir projeto', () => $('restore')?.click()], ['Salvar', () => $('save')?.click()],
     ['Exemplo didático', () => $('example')?.click()], ['Desfazer', () => window.undo58?.undo?.()], ['Refazer', () => window.undo58?.redo?.()],
     ['Resistências', () => window.res96?.open()], ['Vento e contraventamento', () => window.vento109?.open()], ['Vergas', () => window.vergas109?.open()],
-    ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Memorial descritivo', () => window.memo147?.abrir()], ['Visibilidade', () => $('vis87btn')?.click()],
+    ['Memorial de cálculo', () => window.memorial?.imprimir()], ['Memorial descritivo', () => window.memo147?.abrir()], ['Estrutura (IFC)', () => window.estr156?.abrirPainel()], ['Visibilidade', () => $('vis87btn')?.click()],
     ['Verificar geometria', () => window.geo116?.abrir()], ['Gerar todos os níveis', () => document.getElementById('genAll103')?.click()], ['Trena', () => window.trena118?.ligar()], ['Lápis', () => window.ref126?.ligar()], ['Renumerar', () => window.renum116?.()],
   ];
   for (const [l, f] of EXTRA) REG.set('x:' + l, { key: 'x:' + l, t: { l, ic: '', t: () => { f(); } }, cat: 'extra' });
@@ -312,7 +312,7 @@
   const daCat = c => { const out = []; for (const g of U.CATS[c]?.groups || []) { if (!g[1].length) continue; out.push({ h: g[0] }); for (const t of g[1]) if (!String(t.t).startsWith('#')) out.push({ k: keyOf(t) }); } return out; };
   const ghostOn = () => LS('ghost74') === '1';
   const MENUS = [
-    ['Arquivo', () => [{ k: 'x:Novo projeto' }, { k: 'x:Abrir projeto' }, { k: 'x:Salvar' }, { k: 'x:Exemplo didático' }, { s: 1 },
+    ['Arquivo', () => [{ k: 'x:Novo projeto' }, { k: 'x:Abrir projeto' }, { k: 'x:Salvar' }, { k: 'x:Exemplo didático' }, { k: 'x:Estrutura (IFC)' }, { s: 1 },
       { k: 'Conferir projeto|auditV48' }, { k: 'Diagnóstico (.txt)|downloadAuditV48' }, { s: 1 }, { k: 'x:Memorial de cálculo' }, { k: 'x:Memorial descritivo' }]],
     ['Editar', () => [{ k: 'x:Desfazer', d: 'Ctrl+Z' }, { k: 'x:Refazer', d: 'Ctrl+Y' }, { s: 1 }, { k: 'Selecionar|sel', d: 'Esc' }, { k: 'Apagar parede|deleteWall' }, { k: 'Desfazer exclusão|undoDelete' }]],
     ['Ver', () => [{ h: 'Vistas' }, ...Object.entries(U.VNAME).map(([v, n]) => ({ l: n, f: () => U.view(v), c: U.curView === v })), { s: 1 },

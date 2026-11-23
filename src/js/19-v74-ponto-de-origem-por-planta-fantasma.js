@@ -367,7 +367,7 @@ async function importIFC0(file){const st=$('planStatus');try{
  const msg='IFC importado: '+made.length+' pavimento(s) — '+made.map(x=>x.S.name+' ('+f2(x.S.z/100)+' m): '+x.n+' paredes, '+x.ops+' aberturas').join(' · ')+'. A escala e o ponto de origem já vêm do IFC.'+(nNorm?' '+nNorm+' abertura(s) com altura fora das fiadas receberam complemento hachurado.':'')+' Confira as paredes (espessura, altura, posição) e marque como conferidas.'+(skipped.length?' Itens ignorados: '+skipped.length+' ('+skipped.slice(0,4).join(', ')+(skipped.length>4?'…':'')+').':'');
  st.textContent=msg;setTimeout(()=>{st.textContent=msg;},80);return {made,skipped,walls:walls.length,ops:nOps};
  }catch(e){console.error(e);st.textContent='Não foi possível importar o IFC: '+e.message;alert('Não foi possível importar o IFC: '+e.message);return null;}}
-window.importIFC74=importIFC;
+window.ifc74={parseIFC,ifcModel,hull,minRectDir};window.importIFC74=importIFC;
 
 const css=document.createElement('style');css.textContent=`
 .grp74{border-color:#c7b8f0!important;background:#faf8ff!important}.grp74 button.on74{background:#ede4ff;border-color:#8b5cf6;color:#4c1d95}
