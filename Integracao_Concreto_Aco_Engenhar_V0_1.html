@@ -3270,7 +3270,7 @@ async function plotPDF(){const P=buildPlot();if(!P){note('Gere a estrutura metá
     sh.D.e.forEach(e=>{if(e.t==='l'){setL(e.ly);doc.line(e.x1,-e.y1,e.x2,-e.y2);}else if(e.t==='c'){setL(e.ly);doc.circle(e.x,-e.y,e.r,'S');}
       else if(e.t==='i'){try{doc.addImage(e.href,'PNG',e.x,-(e.y+e.h),e.w,e.h);}catch(err){}}
       else if(e.s){const c=PLOT.bw?[0,0,0]:(PDF_COR[e.ly]||[0,0,0]);doc.setTextColor(c[0],c[1],c[2]);doc.setFont('helvetica',e.b?'bold':'normal');doc.setFontSize(e.h/.716/.3528);
-        doc.text(pdfTxt(e.s),e.x,-e.y,{angle:e.rot||0,align:e.an==='middle'?'center':e.an==='end'?'right':'left'});}});});
+        {const t=pdfTxt(e.s),f=e.an==='middle'?.5:e.an==='end'?1:0,r=(e.rot||0)*Math.PI/180,w=f?doc.getTextWidth(t):0;doc.text(t,e.x-f*w*Math.cos(r),-e.y+f*w*Math.sin(r),{angle:e.rot||0});}}});});
   const nome=`pranchas_${((MODELS.est&&MODELS.est.name)||'projeto').replace(/\.ifc$/i,'').replace(/[^\w-]+/g,'_')}.pdf`;saveFile(nome,doc.output('arraybuffer'),'application/pdf');}
 // ---------- documentos em texto (A4): memória de cálculo e memorial descritivo
 async function docPDF(nome,titulo,secs){let lib;try{lib=await loadJsPDF();}catch(e){note('Não consegui carregar o gerador de PDF. Verifique a conexão.');return;}
