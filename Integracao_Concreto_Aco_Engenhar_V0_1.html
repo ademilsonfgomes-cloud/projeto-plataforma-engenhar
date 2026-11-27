@@ -254,6 +254,8 @@ svg text{font-family:var(--f-disp);font-weight:500}
         <div class="f"><label for="ew_q">Sobrecarga (kN/m²) · loja comercial NBR 6120 = 4,0</label><input id="ew_q" type="number" step="0.5" min="0" value="4.0"></div>
         <div class="f"><label for="ew_alv">Alvenaria de fechamento (kN/m² de parede)</label><input id="ew_alv" type="number" step="0.1" min="0" value="1.9"></div>
         <label class="chk"><input type="checkbox" id="ew_top" checked> O último nível é a cobertura (sem laje)</label>
+        <div class="row"><button type="button" class="primary" id="ewDimB">Dimensionar perfis W</button><button type="button" id="ewDimX">Voltar aos perfis do IFC</button></div>
+        <p class="note" id="ewDimSt" style="margin:0"></p>
         <div class="f"><label for="ew_gR">Cobertura: telha + estrutura (kN/m²)</label><input id="ew_gR" type="number" step="0.05" min="0" value="0.25"></div>
         <div class="f"><label for="ew_qR">Cobertura: sobrecarga (kN/m²)</label><input id="ew_qR" type="number" step="0.05" min="0" value="0.25"></div>
       </fieldset>
@@ -1250,6 +1252,7 @@ function calcGalpao(out,G){const M=MODELS.est;if(!out.trusses.length)return null
   return res;}
 
 // ---- dimensionamento automático: em cada grupo, o perfil mais leve da lista que passa com os esforços da análise; repete até estabilizar
+function dimensionarW(){return ewDim();}
 function dimensionar(){const st=$('#dimSt'),M=MODELS.est;if(!M||!STEEL||!STEEL.calc){if(st)st.textContent='Abra um IFC ou crie um galpão antes.';return;}
   const nv=M.novo,log=[],kg0=STEEL.mem.reduce((a,m)=>a+m.len/1000*m.prof.kgm,0),opts=id=>[...document.querySelectorAll('#'+id+' option')].map(o=>o.value).filter(k=>STP[k]&&!(STP[k].t<2)).sort((a,b)=>STP[a].kgm-STP[b].kgm);
   const pick=(cands,ok)=>{for(const k of cands)if(ok(k))return k;return cands[cands.length-1];};let it=0,ch=true;
@@ -2505,6 +2508,9 @@ function wMrd(P,Lb,ax='x'){if(ax==='y')return Math.min(P.Zy*EW_FY,1.5*P.Wy*EW_FY
 function wNcRd(P,Lx,Ly){const Ne=Math.min(Math.PI**2*EW_E*P.Ix/Lx**2,Math.PI**2*EW_E*P.Iy/Ly**2),l0=Math.sqrt(P.A*EW_FY/Ne),chi=l0<=1.5?.658**(l0*l0):.877/(l0*l0);return {N:chi*P.A*EW_FY/1.1,chi,l0};}
 const EW_BOLT={16:{A:2.01,ang:'L 76 x 76 x 6,3 (3" x 1/4")',ta:6.3,aw:76},19:{A:2.84,ang:'L 76 x 76 x 6,3 (3" x 1/4")',ta:6.3,aw:76},22:{A:3.87,ang:'L 102 x 102 x 7,9 (4" x 5/16")',ta:7.9,aw:102}};
 const boltV=d=>.4*EW_BOLT[d].A*82.5/1.35,boltC=(d,t)=>2.4*d/10*t/10*EW_FU/1.35;   // kN (A325, rosca no plano de corte; esmagamento)
+// dimensiona: troca o perfil de cada vão que não passa pelo W mais leve que passa (e repete até estabilizar)
+function ewDim(){if(!STEEL||!STEEL.ew)return 0;OVR.ewp=OVR.ewp||{};let n=0;
+  for(let it=0;it<4;it++){const bad=STEEL.ew.spans.filter(s=>s.ut>1&&s.sug&&OVR.ewp[s.nm]!==s.sug.label);if(!bad.length)break;bad.forEach(s=>{OVR.ewp[s.nm]=s.sug.label;n++;});saveOVR();runSteel();}return n;}
 function ewInputs(){const v=(id,d)=>{const e=$('#'+id);const x=e?+String(e.value).replace(',','.'):NaN;return isFinite(x)&&e&&e.value!==''?x:d;};
   return {lj:v('ew_lj',10),rev:v('ew_rev',1.0),q:v('ew_q',4.0),alv:v('ew_alv',1.9),top:!$('#ew_top')||$('#ew_top').checked,gR:v('ew_gR',.25),qR:v('ew_qR',.25)};}
 function ewBuild(G){const M=MODELS.est;if(!M||M.novo)return null;const st=M.els.filter(e=>isSteelEl(e)&&e.ex[0]);if(st.length<3)return null;
@@ -2525,7 +2531,7 @@ function ewBuild(G){const M=MODELS.est;if(!M||M.novo)return null;const st=M.els.
   B.forEach(e=>{const x=e.ex[0],a=x.start,b=x.end,L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<300)return;const u=[(b[0]-a[0])/L,(b[1]-a[1])/L],z=Math.round(e.bb.z1/10)*10,P=propOf(e);
     const cuts=[0,L];out.cols.forEach(c=>{if(c.z0>z+50||c.z1<z-400)return;const q=proj([c.x,c.y],a,u,L);if(q.d<Math.max(c.P.h,c.P.w)/2+60&&q.t>300&&q.t<L-300)cuts.push(q.t);});
     concP.forEach(c=>{if(c.bb.z0>z-100||c.bb.z1<z-400)return;const q=proj([(c.bb.x0+c.bb.x1)/2,(c.bb.y0+c.bb.y1)/2],a,u,L),hw=Math.max(c.bb.x1-c.bb.x0,c.bb.y1-c.bb.y0)/2;if(q.d<hw+60&&q.t>300&&q.t<L-300&&!cuts.some(t=>Math.abs(t-q.t)<300))cuts.push(q.t);});
-    cuts.sort((p,q)=>p-q);for(let k=0;k<cuts.length-1;k++){const t0=cuts[k],t1=cuts[k+1];out.spans.push({el:e,nm:nm(e)+(cuts.length>2?String.fromCharCode(97+k):''),P,z,u,a:[a[0]+u[0]*t0,a[1]+u[1]*t0],b:[a[0]+u[0]*t1,a[1]+u[1]*t1],L:t1-t0,pl:[],ends:[]});}});
+    cuts.sort((p,q)=>p-q);for(let k=0;k<cuts.length-1;k++){const t0=cuts[k],t1=cuts[k+1];const nmS=nm(e)+(cuts.length>2?String.fromCharCode(97+k):''),Po=(OVR.ewp||{})[nmS],PS=Po&&EW_CAT.find(q=>q.label===Po)||P;out.spans.push({el:e,nm:nmS,P:PS,P0:P,z,u,a:[a[0]+u[0]*t0,a[1]+u[1]*t0],b:[a[0]+u[0]*t1,a[1]+u[1]*t1],L:t1-t0,pl:[],ends:[]});}});
   // apoio de cada ponta: pilar W (mesa ou alma), viga W, concreto
   const segD=(p,s)=>{const ab=[s.b[0]-s.a[0],s.b[1]-s.a[1]],t=Math.max(0,Math.min(1,((p[0]-s.a[0])*ab[0]+(p[1]-s.a[1])*ab[1])/(s.L*s.L)));return {d:Math.hypot(p[0]-s.a[0]-t*ab[0],p[1]-s.a[1]-t*ab[1]),t:t*s.L};};
   out.spans.forEach(sp=>{[[sp.a,1],[sp.b,-1]].forEach(([p,g])=>{const dir=[sp.u[0]*g,sp.u[1]*g];// dir: do apoio para dentro do vão
@@ -2598,11 +2604,23 @@ function ewBuild(G){const M=MODELS.est;if(!M||M.novo)return null;const st=M.els.
   const tk=c=>`${c.k}|${c.sp.P.label}|${c.sup&&c.sup.P?c.sup.P.label:''}|${c.d}|${c.n}|${c.cope?c.cope.d+'x'+c.cope.l:''}|${c.nq}|${c.tp||''}`,tm=new Map(),cnt={};
   out.conns.forEach(c=>{const k=tk(c);if(!tm.has(k)){cnt[c.k]=(cnt[c.k]||0)+1;tm.set(k,{mark:c.k+cnt[c.k],k:c.k,rep:c,list:[],Vmax:0});}const t=tm.get(k);t.list.push(c);t.Vmax=Math.max(t.Vmax,c.V);c.mark=t.mark;});
   out.types=[...tm.values()];
-  // bases (pilar mais baixo de cada prumada): placa rotulada com 4 chumbadores químicos
+  // bases (pilar mais baixo de cada prumada): placa rotulada apoiada na viga, pilar ou laje de concreto (sem fundação própria)
   stacks.forEach(s=>{const c=s.cs[0],P=c.P,Nd=c.Nd,sig=20/1.96/10;let Bp=Math.ceil((P.w+100)/10)*10,Lp=Math.ceil((P.h+100)/10)*10;const Areq=Nd/sig*100;if(Bp*Lp<Areq){const k=Math.sqrt(Areq/(Bp*Lp));Bp=Math.ceil(Bp*k/10)*10;Lp=Math.ceil(Lp*k/10)*10;}
     const s0=Nd/(Bp*Lp/100),m=Math.max((Lp-.95*P.h)/2,(Bp-.8*P.w)/2),treq=m*Math.sqrt(2*s0/(EW_FY/1.1)),tp=[16,19,22.4,25,31.5].find(t=>t>=treq)||31.5;
-    c.base={Bp,Lp,tp,d:16,s0,treq,Nd};out.bases.push({c,Bp,Lp,tp,Nd});});
-  {const bm=new Map();out.bases.forEach(b=>{const k=`${b.c.P.label}|${b.Bp}|${b.Lp}|${b.tp}`;if(!bm.has(k))bm.set(k,{mark:'BP'+(bm.size+1),rep:b,list:[]});bm.get(k).list.push(b);b.mark=bm.get(k).mark;});out.baseTypes=[...bm.values()];}
+    const z=c.z0,ins=e=>c.x>e.bb.x0-60&&c.x<e.bb.x1+60&&c.y>e.bb.y0-60&&c.y<e.bb.y1+60&&e.bb.z1>z-120&&e.bb.z1<z+120&&!isSteelEl(e);
+    const v=M.els.find(e=>e.cat==='Viga'&&ins(e)),pc=!v&&M.els.find(e=>e.cat==='Pilar'&&ins(e)),lj=!v&&!pc&&M.els.find(e=>e.cat==='Laje'&&ins(e));let sup;
+    if(v){const bw=Math.round(Math.min(v.bb.x1-v.bb.x0,v.bb.y1-v.bb.y0)),hv=Math.round(v.bb.z1-v.bb.z0);sup={k:'viga',nm:nm(v),txt:`viga ${nm(v)} (${Math.round(bw/10)}x${Math.round(hv/10)})`,bw,hv,anc:`4 chumbadores químicos ø16 x ${Math.min(200,hv-60)} mm na viga`};
+      // viga estreita: chumbadores em duas linhas ao longo do eixo da viga, dentro da largura dela
+      if(Math.min(Bp,Lp)>bw-40&&v.ex[0]){const a=v.ex[0].start,b2=v.ex[0].end,Lv=Math.hypot(b2[0]-a[0],b2[1]-a[1])||1,u=[(b2[0]-a[0])/Lv,(b2[1]-a[1])/Lv],alX=Math.abs(u[0]*c.xw[0]+u[1]*c.xw[1])>=Math.abs(u[0]*c.yw[0]+u[1]*c.yw[1]),sA=Math.max(60,bw-80);
+        sup.anch=alX?[[-1,-1],[1,-1],[-1,1],[1,1]].map(([i,j])=>[i*(Bp/2-50),j*sA/2]):[[-1,-1],[1,-1],[-1,1],[1,1]].map(([i,j])=>[i*sA/2,j*(Lp/2-50)]);sup.sA=sA;
+        sup.anc+=`, em 2 linhas ao longo da viga a ${sA} mm`;}
+      if(Math.min(Bp,Lp)>bw+40)out.warns.push(`Base do pilar ${c.nm}: placa de ${Math.min(Bp,Lp)} mm sobre a viga ${nm(v)} de ${bw} mm de largura; confira o apoio no projeto de concreto.`);}
+    else if(pc){sup={k:'pilar',nm:nm(pc),txt:`pilar de concreto ${nm(pc)}`,anc:'4 chumbadores químicos ø16 x 200 mm no pilar'};}
+    else if(lj){const h=Math.round(lj.bb.z1-lj.bb.z0),d=h-25,u=2*(Bp+Lp)+2*Math.PI*2*d,tau=Nd*1000/(u*d),tRd=.13*(1+Math.sqrt(200/d))*Math.cbrt(100*.005*20);
+      sup={k:'laje',nm:nm(lj),txt:`laje ${nm(lj)} (h = ${Math.round(h/10)} cm)`,h,tau,tRd,up:tau/tRd,anc:`4 chumbadores químicos ø16 x ${Math.max(80,Math.min(200,h-40))} mm na laje`};}
+    else{sup={k:'?',txt:'sem elemento de concreto identificado sob a base',anc:'4 chumbadores químicos ø16 x 200 mm'};out.warns.push(`Base do pilar ${c.nm}: não achei viga, pilar ou laje de concreto embaixo (cota +${m2(z)} m).`);}
+    c.base={Bp,Lp,tp,d:16,s0,treq,Nd,sup};out.bases.push({c,Bp,Lp,tp,Nd,sup});});
+  {const bm=new Map();out.bases.forEach(b=>{const k=`${b.c.P.label}|${b.Bp}|${b.Lp}|${b.tp}|${b.sup.k}|${b.sup.anch?JSON.stringify(b.sup.anch.map(q=>q.map(Math.round))):''}`;if(!bm.has(k))bm.set(k,{mark:'BP'+(bm.size+1),rep:b,list:[]});bm.get(k).list.push(b);b.mark=bm.get(k).mark;});out.baseTypes=[...bm.values()];}
   // emendas de pilar nos encontros das prumadas
   out.cols.forEach(c=>{if(c.below){const P=c.below.P;out.splices.push({c,z:c.z0,P,Pa:c.P});}});
   {const em=new Map();out.splices.forEach(s=>{const k=`${s.P.label}|${s.Pa.label}`;if(!em.has(k))em.set(k,{mark:'EP'+(em.size+1),rep:s,list:[]});em.get(k).list.push(s);s.mark=em.get(k).mark;});out.spliceTypes=[...em.values()];}
@@ -2626,8 +2644,8 @@ function ewAxes(d,cols,ts,lab=true){const clu=v=>{const s=[...v].sort((a,b)=>a-b
 function drawEwLoc(S){const W=S.ew;if(!W)return null;const base=W.stacks.map(s=>s.cs[0]),R=ewRange(base),d=Dwg.at(escN(Math.max(R.w,R.h,3000)/300)),ts=d.ts;const A=ewAxes(d,base,ts);
   base.forEach(c=>{const b=c.base;if(b){const cs=c.xw[0],sn=c.xw[1],pts=[[-b.Bp/2,-b.Lp/2],[b.Bp/2,-b.Lp/2],[b.Bp/2,b.Lp/2],[-b.Bp/2,b.Lp/2]];d.P(pts.map(([u,v])=>[c.x+u*cs-v*sn,c.y+u*sn+v*cs]),'CHAPA');}
     ewIsec(d,c.x,c.y,c.P,c.xw,'ACO');const sx=c.x<(A.X0+A.X1)/2?-1:1,an=sx<0?'end':'start',ext=b?Math.max(b.Bp,b.Lp)/2:200;
-    d.T(c.x+sx*(ext+ts*.5),c.y+ts*.5,`${c.nm} · ${c.P.label}`,'TEXTO',{h:ts*.7,an});d.T(c.x+sx*(ext+ts*.5),c.y-ts*.6,`${b?b.mark||W.bases.find(q=>q.c===c).mark:''} ${b?`${b.Bp}x${b.Lp}x${nf1.format(b.tp)}`:''}`,'ANOT',{h:ts*.6,an});});
-  d.notes(A.X0,A.Y0-ts*8,[`Pilares metálicos (W) nascendo em +${m2(base[0].z0)} m sobre o concreto: base rotulada com placa e 4 chumbadores químicos ø16 (ver BP).`,'Alma do perfil conforme desenho; locar pelos eixos dos pilares do projeto de concreto.','Cotas em mm entre eixos.'],'LOCAÇÃO DOS PILARES METÁLICOS E BASES',sub());return d;}
+    d.T(c.x+sx*(ext+ts*.5),c.y+ts*.5,`${c.nm} · ${c.P.label}`,'TEXTO',{h:ts*.7,an});const bq=W.bases.find(q=>q.c===c);d.T(c.x+sx*(ext+ts*.5),c.y-ts*.6,`${bq?bq.mark:''} ${b?`${b.Bp}x${b.Lp}x${nf1.format(b.tp)}`:''}${b&&b.sup?` · sobre ${b.sup.k==='laje'?'laje':b.sup.k==='viga'?b.sup.nm:b.sup.k==='pilar'?b.sup.nm:'?'}`:''}`,'ANOT',{h:ts*.6,an});});
+  d.notes(A.X0,A.Y0-ts*8,[`Pilares metálicos (W) nascendo em +${m2(base[0].z0)} m sobre vigas e lajes de concreto existentes (sem fundação própria): base rotulada com placa e 4 chumbadores químicos ø16 no concreto (ver BP).`,'Alma do perfil conforme desenho; locar pelos eixos dos pilares do projeto de concreto.','Cotas em mm entre eixos.'],'LOCAÇÃO DOS PILARES METÁLICOS E BASES',sub());return d;}
 function ewRange(cs){const xs=cs.map(c=>c.x),ys=cs.map(c=>c.y);return {w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)};}
 function drawEwPlanta(S){const W=S.ew;if(!W)return null;const all=W.cols,R=ewRange(all),esc=escN(Math.max(R.w,R.h,3000)/300),d=Dwg.at(esc),ts=d.ts;let ox=0;
   W.levels.forEach(lv=>{const sd=new Dwg(ts,esc),sps=W.spans.filter(s=>Math.round(s.z/10)*10===lv.z),cs=all.filter(c=>c.z0<lv.z-50&&c.z1>lv.z-50);const A=ewAxes(sd,cs.length?cs:all,ts);
@@ -2666,12 +2684,14 @@ function drawEwLig(S){const W=S.ew;if(!W)return null;const d=Dwg.at(10),ts=d.ts,
       c.k==='LC'?`Fixação no concreto: chapa 12,5 x 200 x ${c.Lang+80} mm com ${c.nq} chumbadores químicos ø16 x 160 mm; cantoneiras parafusadas na aleta soldada na chapa.`:`${2*c.n} parafusos ASTM A325 ø${c.d} mm (${c.n} por cantoneira) na ${c.k==='LP'?'mesa do pilar':c.k==='LA'?'alma do pilar':'alma da viga de apoio'}, furos ø${c.d+1.5}, gabarito 70 mm, borda 35 mm.`,
       `Cortante de cálculo máximo ${nf1.format(t.Vmax)} kN; parafusos ${nf0.format(c.uB*100)}% e solda ${nf0.format(c.uW*100)}% (pior posição do tipo).`,...(c.cope?[`Recorte da mesa superior: ${c.cope.l} x ${c.cope.d} mm (raio 10 mm no canto).`]:[]),
       `Vale para ${t.list.length} ponta(s): ${where.slice(0,10).join(', ')}${where.length>10?'…':''}.`],`${t.mark} · VIGA ${P.label} ${c.k==='LP'?'NA MESA DO PILAR':c.k==='LA'?'NA ALMA DO PILAR':c.k==='LV'?'APOIADA EM VIGA':'NO CONCRETO'}`,`${t.list.length} unidades`);put(sd);});
-  W.baseTypes.forEach(t=>{const b=t.rep,c=b.c,P=c.P,sd=new Dwg(ts,10),e=50;sd.R(-b.Bp/2,-b.Lp/2,b.Bp,b.Lp,'CHAPA');ewIsec(sd,0,0,P,[1,0,0],'ACO');[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([i,j])=>sd.C(i*(b.Bp/2-e),j*(b.Lp/2-e),9,'CHAPA'));
+  W.baseTypes.forEach(t=>{const b=t.rep,c=b.c,P=c.P,sd=new Dwg(ts,10),e=50;sd.R(-b.Bp/2,-b.Lp/2,b.Bp,b.Lp,'CHAPA');ewIsec(sd,0,0,P,[1,0,0],'ACO');const an=(b.sup&&b.sup.anch)||[[-1,-1],[1,-1],[-1,1],[1,1]].map(([i,j])=>[i*(b.Bp/2-e),j*(b.Lp/2-e)]);an.forEach(([x,y])=>sd.C(x,y,9,'CHAPA'));
+    if(b.sup&&b.sup.anch){const ax=Math.abs(an[0][0])>Math.abs(an[0][1]),w=b.sup.bw;if(ax){sd.L(-b.Bp/2-40,-w/2,b.Bp/2+40,-w/2,'EIXO');sd.L(-b.Bp/2-40,w/2,b.Bp/2+40,w/2,'EIXO');}else{sd.L(-w/2,-b.Lp/2-40,-w/2,b.Lp/2+40,'EIXO');sd.L(w/2,-b.Lp/2-40,w/2,b.Lp/2+40,'EIXO');}sd.T(0,-b.Lp/2-ts*3.2,`faces da viga de concreto (${w} mm)`,'ANOT',{h:ts*.6,an:'middle'});}
     sd.D(-b.Bp/2,-b.Lp/2,b.Bp/2,-b.Lp/2,-ts*1.6,String(b.Bp));sd.D(b.Bp/2,-b.Lp/2,b.Bp/2,b.Lp/2,-ts*1.6,String(b.Lp));sd.T(0,b.Lp/2+ts*1.2,'PLANTA','TEXTO',{an:'middle',h:ts*.8});
-    const ox=b.Bp/2+ts*8;sd.hatch(ox-b.Bp/2-60,-260,b.Bp+120,200);sd.R(ox-b.Bp/2,-60,b.Bp,25,'ANOT');sd.R(ox-b.Bp/2,-35,b.Bp,b.tp,'CHAPA');sd.R(ox-P.w/2,-35+b.tp,P.w,400,'ACO');[-1,1].forEach(g=>sd.L(ox+g*(b.Bp/2-e),-35+b.tp+30,ox+g*(b.Bp/2-e),-220,'ANOT'));
+    const ox=b.Bp+120+ts*8,su=b.sup||{k:'?'},hc=su.k==='laje'?su.h:su.k==='viga'?Math.min(su.hv,450):300;sd.hatch(ox-b.Bp/2-120,-60-hc,b.Bp+240,hc);sd.R(ox-b.Bp/2,-60,b.Bp,25,'ANOT');sd.R(ox-b.Bp/2,-35,b.Bp,b.tp,'CHAPA');sd.R(ox-P.w/2,-35+b.tp,P.w,400,'ACO');
+    [...new Set(an.map(q=>Math.round(q[0])))].forEach(x=>sd.L(ox+x,-35+b.tp+30,ox+x,-60-Math.max(80,Math.min(200,hc-(su.k==='laje'?40:60))),'ANOT'));sd.D(ox-b.Bp/2-120,-60-hc,ox-b.Bp/2-120,-60,ts*1.6,String(hc));sd.T(ox,-60-hc-ts*(su.k==='laje'?2.6:1.2),su.txt||'','ANOT',{h:ts*.6,an:'middle'});
     sd.T(ox,-35+b.tp+400+ts*.9,'ELEVAÇÃO','TEXTO',{an:'middle',h:ts*.8});
-    sd.notes(sd.bbox().x0,sd.bbox().y0-ts*2.5,[`Placa ${b.Bp} x ${b.Lp} x ${nf1.format(b.tp)} mm ASTM A36, soldada no pilar com filete de 6 mm em todo o contorno.`,`4 chumbadores químicos ø16 x 200 mm no concreto existente (furo ø18), graute 25 mm sob a placa; base rotulada.`,
-      `Nd máx. ${nf1.format(Math.max(...t.list.map(q=>q.Nd)))} kN; tensão no concreto ${nf2.format(b.c.base.s0*10)} MPa (C20); espessura necessária ${nf1.format(b.c.base.treq*10)} mm.`,`Pilares: ${t.list.map(q=>q.c.nm).join(', ')}.`],`${t.mark} · BASE DO PILAR ${P.label}`,`${t.list.length} unidades`);put(sd);});
+    sd.notes(sd.bbox().x0,sd.bbox().y0-ts*2.5,[`Placa ${b.Bp} x ${b.Lp} x ${nf1.format(b.tp)} mm ASTM A36, soldada no pilar com filete de 6 mm em todo o contorno.`,`Apoio: ${(b.sup&&b.sup.txt)||'concreto existente'}. Fixação: ${(b.sup&&b.sup.anc)||'4 chumbadores químicos ø16'}; graute 25 mm sob a placa; base rotulada.`,...(b.sup&&b.sup.k==='laje'?[`Punção na laje (NBR 6118, sem armadura de punção, ρ = 0,5%): τ ${nf2.format(b.sup.tau)} / ${nf2.format(b.sup.tRd)} MPa = ${nf0.format(b.sup.up*100)}% (pior pilar do tipo: confirmar no projeto de concreto).`]:b.sup&&b.sup.k==='viga'?[`Carga transmitida à viga de concreto: Nd ${nf1.format(Math.max(...t.list.map(q=>q.Nd)))} kN (verificar a viga no projeto de concreto).`]:[]),
+      `Nd máx. ${nf1.format(Math.max(...t.list.map(q=>q.Nd)))} kN; tensão no concreto ${nf2.format(b.c.base.s0*10)} MPa (C20); espessura necessária ${nf1.format(b.c.base.treq)} mm.`,`Pilares: ${t.list.map(q=>q.c.nm).join(', ')}.`],`${t.mark} · BASE DO PILAR ${P.label}`,`${t.list.length} unidades`);put(sd);});
   W.spliceTypes.forEach(t=>{const s=t.rep,P=s.P,sd=new Dwg(ts,10);sd.R(-P.w/2,-600,P.w,600,'ACO');sd.R(-s.Pa.w/2,4,s.Pa.w,600,'ACO');[-1,1].forEach(g=>{sd.R(g>0?P.w/2:-P.w/2-8,-200,8,400,'CHAPA');[-140,-60,60,140].forEach(yy=>sd.C(g*(P.w/2+20),yy,9,'CHAPA'));});
     sd.D(-P.w/2-8,-200,-P.w/2-8,200,ts*1.6,'400');sd.T(0,620+ts,'ELEVAÇÃO (talas nas duas mesas e na alma)','TEXTO',{an:'middle',h:ts*.75});
     sd.notes(sd.bbox().x0,sd.bbox().y0-ts*2.5,[`Emenda por contato, com faces usinadas ou esmerilhadas; talas de mesa 8 x ${Math.round(Math.min(P.w,s.Pa.w))} x 400 mm e tala de alma 6,3 x ${Math.round(P.h-2*P.tf-40)} x 300 mm.`,'Parafusos A325 ø16: 4 por tala de mesa de cada lado da junta e 2 na alma; posição 500 mm acima do piso.',
@@ -3795,7 +3815,7 @@ function projOpen(txt,fname){const st=$('#stProj');let P;try{P=JSON.parse(txt);}
   nvSchema();st.textContent=`Projeto aberto: ${fname} (salvo em ${new Date(P.salvo||Date.now()).toLocaleString('pt-BR')}).`;}
 $('#bProjS').onclick=projSave;$('#fdA').onclick=()=>{fdAuto();$('#sel').hidden=true;runSteel();};$('#fdV').onclick=()=>setView('desenho','locacao');['fi_tipo','fi_bloco','fi_nE','fi_D','fi_B','fi_prof','fi_a'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('change',()=>{if(!(OVR.fd||[]).length)return;OVR.fd.forEach(x=>{if(x.src==='prop'&&!x.ed)x.f=fdDefault();});saveOVR();runSteel();});});$('#fdX').onclick=()=>{OVR.fd=[];saveOVR();$('#sel').hidden=true;runSteel();};$('#manM').onclick=()=>manMode(PICKT==='M'?null:'M');$('#manT').onclick=()=>manMode(PICKT==='T'?null:'T');
 $('#manU').onclick=()=>{if((OVR.man||[]).length){OVR.man.pop();saveOVR();runSteel();}manMode(null);};$('#manC').onclick=()=>{OVR.man=[];saveOVR();runSteel();manMode(null);};
-$('#g_tLanc').addEventListener('change',()=>{if($('#g_tLanc').value!=='man')manMode(null);});$('#pl_mem').onclick=memCalc;$('#pl_mdesc').onclick=memDesc;$('#bDim').onclick=()=>{$('#dimSt').textContent='Calculando…';setTimeout(dimensionar,30);};$('#bProjA').onclick=()=>$('#fProj').click();
+$('#g_tLanc').addEventListener('change',()=>{if($('#g_tLanc').value!=='man')manMode(null);});$('#pl_mem').onclick=memCalc;$('#pl_mdesc').onclick=memDesc;$('#bDim').onclick=()=>{$('#dimSt').textContent='Calculando…';setTimeout(()=>{dimensionar();const n=dimensionarW();if(n){const st=$('#dimSt');if(st)st.textContent+=` Estrutura W: ${Object.entries(OVR.ewp||{}).map(([k,v])=>`${k} → ${v}`).join('; ')}.`;}},30);};$('#bProjA').onclick=()=>$('#fProj').click();
 $('#fProj').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>projOpen(r.result,f.name);r.readAsText(f);e.target.value='';};
 function bindFile(btn,inp,k){$(btn).onclick=()=>$(inp).click();$(inp).onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadText(k,r.result,f.name,false);r.readAsText(f);e.target.value='';};}
 bindFile('#bEst','#fEst','est');bindFile('#bArq','#fArq','arq');
@@ -4106,7 +4126,8 @@ $('#pclose').onclick=()=>{if(PANE)setPane(PANE);};
 const hdr=document.querySelector('header.top');new ResizeObserver(()=>document.documentElement.style.setProperty('--hh',hdr.offsetHeight+'px')).observe(hdr);
 {const p=PANE;PANE=null;if(p)setPane(p);else{$('#app').classList.add('nopanel');document.querySelectorAll('#panel [data-pane]').forEach(x=>x.hidden=true);}}
 setView(VIEW);
-initScene();bindSheets();bindPlot();bindCtx();['ew_lj','ew_rev','ew_q','ew_alv','ew_top','ew_gR','ew_qR'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('change',()=>runSteel());});loadPLOT();renderAll();loadExample();
+initScene();bindSheets();bindPlot();bindCtx();$('#ewDimB').onclick=()=>{const n=ewDim(),ch=Object.entries(OVR.ewp||{});$('#ewDimSt').textContent=n||ch.length?`Perfis trocados: ${ch.map(([k,v])=>`${k} → ${v}`).join('; ')}.`:'Todos os perfis do IFC passam.';};$('#ewDimX').onclick=()=>{delete OVR.ewp;saveOVR();runSteel();$('#ewDimSt').textContent='Perfis do IFC restaurados.';};
+['ew_lj','ew_rev','ew_q','ew_alv','ew_top','ew_gR','ew_qR'].forEach(id=>{const e=$('#'+id);if(e)e.addEventListener('change',()=>runSteel());});loadPLOT();renderAll();loadExample();
 window.__eng={get PLOT_LAST(){return PLOT_LAST;},MODELS,IFC,sampleEst,sampleArq,select,selectSteel,mqAddPoint:h=>mqAddPoint(h),get ORIGIN(){return ORIGIN;},get STEEL(){return STEEL;},runSteel,get cam(){return camera;},get ctl(){return controls;},man:l=>{OVR.man=l;saveOVR();runSteel();}};
 })();
 </script>
